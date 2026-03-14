@@ -1,0 +1,345 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ─── Users ───────────────────────────────────────────────
+model User {
+  id        String   @id @default(uuid()) @db.Uuid
+  email     String   @unique
+  name      String?
+  password  String?
+  image     String?
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  goals          Goal[]
+  programs       Program[]
+  workouts       Workout[]
+  exercises      Exercise[]
+  exercisePrs    ExercisePr[]
+  bodyMetrics    BodyMetric[]
+  progressPhotos ProgressPhoto[]
+  injuries       Injury[]
+
+  @@map("users")
+}
+
+// ─── Goals ───────────────────────────────────────────────
+enum GoalType {
+  frequency
+  strength
+  bodyweight
+  competition
+  powerlifting
+}
+
+enum GoalStatus {
+  active
+  achieved
+  abandoned
+}
+
+model Goal {
+  id          String     @id @default(uuid()) @db.Uuid
+  userId      String     @map("user_id") @db.Uuid
+  type        GoalType
+  title       String
+  description String?
+  targetValue Decimal?   @map("target_value")
+  targetUnit  String?    @map("target_unit")
+  targetDate  DateTime?  @map("target_date") @db.Date
+  status      GoalStatus @default(active)
+  createdAt   DateTime   @default(now()) @map("created_at")
+
+  user     User      @relation(fields: [userId], references: [id])
+  programs Program[]
+
+  @@map("goals")
+}
+
+// ─── Programs ────────────────────────────────────────────
+enum ProgramStatus {
+  active
+  completed
+  paused
+}
+
+model Program {
+  id            String        @id @default(uuid()) @db.Uuid
+  userId        String        @map("user_id") @db.Uuid
+  goalId        String?       @map("goal_id") @db.Uuid
+  name          String
+  description   String?
+  startDate     DateTime?     @map("start_date") @db.Date
+  endDate       DateTime?     @map("end_date") @db.Date
+  durationWeeks Int?          @map("duration_weeks")
+  status        ProgramStatus @default(active)
+  createdAt     DateTime      @default(now()) @map("created_at")
+
+  user           User               @relation(fields: [userId], references: [id])
+  goal           Goal?              @relation(fields: [goalId], references: [id])
+  blocks         Block[]
+  benchmarks     ProgramBenchmark[]
+  progressPhotos ProgressPhoto[]
+
+  @@map("programs")
+}
+
+model ProgramBenchmark {
+  id          String    @id @default(uuid()) @db.Uuid
+  programId   String    @map("program_id") @db.Uuid
+  label       String
+  targetValue Decimal   @map("target_value")
+  targetUnit  String    @map("target_unit")
+  targetDate  DateTime? @map("target_date") @db.Date
+  actualValue Decimal?  @map("actual_value")
+  achievedAt  DateTime? @map("achieved_at")
+
+  program Program @relation(fields: [programId], references: [id])
+
+  @@map("program_benchmarks")
+}
+
+// ─── Blocks ──────────────────────────────────────────────
+enum BlockStatus {
+  active
+  completed
+  upcoming
+}
+
+model Block {
+  id                  String      @id @default(uuid()) @db.Uuid
+  programId           String      @map("program_id") @db.Uuid
+  name                String
+  description         String?
+  blockNumber         Int         @map("block_number")
+  startDate           DateTime?   @map("start_date") @db.Date
+  endDate             DateTime?   @map("end_date") @db.Date
+  durationWeeks       Int?        @map("duration_weeks")
+  scheduleDaysPerWeek Int?        @map("schedule_days_per_week")
+  focus               String?
+  status              BlockStatus @default(upcoming)
+  createdAt           DateTime    @default(now()) @map("created_at")
+
+  program  Program    @relation(fields: [programId], references: [id])
+  days     BlockDay[]
+  workouts Workout[]
+
+  @@map("blocks")
+}
+
+// ─── Block Days (Templates) ──────────────────────────────
+enum DayType {
+  lifting
+  cardio
+  conditioning
+  mobility
+  rest
+}
+
+model BlockDay {
+  id        String  @id @default(uuid()) @db.Uuid
+  blockId   String  @map("block_id") @db.Uuid
+  dayNumber Int     @map("day_number")
+  name      String
+  dayType   DayType @default(lifting) @map("day_type")
+  sortOrder Int     @map("sort_order")
+
+  block     Block              @relation(fields: [blockId], references: [id])
+  exercises BlockDayExercise[]
+  workouts  Workout[]
+
+  @@map("block_days")
+}
+
+// ─── Block Day Exercises (Templates) ─────────────────────
+enum ProgressionType {
+  linear
+  double
+  wave
+  rpe_based
+  percentage_based
+  none
+}
+
+model BlockDayExercise {
+  id                    String          @id @default(uuid()) @db.Uuid
+  blockDayId            String          @map("block_day_id") @db.Uuid
+  exerciseId            String          @map("exercise_id") @db.Uuid
+  altExerciseId         String?         @map("alt_exercise_id") @db.Uuid
+  sortOrder             Int             @map("sort_order")
+  targetSets            Int?            @map("target_sets")
+  targetRepRange        String?         @map("target_rep_range")
+  targetRpe             String?         @map("target_rpe")
+  progressionType       ProgressionType @default(none) @map("progression_type")
+  progressionIncrement  Decimal?        @map("progression_increment")
+  notes                 String?
+
+  blockDay    BlockDay  @relation(fields: [blockDayId], references: [id])
+  exercise    Exercise  @relation("primary", fields: [exerciseId], references: [id])
+  altExercise Exercise? @relation("alternate", fields: [altExerciseId], references: [id])
+
+  @@map("block_day_exercises")
+}
+
+// ─── Workouts (Logged Sessions) ──────────────────────────
+model Workout {
+  id         String    @id @default(uuid()) @db.Uuid
+  userId     String    @map("user_id") @db.Uuid
+  blockId    String?   @map("block_id") @db.Uuid
+  blockDayId String?   @map("block_day_id") @db.Uuid
+  date       DateTime  @db.Date
+  weekNumber Int?      @map("week_number")
+  startTime  DateTime? @map("start_time")
+  endTime    DateTime? @map("end_time")
+  notes      String?
+  rating     Int?
+  bodyWeight Decimal?  @map("body_weight")
+  createdAt  DateTime  @default(now()) @map("created_at")
+
+  user      User              @relation(fields: [userId], references: [id])
+  block     Block?            @relation(fields: [blockId], references: [id])
+  blockDay  BlockDay?         @relation(fields: [blockDayId], references: [id])
+  exercises WorkoutExercise[]
+
+  @@map("workouts")
+}
+
+model WorkoutExercise {
+  id         String  @id @default(uuid()) @db.Uuid
+  workoutId  String  @map("workout_id") @db.Uuid
+  exerciseId String  @map("exercise_id") @db.Uuid
+  sortOrder  Int     @map("sort_order")
+  notes      String?
+
+  workout  Workout  @relation(fields: [workoutId], references: [id])
+  exercise Exercise @relation(fields: [exerciseId], references: [id])
+  sets     Set[]
+
+  @@map("workout_exercises")
+}
+
+model Set {
+  id                String   @id @default(uuid()) @db.Uuid
+  workoutExerciseId String   @map("workout_exercise_id") @db.Uuid
+  setNumber         Int      @map("set_number")
+  weight            Decimal?
+  reps              Int?
+  rir               Int?
+  rpe               Decimal?
+  isWarmup          Boolean  @default(false) @map("is_warmup")
+  isPr              Boolean  @default(false) @map("is_pr")
+  notes             String?
+
+  workoutExercise WorkoutExercise @relation(fields: [workoutExerciseId], references: [id])
+  exercisePrs     ExercisePr[]
+
+  @@map("sets")
+}
+
+// ─── Exercise Library ────────────────────────────────────
+model Exercise {
+  id               String  @id @default(uuid()) @db.Uuid
+  userId           String? @map("user_id") @db.Uuid
+  name             String  @unique
+  movementPattern  String? @map("movement_pattern")
+  primaryMuscle    String? @map("primary_muscle")
+  secondaryMuscle1 String? @map("secondary_muscle_1")
+  secondaryMuscle2 String? @map("secondary_muscle_2")
+  equipment        String?
+  isCustom         Boolean @default(false) @map("is_custom")
+  createdAt        DateTime @default(now()) @map("created_at")
+
+  user               User?              @relation(fields: [userId], references: [id])
+  exercisePrs        ExercisePr[]
+  workoutExercises   WorkoutExercise[]
+  blockDayExercises  BlockDayExercise[] @relation("primary")
+  blockDayExercisesAlt BlockDayExercise[] @relation("alternate")
+
+  @@map("exercises")
+}
+
+model ExercisePr {
+  id           String   @id @default(uuid()) @db.Uuid
+  userId       String   @map("user_id") @db.Uuid
+  exerciseId   String   @map("exercise_id") @db.Uuid
+  prType       String   @map("pr_type") // weight, reps, volume, e1rm
+  value        Decimal
+  repsAtWeight Int?     @map("reps_at_weight")
+  setId        String?  @map("set_id") @db.Uuid
+  achievedAt   DateTime @default(now()) @map("achieved_at")
+
+  user     User     @relation(fields: [userId], references: [id])
+  exercise Exercise @relation(fields: [exerciseId], references: [id])
+  set      Set?     @relation(fields: [setId], references: [id])
+
+  @@map("exercise_prs")
+}
+
+// ─── Body Metrics & Progress ─────────────────────────────
+model BodyMetric {
+  id        String   @id @default(uuid()) @db.Uuid
+  userId    String   @map("user_id") @db.Uuid
+  date      DateTime @db.Date
+  weight    Decimal?
+  bodyFatPct Decimal? @map("body_fat_pct")
+  source    String   @default("manual") // manual, fitbit, scale
+  notes     String?
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@map("body_metrics")
+}
+
+model ProgressPhoto {
+  id        String   @id @default(uuid()) @db.Uuid
+  userId    String   @map("user_id") @db.Uuid
+  programId String?  @map("program_id") @db.Uuid
+  date      DateTime @db.Date
+  imageUrl  String   @map("image_url")
+  poseType  String   @default("front") @map("pose_type") // front, side, back, custom
+  notes     String?
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user    User     @relation(fields: [userId], references: [id])
+  program Program? @relation(fields: [programId], references: [id])
+
+  @@map("progress_photos")
+}
+
+// ─── Injuries ────────────────────────────────────────────
+model Injury {
+  id           String    @id @default(uuid()) @db.Uuid
+  userId       String    @map("user_id") @db.Uuid
+  bodyPart     String    @map("body_part")
+  description  String?
+  severity     String    @default("tweak") // tweak, mild, moderate, severe
+  onsetDate    DateTime  @map("onset_date") @db.Date
+  resolvedDate DateTime? @map("resolved_date") @db.Date
+  status       String    @default("active") // active, monitoring, resolved
+  createdAt    DateTime  @default(now()) @map("created_at")
+
+  user  User         @relation(fields: [userId], references: [id])
+  notes InjuryNote[]
+
+  @@map("injuries")
+}
+
+model InjuryNote {
+  id          String    @id @default(uuid()) @db.Uuid
+  injuryId    String    @map("injury_id") @db.Uuid
+  date        DateTime  @db.Date
+  note        String
+  treatment   String?
+  followUpDate DateTime? @map("follow_up_date") @db.Date
+
+  injury Injury @relation(fields: [injuryId], references: [id])
+
+  @@map("injury_notes")
+}

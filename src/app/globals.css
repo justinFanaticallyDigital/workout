@@ -1,0 +1,43 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  background: #1a1a1a;
+  color: #ffffff;
+  font-family: system-ui, -apple-system, sans-serif;
+  margin: 0;
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #1a1a1a;
+}
+::-webkit-scrollbar-thumb {
+  background: #434343;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #555555;
+}
+
+/* Input resets for the dark theme */
+input, textarea, select {
+  font-family: 'Courier New', Courier, monospace;
+}
+
+input:focus, textarea:focus, select:focus {
+  outline: 1px solid #888888;
+  outline-offset: -1px;
+}
+
+input::placeholder, textarea::placeholder {
+  color: #666666;
+}
