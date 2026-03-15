@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import Nav from "@/components/ui/Nav";
+import SessionProvider from "@/components/SessionProvider";
 
 export const metadata: Metadata = {
   title: "FitTrack",
@@ -15,10 +16,12 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className="bg-ft-bg min-h-screen antialiased">
-        <Nav />
-        <div className="max-w-[1100px] mx-auto px-6 py-7">
-          {children}
-        </div>
+        <SessionProvider>
+          <Nav />
+          <div className="max-w-[1100px] mx-auto px-6 py-7">
+            {children}
+          </div>
+        </SessionProvider>
       </body>
     </html>
   );

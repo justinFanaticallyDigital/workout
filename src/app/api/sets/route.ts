@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getDemoUserId } from "@/lib/demo-user";
+import { requireAuthUserId } from "@/lib/auth-helpers";
 
 export async function POST(request: NextRequest) {
-  const userId = await getDemoUserId();
+  const userId = await requireAuthUserId();
   const body = await request.json();
 
   // Get the next set number

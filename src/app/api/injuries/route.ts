@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getDemoUserId } from "@/lib/demo-user";
+import { requireAuthUserId } from "@/lib/auth-helpers";
 
 export const dynamic = "force-dynamic";
 
 export async function GET() {
-  const userId = await getDemoUserId();
+  const userId = await requireAuthUserId();
 
   const injuries = await prisma.injury.findMany({
     where: { userId },
@@ -30,7 +30,7 @@ export async function GET() {
 }
 
 export async function POST(request: NextRequest) {
-  const userId = await getDemoUserId();
+  const userId = await requireAuthUserId();
   const body = await request.json();
 
   const injury = await prisma.injury.create({

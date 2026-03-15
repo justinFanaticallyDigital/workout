@@ -1,11 +1,11 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getDemoUserId } from "@/lib/demo-user";
+import { requireAuthUserId } from "@/lib/auth-helpers";
 
 export const dynamic = "force-dynamic";
 
 export async function GET() {
-  const userId = await getDemoUserId();
+  const userId = await requireAuthUserId();
 
   const prs = await prisma.exercisePr.findMany({
     where: { userId },

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getDemoUserId } from "@/lib/demo-user";
+import { requireAuthUserId } from "@/lib/auth-helpers";
 
 export const dynamic = "force-dynamic";
 
@@ -25,7 +25,7 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
-  const userId = await getDemoUserId();
+  const userId = await requireAuthUserId();
   const body = await request.json();
 
   const exercise = await prisma.exercise.create({
