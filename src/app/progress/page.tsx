@@ -2,6 +2,7 @@ import { Card, SectionHeader } from "@/components/ui";
 import { prisma } from "@/lib/prisma";
 import { getAuthUserId } from "@/lib/auth-helpers";
 import { redirect } from "next/navigation";
+import Link from "next/link";
 
 export const dynamic = "force-dynamic";
 
@@ -234,14 +235,19 @@ export default async function ProgressPage() {
         <SectionHeader
           title="Progress Photos"
           action={
-            <button className="text-ft-dim text-xs font-mono hover:text-ft-light transition-colors border border-ft-border rounded px-3 py-1">
-              + Upload
-            </button>
+            <Link
+              href="/progress/photos"
+              className="text-ft-dim text-xs font-mono hover:text-ft-light transition-colors border border-ft-border rounded px-3 py-1"
+            >
+              View All &rarr;
+            </Link>
           }
         />
-        <p className="text-ft-muted font-mono text-sm py-8 text-center">
-          Upload photos to track visual progress
-        </p>
+        <Link href="/progress/photos">
+          <p className="text-ft-muted font-mono text-sm py-8 text-center hover:text-ft-light transition-colors">
+            View and upload progress photos
+          </p>
+        </Link>
       </Card>
     </div>
   );

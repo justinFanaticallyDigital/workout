@@ -180,7 +180,7 @@ export default async function Home() {
       </div>
 
       {/* Top Stats Grid */}
-      <div className="grid grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
         <Card>
           <Stat label="This Week" value={`${sessionsThisWeek}`} sub="sessions" />
         </Card>
@@ -208,7 +208,7 @@ export default async function Home() {
       </div>
 
       {/* Week View + Quick Log */}
-      <div className="grid grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {/* Week View */}
         <Card className="col-span-2">
           <SectionHeader title="Week View" />
@@ -257,8 +257,68 @@ export default async function Home() {
         </Link>
       </div>
 
+      {/* Recent Workouts */}
+      {recentWorkouts.length > 0 && (
+        <Card>
+          <SectionHeader
+            title="Recent Workouts"
+            action={
+              <Link
+                href="/history"
+                className="text-ft-dim text-xs font-mono hover:text-ft-light transition-colors"
+              >
+                View All &rarr;
+              </Link>
+            }
+          />
+          <div className="space-y-2">
+            {recentWorkouts.slice(0, 5).map((w) => {
+              const vol = w.exercises.reduce((sum, ex) => {
+                return sum + ex.sets.reduce((s, set) => {
+                  if (set.weight && set.reps && !set.isWarmup) {
+                    return s + Number(set.weight) * set.reps;
+                  }
+                  return s;
+                }, 0);
+              }, 0);
+              const setCount = w.exercises.reduce(
+                (sum, ex) => sum + ex.sets.filter((s) => !s.isWarmup).length,
+                0
+              );
+              return (
+                <Link key={w.id} href={`/history/${w.id}`} className="block">
+                  <div className="flex items-center justify-between py-2 border-b border-ft-border last:border-0 hover:bg-ft-surface/50 rounded px-2 -mx-2 transition-colors">
+                    <div className="flex items-center gap-3">
+                      <span className="text-ft-white text-sm font-mono font-bold">
+                        {w.date.toLocaleDateString("en-US", {
+                          weekday: "short",
+                          month: "short",
+                          day: "numeric",
+                        })}
+                      </span>
+                      {w.blockDay && (
+                        <Tag>{w.blockDay.name}</Tag>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-4 text-right">
+                      <span className="text-ft-dim text-xs font-mono">
+                        {setCount} sets
+                      </span>
+                      <span className="text-ft-dim text-xs font-mono">
+                        {vol > 0 ? `${vol.toLocaleString()} lbs` : "—"}
+                      </span>
+                      <span className="text-ft-muted text-sm">&rarr;</span>
+                    </div>
+                  </div>
+                </Link>
+              );
+            })}
+          </div>
+        </Card>
+      )}
+
       {/* Recent PRs */}
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <Card>
           <SectionHeader title="Recent PRs" />
           {recentPRs.length === 0 ? (
@@ -311,7 +371,7 @@ export default async function Home() {
       {muscleVolume.length > 0 && (
         <Card>
           <SectionHeader title="Weekly Volume by Muscle" />
-          <div className="grid grid-cols-6 gap-3">
+          <div className="grid grid-cols-3 sm:grid-cols-6 gap-3">
             {muscleVolume.map(({ group, volume, raw }) => (
               <div
                 key={group}

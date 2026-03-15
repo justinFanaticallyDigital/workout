@@ -10,6 +10,8 @@ export async function GET(
   const block = await prisma.block.findUnique({
     where: { id },
     include: {
+      program: { select: { name: true } },
+      _count: { select: { workouts: true } },
       days: {
         include: {
           exercises: {

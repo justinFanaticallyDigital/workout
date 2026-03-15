@@ -75,9 +75,12 @@ export default async function ProgramsPage() {
             Goal-driven training plans
           </p>
         </div>
-        <button className="bg-ft-white text-ft-bg font-mono text-sm font-bold px-4 py-2 rounded hover:bg-ft-light transition-colors">
+        <Link
+          href="/programs/new"
+          className="bg-ft-white text-ft-bg font-mono text-sm font-bold px-4 py-2 rounded hover:bg-ft-light transition-colors"
+        >
           + New Program
-        </button>
+        </Link>
       </div>
 
       {/* Active Program */}

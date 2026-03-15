@@ -1,8 +1,10 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { Card, SectionHeader, Tag } from "@/components/ui";
+import { addToQueue } from "@/lib/offline-queue";
 
 interface SetData {
   set: number;
@@ -12,27 +14,41 @@ interface SetData {
   done: boolean;
 }
 
+interface LastSet {
+  weight: number | null;
+  reps: number | null;
+  rir: number | null;
+}
+
 interface ExerciseData {
   id: string;
+  exerciseId: string;
   name: string;
   shortName: string;
   category: string;
   targetSets: number;
   targetRepRange: string;
+  progressionType: string;
   sets: SetData[];
+  notes: string;
+  lastSets: LastSet[];
+  suggestedWeight: number | null;
 }
 
 interface BlockDayData {
   id: string;
+  blockId: string;
   name: string;
   dayNumber: number;
   block: { name: string };
   exercises: {
     id: string;
+    exerciseId: string;
     exercise: { name: string; movementPattern: string | null };
     targetSets: number | null;
     targetRepRange: string | null;
     progressionType: string;
+    progressionIncrement: number | null;
   }[];
 }
 
@@ -41,9 +57,31 @@ function isExerciseComplete(ex: ExerciseData) {
 }
 
 function makeShortName(name: string): string {
-  // Take first word(s) up to ~12 chars
   const parts = name.split(/[-·]/);
   return parts[0].trim().slice(0, 12);
+}
+
+function calcSuggestion(
+  progressionType: string,
+  increment: number | null,
+  lastSets: LastSet[],
+  targetRepRange: string
+): number | null {
+  if (lastSets.length === 0) return null;
+  const lastWeight = lastSets[0]?.weight;
+  if (!lastWeight) return null;
+
+  if (progressionType === "linear" && increment) {
+    return lastWeight + increment;
+  }
+  if (progressionType === "double") {
+    // If all reps hit top of range, increase weight
+    const topReps = parseInt(targetRepRange.split("-").pop() ?? "12");
+    const allHitTop = lastSets.every((s) => s.reps && s.reps >= topReps);
+    if (allHitTop) return lastWeight + (increment ?? 5);
+    return lastWeight; // keep same weight, increase reps
+  }
+  return null;
 }
 
 export default function ActiveWorkoutPage({
@@ -51,13 +89,20 @@ export default function ActiveWorkoutPage({
 }: {
   params: Promise<{ workoutId: string }>;
 }) {
+  const router = useRouter();
   const [workoutId, setWorkoutId] = useState<string>("");
+  const [blockDayId, setBlockDayId] = useState<string>("");
+  const [blockId, setBlockId] = useState<string>("");
   const [exercises, setExercises] = useState<ExerciseData[]>([]);
   const [dayInfo, setDayInfo] = useState<{ name: string; blockName: string } | null>(null);
   const [activeEx, setActiveEx] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [finishing, setFinishing] = useState(false);
+  const [workoutNotes, setWorkoutNotes] = useState("");
   const [startTime] = useState(() => Date.now());
   const [elapsed, setElapsed] = useState("0:00");
+  const [restored, setRestored] = useState(false);
+  const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Resolve params
   useEffect(() => {
@@ -75,11 +120,27 @@ export default function ActiveWorkoutPage({
     return () => clearInterval(interval);
   }, [startTime]);
 
-  // Load block day exercises (the workoutId here is actually the blockDay ID from /log)
+  // Auto-save to localStorage (debounced 2s)
+  const saveToLocalStorage = useCallback(() => {
+    if (!workoutId || workoutId === "new-blank") return;
+    const key = `workout-draft-${workoutId}`;
+    const data = { exercises, workoutNotes, savedAt: Date.now() };
+    localStorage.setItem(key, JSON.stringify(data));
+  }, [workoutId, exercises, workoutNotes]);
+
+  useEffect(() => {
+    if (!workoutId || exercises.length === 0) return;
+    if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+    saveTimerRef.current = setTimeout(saveToLocalStorage, 2000);
+    return () => {
+      if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+    };
+  }, [exercises, workoutNotes, saveToLocalStorage, workoutId]);
+
+  // Load block day exercises
   useEffect(() => {
     if (!workoutId || workoutId === "new-blank") return;
 
-    // Fetch the block day template to get exercises
     fetch(`/api/blocks/day/${workoutId}`)
       .then((res) => {
         if (!res.ok) return null;
@@ -90,25 +151,74 @@ export default function ActiveWorkoutPage({
           setLoading(false);
           return;
         }
+        setBlockDayId(data.id);
+        setBlockId(data.blockId);
         setDayInfo({ name: data.name, blockName: data.block.name });
-        setExercises(
-          data.exercises.map((bde) => ({
-            id: bde.id,
-            name: bde.exercise.name,
-            shortName: makeShortName(bde.exercise.name),
-            category: bde.exercise.movementPattern || "—",
-            targetSets: bde.targetSets ?? 3,
-            targetRepRange: bde.targetRepRange ?? "8-12",
-            sets: Array.from({ length: bde.targetSets ?? 3 }, (_, i) => ({
-              set: i + 1,
-              weight: null,
-              reps: null,
-              rir: null,
-              done: false,
-            })),
-          }))
-        );
+
+        // Check for saved draft
+        const key = `workout-draft-${workoutId}`;
+        const saved = localStorage.getItem(key);
+        if (saved) {
+          try {
+            const draft = JSON.parse(saved);
+            // Only restore if less than 24 hours old
+            if (draft.savedAt && Date.now() - draft.savedAt < 24 * 60 * 60 * 1000) {
+              setExercises(draft.exercises);
+              setWorkoutNotes(draft.workoutNotes || "");
+              setRestored(true);
+              setLoading(false);
+              return;
+            }
+          } catch {
+            // ignore parse errors
+          }
+        }
+
+        const exerciseList: ExerciseData[] = data.exercises.map((bde) => ({
+          id: bde.id,
+          exerciseId: bde.exerciseId,
+          name: bde.exercise.name,
+          shortName: makeShortName(bde.exercise.name),
+          category: bde.exercise.movementPattern || "—",
+          targetSets: bde.targetSets ?? 3,
+          targetRepRange: bde.targetRepRange ?? "8-12",
+          progressionType: bde.progressionType ?? "none",
+          sets: Array.from({ length: bde.targetSets ?? 3 }, (_, i) => ({
+            set: i + 1,
+            weight: null,
+            reps: null,
+            rir: null,
+            done: false,
+          })),
+          notes: "",
+          lastSets: [],
+          suggestedWeight: null,
+        }));
+        setExercises(exerciseList);
         setLoading(false);
+
+        // Fetch last performance for each exercise (non-blocking)
+        for (let i = 0; i < data.exercises.length; i++) {
+          const bde = data.exercises[i];
+          fetch(`/api/exercises/${bde.exerciseId}/last-performance`)
+            .then((r) => r.ok ? r.json() : null)
+            .then((perf) => {
+              if (!perf?.lastPerformance) return;
+              const lastSets = perf.lastPerformance.sets as LastSet[];
+              const suggested = calcSuggestion(
+                bde.progressionType,
+                bde.progressionIncrement ? Number(bde.progressionIncrement) : null,
+                lastSets,
+                bde.targetRepRange ?? "8-12"
+              );
+              setExercises((prev) =>
+                prev.map((ex, idx) =>
+                  idx === i ? { ...ex, lastSets: lastSets, suggestedWeight: suggested } : ex
+                )
+              );
+            })
+            .catch(() => {});
+        }
       })
       .catch(() => setLoading(false));
   }, [workoutId]);
@@ -152,6 +262,127 @@ export default function ActiveWorkoutPage({
       )
     );
   }, []);
+
+  const updateExerciseNotes = useCallback((exIdx: number, notes: string) => {
+    setExercises((prev) =>
+      prev.map((ex, ei) => (ei !== exIdx ? ex : { ...ex, notes }))
+    );
+  }, []);
+
+  // Finish workout handler
+  const handleFinish = async () => {
+    // Check that at least one set is completed
+    const hasCompletedSets = exercises.some((ex) =>
+      ex.sets.some((s) => s.done && s.weight !== null && s.reps !== null)
+    );
+    if (!hasCompletedSets) {
+      alert("Complete at least one set before finishing.");
+      return;
+    }
+
+    setFinishing(true);
+    try {
+      // 1. Create the workout
+      const workoutRes = await fetch("/api/workouts", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          date: new Date().toISOString(),
+          startTime: new Date(startTime).toISOString(),
+          blockId: blockId || null,
+          blockDayId: blockDayId || null,
+          notes: workoutNotes || null,
+        }),
+      });
+      if (!workoutRes.ok) throw new Error("Failed to create workout");
+      const workout = await workoutRes.json();
+
+      // 2. For each exercise with completed sets, add to workout and log sets
+      for (const ex of exercises) {
+        const completedSets = ex.sets.filter(
+          (s) => s.done && s.weight !== null && s.reps !== null
+        );
+        if (completedSets.length === 0) continue;
+
+        // Add exercise to workout
+        const weRes = await fetch(`/api/workouts/${workout.id}/exercises`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            exerciseId: ex.exerciseId,
+            notes: ex.notes || null,
+          }),
+        });
+        if (!weRes.ok) throw new Error("Failed to add exercise");
+        const workoutExercise = await weRes.json();
+
+        // Log each completed set
+        for (const s of completedSets) {
+          await fetch("/api/sets", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              workoutExerciseId: workoutExercise.id,
+              weight: s.weight,
+              reps: s.reps,
+              rir: s.rir,
+            }),
+          });
+        }
+      }
+
+      // 3. Finalize workout with endTime
+      await fetch(`/api/workouts/${workout.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          endTime: new Date().toISOString(),
+          notes: workoutNotes || null,
+        }),
+      });
+
+      // 4. Clear localStorage draft
+      localStorage.removeItem(`workout-draft-${workoutId}`);
+
+      // 5. Redirect to dashboard
+      router.push("/");
+    } catch (err) {
+      // If offline (network error), queue for later sync
+      const isOffline = !navigator.onLine || (err instanceof TypeError && err.message === "Failed to fetch");
+      if (isOffline) {
+        const queuedExercises = exercises
+          .filter((ex) => ex.sets.some((s) => s.done && s.weight !== null && s.reps !== null))
+          .map((ex) => ({
+            exerciseId: ex.exerciseId,
+            notes: ex.notes || null,
+            sets: ex.sets
+              .filter((s) => s.done && s.weight !== null && s.reps !== null)
+              .map((s) => ({ weight: s.weight!, reps: s.reps!, rir: s.rir })),
+          }));
+
+        addToQueue({
+          id: `offline-${Date.now()}`,
+          queuedAt: Date.now(),
+          payload: {
+            date: new Date().toISOString(),
+            startTime: new Date(startTime).toISOString(),
+            blockId: blockId || null,
+            blockDayId: blockDayId || null,
+            notes: workoutNotes || null,
+            exercises: queuedExercises,
+          },
+        });
+
+        localStorage.removeItem(`workout-draft-${workoutId}`);
+        alert("You're offline. Workout saved and will sync when you reconnect.");
+        router.push("/");
+        return;
+      }
+
+      alert("Failed to save workout. Please try again.");
+      setFinishing(false);
+    }
+  };
 
   if (loading) {
     return (
@@ -219,12 +450,29 @@ export default function ActiveWorkoutPage({
                 {elapsed}
               </span>
             </div>
-            <button className="bg-ft-success/20 text-ft-success font-mono text-sm font-bold px-4 py-1.5 rounded hover:bg-ft-success/30 transition-colors">
-              Finish
+            <button
+              onClick={handleFinish}
+              disabled={finishing}
+              className="bg-ft-success/20 text-ft-success font-mono text-sm font-bold px-4 py-1.5 rounded hover:bg-ft-success/30 transition-colors disabled:opacity-50"
+            >
+              {finishing ? "Saving..." : "Finish"}
             </button>
           </div>
         </div>
       </div>
+
+      {/* Restored draft banner */}
+      {restored && (
+        <div className="mx-4 mt-3 bg-ft-surface border border-ft-card rounded px-3 py-2 flex items-center justify-between">
+          <span className="text-ft-dim text-xs font-mono">Draft restored from previous session</span>
+          <button
+            onClick={() => setRestored(false)}
+            className="text-ft-muted text-xs font-mono hover:text-ft-light"
+          >
+            Dismiss
+          </button>
+        </div>
+      )}
 
       {/* Exercise Tabs */}
       <div className="px-4 mt-4 mb-4">
@@ -262,8 +510,8 @@ export default function ActiveWorkoutPage({
             </div>
           </div>
 
-          {/* Target */}
-          <div className="flex gap-4 mb-4">
+          {/* Target + Last Performance */}
+          <div className="flex gap-3 mb-4">
             <div className="flex-1 bg-ft-bg rounded p-2.5">
               <p className="text-ft-dim text-[11px] font-mono uppercase tracking-wider mb-0.5">
                 Target
@@ -272,6 +520,30 @@ export default function ActiveWorkoutPage({
                 {current.targetSets}&times;{current.targetRepRange}
               </p>
             </div>
+            {current.lastSets.length > 0 && (
+              <div className="flex-1 bg-ft-bg rounded p-2.5">
+                <p className="text-ft-dim text-[11px] font-mono uppercase tracking-wider mb-0.5">
+                  Last
+                </p>
+                <p className="text-ft-light text-sm font-mono font-bold">
+                  {current.lastSets
+                    .slice(0, 3)
+                    .map((s) => `${s.weight ?? 0}×${s.reps ?? 0}`)
+                    .join(", ")}
+                  {current.lastSets.length > 3 && "..."}
+                </p>
+              </div>
+            )}
+            {current.suggestedWeight && (
+              <div className="flex-1 bg-ft-success/10 border border-ft-success/20 rounded p-2.5">
+                <p className="text-ft-success text-[11px] font-mono uppercase tracking-wider mb-0.5">
+                  Suggested
+                </p>
+                <p className="text-ft-success text-sm font-mono font-bold">
+                  {current.suggestedWeight} lbs
+                </p>
+              </div>
+            )}
           </div>
 
           {/* Set Table */}
@@ -364,12 +636,26 @@ export default function ActiveWorkoutPage({
           </div>
         </Card>
 
-        {/* Notes */}
+        {/* Exercise Notes */}
         <Card>
           <SectionHeader title="Notes" />
           <textarea
             rows={3}
+            value={current.notes}
+            onChange={(e) => updateExerciseNotes(activeEx, e.target.value)}
             placeholder="Add notes for this exercise..."
+            className="w-full bg-ft-bg border border-ft-card rounded px-3 py-2 text-sm font-mono text-ft-light placeholder:text-ft-muted focus:outline-none focus:border-ft-dim resize-none transition-colors"
+          />
+        </Card>
+
+        {/* Workout Notes */}
+        <Card>
+          <SectionHeader title="Workout Notes" />
+          <textarea
+            rows={2}
+            value={workoutNotes}
+            onChange={(e) => setWorkoutNotes(e.target.value)}
+            placeholder="Overall session notes..."
             className="w-full bg-ft-bg border border-ft-card rounded px-3 py-2 text-sm font-mono text-ft-light placeholder:text-ft-muted focus:outline-none focus:border-ft-dim resize-none transition-colors"
           />
         </Card>
