@@ -180,7 +180,7 @@ export default async function Home() {
       </div>
 
       {/* Top Stats Grid */}
-      <div className="grid grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
         <Card>
           <Stat label="This Week" value={`${sessionsThisWeek}`} sub="sessions" />
         </Card>
@@ -208,7 +208,7 @@ export default async function Home() {
       </div>
 
       {/* Week View + Quick Log */}
-      <div className="grid grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {/* Week View */}
         <Card className="col-span-2">
           <SectionHeader title="Week View" />
@@ -258,7 +258,7 @@ export default async function Home() {
       </div>
 
       {/* Recent PRs */}
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <Card>
           <SectionHeader title="Recent PRs" />
           {recentPRs.length === 0 ? (
@@ -311,7 +311,7 @@ export default async function Home() {
       {muscleVolume.length > 0 && (
         <Card>
           <SectionHeader title="Weekly Volume by Muscle" />
-          <div className="grid grid-cols-6 gap-3">
+          <div className="grid grid-cols-3 sm:grid-cols-6 gap-3">
             {muscleVolume.map(({ group, volume, raw }) => (
               <div
                 key={group}

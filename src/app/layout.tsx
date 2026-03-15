@@ -6,6 +6,9 @@ import SessionProvider from "@/components/SessionProvider";
 export const metadata: Metadata = {
   title: "FitTrack",
   description: "Personal Fitness Tracking",
+  manifest: "/manifest.json",
+  themeColor: "#1a1a1a",
+  viewport: "width=device-width, initial-scale=1, maximum-scale=1",
 };
 
 export default function RootLayout({
@@ -18,7 +21,7 @@ export default function RootLayout({
       <body className="bg-ft-bg min-h-screen antialiased">
         <SessionProvider>
           <Nav />
-          <div className="max-w-[1100px] mx-auto px-6 py-7">
+          <div className="max-w-[1100px] mx-auto px-4 sm:px-6 py-4 sm:py-7">
             {children}
           </div>
         </SessionProvider>

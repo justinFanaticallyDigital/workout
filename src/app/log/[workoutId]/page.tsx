@@ -13,6 +13,12 @@ interface SetData {
   done: boolean;
 }
 
+interface LastSet {
+  weight: number | null;
+  reps: number | null;
+  rir: number | null;
+}
+
 interface ExerciseData {
   id: string;
   exerciseId: string;
@@ -21,8 +27,11 @@ interface ExerciseData {
   category: string;
   targetSets: number;
   targetRepRange: string;
+  progressionType: string;
   sets: SetData[];
   notes: string;
+  lastSets: LastSet[];
+  suggestedWeight: number | null;
 }
 
 interface BlockDayData {
@@ -38,6 +47,7 @@ interface BlockDayData {
     targetSets: number | null;
     targetRepRange: string | null;
     progressionType: string;
+    progressionIncrement: number | null;
   }[];
 }
 
@@ -48,6 +58,29 @@ function isExerciseComplete(ex: ExerciseData) {
 function makeShortName(name: string): string {
   const parts = name.split(/[-·]/);
   return parts[0].trim().slice(0, 12);
+}
+
+function calcSuggestion(
+  progressionType: string,
+  increment: number | null,
+  lastSets: LastSet[],
+  targetRepRange: string
+): number | null {
+  if (lastSets.length === 0) return null;
+  const lastWeight = lastSets[0]?.weight;
+  if (!lastWeight) return null;
+
+  if (progressionType === "linear" && increment) {
+    return lastWeight + increment;
+  }
+  if (progressionType === "double") {
+    // If all reps hit top of range, increase weight
+    const topReps = parseInt(targetRepRange.split("-").pop() ?? "12");
+    const allHitTop = lastSets.every((s) => s.reps && s.reps >= topReps);
+    if (allHitTop) return lastWeight + (increment ?? 5);
+    return lastWeight; // keep same weight, increase reps
+  }
+  return null;
 }
 
 export default function ActiveWorkoutPage({
@@ -140,26 +173,51 @@ export default function ActiveWorkoutPage({
           }
         }
 
-        setExercises(
-          data.exercises.map((bde) => ({
-            id: bde.id,
-            exerciseId: bde.exerciseId,
-            name: bde.exercise.name,
-            shortName: makeShortName(bde.exercise.name),
-            category: bde.exercise.movementPattern || "—",
-            targetSets: bde.targetSets ?? 3,
-            targetRepRange: bde.targetRepRange ?? "8-12",
-            sets: Array.from({ length: bde.targetSets ?? 3 }, (_, i) => ({
-              set: i + 1,
-              weight: null,
-              reps: null,
-              rir: null,
-              done: false,
-            })),
-            notes: "",
-          }))
-        );
+        const exerciseList: ExerciseData[] = data.exercises.map((bde) => ({
+          id: bde.id,
+          exerciseId: bde.exerciseId,
+          name: bde.exercise.name,
+          shortName: makeShortName(bde.exercise.name),
+          category: bde.exercise.movementPattern || "—",
+          targetSets: bde.targetSets ?? 3,
+          targetRepRange: bde.targetRepRange ?? "8-12",
+          progressionType: bde.progressionType ?? "none",
+          sets: Array.from({ length: bde.targetSets ?? 3 }, (_, i) => ({
+            set: i + 1,
+            weight: null,
+            reps: null,
+            rir: null,
+            done: false,
+          })),
+          notes: "",
+          lastSets: [],
+          suggestedWeight: null,
+        }));
+        setExercises(exerciseList);
         setLoading(false);
+
+        // Fetch last performance for each exercise (non-blocking)
+        for (let i = 0; i < data.exercises.length; i++) {
+          const bde = data.exercises[i];
+          fetch(`/api/exercises/${bde.exerciseId}/last-performance`)
+            .then((r) => r.ok ? r.json() : null)
+            .then((perf) => {
+              if (!perf?.lastPerformance) return;
+              const lastSets = perf.lastPerformance.sets as LastSet[];
+              const suggested = calcSuggestion(
+                bde.progressionType,
+                bde.progressionIncrement ? Number(bde.progressionIncrement) : null,
+                lastSets,
+                bde.targetRepRange ?? "8-12"
+              );
+              setExercises((prev) =>
+                prev.map((ex, idx) =>
+                  idx === i ? { ...ex, lastSets: lastSets, suggestedWeight: suggested } : ex
+                )
+              );
+            })
+            .catch(() => {});
+        }
       })
       .catch(() => setLoading(false));
   }, [workoutId]);
@@ -418,8 +476,8 @@ export default function ActiveWorkoutPage({
             </div>
           </div>
 
-          {/* Target */}
-          <div className="flex gap-4 mb-4">
+          {/* Target + Last Performance */}
+          <div className="flex gap-3 mb-4">
             <div className="flex-1 bg-ft-bg rounded p-2.5">
               <p className="text-ft-dim text-[11px] font-mono uppercase tracking-wider mb-0.5">
                 Target
@@ -428,6 +486,30 @@ export default function ActiveWorkoutPage({
                 {current.targetSets}&times;{current.targetRepRange}
               </p>
             </div>
+            {current.lastSets.length > 0 && (
+              <div className="flex-1 bg-ft-bg rounded p-2.5">
+                <p className="text-ft-dim text-[11px] font-mono uppercase tracking-wider mb-0.5">
+                  Last
+                </p>
+                <p className="text-ft-light text-sm font-mono font-bold">
+                  {current.lastSets
+                    .slice(0, 3)
+                    .map((s) => `${s.weight ?? 0}×${s.reps ?? 0}`)
+                    .join(", ")}
+                  {current.lastSets.length > 3 && "..."}
+                </p>
+              </div>
+            )}
+            {current.suggestedWeight && (
+              <div className="flex-1 bg-ft-success/10 border border-ft-success/20 rounded p-2.5">
+                <p className="text-ft-success text-[11px] font-mono uppercase tracking-wider mb-0.5">
+                  Suggested
+                </p>
+                <p className="text-ft-success text-sm font-mono font-bold">
+                  {current.suggestedWeight} lbs
+                </p>
+              </div>
+            )}
           </div>
 
           {/* Set Table */}
