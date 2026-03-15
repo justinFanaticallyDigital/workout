@@ -41,7 +41,7 @@ export async function POST(request: NextRequest) {
       blockId: body.blockId ?? null,
       blockDayId: body.blockDayId ?? null,
       weekNumber: body.weekNumber ?? null,
-      startTime: new Date(),
+      startTime: body.startTime ? new Date(body.startTime) : new Date(),
       notes: body.notes ?? null,
       bodyWeight: body.bodyWeight ?? null,
     },

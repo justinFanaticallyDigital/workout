@@ -11,6 +11,7 @@ export interface QueuedWorkout {
   queuedAt: number;
   payload: {
     date: string;
+    startTime: string;
     blockId: string | null;
     blockDayId: string | null;
     notes: string | null;
@@ -69,6 +70,7 @@ export async function syncQueue(): Promise<number> {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           date: item.payload.date,
+          startTime: item.payload.startTime,
           blockId: item.payload.blockId,
           blockDayId: item.payload.blockDayId,
           notes: item.payload.notes,

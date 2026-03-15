@@ -288,6 +288,7 @@ export default function ActiveWorkoutPage({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           date: new Date().toISOString(),
+          startTime: new Date(startTime).toISOString(),
           blockId: blockId || null,
           blockDayId: blockDayId || null,
           notes: workoutNotes || null,
@@ -345,9 +346,10 @@ export default function ActiveWorkoutPage({
 
       // 5. Redirect to dashboard
       router.push("/");
-    } catch {
-      // If offline, queue for later sync
-      if (!navigator.onLine) {
+    } catch (err) {
+      // If offline (network error), queue for later sync
+      const isOffline = !navigator.onLine || (err instanceof TypeError && err.message === "Failed to fetch");
+      if (isOffline) {
         const queuedExercises = exercises
           .filter((ex) => ex.sets.some((s) => s.done && s.weight !== null && s.reps !== null))
           .map((ex) => ({
@@ -363,6 +365,7 @@ export default function ActiveWorkoutPage({
           queuedAt: Date.now(),
           payload: {
             date: new Date().toISOString(),
+            startTime: new Date(startTime).toISOString(),
             blockId: blockId || null,
             blockDayId: blockDayId || null,
             notes: workoutNotes || null,
