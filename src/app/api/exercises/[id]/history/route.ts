@@ -1,19 +1,32 @@
 import { NextResponse } from "next/server";
-
-// TODO: Connect to database — fetch exercise history including all logged
-// sets, PRs, volume trends, and e1RM progression over time.
+import { prisma } from "@/lib/prisma";
 
 export async function GET(
   _request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params;
-  return NextResponse.json({
-    exerciseId: id,
-    history: [
-      { date: "2026-03-12", sets: [{ weight: 245, reps: 3, rpe: 9 }], e1rm: 260 },
-      { date: "2026-03-05", sets: [{ weight: 235, reps: 4, rpe: 8.5 }], e1rm: 255 },
-      { date: "2026-02-26", sets: [{ weight: 230, reps: 5, rpe: 8 }], e1rm: 253 },
-    ],
+
+  const workoutExercises = await prisma.workoutExercise.findMany({
+    where: { exerciseId: id },
+    include: {
+      sets: { orderBy: { setNumber: "asc" } },
+      workout: { select: { date: true } },
+    },
+    orderBy: { workout: { date: "desc" } },
   });
+
+  const history = workoutExercises.map((we) => ({
+    date: we.workout.date.toISOString().split("T")[0],
+    sets: we.sets.map((s) => ({
+      weight: s.weight ? Number(s.weight) : null,
+      reps: s.reps,
+      rpe: s.rpe ? Number(s.rpe) : null,
+      rir: s.rir,
+      isWarmup: s.isWarmup,
+      isPr: s.isPr,
+    })),
+  }));
+
+  return NextResponse.json({ exerciseId: id, history });
 }

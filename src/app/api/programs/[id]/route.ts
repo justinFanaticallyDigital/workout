@@ -1,21 +1,40 @@
 import { NextResponse } from "next/server";
-
-// TODO: Connect to database — fetch full program detail including blocks,
-// day templates, and progression rules.
+import { prisma } from "@/lib/prisma";
 
 export async function GET(
   _request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params;
-  return NextResponse.json({
-    id,
-    name: "Upper/Lower Split",
-    weeks: 8,
-    status: "active",
-    blocks: [
-      { id: "blk_1", name: "Accumulation", weeks: 4, order: 1 },
-      { id: "blk_2", name: "Intensification", weeks: 4, order: 2 },
-    ],
+
+  const program = await prisma.program.findUnique({
+    where: { id },
+    include: {
+      goal: true,
+      blocks: {
+        include: {
+          days: {
+            include: {
+              exercises: {
+                include: {
+                  exercise: { select: { name: true, equipment: true } },
+                  altExercise: { select: { name: true, equipment: true } },
+                },
+                orderBy: { sortOrder: "asc" },
+              },
+            },
+            orderBy: { sortOrder: "asc" },
+          },
+        },
+        orderBy: { blockNumber: "asc" },
+      },
+      benchmarks: true,
+    },
   });
+
+  if (!program) {
+    return NextResponse.json({ error: "Program not found" }, { status: 404 });
+  }
+
+  return NextResponse.json(program);
 }

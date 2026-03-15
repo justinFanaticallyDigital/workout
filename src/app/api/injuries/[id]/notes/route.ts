@@ -1,21 +1,22 @@
-import { NextResponse } from "next/server";
-
-// TODO: Connect to database — add a follow-up note to an existing injury
-// record, tracking pain level changes, rehab exercises, and recovery status.
+import { NextRequest, NextResponse } from "next/server";
+import { prisma } from "@/lib/prisma";
 
 export async function POST(
-  _request: Request,
+  request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const { id } = await params;
-  return NextResponse.json(
-    {
-      id: "note_1",
-      injuryId: id,
-      painLevel: 3,
-      note: "Feeling better after rest day. Mobility work helping.",
-      createdAt: new Date().toISOString(),
+  const { id: injuryId } = await params;
+  const body = await request.json();
+
+  const note = await prisma.injuryNote.create({
+    data: {
+      injuryId,
+      date: new Date(body.date ?? new Date()),
+      note: body.note,
+      treatment: body.treatment ?? null,
+      followUpDate: body.followUpDate ? new Date(body.followUpDate) : null,
     },
-    { status: 201 }
-  );
+  });
+
+  return NextResponse.json(note, { status: 201 });
 }

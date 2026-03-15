@@ -1,22 +1,51 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
+import { prisma } from "@/lib/prisma";
+import { getDemoUserId } from "@/lib/demo-user";
 
-// TODO: Connect to database and file storage — fetch progress photo
-// metadata/URLs, and handle photo uploads with date tagging.
+export const dynamic = "force-dynamic";
 
 export async function GET() {
+  const userId = await getDemoUserId();
+
+  const photos = await prisma.progressPhoto.findMany({
+    where: { userId },
+    orderBy: { date: "desc" },
+  });
+
   return NextResponse.json({
-    photos: [
-      { id: "ph_1", date: "2026-01-01", url: "/placeholder/photo1.jpg" },
-      { id: "ph_2", date: "2026-02-01", url: "/placeholder/photo2.jpg" },
-      { id: "ph_3", date: "2026-03-01", url: "/placeholder/photo3.jpg" },
-      { id: "ph_4", date: "2026-03-14", url: "/placeholder/photo4.jpg" },
-    ],
+    photos: photos.map((p) => ({
+      id: p.id,
+      date: p.date.toISOString().split("T")[0],
+      url: p.imageUrl,
+      poseType: p.poseType,
+      notes: p.notes,
+      programId: p.programId,
+    })),
   });
 }
 
-export async function POST() {
+export async function POST(request: NextRequest) {
+  const userId = await getDemoUserId();
+  const body = await request.json();
+
+  const photo = await prisma.progressPhoto.create({
+    data: {
+      userId,
+      date: new Date(body.date ?? new Date()),
+      imageUrl: body.url ?? body.imageUrl,
+      poseType: body.poseType ?? "front",
+      notes: body.notes ?? null,
+      programId: body.programId ?? null,
+    },
+  });
+
   return NextResponse.json(
-    { id: "ph_5", date: "2026-03-14", url: "/placeholder/photo5.jpg" },
+    {
+      id: photo.id,
+      date: photo.date.toISOString().split("T")[0],
+      url: photo.imageUrl,
+      poseType: photo.poseType,
+    },
     { status: 201 }
   );
 }

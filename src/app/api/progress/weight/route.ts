@@ -1,24 +1,56 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
+import { prisma } from "@/lib/prisma";
+import { getDemoUserId } from "@/lib/demo-user";
 
-// TODO: Connect to database — fetch weight log entries for charting,
-// and log new body weight entries with optional notes.
+export const dynamic = "force-dynamic";
 
 export async function GET() {
+  const userId = await getDemoUserId();
+
+  const entries = await prisma.bodyMetric.findMany({
+    where: { userId },
+    orderBy: { date: "asc" },
+    select: {
+      id: true,
+      date: true,
+      weight: true,
+      bodyFatPct: true,
+      notes: true,
+    },
+  });
+
   return NextResponse.json({
-    entries: [
-      { date: "2025-10-01", weight: 204 },
-      { date: "2025-11-01", weight: 202.5 },
-      { date: "2025-12-01", weight: 201 },
-      { date: "2026-01-01", weight: 200 },
-      { date: "2026-02-01", weight: 199 },
-      { date: "2026-03-14", weight: 198.4 },
-    ],
+    entries: entries.map((e) => ({
+      id: e.id,
+      date: e.date.toISOString().split("T")[0],
+      weight: e.weight ? Number(e.weight) : null,
+      bodyFatPct: e.bodyFatPct ? Number(e.bodyFatPct) : null,
+      notes: e.notes,
+    })),
   });
 }
 
-export async function POST() {
+export async function POST(request: NextRequest) {
+  const userId = await getDemoUserId();
+  const body = await request.json();
+
+  const entry = await prisma.bodyMetric.create({
+    data: {
+      userId,
+      date: new Date(body.date ?? new Date()),
+      weight: body.weight ?? null,
+      bodyFatPct: body.bodyFatPct ?? null,
+      source: body.source ?? "manual",
+      notes: body.notes ?? null,
+    },
+  });
+
   return NextResponse.json(
-    { id: "wt_1", date: "2026-03-14", weight: 198.4 },
+    {
+      id: entry.id,
+      date: entry.date.toISOString().split("T")[0],
+      weight: entry.weight ? Number(entry.weight) : null,
+    },
     { status: 201 }
   );
 }

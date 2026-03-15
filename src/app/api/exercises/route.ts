@@ -1,22 +1,45 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
+import { prisma } from "@/lib/prisma";
+import { getDemoUserId } from "@/lib/demo-user";
 
-// TODO: Connect to database — list all exercises in the library (with
-// optional search/filter), and create custom exercises.
+export const dynamic = "force-dynamic";
 
-export async function GET() {
-  return NextResponse.json({
-    exercises: [
-      { id: "ex_1", name: "Bench Press", muscleGroup: "Chest", equipment: "Barbell" },
-      { id: "ex_2", name: "Squat", muscleGroup: "Quads", equipment: "Barbell" },
-      { id: "ex_3", name: "Deadlift", muscleGroup: "Back", equipment: "Barbell" },
-      { id: "ex_4", name: "OHP", muscleGroup: "Shoulders", equipment: "Barbell" },
-    ],
+export async function GET(request: NextRequest) {
+  const { searchParams } = request.nextUrl;
+  const search = searchParams.get("search") ?? undefined;
+  const muscle = searchParams.get("muscle") ?? undefined;
+  const equipment = searchParams.get("equipment") ?? undefined;
+  const movement = searchParams.get("movement") ?? undefined;
+
+  const exercises = await prisma.exercise.findMany({
+    where: {
+      ...(search && { name: { contains: search, mode: "insensitive" as const } }),
+      ...(muscle && { primaryMuscle: muscle }),
+      ...(equipment && { equipment }),
+      ...(movement && { movementPattern: movement }),
+    },
+    orderBy: { name: "asc" },
   });
+
+  return NextResponse.json({ exercises });
 }
 
-export async function POST() {
-  return NextResponse.json(
-    { id: "ex_5", name: "New Exercise", muscleGroup: "Other", equipment: "Other" },
-    { status: 201 }
-  );
+export async function POST(request: NextRequest) {
+  const userId = await getDemoUserId();
+  const body = await request.json();
+
+  const exercise = await prisma.exercise.create({
+    data: {
+      userId,
+      name: body.name,
+      equipment: body.equipment ?? null,
+      movementPattern: body.movementPattern ?? null,
+      primaryMuscle: body.primaryMuscle ?? null,
+      secondaryMuscle1: body.secondaryMuscle1 ?? null,
+      secondaryMuscle2: body.secondaryMuscle2 ?? null,
+      isCustom: true,
+    },
+  });
+
+  return NextResponse.json(exercise, { status: 201 });
 }

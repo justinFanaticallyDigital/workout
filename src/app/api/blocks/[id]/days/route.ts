@@ -1,21 +1,33 @@
-import { NextResponse } from "next/server";
-
-// TODO: Connect to database — add or edit a day template within a block,
-// including prescribed exercises, sets, rep ranges, and RPE targets.
+import { NextRequest, NextResponse } from "next/server";
+import { prisma } from "@/lib/prisma";
 
 export async function POST(
-  _request: Request,
+  request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const { id } = await params;
-  return NextResponse.json(
-    {
-      id: "day_5",
-      blockId: id,
-      name: "New Day Template",
-      order: 5,
-      exercises: [],
+  const { id: blockId } = await params;
+  const body = await request.json();
+
+  // Get the next sort order
+  const last = await prisma.blockDay.findFirst({
+    where: { blockId },
+    orderBy: { sortOrder: "desc" },
+    select: { sortOrder: true },
+  });
+  const sortOrder = (last?.sortOrder ?? 0) + 1;
+
+  const day = await prisma.blockDay.create({
+    data: {
+      blockId,
+      dayNumber: body.dayNumber ?? sortOrder,
+      name: body.name,
+      dayType: body.dayType ?? "lifting",
+      sortOrder,
     },
-    { status: 201 }
-  );
+    include: {
+      exercises: true,
+    },
+  });
+
+  return NextResponse.json(day, { status: 201 });
 }
