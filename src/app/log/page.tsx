@@ -1,45 +1,43 @@
 import Link from "next/link";
 import { Card, SectionHeader, Tag } from "@/components/ui";
+import { prisma } from "@/lib/prisma";
+import { getAuthUserId } from "@/lib/auth-helpers";
+import { redirect } from "next/navigation";
 
-const dayTemplates = [
-  {
-    id: "new-day-1",
-    day: 1,
-    name: "Upper Push",
-    exercises: 5,
-    focus: "Chest, Shoulders, Triceps",
-  },
-  {
-    id: "new-day-2",
-    day: 2,
-    name: "Lower Pull",
-    exercises: 5,
-    focus: "Hamstrings, Glutes, Back",
-  },
-  {
-    id: "new-day-3",
-    day: 3,
-    name: "Upper Pull",
-    exercises: 5,
-    focus: "Back, Biceps, Rear Delts",
-  },
-  {
-    id: "new-day-4",
-    day: 4,
-    name: "Lower Push",
-    exercises: 5,
-    focus: "Quads, Calves, Core",
-  },
-  {
-    id: "new-day-5",
-    day: 5,
-    name: "Arms & Accessories",
-    exercises: 6,
-    focus: "Biceps, Triceps, Forearms",
-  },
-];
+export const dynamic = "force-dynamic";
 
-export default function LogWorkoutPage() {
+export default async function LogWorkoutPage() {
+  const userId = await getAuthUserId();
+  if (!userId) redirect("/signin");
+
+  // Find the active program's active block and its days
+  const activeProgram = await prisma.program.findFirst({
+    where: { userId, status: "active" },
+    include: {
+      blocks: {
+        where: { status: "active" },
+        orderBy: { blockNumber: "asc" },
+        take: 1,
+        include: {
+          days: {
+            include: {
+              exercises: {
+                include: {
+                  exercise: { select: { name: true, primaryMuscle: true } },
+                },
+                orderBy: { sortOrder: "asc" },
+              },
+            },
+            orderBy: { sortOrder: "asc" },
+          },
+        },
+      },
+    },
+  });
+
+  const activeBlock = activeProgram?.blocks[0];
+  const dayTemplates = activeBlock?.days ?? [];
+
   return (
     <div className="min-h-screen bg-ft-bg text-ft-white p-4 pb-24 max-w-2xl mx-auto">
       {/* Header */}
@@ -47,36 +45,62 @@ export default function LogWorkoutPage() {
         Log Workout
       </h1>
       <p className="text-ft-dim text-sm font-mono mb-6">
-        Block 2 &middot; Week 3
+        {activeBlock
+          ? `${activeBlock.name}${activeBlock.description ? ` · ${activeBlock.description}` : ""}`
+          : "No active block"}
       </p>
 
       {/* Day Templates */}
-      <SectionHeader title="Day Templates" subtitle="5 days" />
-      <div className="flex flex-col gap-3 mb-8">
-        {dayTemplates.map((tmpl) => (
-          <Link key={tmpl.id} href={`/log/${tmpl.id}`}>
-            <Card className="hover:border-ft-light transition-colors">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <span className="text-ft-dim font-mono text-xs w-6 shrink-0">
-                    D{tmpl.day}
-                  </span>
-                  <div>
-                    <p className="text-ft-white font-mono text-sm font-bold">
-                      Day {tmpl.day} &middot; {tmpl.name}
-                    </p>
-                    <p className="text-ft-dim text-xs mt-0.5">{tmpl.focus}</p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-3">
-                  <Tag>{tmpl.exercises} exercises</Tag>
-                  <span className="text-ft-muted text-lg">&rsaquo;</span>
-                </div>
-              </div>
-            </Card>
-          </Link>
-        ))}
-      </div>
+      {dayTemplates.length > 0 ? (
+        <>
+          <SectionHeader
+            title="Day Templates"
+            subtitle={`${dayTemplates.length} days`}
+          />
+          <div className="flex flex-col gap-3 mb-8">
+            {dayTemplates.map((tmpl) => {
+              // Collect unique primary muscles for focus display
+              const muscles = new Set<string>();
+              for (const bde of tmpl.exercises) {
+                if (bde.exercise.primaryMuscle) muscles.add(bde.exercise.primaryMuscle);
+              }
+              const focus = Array.from(muscles).slice(0, 3).join(", ");
+
+              return (
+                <Link key={tmpl.id} href={`/log/${tmpl.id}`}>
+                  <Card className="hover:border-ft-light transition-colors">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <span className="text-ft-dim font-mono text-xs w-6 shrink-0">
+                          D{tmpl.dayNumber}
+                        </span>
+                        <div>
+                          <p className="text-ft-white font-mono text-sm font-bold">
+                            Day {tmpl.dayNumber} &middot; {tmpl.name}
+                          </p>
+                          {focus && (
+                            <p className="text-ft-dim text-xs mt-0.5">{focus}</p>
+                          )}
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <Tag>{tmpl.exercises.length} exercises</Tag>
+                        <span className="text-ft-muted text-lg">&rsaquo;</span>
+                      </div>
+                    </div>
+                  </Card>
+                </Link>
+              );
+            })}
+          </div>
+        </>
+      ) : (
+        <Card className="mb-8">
+          <p className="text-ft-muted font-mono text-sm text-center py-4">
+            No day templates found. Create a program with blocks and training days first.
+          </p>
+        </Card>
+      )}
 
       {/* Blank Workout */}
       <SectionHeader title="Quick Start" />

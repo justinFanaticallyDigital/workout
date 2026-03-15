@@ -1,88 +1,56 @@
 import Link from "next/link";
 import Card from "@/components/ui/Card";
 import Tag from "@/components/ui/Tag";
-
-const activeTagClass = "bg-ft-white text-ft-bg";
 import ProgressBar from "@/components/ui/ProgressBar";
 import Stat from "@/components/ui/Stat";
+import { prisma } from "@/lib/prisma";
+import { notFound } from "next/navigation";
 
-const program = {
-  id: "prog-1",
-  title: "Hypertrophy Block Series",
-  goal: "Progressive overload through periodized volume and intensity blocks",
-  duration: "24 weeks",
-  status: "active" as const,
-  currentWeek: 10,
-  totalWeeks: 24,
-  stats: {
-    sessions: 38,
-    volume: "186k",
-    avgDays: "3.2",
-    prs: 12,
-  },
-  blocks: [
-    {
-      id: "block-1",
-      name: "Block 1",
-      subtitle: "Anatomical Adaptation",
-      weeks: "1-3",
-      status: "completed" as const,
-      sessions: 12,
-      focus: "Foundation",
-    },
-    {
-      id: "block-2",
-      name: "Block 2",
-      subtitle: "Accumulation",
-      weeks: "4-9",
-      status: "completed" as const,
-      sessions: 24,
-      focus: "Volume",
-    },
-    {
-      id: "block-3",
-      name: "Block 3",
-      subtitle: "Intensification",
-      weeks: "10-15",
-      status: "active" as const,
-      sessions: 2,
-      focus: "Intensity",
-    },
-    {
-      id: "deload-1",
-      name: "Deload",
-      subtitle: "Recovery",
-      weeks: "16",
-      status: "upcoming" as const,
-      sessions: 0,
-      focus: "Recovery",
-    },
-    {
-      id: "block-4",
-      name: "Block 4",
-      subtitle: "Strength",
-      weeks: "17-21",
-      status: "upcoming" as const,
-      sessions: 0,
-      focus: "Strength",
-    },
-    {
-      id: "peak-1",
-      name: "Peak",
-      subtitle: "Peaking & Test",
-      weeks: "22-24",
-      status: "upcoming" as const,
-      sessions: 0,
-      focus: "Peak",
-    },
-  ],
-};
+const activeTagClass = "bg-ft-white text-ft-bg";
 
-export default function ProgramDetailPage({
+export const dynamic = "force-dynamic";
+
+export default async function ProgramDetailPage({
   params,
 }: {
-  params: { programId: string };
+  params: Promise<{ programId: string }>;
 }) {
+  const { programId } = await params;
+
+  const program = await prisma.program.findUnique({
+    where: { id: programId },
+    include: {
+      goal: true,
+      blocks: {
+        orderBy: { blockNumber: "asc" },
+        include: {
+          _count: { select: { workouts: true } },
+        },
+      },
+    },
+  });
+
+  if (!program) notFound();
+
+  // Calculate progress
+  const totalWeeks = program.durationWeeks ?? 0;
+  let currentWeek = 0;
+  if (program.startDate && totalWeeks > 0) {
+    const start = new Date(program.startDate);
+    const now = new Date();
+    const diffMs = now.getTime() - start.getTime();
+    currentWeek = Math.min(
+      Math.ceil(diffMs / (7 * 24 * 60 * 60 * 1000)),
+      totalWeeks
+    );
+  }
+
+  // Total sessions across all blocks
+  const totalSessions = program.blocks.reduce(
+    (sum, b) => sum + b._count.workouts,
+    0
+  );
+
   return (
     <div className="min-h-screen bg-ft-bg text-ft-white p-6 max-w-5xl mx-auto">
       {/* Breadcrumb */}
@@ -90,7 +58,7 @@ export default function ProgramDetailPage({
         href="/programs"
         className="inline-flex items-center gap-1.5 text-ft-dim text-sm font-mono hover:text-ft-light transition-colors mb-6"
       >
-        <span>←</span>
+        <span>&larr;</span>
         <span>Programs</span>
       </Link>
 
@@ -99,29 +67,52 @@ export default function ProgramDetailPage({
         <div>
           <div className="flex items-center gap-3 mb-2">
             <h1 className="font-mono text-2xl font-bold tracking-tight">
-              {program.title}
+              {program.name}
             </h1>
-            <Tag className={activeTagClass}>Active</Tag>
+            {program.status === "active" && (
+              <Tag className={activeTagClass}>Active</Tag>
+            )}
+            {program.status === "completed" && <Tag>Completed</Tag>}
           </div>
-          <p className="text-ft-dim text-sm font-mono mb-1">{program.goal}</p>
-          <p className="text-ft-muted text-xs font-mono">{program.duration}</p>
+          {program.description && (
+            <p className="text-ft-dim text-sm font-mono mb-1">
+              {program.description}
+            </p>
+          )}
+          {program.durationWeeks && (
+            <p className="text-ft-muted text-xs font-mono">
+              {program.durationWeeks} weeks
+            </p>
+          )}
         </div>
       </div>
 
       {/* Progress Overview */}
       <Card className="mb-8">
-        <div className="flex items-center justify-between mb-2">
-          <span className="text-ft-dim text-xs font-mono">
-            Week {program.currentWeek} of {program.totalWeeks} ·{" "}
-            {Math.round((program.currentWeek / program.totalWeeks) * 100)}%
-          </span>
-        </div>
-        <ProgressBar value={program.currentWeek} max={program.totalWeeks} />
+        {totalWeeks > 0 && (
+          <>
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-ft-dim text-xs font-mono">
+                Week {currentWeek} of {totalWeeks} &middot;{" "}
+                {Math.round((currentWeek / totalWeeks) * 100)}%
+              </span>
+            </div>
+            <ProgressBar value={currentWeek} max={totalWeeks} />
+          </>
+        )}
         <div className="grid grid-cols-4 gap-4 mt-4 pt-4 border-t border-ft-border">
-          <Stat label="Sessions" value={program.stats.sessions} small />
-          <Stat label="Volume" value={program.stats.volume} small />
-          <Stat label="Avg Days/Wk" value={program.stats.avgDays} small />
-          <Stat label="PRs" value={program.stats.prs} small />
+          <Stat label="Sessions" value={totalSessions} small />
+          <Stat label="Blocks" value={program.blocks.length} small />
+          <Stat
+            label="Duration"
+            value={program.durationWeeks ? `${program.durationWeeks}wk` : "—"}
+            small
+          />
+          <Stat
+            label="Goal"
+            value={program.goal?.title ?? "—"}
+            small
+          />
         </div>
       </Card>
 
@@ -129,64 +120,80 @@ export default function ProgramDetailPage({
       <h2 className="font-mono text-lg font-bold text-ft-light mb-4">
         Blocks
       </h2>
-      <div className="space-y-3">
-        {program.blocks.map((block) => (
-          <Link
-            key={block.id}
-            href={`/programs/${params.programId}/blocks/${block.id}`}
-          >
-            <Card
-              className={`mb-1 ${
-                block.status === "active"
-                  ? "border-ft-white"
-                  : block.status === "completed"
-                  ? "border-ft-muted"
-                  : ""
-              } hover:border-ft-dim transition-colors`}
+      {program.blocks.length === 0 ? (
+        <Card className="border-dashed">
+          <p className="text-ft-muted font-mono text-sm text-center py-4">
+            No blocks created yet
+          </p>
+        </Card>
+      ) : (
+        <div className="space-y-3">
+          {program.blocks.map((block) => (
+            <Link
+              key={block.id}
+              href={`/programs/${programId}/blocks/${block.id}`}
             >
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div
-                    className={`w-2 h-2 rounded-full ${
-                      block.status === "completed"
-                        ? "bg-ft-success"
-                        : block.status === "active"
-                        ? "bg-ft-white"
-                        : "bg-ft-card"
-                    }`}
-                  />
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <h3 className="font-mono text-sm font-bold">
-                        {block.name}
-                      </h3>
-                      <span className="text-ft-dim text-xs font-mono">
-                        · {block.subtitle}
-                      </span>
+              <Card
+                className={`mb-1 ${
+                  block.status === "active"
+                    ? "border-ft-white"
+                    : block.status === "completed"
+                    ? "border-ft-muted"
+                    : ""
+                } hover:border-ft-dim transition-colors`}
+              >
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div
+                      className={`w-2 h-2 rounded-full ${
+                        block.status === "completed"
+                          ? "bg-ft-success"
+                          : block.status === "active"
+                          ? "bg-ft-white"
+                          : "bg-ft-card"
+                      }`}
+                    />
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <h3 className="font-mono text-sm font-bold">
+                          {block.name}
+                        </h3>
+                        {block.description && (
+                          <span className="text-ft-dim text-xs font-mono">
+                            &middot; {block.description}
+                          </span>
+                        )}
+                      </div>
+                      {block.durationWeeks && (
+                        <p className="text-ft-muted text-xs font-mono">
+                          {block.durationWeeks} weeks
+                        </p>
+                      )}
                     </div>
-                    <p className="text-ft-muted text-xs font-mono">
-                      Weeks {block.weeks}
-                    </p>
+                  </div>
+                  <div className="flex items-center gap-4">
+                    {block.status === "active" && (
+                      <Tag className={activeTagClass}>Current</Tag>
+                    )}
+                    {block.status === "completed" && <Tag>Done</Tag>}
+                    {block.status === "upcoming" && (
+                      <span className="text-ft-muted text-xs font-mono">
+                        Upcoming
+                      </span>
+                    )}
+                    {block._count.workouts > 0 && (
+                      <div className="text-ft-dim text-xs font-mono">
+                        {block._count.workouts} sessions
+                      </div>
+                    )}
+                    <span className="text-ft-muted text-sm">&rarr;</span>
                   </div>
                 </div>
-                <div className="flex items-center gap-4">
-                  {block.status === "active" && <Tag className={activeTagClass}>Current</Tag>}
-                  {block.status === "completed" && <Tag>Done</Tag>}
-                  {block.status === "upcoming" && (
-                    <span className="text-ft-muted text-xs font-mono">
-                      Upcoming
-                    </span>
-                  )}
-                  <div className="text-ft-dim text-xs font-mono">
-                    {block.sessions > 0 && `${block.sessions} sessions`}
-                  </div>
-                  <span className="text-ft-muted text-sm">→</span>
-                </div>
-              </div>
-            </Card>
-          </Link>
-        ))}
-      </div>
+              </Card>
+            </Link>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

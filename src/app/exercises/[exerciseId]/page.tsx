@@ -1,100 +1,9 @@
 import Link from "next/link";
 import { Card, SectionHeader, Stat, Tag } from "@/components/ui";
+import { prisma } from "@/lib/prisma";
+import { getAuthUserId } from "@/lib/auth-helpers";
 
-const EXERCISES: Record<
-  string,
-  {
-    name: string;
-    pattern: string;
-    primary: string;
-    secondary: string;
-    pr: string;
-    prDate: string;
-    e1rm: string;
-    sessions: number;
-  }
-> = {
-  "bench-press-incline-barbell": {
-    name: "Bench Press - Incline Barbell",
-    pattern: "Horizontal Push",
-    primary: "Chest",
-    secondary: "Front Deltoids, Triceps",
-    pr: "185×6",
-    prDate: "Feb 28, 2026",
-    e1rm: "214 lb",
-    sessions: 14,
-  },
-  "bench-press-flat-barbell": {
-    name: "Bench Press - Flat Barbell",
-    pattern: "Horizontal Push",
-    primary: "Chest",
-    secondary: "Front Deltoids, Triceps",
-    pr: "205×5",
-    prDate: "Mar 7, 2026",
-    e1rm: "230 lb",
-    sessions: 22,
-  },
-  "pull-up-weighted-bodyweight": {
-    name: "Pull Up - Weighted Bodyweight",
-    pattern: "Vertical Pull",
-    primary: "Lats",
-    secondary: "Biceps, Rear Deltoids",
-    pr: "BW+45×5",
-    prDate: "Mar 3, 2026",
-    e1rm: "—",
-    sessions: 18,
-  },
-  "squat-lever-plate": {
-    name: "Squat - Lever Plate",
-    pattern: "Squat",
-    primary: "Quadriceps",
-    secondary: "Glutes, Adductors",
-    pr: "225×8",
-    prDate: "Feb 20, 2026",
-    e1rm: "281 lb",
-    sessions: 8,
-  },
-  "deadlift-romanian-barbell": {
-    name: "Deadlift - Romanian Barbell",
-    pattern: "Hip Hinge",
-    primary: "Hamstrings",
-    secondary: "Glutes, Erectors",
-    pr: "225×8",
-    prDate: "Mar 1, 2026",
-    e1rm: "281 lb",
-    sessions: 16,
-  },
-  "curl-barbell": {
-    name: "Curl - Barbell",
-    pattern: "Elbow Flexion",
-    primary: "Biceps",
-    secondary: "Brachialis, Forearms",
-    pr: "95×10",
-    prDate: "Mar 10, 2026",
-    e1rm: "127 lb",
-    sessions: 20,
-  },
-  "row-chest-supported-dumbbell": {
-    name: "Row - Chest Supported Dumbbell",
-    pattern: "Horizontal Pull",
-    primary: "Lats",
-    secondary: "Rear Deltoids, Biceps",
-    pr: "55×12",
-    prDate: "Feb 25, 2026",
-    e1rm: "78 lb",
-    sessions: 12,
-  },
-  "raise-lateral-dumbbell": {
-    name: "Raise - Lateral Dumbbell",
-    pattern: "Shoulder Isolation",
-    primary: "Shoulders",
-    secondary: "Upper Traps",
-    pr: "30×12",
-    prDate: "Mar 5, 2026",
-    e1rm: "43 lb",
-    sessions: 15,
-  },
-};
+export const dynamic = "force-dynamic";
 
 export default async function ExerciseDetailPage({
   params,
@@ -102,7 +11,10 @@ export default async function ExerciseDetailPage({
   params: Promise<{ exerciseId: string }>;
 }) {
   const { exerciseId } = await params;
-  const exercise = EXERCISES[exerciseId];
+
+  const exercise = await prisma.exercise.findUnique({
+    where: { id: exerciseId },
+  });
 
   if (!exercise) {
     return (
@@ -111,12 +23,38 @@ export default async function ExerciseDetailPage({
           href="/exercises"
           className="text-ft-dim font-mono text-xs uppercase tracking-wider hover:text-ft-light transition-colors"
         >
-          ← Exercises
+          &larr; Exercises
         </Link>
         <p className="text-ft-light font-mono mt-8">Exercise not found.</p>
       </div>
     );
   }
+
+  // Get PRs and session count for this exercise
+  const userId = await getAuthUserId();
+
+  const [prs, sessionCount] = await Promise.all([
+    userId
+      ? prisma.exercisePr.findMany({
+          where: { userId, exerciseId },
+          orderBy: { value: "desc" },
+          take: 1,
+        })
+      : Promise.resolve([]),
+    userId
+      ? prisma.workoutExercise.count({
+          where: {
+            exerciseId,
+            workout: { userId },
+          },
+        })
+      : Promise.resolve(0),
+  ]);
+
+  const bestPR = prs[0] ?? null;
+  const secondary = [exercise.secondaryMuscle1, exercise.secondaryMuscle2]
+    .filter(Boolean)
+    .join(", ");
 
   return (
     <div className="min-h-screen bg-ft-bg p-6">
@@ -125,7 +63,7 @@ export default async function ExerciseDetailPage({
         href="/exercises"
         className="text-ft-dim font-mono text-xs uppercase tracking-wider hover:text-ft-light transition-colors"
       >
-        ← Exercises
+        &larr; Exercises
       </Link>
 
       {/* Exercise Header */}
@@ -134,14 +72,20 @@ export default async function ExerciseDetailPage({
           {exercise.name}
         </h1>
         <div className="flex items-center gap-3 mt-2">
-          <Tag>{exercise.pattern}</Tag>
-          <span className="text-ft-dim font-mono text-xs">
-            {exercise.primary}
-          </span>
-          <span className="text-ft-muted font-mono text-xs">·</span>
-          <span className="text-ft-muted font-mono text-xs">
-            {exercise.secondary}
-          </span>
+          {exercise.movementPattern && <Tag>{exercise.movementPattern}</Tag>}
+          {exercise.primaryMuscle && (
+            <span className="text-ft-dim font-mono text-xs">
+              {exercise.primaryMuscle}
+            </span>
+          )}
+          {secondary && (
+            <>
+              <span className="text-ft-muted font-mono text-xs">&middot;</span>
+              <span className="text-ft-muted font-mono text-xs">
+                {secondary}
+              </span>
+            </>
+          )}
         </div>
       </div>
 
@@ -150,12 +94,28 @@ export default async function ExerciseDetailPage({
         <SectionHeader title="Personal Records" />
         <Card>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-6">
-            <Stat label="Best Set" value={exercise.pr} sub={exercise.prDate} />
-            <Stat label="Est. 1RM" value={exercise.e1rm} />
-            <Stat label="Total Sessions" value={exercise.sessions} />
+            <Stat
+              label="Best Set"
+              value={
+                bestPR
+                  ? `${Number(bestPR.value)}${bestPR.repsAtWeight ? `×${bestPR.repsAtWeight}` : ""}`
+                  : "—"
+              }
+              sub={
+                bestPR
+                  ? bestPR.achievedAt.toISOString().split("T")[0]
+                  : undefined
+              }
+            />
+            <Stat label="Est. 1RM" value="—" />
+            <Stat label="Total Sessions" value={sessionCount} />
             <Stat
               label="Avg Frequency"
-              value={`${(exercise.sessions / 12).toFixed(1)}/mo`}
+              value={
+                sessionCount > 0
+                  ? `${(sessionCount / 12).toFixed(1)}/mo`
+                  : "—"
+              }
             />
           </div>
         </Card>
@@ -167,7 +127,9 @@ export default async function ExerciseDetailPage({
         <Card>
           <div className="h-48 flex items-center justify-center">
             <span className="text-ft-muted font-mono text-xs uppercase tracking-wider">
-              Volume chart placeholder
+              {sessionCount > 0
+                ? "Volume chart placeholder"
+                : "Log workouts to see volume trends"}
             </span>
           </div>
         </Card>
@@ -178,7 +140,9 @@ export default async function ExerciseDetailPage({
         <Card>
           <div className="h-48 flex items-center justify-center">
             <span className="text-ft-muted font-mono text-xs uppercase tracking-wider">
-              Session history table placeholder
+              {sessionCount > 0
+                ? "Session history table placeholder"
+                : "No sessions logged yet"}
             </span>
           </div>
         </Card>

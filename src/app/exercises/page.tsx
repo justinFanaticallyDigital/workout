@@ -1,105 +1,53 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { DataTable } from "@/components/ui";
 
-const FILTERS = [
-  "All",
-  "Horizontal Push",
-  "Vertical Pull",
-  "Horizontal Pull",
-  "Squat",
-  "Hip Hinge",
-  "Elbow Flexion",
-  "Elbow Extension",
-  "Shoulder Isolation",
-] as const;
-
-const EXERCISES = [
-  {
-    id: "bench-press-incline-barbell",
-    exercise: "Bench Press - Incline Barbell",
-    pattern: "Horizontal Push",
-    primary: "Chest",
-    pr: "185×6",
-    sessions: 14,
-  },
-  {
-    id: "bench-press-flat-barbell",
-    exercise: "Bench Press - Flat Barbell",
-    pattern: "Horizontal Push",
-    primary: "Chest",
-    pr: "205×5",
-    sessions: 22,
-  },
-  {
-    id: "pull-up-weighted-bodyweight",
-    exercise: "Pull Up - Weighted Bodyweight",
-    pattern: "Vertical Pull",
-    primary: "Lats",
-    pr: "BW+45×5",
-    sessions: 18,
-  },
-  {
-    id: "squat-lever-plate",
-    exercise: "Squat - Lever Plate",
-    pattern: "Squat",
-    primary: "Quadriceps",
-    pr: "225×8",
-    sessions: 8,
-  },
-  {
-    id: "deadlift-romanian-barbell",
-    exercise: "Deadlift - Romanian Barbell",
-    pattern: "Hip Hinge",
-    primary: "Hamstrings",
-    pr: "225×8",
-    sessions: 16,
-  },
-  {
-    id: "curl-barbell",
-    exercise: "Curl - Barbell",
-    pattern: "Elbow Flexion",
-    primary: "Biceps",
-    pr: "95×10",
-    sessions: 20,
-  },
-  {
-    id: "row-chest-supported-dumbbell",
-    exercise: "Row - Chest Supported Dumbbell",
-    pattern: "Horizontal Pull",
-    primary: "Lats",
-    pr: "55×12",
-    sessions: 12,
-  },
-  {
-    id: "raise-lateral-dumbbell",
-    exercise: "Raise - Lateral Dumbbell",
-    pattern: "Shoulder Isolation",
-    primary: "Shoulders",
-    pr: "30×12",
-    sessions: 15,
-  },
-];
+interface Exercise {
+  id: string;
+  name: string;
+  movementPattern: string | null;
+  primaryMuscle: string | null;
+  equipment: string | null;
+}
 
 const COLUMNS = [
-  { key: "exercise", label: "Exercise", className: "min-w-[200px]" },
-  { key: "pattern", label: "Pattern" },
-  { key: "primary", label: "Primary" },
-  { key: "pr", label: "PR" },
-  { key: "sessions", label: "Sessions", className: "w-[80px]" },
+  { key: "name", label: "Exercise", className: "min-w-[200px]" },
+  { key: "movementPattern", label: "Pattern" },
+  { key: "primaryMuscle", label: "Primary" },
+  { key: "equipment", label: "Equipment" },
 ];
 
 export default function ExerciseLibraryPage() {
+  const [exercises, setExercises] = useState<Exercise[]>([]);
+  const [loading, setLoading] = useState(true);
   const [activeFilter, setActiveFilter] = useState<string>("All");
+  const [filters, setFilters] = useState<string[]>(["All"]);
   const router = useRouter();
+
+  useEffect(() => {
+    fetch("/api/exercises")
+      .then((res) => res.json())
+      .then((data) => {
+        const exs: Exercise[] = data.exercises ?? [];
+        setExercises(exs);
+
+        // Build unique movement pattern filters from data
+        const patterns = new Set<string>();
+        for (const ex of exs) {
+          if (ex.movementPattern) patterns.add(ex.movementPattern);
+        }
+        setFilters(["All", ...Array.from(patterns).sort()]);
+      })
+      .finally(() => setLoading(false));
+  }, []);
 
   const filtered =
     activeFilter === "All"
-      ? EXERCISES
-      : EXERCISES.filter((e) => e.pattern === activeFilter);
+      ? exercises
+      : exercises.filter((e) => e.movementPattern === activeFilter);
 
   return (
     <div className="min-h-screen bg-ft-bg p-6">
@@ -110,7 +58,7 @@ export default function ExerciseLibraryPage() {
             Exercise Library
           </h1>
           <p className="text-ft-dim font-mono text-xs mt-1">
-            205 exercises · 24 movement patterns
+            {exercises.length} exercises · {filters.length - 1} movement patterns
           </p>
         </div>
         <Link
@@ -123,7 +71,7 @@ export default function ExerciseLibraryPage() {
 
       {/* Filter Chips */}
       <div className="flex flex-wrap gap-2 mb-6">
-        {FILTERS.map((filter) => (
+        {filters.map((filter) => (
           <button
             key={filter}
             onClick={() => setActiveFilter(filter)}
@@ -139,11 +87,25 @@ export default function ExerciseLibraryPage() {
       </div>
 
       {/* Exercise Table */}
-      <DataTable
-        columns={COLUMNS}
-        data={filtered}
-        onRowClick={(row: Record<string, unknown>) => router.push(`/exercises/${row.id}`)}
-      />
+      {loading ? (
+        <div className="text-ft-dim font-mono text-sm">Loading exercises...</div>
+      ) : filtered.length === 0 ? (
+        <div className="text-ft-muted font-mono text-sm">No exercises found</div>
+      ) : (
+        <DataTable
+          columns={COLUMNS}
+          data={filtered.map((e) => ({
+            id: e.id,
+            name: e.name,
+            movementPattern: e.movementPattern || "—",
+            primaryMuscle: e.primaryMuscle || "—",
+            equipment: e.equipment || "—",
+          }))}
+          onRowClick={(row: Record<string, unknown>) =>
+            router.push(`/exercises/${row.id}`)
+          }
+        />
+      )}
     </div>
   );
 }

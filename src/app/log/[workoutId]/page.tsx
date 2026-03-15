@@ -1,110 +1,222 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { Card, SectionHeader, Tag } from "@/components/ui";
 
-const exercises = [
-  {
-    name: "Bench Press - Incline Barbell",
-    shortName: "Inc. Bench",
-    category: "Horizontal Push",
-    progression: "Linear +5lbs",
-    target: "3\u00d76-8 @ RPE 7-8",
-    lastBest: "155\u00d78",
-    sets: [
-      { set: 1, weight: 155, reps: 8, rir: 2, done: true },
-      { set: 2, weight: 155, reps: 8, rir: 2, done: true },
-      { set: 3, weight: 155, reps: 7, rir: 1, done: true },
-    ],
-    history: [
-      { week: 1, value: "145\u00d78" },
-      { week: 2, value: "150\u00d78" },
-      { week: 3, value: "155\u00d78" },
-      { week: 4, value: "\u2014" },
-    ],
-  },
-  {
-    name: "Fly - Machine",
-    shortName: "Machine Fly",
-    category: "Horizontal Push",
-    progression: "Double progression",
-    target: "3\u00d710-12 @ RPE 8",
-    lastBest: "120\u00d712",
-    sets: [
-      { set: 1, weight: 120, reps: 12, rir: 2, done: true },
-      { set: 2, weight: 120, reps: 11, rir: null, done: false },
-      { set: 3, weight: null, reps: null, rir: null, done: false },
-    ],
-    history: [
-      { week: 1, value: "110\u00d710" },
-      { week: 2, value: "115\u00d711" },
-      { week: 3, value: "120\u00d712" },
-      { week: 4, value: "\u2014" },
-    ],
-  },
-  {
-    name: "Lateral Raise - Seated Dumbbell",
-    shortName: "Lat. Raise",
-    category: "Shoulder Isolation",
-    progression: "Double progression",
-    target: "3\u00d712-15 @ RPE 8-9",
-    lastBest: "25\u00d714",
-    sets: [
-      { set: 1, weight: null, reps: null, rir: null, done: false },
-      { set: 2, weight: null, reps: null, rir: null, done: false },
-      { set: 3, weight: null, reps: null, rir: null, done: false },
-    ],
-    history: [
-      { week: 1, value: "20\u00d712" },
-      { week: 2, value: "22\u00d713" },
-      { week: 3, value: "25\u00d714" },
-      { week: 4, value: "\u2014" },
-    ],
-  },
-];
-
-function isExerciseComplete(ex: (typeof exercises)[number]) {
-  return ex.sets.every((s) => s.done);
+interface SetData {
+  set: number;
+  weight: number | null;
+  reps: number | null;
+  rir: number | null;
+  done: boolean;
 }
 
-export default function ActiveWorkoutPage() {
+interface ExerciseData {
+  id: string;
+  name: string;
+  shortName: string;
+  category: string;
+  targetSets: number;
+  targetRepRange: string;
+  sets: SetData[];
+}
+
+interface BlockDayData {
+  id: string;
+  name: string;
+  dayNumber: number;
+  block: { name: string };
+  exercises: {
+    id: string;
+    exercise: { name: string; movementPattern: string | null };
+    targetSets: number | null;
+    targetRepRange: string | null;
+    progressionType: string;
+  }[];
+}
+
+function isExerciseComplete(ex: ExerciseData) {
+  return ex.sets.length > 0 && ex.sets.every((s) => s.done);
+}
+
+function makeShortName(name: string): string {
+  // Take first word(s) up to ~12 chars
+  const parts = name.split(/[-·]/);
+  return parts[0].trim().slice(0, 12);
+}
+
+export default function ActiveWorkoutPage({
+  params,
+}: {
+  params: Promise<{ workoutId: string }>;
+}) {
+  const [workoutId, setWorkoutId] = useState<string>("");
+  const [exercises, setExercises] = useState<ExerciseData[]>([]);
+  const [dayInfo, setDayInfo] = useState<{ name: string; blockName: string } | null>(null);
   const [activeEx, setActiveEx] = useState(0);
+  const [loading, setLoading] = useState(true);
+  const [startTime] = useState(() => Date.now());
+  const [elapsed, setElapsed] = useState("0:00");
+
+  // Resolve params
+  useEffect(() => {
+    params.then((p) => setWorkoutId(p.workoutId));
+  }, [params]);
+
+  // Timer
+  useEffect(() => {
+    const interval = setInterval(() => {
+      const diff = Math.floor((Date.now() - startTime) / 1000);
+      const mins = Math.floor(diff / 60);
+      const secs = diff % 60;
+      setElapsed(`${mins}:${secs.toString().padStart(2, "0")}`);
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [startTime]);
+
+  // Load block day exercises (the workoutId here is actually the blockDay ID from /log)
+  useEffect(() => {
+    if (!workoutId || workoutId === "new-blank") return;
+
+    // Fetch the block day template to get exercises
+    fetch(`/api/blocks/day/${workoutId}`)
+      .then((res) => {
+        if (!res.ok) return null;
+        return res.json();
+      })
+      .then((data: BlockDayData | null) => {
+        if (!data) {
+          setLoading(false);
+          return;
+        }
+        setDayInfo({ name: data.name, blockName: data.block.name });
+        setExercises(
+          data.exercises.map((bde) => ({
+            id: bde.id,
+            name: bde.exercise.name,
+            shortName: makeShortName(bde.exercise.name),
+            category: bde.exercise.movementPattern || "—",
+            targetSets: bde.targetSets ?? 3,
+            targetRepRange: bde.targetRepRange ?? "8-12",
+            sets: Array.from({ length: bde.targetSets ?? 3 }, (_, i) => ({
+              set: i + 1,
+              weight: null,
+              reps: null,
+              rir: null,
+              done: false,
+            })),
+          }))
+        );
+        setLoading(false);
+      })
+      .catch(() => setLoading(false));
+  }, [workoutId]);
+
+  const updateSet = useCallback(
+    (exIdx: number, setIdx: number, field: keyof SetData, value: unknown) => {
+      setExercises((prev) =>
+        prev.map((ex, ei) =>
+          ei !== exIdx
+            ? ex
+            : {
+                ...ex,
+                sets: ex.sets.map((s, si) =>
+                  si !== setIdx ? s : { ...s, [field]: value }
+                ),
+              }
+        )
+      );
+    },
+    []
+  );
+
+  const addSet = useCallback((exIdx: number) => {
+    setExercises((prev) =>
+      prev.map((ex, ei) =>
+        ei !== exIdx
+          ? ex
+          : {
+              ...ex,
+              sets: [
+                ...ex.sets,
+                {
+                  set: ex.sets.length + 1,
+                  weight: null,
+                  reps: null,
+                  rir: null,
+                  done: false,
+                },
+              ],
+            }
+      )
+    );
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-ft-bg text-ft-white flex items-center justify-center">
+        <p className="text-ft-dim font-mono text-sm">Loading workout...</p>
+      </div>
+    );
+  }
+
+  // Blank workout or no template found
+  if (exercises.length === 0) {
+    return (
+      <div className="min-h-screen bg-ft-bg text-ft-white p-4 max-w-2xl mx-auto">
+        <Link
+          href="/log"
+          className="text-ft-dim hover:text-ft-light text-sm font-mono transition-colors"
+        >
+          &larr; Back
+        </Link>
+        <Card className="mt-6">
+          <p className="text-ft-muted font-mono text-sm text-center py-8">
+            No template found for this day. Use the exercise library to add exercises to your workout.
+          </p>
+        </Card>
+      </div>
+    );
+  }
+
   const current = exercises[activeEx];
 
   return (
     <div className="min-h-screen bg-ft-bg text-ft-white pb-24 max-w-2xl mx-auto">
       {/* Header */}
       <div className="sticky top-0 z-10 bg-ft-bg border-b border-ft-card px-4 pt-4 pb-3">
-        {/* Breadcrumb */}
         <div className="flex items-center gap-2 mb-2">
           <Link
             href="/log"
             className="text-ft-dim hover:text-ft-light text-sm font-mono transition-colors"
           >
-            &larr; Block 2
+            &larr; {dayInfo?.blockName ?? "Back"}
           </Link>
           <span className="text-ft-muted text-sm font-mono">/</span>
           <span className="text-ft-dim text-sm font-mono">
-            Day 1 &middot; Upper Push
+            {dayInfo?.name ?? "Workout"}
           </span>
         </div>
 
-        {/* Title row */}
         <div className="flex items-center justify-between">
           <div>
             <h1 className="font-mono text-lg font-bold text-ft-white">
-              Day 1 &middot; Upper Push
+              {dayInfo?.name ?? "Workout"}
             </h1>
             <p className="text-ft-dim text-xs font-mono mt-0.5">
-              Wed, Mar 12 &middot; Week 3
+              {new Date().toLocaleDateString("en-US", {
+                weekday: "short",
+                month: "short",
+                day: "numeric",
+              })}
             </p>
           </div>
           <div className="flex items-center gap-2">
             <div className="flex items-center gap-1.5 bg-ft-surface border border-ft-card rounded px-2.5 py-1.5">
               <span className="text-ft-dim text-xs font-mono">&#9201;</span>
               <span className="text-ft-light text-sm font-mono tabular-nums">
-                42:15
+                {elapsed}
               </span>
             </div>
             <button className="bg-ft-success/20 text-ft-success font-mono text-sm font-bold px-4 py-1.5 rounded hover:bg-ft-success/30 transition-colors">
@@ -122,7 +234,7 @@ export default function ActiveWorkoutPage() {
             const isActive = i === activeEx;
             return (
               <button
-                key={i}
+                key={ex.id}
                 onClick={() => setActiveEx(i)}
                 className={`shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded font-mono text-xs transition-colors ${
                   isActive
@@ -130,9 +242,7 @@ export default function ActiveWorkoutPage() {
                     : "bg-ft-surface text-ft-dim hover:text-ft-light border border-ft-card"
                 }`}
               >
-                <span>
-                  {complete ? "\u2713" : `E${i + 1}`}
-                </span>
+                <span>{complete ? "\u2713" : `E${i + 1}`}</span>
                 <span>{ex.shortName}</span>
               </button>
             );
@@ -149,33 +259,23 @@ export default function ActiveWorkoutPage() {
             </h2>
             <div className="flex items-center gap-2 mt-1.5 flex-wrap">
               <Tag>{current.category}</Tag>
-              <Tag>{current.progression}</Tag>
             </div>
           </div>
 
-          {/* Target & Last Best */}
+          {/* Target */}
           <div className="flex gap-4 mb-4">
             <div className="flex-1 bg-ft-bg rounded p-2.5">
               <p className="text-ft-dim text-[11px] font-mono uppercase tracking-wider mb-0.5">
                 Target
               </p>
               <p className="text-ft-light text-sm font-mono font-bold">
-                {current.target}
-              </p>
-            </div>
-            <div className="flex-1 bg-ft-bg rounded p-2.5">
-              <p className="text-ft-dim text-[11px] font-mono uppercase tracking-wider mb-0.5">
-                Last Best
-              </p>
-              <p className="text-ft-light text-sm font-mono font-bold">
-                {current.lastBest}
+                {current.targetSets}&times;{current.targetRepRange}
               </p>
             </div>
           </div>
 
           {/* Set Table */}
           <div className="mb-3">
-            {/* Table Header */}
             <div className="grid grid-cols-[40px_1fr_1fr_1fr_36px] gap-1.5 mb-1.5">
               <span className="text-ft-dim text-[11px] font-mono uppercase text-center">
                 Set
@@ -194,7 +294,6 @@ export default function ActiveWorkoutPage() {
               </span>
             </div>
 
-            {/* Set Rows */}
             {current.sets.map((s, si) => (
               <div
                 key={si}
@@ -207,7 +306,11 @@ export default function ActiveWorkoutPage() {
                 </div>
                 <input
                   type="text"
-                  defaultValue={s.weight ?? ""}
+                  value={s.weight ?? ""}
+                  onChange={(e) => {
+                    const val = e.target.value === "" ? null : Number(e.target.value);
+                    updateSet(activeEx, si, "weight", val);
+                  }}
                   placeholder="-"
                   className={`${
                     s.done ? "bg-ft-card" : "bg-ft-bg"
@@ -215,7 +318,11 @@ export default function ActiveWorkoutPage() {
                 />
                 <input
                   type="text"
-                  defaultValue={s.reps ?? ""}
+                  value={s.reps ?? ""}
+                  onChange={(e) => {
+                    const val = e.target.value === "" ? null : Number(e.target.value);
+                    updateSet(activeEx, si, "reps", val);
+                  }}
                   placeholder="-"
                   className={`${
                     s.done ? "bg-ft-card" : "bg-ft-bg"
@@ -223,7 +330,11 @@ export default function ActiveWorkoutPage() {
                 />
                 <input
                   type="text"
-                  defaultValue={s.rir ?? ""}
+                  value={s.rir ?? ""}
+                  onChange={(e) => {
+                    const val = e.target.value === "" ? null : Number(e.target.value);
+                    updateSet(activeEx, si, "rir", val);
+                  }}
                   placeholder="-"
                   className={`${
                     s.done ? "bg-ft-card" : "bg-ft-bg"
@@ -231,41 +342,25 @@ export default function ActiveWorkoutPage() {
                 />
                 <div className="flex items-center justify-center">
                   <div
+                    onClick={() => updateSet(activeEx, si, "done", !s.done)}
                     className={`w-5 h-5 rounded border flex items-center justify-center cursor-pointer transition-colors ${
                       s.done
                         ? "bg-ft-success/20 border-ft-success text-ft-success"
                         : "border-ft-card hover:border-ft-dim"
                     }`}
                   >
-                    {s.done && (
-                      <span className="text-xs">&#10003;</span>
-                    )}
+                    {s.done && <span className="text-xs">&#10003;</span>}
                   </div>
                 </div>
               </div>
             ))}
 
-            {/* Add Set */}
-            <button className="w-full mt-1 border border-dashed border-ft-card rounded py-2 text-ft-dim text-xs font-mono hover:border-ft-dim hover:text-ft-light transition-colors">
+            <button
+              onClick={() => addSet(activeEx)}
+              className="w-full mt-1 border border-dashed border-ft-card rounded py-2 text-ft-dim text-xs font-mono hover:border-ft-dim hover:text-ft-light transition-colors"
+            >
               + Add Set
             </button>
-          </div>
-        </Card>
-
-        {/* Recent History */}
-        <Card>
-          <SectionHeader title="Recent History" />
-          <div className="grid grid-cols-4 gap-2">
-            {current.history.map((h, hi) => (
-              <div key={hi} className="bg-ft-bg rounded p-2 text-center">
-                <p className="text-ft-dim text-[11px] font-mono uppercase mb-1">
-                  Wk {h.week}
-                </p>
-                <p className="text-ft-light text-sm font-mono font-bold">
-                  {h.value}
-                </p>
-              </div>
-            ))}
           </div>
         </Card>
 
@@ -274,7 +369,6 @@ export default function ActiveWorkoutPage() {
           <SectionHeader title="Notes" />
           <textarea
             rows={3}
-            defaultValue="Left shoulder felt tight on set 3..."
             placeholder="Add notes for this exercise..."
             className="w-full bg-ft-bg border border-ft-card rounded px-3 py-2 text-sm font-mono text-ft-light placeholder:text-ft-muted focus:outline-none focus:border-ft-dim resize-none transition-colors"
           />

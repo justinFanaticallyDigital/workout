@@ -1,37 +1,9 @@
 import { Card, SectionHeader } from "@/components/ui";
+import { prisma } from "@/lib/prisma";
+import { getAuthUserId } from "@/lib/auth-helpers";
+import { redirect } from "next/navigation";
 
-const weightData = [
-  { month: "Oct", value: 204 },
-  { month: "Nov", value: 202.5 },
-  { month: "Dec", value: 201 },
-  { month: "Jan", value: 200 },
-  { month: "Feb", value: 199 },
-  { month: "Mar", value: 198.4 },
-];
-
-const volumeData = [
-  { week: "W1", value: 32000 },
-  { week: "W2", value: 35000 },
-  { week: "W3", value: 38000 },
-  { week: "W4", value: 40000 },
-  { week: "W5", value: 42000 },
-  { week: "W6", value: 41000 },
-];
-
-const milestones = [
-  { date: "Mar 12", exercise: "Bench Press", performance: "245×3", e1rm: "260", delta: "+5 lbs" },
-  { date: "Mar 8", exercise: "Squat", performance: "315×5", e1rm: "354", delta: "+10 lbs" },
-  { date: "Mar 1", exercise: "Deadlift", performance: "405×1", e1rm: "405", delta: "+15 lbs" },
-  { date: "Feb 22", exercise: "OHP", performance: "155×4", e1rm: "170", delta: "+5 lbs" },
-  { date: "Feb 15", exercise: "Barbell Row", performance: "205×6", e1rm: "239", delta: "+8 lbs" },
-];
-
-const photos = [
-  { date: "Jan 1" },
-  { date: "Feb 1" },
-  { date: "Mar 1" },
-  { date: "Mar 14" },
-];
+export const dynamic = "force-dynamic";
 
 function BarChart({
   data,
@@ -52,7 +24,7 @@ function BarChart({
       {data.map((item, i) => {
         const value = item[valueKey] as number;
         const label = item[labelKey] as string;
-        const heightPct = (value / maxValue) * 100;
+        const heightPct = maxValue > 0 ? (value / maxValue) * 100 : 0;
         const isLatest = i === lastIndex;
         return (
           <div key={label} className="flex flex-col items-center flex-1 gap-1">
@@ -73,7 +45,95 @@ function BarChart({
   );
 }
 
-export default function ProgressPage() {
+export default async function ProgressPage() {
+  const userId = await getAuthUserId();
+  if (!userId) redirect("/signin");
+
+  const [bodyMetrics, prs, recentWorkouts] = await Promise.all([
+    prisma.bodyMetric.findMany({
+      where: { userId },
+      orderBy: { date: "asc" },
+      select: { date: true, weight: true },
+    }),
+    prisma.exercisePr.findMany({
+      where: { userId },
+      include: { exercise: { select: { name: true } } },
+      orderBy: { achievedAt: "desc" },
+      take: 10,
+    }),
+    // Get last 6 weeks of workouts for volume trend
+    prisma.workout.findMany({
+      where: {
+        userId,
+        date: {
+          gte: (() => {
+            const d = new Date();
+            d.setDate(d.getDate() - 42);
+            return d;
+          })(),
+        },
+      },
+      include: {
+        exercises: { include: { sets: true } },
+      },
+      orderBy: { date: "asc" },
+    }),
+  ]);
+
+  // Build body weight chart data (last 6 entries)
+  const weightData = bodyMetrics
+    .filter((m) => m.weight)
+    .slice(-6)
+    .map((m) => ({
+      month: m.date.toLocaleDateString("en-US", { month: "short" }),
+      value: Number(m.weight),
+    }));
+
+  const weightMax = weightData.length > 0
+    ? Math.max(...weightData.map((d) => d.value)) + 5
+    : 210;
+
+  // Build weekly volume data (last 6 weeks)
+  const weeklyVolumes: Record<string, number> = {};
+  for (const w of recentWorkouts) {
+    const weekStart = new Date(w.date);
+    const dayOfWeek = weekStart.getDay();
+    const mondayOffset = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
+    weekStart.setDate(weekStart.getDate() + mondayOffset);
+    const key = weekStart.toISOString().split("T")[0];
+
+    let vol = 0;
+    for (const ex of w.exercises) {
+      for (const s of ex.sets) {
+        if (s.weight && s.reps && !s.isWarmup) {
+          vol += Number(s.weight) * s.reps;
+        }
+      }
+    }
+    weeklyVolumes[key] = (weeklyVolumes[key] || 0) + vol;
+  }
+
+  const volumeEntries = Object.entries(weeklyVolumes)
+    .sort((a, b) => a[0].localeCompare(b[0]))
+    .slice(-6);
+
+  const volumeData = volumeEntries.map(([, val], i) => ({
+    week: `W${i + 1}`,
+    value: val,
+  }));
+
+  const volumeMax = volumeData.length > 0
+    ? Math.max(...volumeData.map((d) => d.value)) * 1.1
+    : 45000;
+
+  // Weight trend
+  let weightTrend = "";
+  if (weightData.length >= 2) {
+    const diff = weightData[weightData.length - 1].value - weightData[0].value;
+    const sign = diff > 0 ? "Up" : "Down";
+    weightTrend = `${sign} ${Math.abs(diff).toFixed(1)} lbs over ${weightData.length} entries`;
+  }
+
   return (
     <div className="min-h-screen bg-ft-bg p-6 max-w-4xl mx-auto space-y-6">
       {/* Header */}
@@ -88,57 +148,85 @@ export default function ProgressPage() {
 
       {/* Body Weight Chart */}
       <Card>
-        <SectionHeader title="Body Weight" subtitle="6-month trend" />
-        <BarChart
-          data={weightData}
-          labelKey="month"
-          valueKey="value"
-          maxValue={210}
-        />
-        <p className="text-ft-success text-sm font-mono mt-3">
-          Down 5.6 lbs over 6 months
-        </p>
+        <SectionHeader title="Body Weight" subtitle={weightData.length > 0 ? `${weightData.length} entries` : "No data yet"} />
+        {weightData.length > 0 ? (
+          <>
+            <BarChart
+              data={weightData}
+              labelKey="month"
+              valueKey="value"
+              maxValue={weightMax}
+            />
+            {weightTrend && (
+              <p className="text-ft-success text-sm font-mono mt-3">
+                {weightTrend}
+              </p>
+            )}
+          </>
+        ) : (
+          <p className="text-ft-muted font-mono text-sm py-8 text-center">
+            Log body weight to see trends
+          </p>
+        )}
       </Card>
 
       {/* Weekly Volume Trend */}
       <Card>
-        <SectionHeader title="Weekly Volume" subtitle="Last 6 weeks" />
-        <BarChart
-          data={volumeData}
-          labelKey="week"
-          valueKey="value"
-          maxValue={45000}
-          formatLabel={(v) => `${(v / 1000).toFixed(0)}k`}
-        />
+        <SectionHeader title="Weekly Volume" subtitle={volumeData.length > 0 ? `Last ${volumeData.length} weeks` : "No data yet"} />
+        {volumeData.length > 0 ? (
+          <BarChart
+            data={volumeData}
+            labelKey="week"
+            valueKey="value"
+            maxValue={volumeMax}
+            formatLabel={(v) => `${(v / 1000).toFixed(0)}k`}
+          />
+        ) : (
+          <p className="text-ft-muted font-mono text-sm py-8 text-center">
+            Log workouts to see volume trends
+          </p>
+        )}
       </Card>
 
       {/* Strength Milestones */}
       <Card>
-        <SectionHeader title="Strength Milestones" subtitle="Recent PRs" />
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm font-mono">
-            <thead>
-              <tr className="text-ft-dim text-left text-xs uppercase tracking-wider">
-                <th className="pb-2 pr-4">Date</th>
-                <th className="pb-2 pr-4">Exercise</th>
-                <th className="pb-2 pr-4">Weight x Reps</th>
-                <th className="pb-2 pr-4">e1RM</th>
-                <th className="pb-2">Delta</th>
-              </tr>
-            </thead>
-            <tbody className="text-ft-light">
-              {milestones.map((m) => (
-                <tr key={`${m.date}-${m.exercise}`} className="border-t border-ft-border">
-                  <td className="py-2 pr-4 text-ft-dim">{m.date}</td>
-                  <td className="py-2 pr-4">{m.exercise}</td>
-                  <td className="py-2 pr-4">{m.performance}</td>
-                  <td className="py-2 pr-4">{m.e1rm}</td>
-                  <td className="py-2 text-ft-success">{m.delta}</td>
+        <SectionHeader title="Strength Milestones" subtitle={prs.length > 0 ? "Recent PRs" : "No PRs yet"} />
+        {prs.length > 0 ? (
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm font-mono">
+              <thead>
+                <tr className="text-ft-dim text-left text-xs uppercase tracking-wider">
+                  <th className="pb-2 pr-4">Date</th>
+                  <th className="pb-2 pr-4">Exercise</th>
+                  <th className="pb-2 pr-4">Weight</th>
+                  <th className="pb-2">Reps</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+              </thead>
+              <tbody className="text-ft-light">
+                {prs.map((pr) => (
+                  <tr
+                    key={pr.id}
+                    className="border-t border-ft-border"
+                  >
+                    <td className="py-2 pr-4 text-ft-dim">
+                      {pr.achievedAt.toLocaleDateString("en-US", {
+                        month: "short",
+                        day: "numeric",
+                      })}
+                    </td>
+                    <td className="py-2 pr-4">{pr.exercise.name}</td>
+                    <td className="py-2 pr-4">{Number(pr.value)}</td>
+                    <td className="py-2">{pr.repsAtWeight ?? "—"}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        ) : (
+          <p className="text-ft-muted font-mono text-sm py-8 text-center">
+            Set PRs to see milestones
+          </p>
+        )}
       </Card>
 
       {/* Progress Photos */}
@@ -151,16 +239,9 @@ export default function ProgressPage() {
             </button>
           }
         />
-        <div className="grid grid-cols-4 gap-3">
-          {photos.map((photo) => (
-            <div
-              key={photo.date}
-              className="aspect-[3/4] bg-ft-card rounded border border-ft-border flex items-center justify-center"
-            >
-              <span className="text-ft-dim text-xs font-mono">{photo.date}</span>
-            </div>
-          ))}
-        </div>
+        <p className="text-ft-muted font-mono text-sm py-8 text-center">
+          Upload photos to track visual progress
+        </p>
       </Card>
     </div>
   );
