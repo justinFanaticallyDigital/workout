@@ -129,21 +129,42 @@ NEXTAUTH_SECRET=...                    # Session encryption
 - **Volume calculation** = weight x reps (excluding warmup sets)
 - **Streak** = consecutive days with workouts, starting from today or yesterday
 
-## Current State (Phase 1 Complete)
-All infrastructure is built and deployed:
+## Build Plan (Original Spec)
+
+### Phase 1: Scaffold (COMPLETE)
+1. Set up Next.js project with TypeScript, Tailwind, Prisma
+2. Build all pages, components, and API route stubs with static/hardcoded data
+3. Set up Railway PostgreSQL and connect DATABASE_URL
+4. Seed exercise library (367 exercises across 20+ categories)
+5. Wire up NextAuth with Google OAuth + Prisma adapter
+6. Connect all 16 API routes to real Prisma queries
+7. Deploy to Vercel with environment variables
+8. Make all pages dynamic — replace hardcoded data with Prisma queries/API fetches
+
+### Phase 2: Core Functionality (IN PROGRESS)
+1. **Program/Block/Day creation UI** — API routes exist (POST) but no creation pages yet
+2. **Wire up "Finish" button in workout logger** — needs to POST workout + sets to API
+3. **Workout auto-save** — currently loses data on page close
+4. **Exercise history charts** — placeholders on exercise detail page
+5. **Body metrics page** (`/progress/body`) — placeholder, API ready
+6. **Progress photos** (`/progress/photos`) — placeholder, upload not wired
+7. **Injury tracker UI** (`/injuries`) — placeholder, API exists
+8. **Settings page** — placeholder
+9. **Data export** — xlsx dependency installed but not wired up
+
+### Phase 3: Polish & Enhancements (FUTURE)
+- Workout history / session replay
+- Advanced progression tracking per exercise
+- Notification / reminder system
+- Mobile responsiveness pass
+- PWA support for offline logging
+
+## Current State
+**Phase 1 is fully complete.** All infrastructure is built and deployed:
 - 367 exercises seeded
 - All 16 API routes connected to real Prisma queries
 - All pages fetch from database (no hardcoded data)
 - Google OAuth working
 - Deployed on Vercel + Railway PostgreSQL
 
-## What Still Needs Work (Phase 2)
-1. **Program/Block/Day creation UI** — API routes exist (POST) but no creation pages
-2. **"Finish" button in workout logger** — needs to POST workout + sets to API
-3. **Workout auto-save** — currently loses data on page close
-4. **Exercise history charts** — placeholders on exercise detail page
-5. **Body metrics page** (`/progress/body`) — placeholder
-6. **Progress photos** (`/progress/photos`) — placeholder, upload not wired
-7. **Injury tracker UI** (`/injuries`) — placeholder, API exists
-8. **Settings page** — placeholder
-9. **Data export** — xlsx dependency installed but not wired up
+**Phase 2 priority:** Seed a real training program and wire up the Finish button so workouts can actually be logged end-to-end.
