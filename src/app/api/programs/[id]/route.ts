@@ -13,6 +13,7 @@ export async function GET(
       goal: true,
       blocks: {
         include: {
+          _count: { select: { workouts: true } },
           days: {
             include: {
               exercises: {
