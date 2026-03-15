@@ -1,39 +1,121 @@
+"use client";
+
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import Card from "@/components/ui/Card";
 import Tag from "@/components/ui/Tag";
 import Stat from "@/components/ui/Stat";
-import { prisma } from "@/lib/prisma";
-import { notFound } from "next/navigation";
+import SectionHeader from "@/components/ui/SectionHeader";
 
-export const dynamic = "force-dynamic";
+interface BlockDayExercise {
+  id: string;
+  exercise: { name: string; movementPattern: string | null };
+  targetSets: number | null;
+  targetRepRange: string | null;
+}
 
-export default async function BlockDetailPage({
+interface BlockDay {
+  id: string;
+  dayNumber: number;
+  name: string;
+  dayType: string;
+  exercises: BlockDayExercise[];
+}
+
+interface Block {
+  id: string;
+  name: string;
+  description: string | null;
+  durationWeeks: number | null;
+  scheduleDaysPerWeek: number | null;
+  focus: string | null;
+  status: string;
+  program: { name: string };
+  days: BlockDay[];
+  _count: { workouts: number };
+}
+
+const DAY_TYPES = ["lifting", "cardio", "conditioning", "mobility", "rest"];
+
+export default function BlockDetailPage({
   params,
 }: {
   params: Promise<{ programId: string; blockId: string }>;
 }) {
-  const { programId, blockId } = await params;
+  const [programId, setProgramId] = useState("");
+  const [blockId, setBlockId] = useState("");
+  const [block, setBlock] = useState<Block | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [showDayForm, setShowDayForm] = useState(false);
+  const [dayName, setDayName] = useState("");
+  const [dayType, setDayType] = useState("lifting");
+  const [savingDay, setSavingDay] = useState(false);
 
-  const block = await prisma.block.findUnique({
-    where: { id: blockId },
-    include: {
-      program: { select: { name: true } },
-      days: {
-        include: {
-          exercises: {
-            include: {
-              exercise: { select: { name: true, movementPattern: true } },
-            },
-            orderBy: { sortOrder: "asc" },
-          },
-        },
-        orderBy: { sortOrder: "asc" },
-      },
-      _count: { select: { workouts: true } },
-    },
-  });
+  useEffect(() => {
+    params.then((p) => {
+      setProgramId(p.programId);
+      setBlockId(p.blockId);
+    });
+  }, [params]);
 
-  if (!block) notFound();
+  useEffect(() => {
+    if (!blockId) return;
+    fetch(`/api/blocks/${blockId}`)
+      .then((res) => {
+        if (!res.ok) return null;
+        return res.json();
+      })
+      .then((data) => {
+        setBlock(data);
+        setLoading(false);
+      })
+      .catch(() => setLoading(false));
+  }, [blockId]);
+
+  const handleAddDay = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!dayName.trim()) return;
+    setSavingDay(true);
+    try {
+      const res = await fetch(`/api/blocks/${blockId}/days`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: dayName.trim(),
+          dayType,
+        }),
+      });
+      if (!res.ok) throw new Error("Failed");
+      const day = await res.json();
+      setBlock((prev) =>
+        prev
+          ? { ...prev, days: [...prev.days, { ...day, exercises: [] }] }
+          : prev
+      );
+      setShowDayForm(false);
+      setDayName("");
+      setDayType("lifting");
+    } catch {
+      alert("Failed to create day.");
+    }
+    setSavingDay(false);
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-ft-bg text-ft-white flex items-center justify-center">
+        <p className="text-ft-dim font-mono text-sm">Loading...</p>
+      </div>
+    );
+  }
+
+  if (!block) {
+    return (
+      <div className="min-h-screen bg-ft-bg text-ft-white p-6">
+        <p className="text-ft-light font-mono">Block not found.</p>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-ft-bg text-ft-white p-6 max-w-5xl mx-auto">
@@ -84,10 +166,74 @@ export default async function BlockDetailPage({
       </div>
 
       {/* Training Days */}
-      <h2 className="font-mono text-lg font-bold text-ft-light mb-4">
-        Training Days
-      </h2>
-      {block.days.length === 0 ? (
+      <SectionHeader
+        title="Training Days"
+        action={
+          <button
+            onClick={() => setShowDayForm(!showDayForm)}
+            className="text-ft-dim text-xs font-mono hover:text-ft-light transition-colors border border-ft-border rounded px-3 py-1"
+          >
+            + Add Day
+          </button>
+        }
+      />
+
+      {/* Add Day Form */}
+      {showDayForm && (
+        <Card className="mb-4">
+          <form onSubmit={handleAddDay} className="space-y-3">
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-ft-dim text-xs font-mono uppercase tracking-wider mb-1">
+                  Day Name *
+                </label>
+                <input
+                  type="text"
+                  value={dayName}
+                  onChange={(e) => setDayName(e.target.value)}
+                  placeholder="e.g. Upper Push"
+                  required
+                  className="w-full bg-ft-bg border border-ft-card rounded px-3 py-2 text-sm font-mono text-ft-white placeholder:text-ft-muted focus:outline-none focus:border-ft-dim transition-colors"
+                />
+              </div>
+              <div>
+                <label className="block text-ft-dim text-xs font-mono uppercase tracking-wider mb-1">
+                  Day Type
+                </label>
+                <select
+                  value={dayType}
+                  onChange={(e) => setDayType(e.target.value)}
+                  className="w-full bg-ft-bg border border-ft-card rounded px-3 py-2 text-sm font-mono text-ft-white focus:outline-none focus:border-ft-dim transition-colors"
+                >
+                  {DAY_TYPES.map((t) => (
+                    <option key={t} value={t}>
+                      {t.charAt(0).toUpperCase() + t.slice(1)}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+            <div className="flex justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => setShowDayForm(false)}
+                className="px-3 py-1.5 text-ft-dim text-xs font-mono hover:text-ft-light"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={savingDay || !dayName.trim()}
+                className="bg-ft-white text-ft-bg font-mono text-xs font-bold px-4 py-1.5 rounded hover:bg-ft-light transition-colors disabled:opacity-50"
+              >
+                {savingDay ? "Saving..." : "Add Day"}
+              </button>
+            </div>
+          </form>
+        </Card>
+      )}
+
+      {block.days.length === 0 && !showDayForm ? (
         <Card className="border-dashed">
           <p className="text-ft-muted font-mono text-sm text-center py-4">
             No training days created yet
