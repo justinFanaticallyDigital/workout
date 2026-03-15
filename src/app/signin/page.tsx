@@ -1,8 +1,22 @@
 "use client";
 
 import { signIn } from "next-auth/react";
+import { useSearchParams } from "next/navigation";
+import { Suspense } from "react";
 
-export default function SignInPage() {
+const ERROR_MESSAGES: Record<string, string> = {
+  Callback: "Sign-in failed. Please try again.",
+  OAuthSignin: "Could not start sign-in. Try again.",
+  OAuthCallback: "OAuth callback error. Try again.",
+  OAuthAccountNotLinked:
+    "This email is linked to a different sign-in method.",
+  Default: "An unexpected error occurred.",
+};
+
+function SignInContent() {
+  const searchParams = useSearchParams();
+  const error = searchParams.get("error");
+
   return (
     <div className="min-h-[80vh] flex items-center justify-center">
       <div className="bg-ft-card border border-ft-border rounded-lg p-8 max-w-sm w-full text-center">
@@ -13,6 +27,14 @@ export default function SignInPage() {
         <p className="text-ft-dim text-sm mb-8">
           Sign in to track your workouts
         </p>
+
+        {error && (
+          <div className="bg-ft-surface border border-ft-danger/40 rounded-md px-4 py-3 mb-6">
+            <p className="text-ft-danger text-sm font-mono">
+              {ERROR_MESSAGES[error] || ERROR_MESSAGES.Default}
+            </p>
+          </div>
+        )}
 
         <button
           onClick={() => signIn("google", { callbackUrl: "/" })}
@@ -40,5 +62,21 @@ export default function SignInPage() {
         </button>
       </div>
     </div>
+  );
+}
+
+export default function SignInPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-[80vh] flex items-center justify-center">
+          <div className="bg-ft-card border border-ft-border rounded-lg p-8 max-w-sm w-full text-center">
+            <p className="text-ft-dim text-sm font-mono">Loading...</p>
+          </div>
+        </div>
+      }
+    >
+      <SignInContent />
+    </Suspense>
   );
 }
