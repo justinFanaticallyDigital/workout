@@ -12,7 +12,15 @@ export async function GET(
     include: {
       block: { select: { name: true } },
       exercises: {
-        include: {
+        select: {
+          id: true,
+          exerciseId: true,
+          sortOrder: true,
+          targetSets: true,
+          targetRepRange: true,
+          targetRpe: true,
+          progressionType: true,
+          progressionIncrement: true,
           exercise: { select: { name: true, movementPattern: true, primaryMuscle: true } },
         },
         orderBy: { sortOrder: "asc" },

@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Card, SectionHeader, Tag } from "@/components/ui";
+import { addToQueue } from "@/lib/offline-queue";
 
 interface SetData {
   set: number;
@@ -345,6 +346,36 @@ export default function ActiveWorkoutPage({
       // 5. Redirect to dashboard
       router.push("/");
     } catch {
+      // If offline, queue for later sync
+      if (!navigator.onLine) {
+        const queuedExercises = exercises
+          .filter((ex) => ex.sets.some((s) => s.done && s.weight !== null && s.reps !== null))
+          .map((ex) => ({
+            exerciseId: ex.exerciseId,
+            notes: ex.notes || null,
+            sets: ex.sets
+              .filter((s) => s.done && s.weight !== null && s.reps !== null)
+              .map((s) => ({ weight: s.weight!, reps: s.reps!, rir: s.rir })),
+          }));
+
+        addToQueue({
+          id: `offline-${Date.now()}`,
+          queuedAt: Date.now(),
+          payload: {
+            date: new Date().toISOString(),
+            blockId: blockId || null,
+            blockDayId: blockDayId || null,
+            notes: workoutNotes || null,
+            exercises: queuedExercises,
+          },
+        });
+
+        localStorage.removeItem(`workout-draft-${workoutId}`);
+        alert("You're offline. Workout saved and will sync when you reconnect.");
+        router.push("/");
+        return;
+      }
+
       alert("Failed to save workout. Please try again.");
       setFinishing(false);
     }
