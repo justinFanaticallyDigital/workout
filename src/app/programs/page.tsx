@@ -28,7 +28,7 @@ export default async function ProgramsPage() {
         },
         orderBy: { blockNumber: "asc" },
       },
-      goals: { select: { id: true, title: true, priority: true } },
+      goal: { select: { id: true, title: true } },
       _count: { select: { blocks: true } },
     },
     orderBy: { createdAt: "desc" },

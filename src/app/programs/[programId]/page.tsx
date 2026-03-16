@@ -52,7 +52,7 @@ interface Program {
   durationWeeks: number | null;
   startDate: string | null;
   status: string;
-  goals: { id: string; title: string; priority: string; type: string }[];
+  goal: { id: string; title: string; type: string } | null;
   blocks: Block[];
 }
 
@@ -393,7 +393,7 @@ export default function ProgramWorkspacePage({
             small
           />
         </Card>
-        <Card><Stat label="Goal" value={program.goals?.[0]?.title ?? "—"} small /></Card>
+        <Card><Stat label="Goal" value={program.goal?.title ?? "—"} small /></Card>
       </div>
 
       {/* Workspace: Blocks panel + Day details */}

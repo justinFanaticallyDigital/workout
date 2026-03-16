@@ -10,6 +10,20 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "title and type are required" }, { status: 400 });
   }
 
+  // Create the goal first
+  const goal = await prisma.goal.create({
+    data: {
+      userId,
+      type: body.type,
+      title: body.title.trim(),
+      description: body.description?.trim() || null,
+      targetValue: body.targetValue ?? null,
+      targetUnit: body.targetUnit ?? null,
+      targetDate: body.targetDate ? new Date(body.targetDate) : null,
+      status: "active",
+    },
+  });
+
   // Auto-create a linked program if requested
   if (body.createProgram) {
     const durationWeeks = body.programWeeks ?? 12;
@@ -18,28 +32,11 @@ export async function POST(request: NextRequest) {
     const program = await prisma.program.create({
       data: {
         userId,
+        goalId: goal.id,
         name: body.programName || body.title.trim(),
         description: `Goal: ${body.title.trim()}`,
         durationWeeks,
         startDate: new Date(),
-        status: "active",
-      },
-    });
-
-    // Create goal linked to the program
-    const goal = await prisma.goal.create({
-      data: {
-        userId,
-        programId: program.id,
-        type: body.type,
-        priority: body.priority ?? "primary",
-        title: body.title.trim(),
-        description: body.description?.trim() || null,
-        metric: body.metric ?? null,
-        startValue: body.startValue ?? null,
-        targetValue: body.targetValue ?? null,
-        targetUnit: body.targetUnit ?? null,
-        targetDate: body.targetDate ? new Date(body.targetDate) : null,
         status: "active",
       },
     });
@@ -63,24 +60,6 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ goal, program }, { status: 201 });
   }
-
-  // Create standalone goal (no program)
-  const goal = await prisma.goal.create({
-    data: {
-      userId,
-      programId: body.programId ?? null,
-      type: body.type,
-      priority: body.priority ?? "primary",
-      title: body.title.trim(),
-      description: body.description?.trim() || null,
-      metric: body.metric ?? null,
-      startValue: body.startValue ?? null,
-      targetValue: body.targetValue ?? null,
-      targetUnit: body.targetUnit ?? null,
-      targetDate: body.targetDate ? new Date(body.targetDate) : null,
-      status: "active",
-    },
-  });
 
   return NextResponse.json({ goal }, { status: 201 });
 }
