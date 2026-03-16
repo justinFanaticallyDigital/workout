@@ -1114,6 +1114,42 @@ export default function ProgramBuilderPage() {
                   />
                 </div>
 
+                {/* Block Schedule (computed dates) */}
+                {startDate && (
+                  <div className="mt-3 pt-3 border-t border-ft-border">
+                    <label className="text-ft-dim text-[10px] font-mono uppercase tracking-wider mb-1.5 block">
+                      Schedule
+                    </label>
+                    {(() => {
+                      const progStart = new Date(startDate);
+                      let weeksBefore = 0;
+                      for (const b of blocks) {
+                        if (b.id === activeBlock.id) break;
+                        weeksBefore += b.durationWeeks || 0;
+                      }
+                      const blockStart = new Date(progStart);
+                      blockStart.setDate(blockStart.getDate() + weeksBefore * 7);
+                      const blockEnd = new Date(blockStart);
+                      blockEnd.setDate(blockEnd.getDate() + (activeBlock.durationWeeks || 0) * 7 - 1);
+                      const fmt = (d: Date) => d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+                      const totalSessions = (activeBlock.scheduleDaysPerWeek || 0) * (activeBlock.durationWeeks || 0);
+                      return (
+                        <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
+                          <span className="text-ft-light text-xs font-mono">
+                            {fmt(blockStart)} — {fmt(blockEnd)}
+                          </span>
+                          <span className="text-ft-muted text-[10px] font-mono">
+                            ~{totalSessions} sessions
+                          </span>
+                          <span className="text-ft-muted text-[10px] font-mono">
+                            Wk {weeksBefore + 1}–{weeksBefore + (activeBlock.durationWeeks || 0)}
+                          </span>
+                        </div>
+                      );
+                    })()}
+                  </div>
+                )}
+
                 {/* Block benchmark / sub-target */}
                 {primaryGoal && (
                   <div className="mt-3 pt-3 border-t border-ft-border">

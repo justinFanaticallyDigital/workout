@@ -92,9 +92,13 @@ enum GoalStatus {
 model Goal {
   id          String     @id @default(uuid()) @db.Uuid
   userId      String     @map("user_id") @db.Uuid
+  programId   String?    @map("program_id") @db.Uuid
   type        GoalType
   title       String
   description String?
+  priority    String     @default("primary")
+  metric      String?
+  startValue  Decimal?   @map("start_value")
   targetValue Decimal?   @map("target_value")
   targetUnit  String?    @map("target_unit")
   targetDate  DateTime?  @map("target_date") @db.Date
@@ -102,9 +106,11 @@ model Goal {
   createdAt   DateTime   @default(now()) @map("created_at")
 
   user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  programs Program[]
+  program  Program?  @relation("GoalProgram", fields: [programId], references: [id], onDelete: SetNull)
+  programs Program[] @relation("ProgramGoal")
 
   @@index([userId])
+  @@index([programId])
   @@map("goals")
 }
 
@@ -128,7 +134,8 @@ model Program {
   createdAt     DateTime      @default(now()) @map("created_at")
 
   user           User               @relation(fields: [userId], references: [id], onDelete: Cascade)
-  goal           Goal?              @relation(fields: [goalId], references: [id], onDelete: SetNull)
+  goal           Goal?              @relation("ProgramGoal", fields: [goalId], references: [id], onDelete: SetNull)
+  goals          Goal[]             @relation("GoalProgram")
   blocks         Block[]
   benchmarks     ProgramBenchmark[]
   progressPhotos ProgressPhoto[]
@@ -141,6 +148,7 @@ model Program {
 model ProgramBenchmark {
   id          String    @id @default(uuid()) @db.Uuid
   programId   String    @map("program_id") @db.Uuid
+  blockId     String?   @map("block_id") @db.Uuid
   label       String
   targetValue Decimal   @map("target_value")
   targetUnit  String    @map("target_unit")
@@ -149,8 +157,10 @@ model ProgramBenchmark {
   achievedAt  DateTime? @map("achieved_at")
 
   program Program @relation(fields: [programId], references: [id], onDelete: Cascade)
+  block   Block?  @relation(fields: [blockId], references: [id], onDelete: SetNull)
 
   @@index([programId])
+  @@index([blockId])
   @@map("program_benchmarks")
 }
 
@@ -171,13 +181,15 @@ model Block {
   endDate             DateTime?   @map("end_date") @db.Date
   durationWeeks       Int?        @map("duration_weeks")
   scheduleDaysPerWeek Int?        @map("schedule_days_per_week")
+  phase               String?
   focus               String?
   status              BlockStatus @default(upcoming)
   createdAt           DateTime    @default(now()) @map("created_at")
 
-  program  Program    @relation(fields: [programId], references: [id], onDelete: Cascade)
-  days     BlockDay[]
-  workouts Workout[]
+  program    Program            @relation(fields: [programId], references: [id], onDelete: Cascade)
+  days       BlockDay[]
+  workouts   Workout[]
+  benchmarks ProgramBenchmark[]
 
   @@index([programId])
   @@map("blocks")

@@ -11,12 +11,20 @@ export async function GET(request: NextRequest) {
   const equipment = searchParams.get("equipment") ?? undefined;
   const movement = searchParams.get("movement") ?? undefined;
 
+  // Support comma-separated multi-select values
+  const muscles = muscle?.split(",").filter(Boolean);
+  const equipments = equipment?.split(",").filter(Boolean);
+  const movements = movement?.split(",").filter(Boolean);
+
   const exercises = await prisma.exercise.findMany({
     where: {
       ...(search && { name: { contains: search, mode: "insensitive" as const } }),
-      ...(muscle && { primaryMuscle: muscle }),
-      ...(equipment && { equipment }),
-      ...(movement && { movementPattern: movement }),
+      ...(muscles?.length === 1 && { primaryMuscle: muscles[0] }),
+      ...(muscles && muscles.length > 1 && { primaryMuscle: { in: muscles } }),
+      ...(equipments?.length === 1 && { equipment: equipments[0] }),
+      ...(equipments && equipments.length > 1 && { equipment: { in: equipments } }),
+      ...(movements?.length === 1 && { movementPattern: movements[0] }),
+      ...(movements && movements.length > 1 && { movementPattern: { in: movements } }),
     },
     orderBy: { name: "asc" },
   });
