@@ -6,12 +6,6 @@ import { useRouter } from "next/navigation";
 import { Card, SectionHeader, Tag } from "@/components/ui";
 import { addToQueue } from "@/lib/offline-queue";
 
-function toLocalDatetime(ts: number): string {
-  const d = new Date(ts);
-  const pad = (n: number) => n.toString().padStart(2, "0");
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
-}
-
 interface SetData {
   set: number;
   weight: number | null;
@@ -131,9 +125,6 @@ export default function ActiveWorkoutPage({
   const [startTime] = useState(() => Date.now());
   const [restored, setRestored] = useState(false);
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const [showFinishModal, setShowFinishModal] = useState(false);
-  const [finishStartTime, setFinishStartTime] = useState("");
-  const [finishEndTime, setFinishEndTime] = useState("");
 
   // Auto-save to localStorage (debounced 2s)
   const saveToLocalStorage = useCallback(() => {
@@ -286,8 +277,9 @@ export default function ActiveWorkoutPage({
     );
   }, []);
 
-  // Open finish modal with pre-filled times
-  const handleFinish = () => {
+  // Finish workout handler
+  const handleFinish = async () => {
+    // Check that at least one set is completed
     const hasCompletedSets = exercises.some((ex) =>
       ex.sets.some((s) => s.done && s.weight !== null && s.reps !== null)
     );
@@ -295,30 +287,16 @@ export default function ActiveWorkoutPage({
       alert("Complete at least one set before finishing.");
       return;
     }
-    setFinishStartTime(toLocalDatetime(startTime));
-    setFinishEndTime(toLocalDatetime(Date.now()));
-    setShowFinishModal(true);
-  };
-
-  // Save workout with user-confirmed times
-  const handleSaveWorkout = async () => {
-    const start = new Date(finishStartTime);
-    const end = new Date(finishEndTime);
-
-    if (isNaN(start.getTime()) || isNaN(end.getTime())) {
-      alert("Please enter valid start and end times.");
-      return;
-    }
 
     setFinishing(true);
     try {
-      // 1. Create the workout (date = start date for overnight sessions)
+      // 1. Create the workout
       const workoutRes = await fetch("/api/workouts", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          date: start.toISOString(),
-          startTime: start.toISOString(),
+          date: new Date().toISOString(),
+          startTime: new Date(startTime).toISOString(),
           blockId: blockId || null,
           blockDayId: blockDayId || null,
           notes: workoutNotes || null,
@@ -334,6 +312,7 @@ export default function ActiveWorkoutPage({
         );
         if (completedSets.length === 0) continue;
 
+        // Add exercise to workout
         const weRes = await fetch(`/api/workouts/${workout.id}/exercises`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -345,6 +324,7 @@ export default function ActiveWorkoutPage({
         if (!weRes.ok) throw new Error("Failed to add exercise");
         const workoutExercise = await weRes.json();
 
+        // Log each completed set
         for (const s of completedSets) {
           await fetch("/api/sets", {
             method: "POST",
@@ -359,12 +339,12 @@ export default function ActiveWorkoutPage({
         }
       }
 
-      // 3. Finalize workout with user-specified endTime
+      // 3. Finalize workout with endTime
       await fetch(`/api/workouts/${workout.id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          endTime: end.toISOString(),
+          endTime: new Date().toISOString(),
           notes: workoutNotes || null,
         }),
       });
@@ -375,6 +355,7 @@ export default function ActiveWorkoutPage({
       // 5. Redirect to dashboard
       router.push("/");
     } catch (err) {
+      // If offline (network error), queue for later sync
       const isOffline = !navigator.onLine || (err instanceof TypeError && err.message === "Failed to fetch");
       if (isOffline) {
         const queuedExercises = exercises
@@ -391,8 +372,8 @@ export default function ActiveWorkoutPage({
           id: `offline-${Date.now()}`,
           queuedAt: Date.now(),
           payload: {
-            date: start.toISOString(),
-            startTime: start.toISOString(),
+            date: new Date().toISOString(),
+            startTime: new Date(startTime).toISOString(),
             blockId: blockId || null,
             blockDayId: blockDayId || null,
             notes: workoutNotes || null,
@@ -682,59 +663,6 @@ export default function ActiveWorkoutPage({
           />
         </Card>
       </div>
-
-      {/* Finish Modal */}
-      {showFinishModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 px-4">
-          <Card className="w-full max-w-md">
-            <h2 className="font-mono text-lg font-bold text-ft-white mb-4">
-              Finish Workout
-            </h2>
-            <div className="space-y-3 mb-4">
-              <div>
-                <label className="block text-ft-dim text-xs font-mono uppercase tracking-wider mb-1">
-                  Start Time
-                </label>
-                <input
-                  type="datetime-local"
-                  value={finishStartTime}
-                  onChange={(e) => setFinishStartTime(e.target.value)}
-                  className="w-full bg-ft-bg border border-ft-card rounded px-3 py-2 text-sm font-mono text-ft-white focus:outline-none focus:border-ft-dim transition-colors"
-                />
-              </div>
-              <div>
-                <label className="block text-ft-dim text-xs font-mono uppercase tracking-wider mb-1">
-                  End Time
-                </label>
-                <input
-                  type="datetime-local"
-                  value={finishEndTime}
-                  onChange={(e) => setFinishEndTime(e.target.value)}
-                  className="w-full bg-ft-bg border border-ft-card rounded px-3 py-2 text-sm font-mono text-ft-white focus:outline-none focus:border-ft-dim transition-colors"
-                />
-              </div>
-            </div>
-            <div className="flex justify-end gap-2">
-              <button
-                type="button"
-                onClick={() => setShowFinishModal(false)}
-                disabled={finishing}
-                className="px-3 py-1.5 text-ft-dim text-xs font-mono hover:text-ft-light disabled:opacity-50"
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                onClick={handleSaveWorkout}
-                disabled={finishing}
-                className="bg-ft-success/20 text-ft-success font-mono text-sm font-bold px-4 py-1.5 rounded hover:bg-ft-success/30 transition-colors disabled:opacity-50"
-              >
-                {finishing ? "Saving..." : "Save Workout"}
-              </button>
-            </div>
-          </Card>
-        </div>
-      )}
     </div>
   );
 }

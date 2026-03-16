@@ -38,20 +38,9 @@ export async function PATCH(
   const { id } = await params;
   const body = await request.json();
 
-  // Verify workout exists before updating
-  const existing = await prisma.workout.findUnique({
-    where: { id, userId },
-    select: { id: true },
-  });
-  if (!existing) {
-    return NextResponse.json({ error: "Workout not found" }, { status: 404 });
-  }
-
   const workout = await prisma.workout.update({
     where: { id, userId },
     data: {
-      ...(body.date && { date: new Date(body.date) }),
-      ...(body.startTime && { startTime: new Date(body.startTime) }),
       ...(body.endTime && { endTime: new Date(body.endTime) }),
       ...(body.notes !== undefined && { notes: body.notes }),
       ...(body.rating !== undefined && { rating: body.rating }),
