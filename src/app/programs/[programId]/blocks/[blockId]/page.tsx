@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, use } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import Card from "@/components/ui/Card";
 import Tag from "@/components/ui/Tag";
@@ -40,9 +40,9 @@ const DAY_TYPES = ["lifting", "cardio", "conditioning", "mobility", "rest"];
 export default function BlockDetailPage({
   params,
 }: {
-  params: Promise<{ programId: string; blockId: string }>;
+  params: { programId: string; blockId: string };
 }) {
-  const { programId, blockId } = use(params);
+  const { programId, blockId } = params;
   const [block, setBlock] = useState<Block | null>(null);
   const [loading, setLoading] = useState(true);
   const [showDayForm, setShowDayForm] = useState(false);

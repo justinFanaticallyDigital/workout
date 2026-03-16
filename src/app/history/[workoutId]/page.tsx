@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, use } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { Card, SectionHeader, Tag } from "@/components/ui";
 
@@ -43,9 +43,9 @@ function formatDuration(start: string | null, end: string | null): string {
 export default function WorkoutDetailPage({
   params,
 }: {
-  params: Promise<{ workoutId: string }>;
+  params: { workoutId: string };
 }) {
-  const { workoutId } = use(params);
+  const { workoutId } = params;
   const [workout, setWorkout] = useState<WorkoutDetail | null>(null);
   const [loading, setLoading] = useState(true);
 

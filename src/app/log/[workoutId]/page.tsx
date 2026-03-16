@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef, use } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Card, SectionHeader, Tag } from "@/components/ui";
@@ -87,10 +87,10 @@ function calcSuggestion(
 export default function ActiveWorkoutPage({
   params,
 }: {
-  params: Promise<{ workoutId: string }>;
+  params: { workoutId: string };
 }) {
   const router = useRouter();
-  const { workoutId } = use(params);
+  const { workoutId } = params;
   const [blockDayId, setBlockDayId] = useState<string>("");
   const [blockId, setBlockId] = useState<string>("");
   const [exercises, setExercises] = useState<ExerciseData[]>([]);

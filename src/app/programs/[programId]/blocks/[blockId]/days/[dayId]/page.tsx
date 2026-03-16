@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, use } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import Card from "@/components/ui/Card";
 import Tag from "@/components/ui/Tag";
@@ -39,9 +39,9 @@ const PROGRESSION_TYPES = ["none", "linear", "double", "wave", "rpe_based", "per
 export default function DayTemplatePage({
   params,
 }: {
-  params: Promise<{ programId: string; blockId: string; dayId: string }>;
+  params: { programId: string; blockId: string; dayId: string };
 }) {
-  const { programId, blockId, dayId } = use(params);
+  const { programId, blockId, dayId } = params;
   const [day, setDay] = useState<DayData | null>(null);
   const [loading, setLoading] = useState(true);
 
