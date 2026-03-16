@@ -12,7 +12,7 @@ export async function GET(
   const program = await prisma.program.findUnique({
     where: { id, userId },
     include: {
-      goals: true,
+      goal: true,
       blocks: {
         include: {
           _count: { select: { workouts: true } },

@@ -19,7 +19,6 @@ export async function GET(
 
   const benchmarks = await prisma.programBenchmark.findMany({
     where: { programId },
-    include: { block: { select: { name: true, blockNumber: true } } },
     orderBy: { targetDate: "asc" },
   });
 
@@ -52,7 +51,6 @@ export async function POST(
   const benchmark = await prisma.programBenchmark.create({
     data: {
       programId,
-      blockId: body.blockId ?? null,
       label: body.label.trim(),
       targetValue: body.targetValue,
       targetUnit: body.targetUnit ?? "lbs",

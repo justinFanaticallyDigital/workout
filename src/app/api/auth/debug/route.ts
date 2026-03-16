@@ -218,7 +218,7 @@ export async function GET() {
           select: { id: true, name: true, blockNumber: true, durationWeeks: true, status: true },
           orderBy: { blockNumber: "asc" },
         },
-        goals: { select: { id: true, title: true, priority: true } },
+        goal: { select: { id: true, title: true } },
         _count: { select: { blocks: true } },
       },
       orderBy: { createdAt: "desc" },
