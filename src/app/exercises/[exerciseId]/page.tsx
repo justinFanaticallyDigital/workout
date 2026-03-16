@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
 import { Card, SectionHeader, Stat, Tag } from "@/components/ui";
 import {
@@ -47,6 +47,18 @@ interface VolumePoint {
   topWeight: number;
 }
 
+const CHART_TICK = { fontSize: 10, fill: "#888888", fontFamily: "monospace" } as const;
+const CHART_AXIS_LINE = { stroke: "#555555" };
+const CHART_TOOLTIP_STYLE = {
+  backgroundColor: "#2e2e2e",
+  border: "1px solid #555555",
+  borderRadius: 4,
+  fontFamily: "monospace",
+  fontSize: 12,
+};
+const CHART_LABEL_STYLE = { color: "#cccccc" };
+const CHART_DOT = { fill: "#ffffff", r: 3 };
+
 export default function ExerciseDetailPage({
   params,
 }: {
@@ -60,7 +72,6 @@ export default function ExerciseDetailPage({
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-
     Promise.all([
       fetch(`/api/exercises/${exerciseId}`).then((r) => r.ok ? r.json() : null),
       fetch(`/api/exercises/${exerciseId}/history`).then((r) => r.ok ? r.json() : null),
@@ -90,6 +101,23 @@ export default function ExerciseDetailPage({
     }).catch(() => setLoading(false));
   }, [exerciseId]);
 
+  // Build volume chart data (must be before early returns per Rules of Hooks)
+  const volumeData = useMemo<VolumePoint[]>(() =>
+    history
+      .map((session) => {
+        const workSets = session.sets.filter((s) => !s.isWarmup && s.weight && s.reps);
+        const volume = workSets.reduce(
+          (sum, s) => sum + (s.weight ?? 0) * (s.reps ?? 0),
+          0
+        );
+        const topWeight = Math.max(...workSets.map((s) => s.weight ?? 0), 0);
+        return { date: session.date, volume, topWeight };
+      })
+      .filter((d) => d.volume > 0)
+      .reverse(),
+    [history]
+  );
+
   if (loading) {
     return (
       <div className="min-h-screen bg-ft-bg p-6 flex items-center justify-center">
@@ -116,20 +144,6 @@ export default function ExerciseDetailPage({
   const secondary = [exercise.secondaryMuscle1, exercise.secondaryMuscle2]
     .filter(Boolean)
     .join(", ");
-
-  // Build volume chart data
-  const volumeData: VolumePoint[] = history
-    .map((session) => {
-      const workSets = session.sets.filter((s) => !s.isWarmup && s.weight && s.reps);
-      const volume = workSets.reduce(
-        (sum, s) => sum + (s.weight ?? 0) * (s.reps ?? 0),
-        0
-      );
-      const topWeight = Math.max(...workSets.map((s) => s.weight ?? 0), 0);
-      return { date: session.date, volume, topWeight };
-    })
-    .filter((d) => d.volume > 0)
-    .reverse(); // chronological order
 
   return (
     <div className="min-h-screen bg-ft-bg p-6">
@@ -202,32 +216,26 @@ export default function ExerciseDetailPage({
                 <LineChart data={volumeData}>
                   <XAxis
                     dataKey="date"
-                    tick={{ fontSize: 10, fill: "#888888", fontFamily: "monospace" }}
+                    tick={CHART_TICK}
                     tickLine={false}
-                    axisLine={{ stroke: "#555555" }}
+                    axisLine={CHART_AXIS_LINE}
                   />
                   <YAxis
-                    tick={{ fontSize: 10, fill: "#888888", fontFamily: "monospace" }}
+                    tick={CHART_TICK}
                     tickLine={false}
-                    axisLine={{ stroke: "#555555" }}
+                    axisLine={CHART_AXIS_LINE}
                     width={50}
                   />
                   <Tooltip
-                    contentStyle={{
-                      backgroundColor: "#2e2e2e",
-                      border: "1px solid #555555",
-                      borderRadius: 4,
-                      fontFamily: "monospace",
-                      fontSize: 12,
-                    }}
-                    labelStyle={{ color: "#cccccc" }}
+                    contentStyle={CHART_TOOLTIP_STYLE}
+                    labelStyle={CHART_LABEL_STYLE}
                   />
                   <Line
                     type="monotone"
                     dataKey="volume"
                     stroke="#ffffff"
                     strokeWidth={2}
-                    dot={{ fill: "#ffffff", r: 3 }}
+                    dot={CHART_DOT}
                     name="Volume (lbs)"
                   />
                 </LineChart>
