@@ -118,13 +118,49 @@ export async function GET() {
     };
   }
 
-  // 6. Environment check
+  // 6. Check what tables and columns actually exist in the database
+  try {
+    const tables = await prisma.$queryRawUnsafe(
+      `SELECT table_name FROM information_schema.tables WHERE table_schema = 'public' ORDER BY table_name`
+    ) as Array<{ table_name: string }>;
+    results.existingTables = tables.map((t) => t.table_name);
+  } catch (e: unknown) {
+    const err = e as Error;
+    results.existingTables = { error: err.message };
+  }
+
+  // 7. Check columns on users table specifically
+  try {
+    const cols = await prisma.$queryRawUnsafe(
+      `SELECT column_name, data_type FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'users' ORDER BY ordinal_position`
+    ) as Array<{ column_name: string; data_type: string }>;
+    results.usersTableColumns = cols.map((c) => `${c.column_name} (${c.data_type})`);
+  } catch (e: unknown) {
+    const err = e as Error;
+    results.usersTableColumns = { error: err.message };
+  }
+
+  // 8. Show the database host being used (safe portion of connection string)
+  try {
+    const connInfo = await prisma.$queryRawUnsafe(
+      `SELECT current_database() as db, inet_server_addr() as host, inet_server_port() as port`
+    ) as Array<{ db: string; host: string; port: number }>;
+    results.connectedTo = connInfo[0];
+  } catch (e: unknown) {
+    const err = e as Error;
+    results.connectedTo = { error: err.message };
+  }
+
+  // 9. Environment check
   results.env = {
     hasGoogleClientId: !!process.env.GOOGLE_CLIENT_ID,
     hasGoogleClientSecret: !!process.env.GOOGLE_CLIENT_SECRET,
     hasNextAuthSecret: !!process.env.NEXTAUTH_SECRET,
     nextAuthUrl: process.env.NEXTAUTH_URL || "(not set)",
     nodeEnv: process.env.NODE_ENV,
+    databaseUrlHost: process.env.DATABASE_URL
+      ? new URL(process.env.DATABASE_URL).host
+      : "(not set)",
   };
 
   return NextResponse.json(results, { status: 200 });
