@@ -1,20 +1,21 @@
 /**
  * Custom NextAuth v4 Prisma adapter for Prisma 7 + PrismaPg.
  *
- * The official @next-auth/prisma-adapter v1.0.7 passes raw OAuth token data
- * directly to Prisma create calls. Prisma 7 performs strict argument validation
- * and rejects unknown fields (e.g. Google's `at_hash`, `sub`, `aud`, `iss`),
- * causing sign-in to fail. This adapter filters data to known schema fields.
+ * Prisma 7 performs strict argument validation and rejects unknown fields.
+ * Every method that writes data filters to known schema fields first.
  */
 import type { Adapter, AdapterUser, AdapterAccount, AdapterSession } from "next-auth/adapters";
 import type { PrismaClient } from "@/generated/prisma/client";
 
-// Only the Account fields defined in our Prisma schema
+const USER_FIELDS = ["email", "name", "emailVerified", "image"] as const;
+
 const ACCOUNT_FIELDS = [
   "userId", "type", "provider", "providerAccountId",
   "refresh_token", "access_token", "expires_at",
   "token_type", "scope", "id_token", "session_state",
 ] as const;
+
+const SESSION_FIELDS = ["sessionToken", "userId", "expires"] as const;
 
 function pick<T extends Record<string, unknown>>(obj: T, keys: readonly string[]): Partial<T> {
   const result: Record<string, unknown> = {};
@@ -24,10 +25,13 @@ function pick<T extends Record<string, unknown>>(obj: T, keys: readonly string[]
   return result as Partial<T>;
 }
 
+/* eslint-disable @typescript-eslint/no-explicit-any */
 export function CustomPrismaAdapter(p: PrismaClient): Adapter {
   return {
-    createUser: (data: Record<string, unknown>) =>
-      p.user.create({ data: data as Parameters<typeof p.user.create>[0]["data"] }) as Promise<AdapterUser>,
+    createUser: (data: Record<string, unknown>) => {
+      const filtered = pick(data, USER_FIELDS);
+      return p.user.create({ data: filtered as any }) as Promise<AdapterUser>;
+    },
 
     getUser: (id) =>
       p.user.findUnique({ where: { id } }) as Promise<AdapterUser | null>,
@@ -43,19 +47,18 @@ export function CustomPrismaAdapter(p: PrismaClient): Adapter {
       return (account?.user as AdapterUser) ?? null;
     },
 
-    updateUser: ({ id, ...data }) =>
-      p.user.update({ where: { id }, data }) as Promise<AdapterUser>,
+    updateUser: ({ id, ...data }: Record<string, unknown> & { id: string }) => {
+      const filtered = pick(data, USER_FIELDS);
+      return p.user.update({ where: { id }, data: filtered }) as Promise<AdapterUser>;
+    },
 
     deleteUser: (id) =>
       p.user.delete({ where: { id } }) as Promise<AdapterUser>,
 
-    // Key fix: filter to known Account fields before creating.
-    // Google OAuth returns extra fields (at_hash, sub, aud, iss, azp, etc.)
-    // that Prisma 7 rejects as unknown arguments.
     linkAccount: (data: Record<string, unknown>) => {
       const filtered = pick(data, ACCOUNT_FIELDS);
       return p.account.create({
-        data: filtered as Parameters<typeof p.account.create>[0]["data"],
+        data: filtered as any,
       }) as unknown as Promise<AdapterAccount>;
     },
 
@@ -74,14 +77,18 @@ export function CustomPrismaAdapter(p: PrismaClient): Adapter {
       return { user: user as AdapterUser, session: session as AdapterSession };
     },
 
-    createSession: (data) =>
-      p.session.create({ data }) as Promise<AdapterSession>,
+    createSession: (data: Record<string, unknown>) => {
+      const filtered = pick(data, SESSION_FIELDS);
+      return p.session.create({ data: filtered as any }) as Promise<AdapterSession>;
+    },
 
-    updateSession: (data) =>
-      p.session.update({
+    updateSession: (data: Record<string, unknown> & { sessionToken: string }) => {
+      const filtered = pick(data, SESSION_FIELDS);
+      return p.session.update({
         where: { sessionToken: data.sessionToken },
-        data,
-      }) as Promise<AdapterSession>,
+        data: filtered,
+      }) as Promise<AdapterSession>;
+    },
 
     deleteSession: (sessionToken) =>
       p.session.delete({ where: { sessionToken } }) as Promise<AdapterSession>,
