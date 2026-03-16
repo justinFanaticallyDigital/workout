@@ -61,6 +61,29 @@ function makeShortName(name: string): string {
   return parts[0].trim().slice(0, 12);
 }
 
+function WorkoutTimer({ startTime }: { startTime: number }) {
+  const [elapsed, setElapsed] = useState("0:00");
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      const diff = Math.floor((Date.now() - startTime) / 1000);
+      const mins = Math.floor(diff / 60);
+      const secs = diff % 60;
+      setElapsed(`${mins}:${secs.toString().padStart(2, "0")}`);
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [startTime]);
+
+  return (
+    <div className="flex items-center gap-1.5 bg-ft-surface border border-ft-card rounded px-2.5 py-1.5">
+      <span className="text-ft-dim text-xs font-mono">&#9201;</span>
+      <span className="text-ft-light text-sm font-mono tabular-nums">
+        {elapsed}
+      </span>
+    </div>
+  );
+}
+
 function calcSuggestion(
   progressionType: string,
   increment: number | null,
@@ -100,20 +123,8 @@ export default function ActiveWorkoutPage({
   const [finishing, setFinishing] = useState(false);
   const [workoutNotes, setWorkoutNotes] = useState("");
   const [startTime] = useState(() => Date.now());
-  const [elapsed, setElapsed] = useState("0:00");
   const [restored, setRestored] = useState(false);
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  // Timer
-  useEffect(() => {
-    const interval = setInterval(() => {
-      const diff = Math.floor((Date.now() - startTime) / 1000);
-      const mins = Math.floor(diff / 60);
-      const secs = diff % 60;
-      setElapsed(`${mins}:${secs.toString().padStart(2, "0")}`);
-    }, 1000);
-    return () => clearInterval(interval);
-  }, [startTime]);
 
   // Auto-save to localStorage (debounced 2s)
   const saveToLocalStorage = useCallback(() => {
@@ -192,28 +203,30 @@ export default function ActiveWorkoutPage({
         setExercises(exerciseList);
         setLoading(false);
 
-        // Fetch last performance for each exercise (non-blocking)
-        for (let i = 0; i < data.exercises.length; i++) {
-          const bde = data.exercises[i];
-          fetch(`/api/exercises/${bde.exerciseId}/last-performance`)
-            .then((r) => r.ok ? r.json() : null)
-            .then((perf) => {
-              if (!perf?.lastPerformance) return;
+        // Fetch last performance for all exercises, then apply in one update
+        Promise.all(
+          data.exercises.map((bde) =>
+            fetch(`/api/exercises/${bde.exerciseId}/last-performance`)
+              .then((r) => r.ok ? r.json() : null)
+              .catch(() => null)
+          )
+        ).then((results) => {
+          setExercises((prev) =>
+            prev.map((ex, i) => {
+              const perf = results[i];
+              if (!perf?.lastPerformance) return ex;
               const lastSets = perf.lastPerformance.sets as LastSet[];
+              const bde = data.exercises[i];
               const suggested = calcSuggestion(
                 bde.progressionType,
                 bde.progressionIncrement ? Number(bde.progressionIncrement) : null,
                 lastSets,
                 bde.targetRepRange ?? "8-12"
               );
-              setExercises((prev) =>
-                prev.map((ex, idx) =>
-                  idx === i ? { ...ex, lastSets: lastSets, suggestedWeight: suggested } : ex
-                )
-              );
+              return { ...ex, lastSets, suggestedWeight: suggested };
             })
-            .catch(() => {});
-        }
+          );
+        });
       })
       .catch(() => setLoading(false));
   }, [workoutId]);
@@ -439,12 +452,7 @@ export default function ActiveWorkoutPage({
             </p>
           </div>
           <div className="flex items-center gap-2">
-            <div className="flex items-center gap-1.5 bg-ft-surface border border-ft-card rounded px-2.5 py-1.5">
-              <span className="text-ft-dim text-xs font-mono">&#9201;</span>
-              <span className="text-ft-light text-sm font-mono tabular-nums">
-                {elapsed}
-              </span>
-            </div>
+            <WorkoutTimer startTime={startTime} />
             <button
               onClick={handleFinish}
               disabled={finishing}
