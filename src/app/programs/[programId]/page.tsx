@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, use } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import Card from "@/components/ui/Card";
 import Tag from "@/components/ui/Tag";
@@ -34,9 +34,9 @@ interface Program {
 export default function ProgramDetailPage({
   params,
 }: {
-  params: Promise<{ programId: string }>;
+  params: { programId: string };
 }) {
-  const { programId } = use(params);
+  const { programId } = params;
   const [program, setProgram] = useState<Program | null>(null);
   const [loading, setLoading] = useState(true);
   const [showBlockForm, setShowBlockForm] = useState(false);

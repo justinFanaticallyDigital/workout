@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, use } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { Card, SectionHeader, Stat, Tag } from "@/components/ui";
 import {
@@ -50,9 +50,9 @@ interface VolumePoint {
 export default function ExerciseDetailPage({
   params,
 }: {
-  params: Promise<{ exerciseId: string }>;
+  params: { exerciseId: string };
 }) {
-  const { exerciseId } = use(params);
+  const { exerciseId } = params;
   const [exercise, setExercise] = useState<ExerciseDetail | null>(null);
   const [prs, setPrs] = useState<PR[]>([]);
   const [history, setHistory] = useState<HistorySession[]>([]);
