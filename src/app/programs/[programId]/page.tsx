@@ -7,6 +7,7 @@ import Tag from "@/components/ui/Tag";
 import ProgressBar from "@/components/ui/ProgressBar";
 import Stat from "@/components/ui/Stat";
 import SectionHeader from "@/components/ui/SectionHeader";
+import { useToast } from "@/components/ui/Toast";
 
 const activeTagClass = "bg-ft-white text-ft-bg";
 
@@ -37,6 +38,7 @@ export default function ProgramDetailPage({
   params: { programId: string };
 }) {
   const { programId } = params;
+  const toast = useToast();
   const [program, setProgram] = useState<Program | null>(null);
   const [loading, setLoading] = useState(true);
   const [showBlockForm, setShowBlockForm] = useState(false);
@@ -88,7 +90,7 @@ export default function ProgramDetailPage({
       setBlockWeeks("");
       setBlockFocus("");
     } catch {
-      alert("Failed to create block.");
+      toast.error("Failed to create block.");
     }
     setSavingBlock(false);
   };

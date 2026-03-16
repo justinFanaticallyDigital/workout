@@ -5,6 +5,7 @@ import Link from "next/link";
 import Card from "@/components/ui/Card";
 import Tag from "@/components/ui/Tag";
 import SectionHeader from "@/components/ui/SectionHeader";
+import { useToast } from "@/components/ui/Toast";
 
 interface Exercise {
   id: string;
@@ -42,6 +43,7 @@ export default function DayTemplatePage({
   params: { programId: string; blockId: string; dayId: string };
 }) {
   const { programId, blockId, dayId } = params;
+  const toast = useToast();
   const [day, setDay] = useState<DayData | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -117,7 +119,7 @@ export default function DayTemplatePage({
       setProgressionType("none");
       setExNotes("");
     } catch {
-      alert("Failed to add exercise.");
+      toast.error("Failed to add exercise.");
     }
     setSavingExercise(false);
   };

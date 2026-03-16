@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { Card, SectionHeader } from "@/components/ui";
+import { useToast } from "@/components/ui/Toast";
 import {
   LineChart,
   Line,
@@ -28,6 +29,7 @@ export default function BodyMetricsPage() {
   const [bodyFat, setBodyFat] = useState("");
   const [notes, setNotes] = useState("");
   const [saving, setSaving] = useState(false);
+  const toast = useToast();
 
   const fetchEntries = () => {
     fetch("/api/progress/weight")
@@ -66,7 +68,7 @@ export default function BodyMetricsPage() {
       setDate(new Date().toISOString().split("T")[0]);
       fetchEntries();
     } catch {
-      alert("Failed to log weight.");
+      toast.error("Failed to log weight.");
     }
     setSaving(false);
   };

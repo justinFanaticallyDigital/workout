@@ -6,6 +6,7 @@ import Card from "@/components/ui/Card";
 import Tag from "@/components/ui/Tag";
 import Stat from "@/components/ui/Stat";
 import SectionHeader from "@/components/ui/SectionHeader";
+import { useToast } from "@/components/ui/Toast";
 
 interface BlockDayExercise {
   id: string;
@@ -43,6 +44,7 @@ export default function BlockDetailPage({
   params: { programId: string; blockId: string };
 }) {
   const { programId, blockId } = params;
+  const toast = useToast();
   const [block, setBlock] = useState<Block | null>(null);
   const [loading, setLoading] = useState(true);
   const [showDayForm, setShowDayForm] = useState(false);
@@ -87,7 +89,7 @@ export default function BlockDetailPage({
       setDayName("");
       setDayType("lifting");
     } catch {
-      alert("Failed to create day.");
+      toast.error("Failed to create day.");
     }
     setSavingDay(false);
   };

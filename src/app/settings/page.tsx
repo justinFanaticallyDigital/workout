@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { Card, SectionHeader } from "@/components/ui";
+import { useToast } from "@/components/ui/Toast";
 
 function getStoredUnit(key: string, fallback: string): string {
   if (typeof window === "undefined") return fallback;
@@ -20,6 +21,7 @@ export default function SettingsPage() {
     localStorage.setItem("ft-distance-unit", distanceUnit);
   }, [distanceUnit]);
   const [exporting, setExporting] = useState(false);
+  const toast = useToast();
 
   const handleExport = async () => {
     setExporting(true);
@@ -89,7 +91,7 @@ export default function SettingsPage() {
       setTimeout(() => downloadCSV("fittrack-body-metrics.csv", weightLines.join("\n")), 500);
       setTimeout(() => downloadCSV("fittrack-prs.csv", prLines.join("\n")), 1000);
     } catch {
-      alert("Failed to export data.");
+      toast.error("Failed to export data.");
     }
     setExporting(false);
   };

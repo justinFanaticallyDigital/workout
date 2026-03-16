@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { Card, SectionHeader, Tag } from "@/components/ui";
+import { useToast } from "@/components/ui/Toast";
 
 interface InjuryNote {
   id: string;
@@ -52,6 +53,7 @@ export default function InjuriesPage() {
   const [noteText, setNoteText] = useState("");
   const [noteTreatment, setNoteTreatment] = useState("");
   const [savingNote, setSavingNote] = useState(false);
+  const toast = useToast();
 
   const fetchInjuries = () => {
     fetch("/api/injuries")
@@ -87,7 +89,7 @@ export default function InjuriesPage() {
       setSeverity("tweak");
       fetchInjuries();
     } catch {
-      alert("Failed to log injury.");
+      toast.error("Failed to log injury.");
     }
     setSaving(false);
   };
@@ -111,7 +113,7 @@ export default function InjuriesPage() {
       setNoteTreatment("");
       fetchInjuries();
     } catch {
-      alert("Failed to add note.");
+      toast.error("Failed to add note.");
     }
     setSavingNote(false);
   };

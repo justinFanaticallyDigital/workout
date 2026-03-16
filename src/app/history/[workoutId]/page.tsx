@@ -2,7 +2,9 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { Card, SectionHeader, Tag } from "@/components/ui";
+import { useToast } from "@/components/ui/Toast";
 
 interface SetDetail {
   setNumber: number;
@@ -46,8 +48,11 @@ export default function WorkoutDetailPage({
   params: { workoutId: string };
 }) {
   const { workoutId } = params;
+  const router = useRouter();
+  const toast = useToast();
   const [workout, setWorkout] = useState<WorkoutDetail | null>(null);
   const [loading, setLoading] = useState(true);
+  const [replaying, setReplaying] = useState(false);
 
   useEffect(() => {
     fetch(`/api/workouts/${workoutId}`)
@@ -61,6 +66,20 @@ export default function WorkoutDetailPage({
       })
       .catch(() => setLoading(false));
   }, [workoutId]);
+
+  const handleRepeat = async () => {
+    setReplaying(true);
+    try {
+      const res = await fetch(`/api/workouts/${workoutId}/replay`, { method: "POST" });
+      if (!res.ok) throw new Error("Failed to replay workout");
+      const data = await res.json();
+      toast.success(`Workout created with ${data.exerciseCount} exercises`);
+      router.push(`/log/${data.workoutId}`);
+    } catch {
+      toast.error("Failed to create workout. Please try again.");
+      setReplaying(false);
+    }
+  };
 
   if (loading) {
     return (
@@ -129,6 +148,13 @@ export default function WorkoutDetailPage({
             </span>
           </div>
         </div>
+        <button
+          onClick={handleRepeat}
+          disabled={replaying}
+          className="bg-ft-white text-ft-bg font-mono text-sm font-bold px-4 py-2 rounded hover:bg-ft-light transition-colors disabled:opacity-50 shrink-0"
+        >
+          {replaying ? "Creating..." : "Repeat Workout"}
+        </button>
       </div>
 
       {/* Stats Row */}
