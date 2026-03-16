@@ -3,6 +3,7 @@
 import { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
 import { Card, SectionHeader, Stat, Tag } from "@/components/ui";
+import { chartTheme } from "@/lib/theme";
 import {
   LineChart,
   Line,
@@ -47,17 +48,6 @@ interface VolumePoint {
   topWeight: number;
 }
 
-const CHART_TICK = { fontSize: 10, fill: "#888888", fontFamily: "monospace" } as const;
-const CHART_AXIS_LINE = { stroke: "#555555" };
-const CHART_TOOLTIP_STYLE = {
-  backgroundColor: "#2e2e2e",
-  border: "1px solid #555555",
-  borderRadius: 4,
-  fontFamily: "monospace",
-  fontSize: 12,
-};
-const CHART_LABEL_STYLE = { color: "#cccccc" };
-const CHART_DOT = { fill: "#ffffff", r: 3 };
 
 export default function ExerciseDetailPage({
   params,
@@ -123,6 +113,8 @@ export default function ExerciseDetailPage({
       .reverse(),
     [history]
   );
+
+  const ct = useMemo(() => chartTheme(), []);
 
   if (loading) {
     return (
@@ -238,26 +230,26 @@ export default function ExerciseDetailPage({
                 <LineChart data={volumeData}>
                   <XAxis
                     dataKey="date"
-                    tick={CHART_TICK}
+                    tick={ct.tick}
                     tickLine={false}
-                    axisLine={CHART_AXIS_LINE}
+                    axisLine={ct.axisLine}
                   />
                   <YAxis
-                    tick={CHART_TICK}
+                    tick={ct.tick}
                     tickLine={false}
-                    axisLine={CHART_AXIS_LINE}
+                    axisLine={ct.axisLine}
                     width={50}
                   />
                   <Tooltip
-                    contentStyle={CHART_TOOLTIP_STYLE}
-                    labelStyle={CHART_LABEL_STYLE}
+                    contentStyle={ct.tooltipStyle}
+                    labelStyle={ct.labelStyle}
                   />
                   <Line
                     type="monotone"
                     dataKey="volume"
-                    stroke="#ffffff"
+                    stroke={ct.lineStroke}
                     strokeWidth={2}
-                    dot={CHART_DOT}
+                    dot={ct.dot}
                     name="Volume (lbs)"
                   />
                 </LineChart>
