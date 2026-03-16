@@ -40,6 +40,7 @@ export async function POST(
       name: body.name,
       description: body.description ?? null,
       blockNumber,
+      phase: body.phase ?? null,
       durationWeeks: body.durationWeeks ?? null,
       scheduleDaysPerWeek: body.scheduleDaysPerWeek ?? null,
       focus: body.focus ?? null,
