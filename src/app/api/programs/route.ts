@@ -14,7 +14,7 @@ export async function GET() {
         select: { id: true, name: true, blockNumber: true, durationWeeks: true, status: true },
         orderBy: { blockNumber: "asc" },
       },
-      goals: { select: { id: true, title: true, priority: true, type: true } },
+      goal: { select: { title: true } },
     },
     orderBy: { createdAt: "desc" },
   });
@@ -35,6 +35,7 @@ export async function POST(request: NextRequest) {
       userId,
       name: body.name,
       description: body.description ?? null,
+      goalId: body.goalId ?? null,
       startDate: body.startDate ? new Date(body.startDate) : null,
       endDate: body.endDate ? new Date(body.endDate) : null,
       durationWeeks: body.durationWeeks ?? null,

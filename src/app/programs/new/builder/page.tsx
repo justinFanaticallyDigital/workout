@@ -481,7 +481,6 @@ export default function ProgramBuilderPage() {
           body: JSON.stringify({
             name: block.name,
             blockNumber: block.blockNumber,
-            phase: block.phase || null,
             durationWeeks: block.durationWeeks,
             scheduleDaysPerWeek: block.scheduleDaysPerWeek,
             focus: block.focus || null,
@@ -497,7 +496,6 @@ export default function ProgramBuilderPage() {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
-              blockId: savedBlock.id,
               label: block.benchmark.label || `End of ${block.name}`,
               targetValue: parseFloat(block.benchmark.targetValue),
               targetUnit: block.benchmark.targetUnit || "lbs",
