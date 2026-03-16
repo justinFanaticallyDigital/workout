@@ -151,7 +151,85 @@ export async function GET() {
     results.connectedTo = { error: err.message };
   }
 
-  // 9. Environment check
+  // 9a. Check columns on programs table
+  try {
+    const cols = await prisma.$queryRawUnsafe(
+      `SELECT column_name, data_type FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'programs' ORDER BY ordinal_position`
+    ) as Array<{ column_name: string; data_type: string }>;
+    results.programsTableColumns = cols.map((c) => `${c.column_name} (${c.data_type})`);
+  } catch (e: unknown) {
+    const err = e as Error;
+    results.programsTableColumns = { error: err.message };
+  }
+
+  // 9b. Check columns on goals table
+  try {
+    const cols = await prisma.$queryRawUnsafe(
+      `SELECT column_name, data_type FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'goals' ORDER BY ordinal_position`
+    ) as Array<{ column_name: string; data_type: string }>;
+    results.goalsTableColumns = cols.map((c) => `${c.column_name} (${c.data_type})`);
+  } catch (e: unknown) {
+    const err = e as Error;
+    results.goalsTableColumns = { error: err.message };
+  }
+
+  // 9c. Check columns on blocks table
+  try {
+    const cols = await prisma.$queryRawUnsafe(
+      `SELECT column_name, data_type FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'blocks' ORDER BY ordinal_position`
+    ) as Array<{ column_name: string; data_type: string }>;
+    results.blocksTableColumns = cols.map((c) => `${c.column_name} (${c.data_type})`);
+  } catch (e: unknown) {
+    const err = e as Error;
+    results.blocksTableColumns = { error: err.message };
+  }
+
+  // 9d. Check columns on program_benchmarks table
+  try {
+    const cols = await prisma.$queryRawUnsafe(
+      `SELECT column_name, data_type FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'program_benchmarks' ORDER BY ordinal_position`
+    ) as Array<{ column_name: string; data_type: string }>;
+    results.programBenchmarksColumns = cols.map((c) => `${c.column_name} (${c.data_type})`);
+  } catch (e: unknown) {
+    const err = e as Error;
+    results.programBenchmarksColumns = { error: err.message };
+  }
+
+  // 9e. Check enums in database
+  try {
+    const enums = await prisma.$queryRawUnsafe(
+      `SELECT t.typname, array_agg(e.enumlabel ORDER BY e.enumsortorder) as values FROM pg_type t JOIN pg_enum e ON t.oid = e.enumtypid GROUP BY t.typname ORDER BY t.typname`
+    ) as Array<{ typname: string; values: string[] }>;
+    results.databaseEnums = enums.reduce((acc: Record<string, string[]>, e) => {
+      acc[e.typname] = e.values;
+      return acc;
+    }, {});
+  } catch (e: unknown) {
+    const err = e as Error;
+    results.databaseEnums = { error: err.message };
+  }
+
+  // 9f. Try the exact query that /programs page runs
+  try {
+    const programs = await prisma.program.findMany({
+      where: { userId: "00000000-0000-0000-0000-000000000000" },
+      include: {
+        blocks: {
+          select: { id: true, name: true, blockNumber: true, durationWeeks: true, status: true },
+          orderBy: { blockNumber: "asc" },
+        },
+        goals: { select: { id: true, title: true, priority: true } },
+        _count: { select: { blocks: true } },
+      },
+      orderBy: { createdAt: "desc" },
+    });
+    results.programsQueryTest = { ok: true, count: programs.length };
+  } catch (e: unknown) {
+    const err = e as Error;
+    results.programsQueryTest = { ok: false, error: err.message, name: err.name };
+  }
+
+  // 10. Environment check
   results.env = {
     hasGoogleClientId: !!process.env.GOOGLE_CLIENT_ID,
     hasGoogleClientSecret: !!process.env.GOOGLE_CLIENT_SECRET,
