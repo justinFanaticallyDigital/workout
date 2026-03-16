@@ -3,7 +3,6 @@
 import { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
 import { Card, SectionHeader, Stat, Tag } from "@/components/ui";
-import { useToast } from "@/components/ui/Toast";
 import {
   LineChart,
   Line,
@@ -66,7 +65,6 @@ export default function ExerciseDetailPage({
   params: { exerciseId: string };
 }) {
   const { exerciseId } = params;
-  const toast = useToast();
   const [exercise, setExercise] = useState<ExerciseDetail | null>(null);
   const [prs, setPrs] = useState<PR[]>([]);
   const [history, setHistory] = useState<HistorySession[]>([]);

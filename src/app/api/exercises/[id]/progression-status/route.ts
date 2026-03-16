@@ -33,10 +33,10 @@ export async function GET(
   });
 
   const sessions = workoutExercises
-    .filter((we: { sets: { weight: unknown; reps: number | null }[] }) => we.sets.length > 0)
-    .map((we: { sets: { weight: unknown; reps: number | null }[]; workout: { date: Date } }) => ({
+    .filter((we) => we.sets.length > 0)
+    .map((we) => ({
       weight: Number(we.sets[0].weight),
-      reps: we.sets[0].reps!,
+      reps: we.sets[0].reps ?? 0,
       date: we.workout.date,
     }));
 
@@ -49,7 +49,7 @@ export async function GET(
   return NextResponse.json({
     status: stalled ? "stalled" : "progressing",
     sessions: sessions.length,
-    recentSessions: sessions.slice(0, 3).map((s: { weight: number; reps: number; date: Date }) => ({
+    recentSessions: sessions.slice(0, 3).map((s) => ({
       weight: s.weight,
       reps: s.reps,
       date: s.date,

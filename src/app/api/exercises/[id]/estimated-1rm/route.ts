@@ -47,7 +47,7 @@ export async function GET(
   let bestSet = sets[0];
 
   for (const s of sets) {
-    const e1rm = estimated1RM(Number(s.weight), s.reps!);
+    const e1rm = estimated1RM(Number(s.weight), s.reps ?? 0);
     if (e1rm > best1RM) {
       best1RM = e1rm;
       bestSet = s;
