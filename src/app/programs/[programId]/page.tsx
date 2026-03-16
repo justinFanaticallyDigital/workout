@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, use } from "react";
 import Link from "next/link";
 import Card from "@/components/ui/Card";
 import Tag from "@/components/ui/Tag";
@@ -36,7 +36,7 @@ export default function ProgramDetailPage({
 }: {
   params: Promise<{ programId: string }>;
 }) {
-  const [programId, setProgramId] = useState("");
+  const { programId } = use(params);
   const [program, setProgram] = useState<Program | null>(null);
   const [loading, setLoading] = useState(true);
   const [showBlockForm, setShowBlockForm] = useState(false);
@@ -47,11 +47,6 @@ export default function ProgramDetailPage({
   const [savingBlock, setSavingBlock] = useState(false);
 
   useEffect(() => {
-    params.then((p) => setProgramId(p.programId));
-  }, [params]);
-
-  useEffect(() => {
-    if (!programId) return;
     fetch(`/api/programs/${programId}`)
       .then((res) => {
         if (!res.ok) return null;

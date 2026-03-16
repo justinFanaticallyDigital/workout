@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, use } from "react";
 import Link from "next/link";
 import { Card, SectionHeader, Stat, Tag } from "@/components/ui";
 import {
@@ -52,7 +52,7 @@ export default function ExerciseDetailPage({
 }: {
   params: Promise<{ exerciseId: string }>;
 }) {
-  const [exerciseId, setExerciseId] = useState("");
+  const { exerciseId } = use(params);
   const [exercise, setExercise] = useState<ExerciseDetail | null>(null);
   const [prs, setPrs] = useState<PR[]>([]);
   const [history, setHistory] = useState<HistorySession[]>([]);
@@ -60,11 +60,6 @@ export default function ExerciseDetailPage({
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    params.then((p) => setExerciseId(p.exerciseId));
-  }, [params]);
-
-  useEffect(() => {
-    if (!exerciseId) return;
 
     Promise.all([
       fetch(`/api/exercises/${exerciseId}`).then((r) => r.ok ? r.json() : null),

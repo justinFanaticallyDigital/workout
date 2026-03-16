@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useRef, use } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Card, SectionHeader, Tag } from "@/components/ui";
@@ -90,7 +90,7 @@ export default function ActiveWorkoutPage({
   params: Promise<{ workoutId: string }>;
 }) {
   const router = useRouter();
-  const [workoutId, setWorkoutId] = useState<string>("");
+  const { workoutId } = use(params);
   const [blockDayId, setBlockDayId] = useState<string>("");
   const [blockId, setBlockId] = useState<string>("");
   const [exercises, setExercises] = useState<ExerciseData[]>([]);
@@ -103,11 +103,6 @@ export default function ActiveWorkoutPage({
   const [elapsed, setElapsed] = useState("0:00");
   const [restored, setRestored] = useState(false);
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  // Resolve params
-  useEffect(() => {
-    params.then((p) => setWorkoutId(p.workoutId));
-  }, [params]);
 
   // Timer
   useEffect(() => {

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, use } from "react";
 import Link from "next/link";
 import Card from "@/components/ui/Card";
 import Tag from "@/components/ui/Tag";
@@ -41,9 +41,7 @@ export default function DayTemplatePage({
 }: {
   params: Promise<{ programId: string; blockId: string; dayId: string }>;
 }) {
-  const [programId, setProgramId] = useState("");
-  const [blockId, setBlockId] = useState("");
-  const [dayId, setDayId] = useState("");
+  const { programId, blockId, dayId } = use(params);
   const [day, setDay] = useState<DayData | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -60,15 +58,6 @@ export default function DayTemplatePage({
   const [savingExercise, setSavingExercise] = useState(false);
 
   useEffect(() => {
-    params.then((p) => {
-      setProgramId(p.programId);
-      setBlockId(p.blockId);
-      setDayId(p.dayId);
-    });
-  }, [params]);
-
-  useEffect(() => {
-    if (!dayId) return;
     fetch(`/api/blocks/day/${dayId}`)
       .then((res) => {
         if (!res.ok) return null;
