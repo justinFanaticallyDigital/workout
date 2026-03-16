@@ -15,6 +15,7 @@ export async function GET() {
         orderBy: { blockNumber: "asc" },
       },
       goal: { select: { id: true, title: true, type: true } },
+      goals: { select: { id: true, title: true, priority: true, type: true } },
     },
     orderBy: { createdAt: "desc" },
   });

@@ -219,6 +219,7 @@ export async function GET() {
           orderBy: { blockNumber: "asc" },
         },
         goal: { select: { id: true, title: true } },
+        goals: { select: { id: true, title: true, priority: true } },
         _count: { select: { blocks: true } },
       },
       orderBy: { createdAt: "desc" },
