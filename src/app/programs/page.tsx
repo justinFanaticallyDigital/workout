@@ -3,11 +3,11 @@ import Card from "@/components/ui/Card";
 import Tag from "@/components/ui/Tag";
 import ProgressBar from "@/components/ui/ProgressBar";
 import Stat from "@/components/ui/Stat";
+import StatusIcon from "@/components/ui/StatusIcon";
+import Timeline from "@/components/ui/Timeline";
 import { prisma } from "@/lib/prisma";
 import { getAuthUserId } from "@/lib/auth-helpers";
 import { redirect } from "next/navigation";
-
-const activeTagClass = "bg-ft-white text-ft-bg";
 
 export const dynamic = "force-dynamic";
 
@@ -86,9 +86,10 @@ export default async function ProgramsPage() {
       {/* Active Program */}
       {activeProgram ? (
         <Link href={`/programs/${activeProgram.id}`}>
-          <Card className="border-ft-white mb-10">
+          <Card className="border-ft-white mb-10 border-l-4 border-l-ft-white">
             <div className="flex items-center gap-2 mb-3">
-              <Tag className={activeTagClass}>Active</Tag>
+              <StatusIcon type="program" status="active" size="md" />
+              <Tag className="bg-ft-white text-ft-bg">Active</Tag>
             </div>
 
             <h2 className="font-mono text-xl font-bold mb-1">
@@ -107,24 +108,15 @@ export default async function ProgramsPage() {
 
             {/* Block Timeline */}
             {activeProgram.blocks.length > 0 && (
-              <div className="flex gap-1 mb-4">
-                {activeProgram.blocks.map((block) => (
-                  <div key={block.id} className="flex-1">
-                    <div
-                      className={`h-2 rounded-full mb-1.5 ${
-                        block.status === "completed"
-                          ? "bg-ft-white"
-                          : block.status === "active"
-                          ? "bg-ft-muted"
-                          : "bg-ft-card"
-                      }`}
-                    />
-                    <span className="text-[10px] font-mono text-ft-dim">
-                      {block.name}
-                    </span>
-                  </div>
-                ))}
-              </div>
+              <Timeline
+                className="mb-4"
+                segments={activeProgram.blocks.map((block) => ({
+                  label: block.name,
+                  width: block.durationWeeks ?? 1,
+                  status: block.status as "active" | "completed" | "upcoming",
+                }))}
+                currentPosition={progressPct}
+              />
             )}
 
             {/* Progress */}
@@ -175,8 +167,9 @@ export default async function ProgramsPage() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {completedPrograms.map((program) => (
               <Link key={program.id} href={`/programs/${program.id}`}>
-                <Card className="hover:border-ft-dim transition-colors">
+                <Card className="hover:border-ft-dim transition-colors border-l-4 border-l-ft-success">
                   <div className="flex items-center gap-2 mb-2">
+                    <StatusIcon type="program" status="completed" />
                     <Tag>Completed</Tag>
                   </div>
                   <h3 className="font-mono text-base font-bold mb-1">

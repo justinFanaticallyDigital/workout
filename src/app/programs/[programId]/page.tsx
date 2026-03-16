@@ -4,12 +4,33 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import Card from "@/components/ui/Card";
 import Tag from "@/components/ui/Tag";
-import ProgressBar from "@/components/ui/ProgressBar";
 import Stat from "@/components/ui/Stat";
-import SectionHeader from "@/components/ui/SectionHeader";
+import StatusIcon from "@/components/ui/StatusIcon";
+import Timeline from "@/components/ui/Timeline";
+import EditableExerciseTable from "@/components/ui/EditableExerciseTable";
 import { useToast } from "@/components/ui/Toast";
 
-const activeTagClass = "bg-ft-white text-ft-bg";
+interface BlockDayExercise {
+  id: string;
+  exercise: { name: string; equipment: string | null; movementPattern?: string | null };
+  altExercise: { name: string; equipment: string | null } | null;
+  targetSets: number | null;
+  targetRepRange: string | null;
+  targetRpe: string | null;
+  progressionType: string;
+  progressionIncrement: number | null;
+  notes: string | null;
+  sortOrder: number;
+}
+
+interface BlockDay {
+  id: string;
+  dayNumber: number;
+  name: string;
+  dayType: string;
+  sortOrder: number;
+  exercises: BlockDayExercise[];
+}
 
 interface Block {
   id: string;
@@ -18,6 +39,9 @@ interface Block {
   blockNumber: number;
   durationWeeks: number | null;
   status: string;
+  focus: string | null;
+  scheduleDaysPerWeek: number | null;
+  days: BlockDay[];
   _count: { workouts: number };
 }
 
@@ -32,7 +56,9 @@ interface Program {
   blocks: Block[];
 }
 
-export default function ProgramDetailPage({
+const DAY_TYPES = ["lifting", "cardio", "conditioning", "mobility", "rest"];
+
+export default function ProgramWorkspacePage({
   params,
 }: {
   params: { programId: string };
@@ -41,6 +67,10 @@ export default function ProgramDetailPage({
   const toast = useToast();
   const [program, setProgram] = useState<Program | null>(null);
   const [loading, setLoading] = useState(true);
+  const [activeBlockId, setActiveBlockId] = useState<string | null>(null);
+  const [expandedDays, setExpandedDays] = useState<Set<string>>(new Set());
+
+  // Block form
   const [showBlockForm, setShowBlockForm] = useState(false);
   const [blockName, setBlockName] = useState("");
   const [blockDesc, setBlockDesc] = useState("");
@@ -48,18 +78,38 @@ export default function ProgramDetailPage({
   const [blockFocus, setBlockFocus] = useState("");
   const [savingBlock, setSavingBlock] = useState(false);
 
+  // Day form
+  const [showDayForm, setShowDayForm] = useState(false);
+  const [dayName, setDayName] = useState("");
+  const [dayType, setDayType] = useState("lifting");
+  const [savingDay, setSavingDay] = useState(false);
+
+
   useEffect(() => {
     fetch(`/api/programs/${programId}`)
-      .then((res) => {
-        if (!res.ok) return null;
-        return res.json();
-      })
+      .then((res) => (res.ok ? res.json() : null))
       .then((data) => {
         setProgram(data);
+        // Auto-select first active block, or first block
+        if (data?.blocks?.length > 0) {
+          const active = data.blocks.find((b: Block) => b.status === "active");
+          setActiveBlockId(active?.id ?? data.blocks[0].id);
+        }
         setLoading(false);
       })
       .catch(() => setLoading(false));
   }, [programId]);
+
+  const activeBlock = program?.blocks.find((b) => b.id === activeBlockId) ?? null;
+
+  const toggleDay = (dayId: string) => {
+    setExpandedDays((prev) => {
+      const next = new Set(prev);
+      if (next.has(dayId)) next.delete(dayId);
+      else next.add(dayId);
+      return next;
+    });
+  };
 
   const handleAddBlock = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -79,11 +129,11 @@ export default function ProgramDetailPage({
       });
       if (!res.ok) throw new Error("Failed");
       const block = await res.json();
+      const newBlock = { ...block, days: [], _count: { workouts: 0 } };
       setProgram((prev) =>
-        prev
-          ? { ...prev, blocks: [...prev.blocks, { ...block, _count: { workouts: 0 } }] }
-          : prev
+        prev ? { ...prev, blocks: [...prev.blocks, newBlock] } : prev
       );
+      setActiveBlockId(block.id);
       setShowBlockForm(false);
       setBlockName("");
       setBlockDesc("");
@@ -94,6 +144,185 @@ export default function ProgramDetailPage({
     }
     setSavingBlock(false);
   };
+
+  const handleAddDay = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!dayName.trim() || !activeBlockId) return;
+    setSavingDay(true);
+    try {
+      const res = await fetch(`/api/blocks/${activeBlockId}/days`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: dayName.trim(), dayType }),
+      });
+      if (!res.ok) throw new Error("Failed");
+      const day = await res.json();
+      setProgram((prev) => {
+        if (!prev) return prev;
+        return {
+          ...prev,
+          blocks: prev.blocks.map((b) =>
+            b.id === activeBlockId
+              ? { ...b, days: [...b.days, { ...day, exercises: [] }] }
+              : b
+          ),
+        };
+      });
+      setShowDayForm(false);
+      setDayName("");
+      setDayType("lifting");
+    } catch {
+      toast.error("Failed to create day.");
+    }
+    setSavingDay(false);
+  };
+
+  // Exercise CRUD handlers for EditableExerciseTable
+  const handleExerciseUpdate = async (exerciseId: string, field: string, value: string | number | null) => {
+    // Find which day this exercise belongs to
+    let dayId: string | null = null;
+    for (const b of program?.blocks ?? []) {
+      for (const d of b.days) {
+        if (d.exercises.some((e) => e.id === exerciseId)) {
+          dayId = d.id;
+          break;
+        }
+      }
+    }
+    if (!dayId) return;
+
+    try {
+      await fetch(`/api/blocks/day/${dayId}/exercises/${exerciseId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ [field]: value }),
+      });
+      // Optimistic update
+      setProgram((prev) => {
+        if (!prev) return prev;
+        return {
+          ...prev,
+          blocks: prev.blocks.map((b) => ({
+            ...b,
+            days: b.days.map((d) => ({
+              ...d,
+              exercises: d.exercises.map((e) =>
+                e.id === exerciseId ? { ...e, [field]: value } : e
+              ),
+            })),
+          })),
+        };
+      });
+    } catch {
+      toast.error("Failed to update exercise.");
+    }
+  };
+
+  const handleExerciseDelete = async (exerciseId: string) => {
+    let dayId: string | null = null;
+    for (const b of program?.blocks ?? []) {
+      for (const d of b.days) {
+        if (d.exercises.some((e) => e.id === exerciseId)) {
+          dayId = d.id;
+          break;
+        }
+      }
+    }
+    if (!dayId) return;
+
+    try {
+      await fetch(`/api/blocks/day/${dayId}/exercises/${exerciseId}`, { method: "DELETE" });
+      setProgram((prev) => {
+        if (!prev) return prev;
+        return {
+          ...prev,
+          blocks: prev.blocks.map((b) => ({
+            ...b,
+            days: b.days.map((d) => ({
+              ...d,
+              exercises: d.exercises.filter((e) => e.id !== exerciseId),
+            })),
+          })),
+        };
+      });
+    } catch {
+      toast.error("Failed to delete exercise.");
+    }
+  };
+
+  const handleExerciseReorder = async (dayId: string, exerciseIds: string[]) => {
+    try {
+      await fetch(`/api/blocks/day/${dayId}/exercises/reorder`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ order: exerciseIds }),
+      });
+      // Optimistic reorder
+      setProgram((prev) => {
+        if (!prev) return prev;
+        return {
+          ...prev,
+          blocks: prev.blocks.map((b) => ({
+            ...b,
+            days: b.days.map((d) => {
+              if (d.id !== dayId) return d;
+              const ordered = exerciseIds
+                .map((id) => d.exercises.find((e) => e.id === id))
+                .filter(Boolean) as typeof d.exercises;
+              return { ...d, exercises: ordered };
+            }),
+          })),
+        };
+      });
+    } catch {
+      toast.error("Failed to reorder exercises.");
+    }
+  };
+
+  const handleAddExerciseToDay = async (dayId: string, exerciseId: string, data: {
+    targetSets: number | null;
+    targetRepRange: string | null;
+    targetRpe: string | null;
+    progressionType: string;
+  }) => {
+    try {
+      const res = await fetch(`/api/blocks/day/${dayId}/exercises`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ exerciseId, ...data }),
+      });
+      if (!res.ok) throw new Error("Failed");
+      const bde = await res.json();
+      setProgram((prev) => {
+        if (!prev) return prev;
+        return {
+          ...prev,
+          blocks: prev.blocks.map((b) => ({
+            ...b,
+            days: b.days.map((d) =>
+              d.id === dayId
+                ? { ...d, exercises: [...d.exercises, { ...bde, altExercise: null, progressionIncrement: null }] }
+                : d
+            ),
+          })),
+        };
+      });
+    } catch {
+      toast.error("Failed to add exercise.");
+    }
+  };
+
+  // Progress calculation
+  const totalWeeks = program?.durationWeeks ?? 0;
+  let currentWeek = 0;
+  if (program?.startDate && totalWeeks > 0) {
+    const start = new Date(program.startDate);
+    const now = new Date();
+    const diffMs = now.getTime() - start.getTime();
+    currentWeek = Math.min(Math.ceil(diffMs / (7 * 24 * 60 * 60 * 1000)), totalWeeks);
+  }
+  const progressPct = totalWeeks > 0 ? Math.round((currentWeek / totalWeeks) * 100) : 0;
+  const totalSessions = program?.blocks.reduce((sum, b) => sum + (b._count?.workouts ?? 0), 0) ?? 0;
 
   if (loading) {
     return (
@@ -111,254 +340,285 @@ export default function ProgramDetailPage({
     );
   }
 
-  // Calculate progress
-  const totalWeeks = program.durationWeeks ?? 0;
-  let currentWeek = 0;
-  if (program.startDate && totalWeeks > 0) {
-    const start = new Date(program.startDate);
-    const now = new Date();
-    const diffMs = now.getTime() - start.getTime();
-    currentWeek = Math.min(
-      Math.ceil(diffMs / (7 * 24 * 60 * 60 * 1000)),
-      totalWeeks
-    );
-  }
-
-  const totalSessions = program.blocks.reduce(
-    (sum, b) => sum + (b._count?.workouts ?? 0),
-    0
-  );
-
   return (
-    <div className="min-h-screen bg-ft-bg text-ft-white p-6 max-w-5xl mx-auto">
+    <div className="min-h-screen bg-ft-bg text-ft-white p-4 sm:p-6 max-w-6xl mx-auto">
       {/* Breadcrumb */}
       <Link
         href="/programs"
-        className="inline-flex items-center gap-1.5 text-ft-dim text-sm font-mono hover:text-ft-light transition-colors mb-6"
+        className="inline-flex items-center gap-1.5 text-ft-dim text-sm font-mono hover:text-ft-light transition-colors mb-4"
       >
         <span>&larr;</span>
         <span>Programs</span>
       </Link>
 
       {/* Header */}
-      <div className="flex items-start justify-between mb-6">
+      <div className="flex items-start justify-between mb-4">
         <div>
-          <div className="flex items-center gap-3 mb-2">
+          <div className="flex items-center gap-3 mb-1">
+            <StatusIcon type="program" status={program.status as "active" | "paused" | "completed"} size="md" />
             <h1 className="font-mono text-2xl font-bold tracking-tight">
               {program.name}
             </h1>
-            {program.status === "active" && (
-              <Tag className={activeTagClass}>Active</Tag>
-            )}
+            {program.status === "active" && <Tag className="bg-ft-white text-ft-bg">Active</Tag>}
             {program.status === "completed" && <Tag>Completed</Tag>}
+            {program.status === "paused" && <Tag variant="warn">Paused</Tag>}
           </div>
           {program.description && (
-            <p className="text-ft-dim text-sm font-mono mb-1">
-              {program.description}
-            </p>
-          )}
-          {program.durationWeeks && (
-            <p className="text-ft-muted text-xs font-mono">
-              {program.durationWeeks} weeks
-            </p>
+            <p className="text-ft-dim text-sm font-mono">{program.description}</p>
           )}
         </div>
       </div>
 
-      {/* Progress Overview */}
-      <Card className="mb-8">
-        {totalWeeks > 0 && (
-          <>
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-ft-dim text-xs font-mono">
-                Week {currentWeek} of {totalWeeks} &middot;{" "}
-                {Math.round((currentWeek / totalWeeks) * 100)}%
-              </span>
-            </div>
-            <ProgressBar value={currentWeek} max={totalWeeks} />
-          </>
-        )}
-        <div className="grid grid-cols-4 gap-4 mt-4 pt-4 border-t border-ft-border">
-          <Stat label="Sessions" value={totalSessions} small />
-          <Stat label="Blocks" value={program.blocks.length} small />
+      {/* Timeline */}
+      {program.blocks.length > 0 && (
+        <Timeline
+          className="mb-4"
+          segments={program.blocks.map((b) => ({
+            label: b.name,
+            width: b.durationWeeks ?? 1,
+            status: b.status as "active" | "completed" | "upcoming",
+          }))}
+          currentPosition={progressPct > 0 ? progressPct : undefined}
+        />
+      )}
+
+      {/* Stats Row */}
+      <div className="grid grid-cols-4 gap-3 mb-6">
+        <Card><Stat label="Sessions" value={totalSessions} small /></Card>
+        <Card><Stat label="Blocks" value={program.blocks.length} small /></Card>
+        <Card>
           <Stat
-            label="Duration"
-            value={program.durationWeeks ? `${program.durationWeeks}wk` : "—"}
+            label="Progress"
+            value={totalWeeks > 0 ? `Wk ${currentWeek}/${totalWeeks}` : "—"}
             small
           />
-          <Stat
-            label="Goal"
-            value={program.goal?.title ?? "—"}
-            small
-          />
-        </div>
-      </Card>
+        </Card>
+        <Card><Stat label="Goal" value={program.goal?.title ?? "—"} small /></Card>
+      </div>
 
-      {/* Blocks List */}
-      <SectionHeader
-        title="Blocks"
-        action={
-          <button
-            onClick={() => setShowBlockForm(!showBlockForm)}
-            className="text-ft-dim text-xs font-mono hover:text-ft-light transition-colors border border-ft-border rounded px-3 py-1"
-          >
-            + Add Block
-          </button>
-        }
-      />
+      {/* Workspace: Blocks panel + Day details */}
+      <div className="grid grid-cols-1 lg:grid-cols-[200px_1fr] gap-4">
+        {/* Left: Blocks Panel */}
+        <div className="lg:block">
+          {/* Mobile: horizontal scroll */}
+          <div className="flex lg:flex-col gap-2 overflow-x-auto lg:overflow-visible pb-2 lg:pb-0">
+            {program.blocks.map((block) => (
+              <button
+                key={block.id}
+                onClick={() => setActiveBlockId(block.id)}
+                className={`flex items-center gap-2 px-3 py-2 rounded font-mono text-sm text-left whitespace-nowrap transition-colors ${
+                  block.id === activeBlockId
+                    ? "bg-ft-surface border border-ft-white text-ft-white"
+                    : "bg-ft-bg border border-ft-border text-ft-dim hover:text-ft-light hover:border-ft-dim"
+                }`}
+              >
+                <StatusIcon type="block" status={block.status as "active" | "completed" | "upcoming"} />
+                <span className="font-bold">{block.name}</span>
+                {block.durationWeeks && (
+                  <span className="text-[10px] text-ft-muted">{block.durationWeeks}wk</span>
+                )}
+              </button>
+            ))}
+            <button
+              onClick={() => setShowBlockForm(!showBlockForm)}
+              className="flex items-center gap-1 px-3 py-2 rounded font-mono text-xs text-ft-muted hover:text-ft-light border border-dashed border-ft-border hover:border-ft-dim transition-colors whitespace-nowrap"
+            >
+              + Block
+            </button>
+          </div>
 
-      {/* Add Block Form */}
-      {showBlockForm && (
-        <Card className="mb-4">
-          <form onSubmit={handleAddBlock} className="space-y-3">
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="block text-ft-dim text-xs font-mono uppercase tracking-wider mb-1">
-                  Block Name *
-                </label>
-                <input
-                  type="text"
-                  value={blockName}
-                  onChange={(e) => setBlockName(e.target.value)}
-                  placeholder="e.g. Hypertrophy"
-                  required
-                  className="w-full bg-ft-bg border border-ft-card rounded px-3 py-2 text-sm font-mono text-ft-white placeholder:text-ft-muted focus:outline-none focus:border-ft-dim transition-colors"
-                />
-              </div>
-              <div>
-                <label className="block text-ft-dim text-xs font-mono uppercase tracking-wider mb-1">
-                  Focus
-                </label>
-                <input
-                  type="text"
-                  value={blockFocus}
-                  onChange={(e) => setBlockFocus(e.target.value)}
-                  placeholder="e.g. Upper body"
-                  className="w-full bg-ft-bg border border-ft-card rounded px-3 py-2 text-sm font-mono text-ft-white placeholder:text-ft-muted focus:outline-none focus:border-ft-dim transition-colors"
-                />
-              </div>
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="block text-ft-dim text-xs font-mono uppercase tracking-wider mb-1">
-                  Description
-                </label>
+          {/* Add Block Form (inline) */}
+          {showBlockForm && (
+            <form onSubmit={handleAddBlock} className="mt-3 space-y-2">
+              <input
+                type="text"
+                value={blockName}
+                onChange={(e) => setBlockName(e.target.value)}
+                placeholder="Block name"
+                required
+                className="w-full bg-ft-bg border border-ft-card rounded px-2 py-1.5 text-xs font-mono text-ft-white placeholder:text-ft-muted focus:outline-none focus:border-ft-dim"
+              />
+              <input
+                type="text"
+                value={blockFocus}
+                onChange={(e) => setBlockFocus(e.target.value)}
+                placeholder="Focus (optional)"
+                className="w-full bg-ft-bg border border-ft-card rounded px-2 py-1.5 text-xs font-mono text-ft-white placeholder:text-ft-muted focus:outline-none focus:border-ft-dim"
+              />
+              <div className="grid grid-cols-2 gap-2">
                 <input
                   type="text"
                   value={blockDesc}
                   onChange={(e) => setBlockDesc(e.target.value)}
-                  placeholder="Optional description"
-                  className="w-full bg-ft-bg border border-ft-card rounded px-3 py-2 text-sm font-mono text-ft-white placeholder:text-ft-muted focus:outline-none focus:border-ft-dim transition-colors"
+                  placeholder="Description"
+                  className="bg-ft-bg border border-ft-card rounded px-2 py-1.5 text-xs font-mono text-ft-white placeholder:text-ft-muted focus:outline-none focus:border-ft-dim"
                 />
-              </div>
-              <div>
-                <label className="block text-ft-dim text-xs font-mono uppercase tracking-wider mb-1">
-                  Weeks
-                </label>
                 <input
                   type="number"
                   value={blockWeeks}
                   onChange={(e) => setBlockWeeks(e.target.value)}
-                  placeholder="e.g. 4"
+                  placeholder="Weeks"
                   min="1"
-                  className="w-full bg-ft-bg border border-ft-card rounded px-3 py-2 text-sm font-mono text-ft-white placeholder:text-ft-muted focus:outline-none focus:border-ft-dim transition-colors"
+                  className="bg-ft-bg border border-ft-card rounded px-2 py-1.5 text-xs font-mono text-ft-white placeholder:text-ft-muted focus:outline-none focus:border-ft-dim"
                 />
               </div>
-            </div>
-            <div className="flex justify-end gap-2">
-              <button
-                type="button"
-                onClick={() => setShowBlockForm(false)}
-                className="px-3 py-1.5 text-ft-dim text-xs font-mono hover:text-ft-light"
-              >
-                Cancel
-              </button>
-              <button
-                type="submit"
-                disabled={savingBlock || !blockName.trim()}
-                className="bg-ft-white text-ft-bg font-mono text-xs font-bold px-4 py-1.5 rounded hover:bg-ft-light transition-colors disabled:opacity-50"
-              >
-                {savingBlock ? "Saving..." : "Add Block"}
-              </button>
-            </div>
-          </form>
-        </Card>
-      )}
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => setShowBlockForm(false)}
+                  className="text-ft-dim text-xs font-mono hover:text-ft-light"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={savingBlock || !blockName.trim()}
+                  className="bg-ft-white text-ft-bg font-mono text-xs font-bold px-3 py-1 rounded hover:bg-ft-light disabled:opacity-50"
+                >
+                  {savingBlock ? "..." : "Add"}
+                </button>
+              </div>
+            </form>
+          )}
+        </div>
 
-      {program.blocks.length === 0 && !showBlockForm ? (
-        <Card className="border-dashed">
-          <p className="text-ft-muted font-mono text-sm text-center py-4">
-            No blocks created yet
-          </p>
-        </Card>
-      ) : (
-        <div className="space-y-3">
-          {program.blocks.map((block) => (
-            <Link
-              key={block.id}
-              href={`/programs/${programId}/blocks/${block.id}`}
-            >
-              <Card
-                className={`mb-1 ${
-                  block.status === "active"
-                    ? "border-ft-white"
-                    : block.status === "completed"
-                    ? "border-ft-muted"
-                    : ""
-                } hover:border-ft-dim transition-colors`}
-              >
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div
-                      className={`w-2 h-2 rounded-full ${
-                        block.status === "completed"
-                          ? "bg-ft-success"
-                          : block.status === "active"
-                          ? "bg-ft-white"
-                          : "bg-ft-card"
-                      }`}
-                    />
+        {/* Right: Day Details */}
+        <div className="min-w-0">
+          {activeBlock ? (
+            <>
+              {/* Block header */}
+              <div className="flex items-center justify-between mb-4">
+                <div>
+                  <div className="flex items-center gap-2">
+                    <h2 className="font-mono text-lg font-bold">{activeBlock.name}</h2>
+                    {activeBlock.focus && (
+                      <span className="text-ft-dim text-xs font-mono">&middot; {activeBlock.focus}</span>
+                    )}
+                  </div>
+                  <p className="text-ft-muted text-xs font-mono">
+                    {activeBlock.durationWeeks ? `${activeBlock.durationWeeks} weeks · ` : ""}
+                    {activeBlock.days.length} days · {activeBlock._count.workouts} sessions
+                  </p>
+                </div>
+                <button
+                  onClick={() => setShowDayForm(!showDayForm)}
+                  className="text-ft-dim text-xs font-mono hover:text-ft-light border border-ft-border rounded px-3 py-1 transition-colors"
+                >
+                  + Day
+                </button>
+              </div>
+
+              {/* Add Day Form */}
+              {showDayForm && (
+                <Card className="mb-4">
+                  <form onSubmit={handleAddDay} className="flex items-end gap-3">
+                    <div className="flex-1">
+                      <label className="block text-ft-dim text-[10px] font-mono uppercase tracking-wider mb-1">Name</label>
+                      <input
+                        type="text"
+                        value={dayName}
+                        onChange={(e) => setDayName(e.target.value)}
+                        placeholder="e.g. Upper Push"
+                        required
+                        className="w-full bg-ft-bg border border-ft-card rounded px-2 py-1.5 text-xs font-mono text-ft-white placeholder:text-ft-muted focus:outline-none focus:border-ft-dim"
+                      />
+                    </div>
                     <div>
-                      <div className="flex items-center gap-2">
-                        <h3 className="font-mono text-sm font-bold">
-                          {block.name}
-                        </h3>
-                        {block.description && (
-                          <span className="text-ft-dim text-xs font-mono">
-                            &middot; {block.description}
-                          </span>
+                      <label className="block text-ft-dim text-[10px] font-mono uppercase tracking-wider mb-1">Type</label>
+                      <select
+                        value={dayType}
+                        onChange={(e) => setDayType(e.target.value)}
+                        className="bg-ft-bg border border-ft-card rounded px-2 py-1.5 text-xs font-mono text-ft-white focus:outline-none focus:border-ft-dim"
+                      >
+                        {DAY_TYPES.map((t) => (
+                          <option key={t} value={t}>{t.charAt(0).toUpperCase() + t.slice(1)}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setShowDayForm(false)}
+                      className="text-ft-dim text-xs font-mono hover:text-ft-light px-2 py-1.5"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="submit"
+                      disabled={savingDay || !dayName.trim()}
+                      className="bg-ft-white text-ft-bg font-mono text-xs font-bold px-3 py-1.5 rounded hover:bg-ft-light disabled:opacity-50"
+                    >
+                      {savingDay ? "..." : "Add"}
+                    </button>
+                  </form>
+                </Card>
+              )}
+
+              {/* Days list (accordion) */}
+              {activeBlock.days.length === 0 && !showDayForm ? (
+                <Card className="border-dashed">
+                  <p className="text-ft-muted font-mono text-sm text-center py-6">
+                    No training days yet. Click &ldquo;+ Day&rdquo; to start building.
+                  </p>
+                </Card>
+              ) : (
+                <div className="space-y-2">
+                  {activeBlock.days.map((day) => {
+                    const isExpanded = expandedDays.has(day.id);
+                    return (
+                      <div key={day.id} className="border border-ft-border rounded bg-ft-surface/50">
+                        {/* Day Header (clickable) */}
+                        <button
+                          onClick={() => toggleDay(day.id)}
+                          className="w-full flex items-center justify-between px-4 py-3 text-left hover:bg-ft-surface/80 transition-colors"
+                        >
+                          <div className="flex items-center gap-2">
+                            <StatusIcon
+                              type="day"
+                              dayType={day.dayType as "lifting" | "cardio" | "conditioning" | "mobility" | "rest"}
+                            />
+                            <span className="font-mono text-sm font-bold text-ft-white">
+                              Day {day.dayNumber} &middot; {day.name}
+                            </span>
+                            <Tag>{day.dayType}</Tag>
+                          </div>
+                          <div className="flex items-center gap-3">
+                            <span className="text-ft-dim text-xs font-mono">
+                              {day.exercises.length} exercises
+                            </span>
+                            <span className="text-ft-muted text-xs">
+                              {isExpanded ? "▾" : "▸"}
+                            </span>
+                          </div>
+                        </button>
+
+                        {/* Expanded: exercises (editable table) */}
+                        {isExpanded && (
+                          <div className="border-t border-ft-border px-4 py-3">
+                            <EditableExerciseTable
+                              dayId={day.id}
+                              exercises={day.exercises}
+                              onUpdate={handleExerciseUpdate}
+                              onDelete={handleExerciseDelete}
+                              onReorder={(ids) => handleExerciseReorder(day.id, ids)}
+                              onAddExercise={handleAddExerciseToDay}
+                            />
+                          </div>
                         )}
                       </div>
-                      {block.durationWeeks && (
-                        <p className="text-ft-muted text-xs font-mono">
-                          {block.durationWeeks} weeks
-                        </p>
-                      )}
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-4">
-                    {block.status === "active" && (
-                      <Tag className={activeTagClass}>Current</Tag>
-                    )}
-                    {block.status === "completed" && <Tag>Done</Tag>}
-                    {block.status === "upcoming" && (
-                      <span className="text-ft-muted text-xs font-mono">
-                        Upcoming
-                      </span>
-                    )}
-                    {block._count?.workouts > 0 && (
-                      <div className="text-ft-dim text-xs font-mono">
-                        {block._count.workouts} sessions
-                      </div>
-                    )}
-                    <span className="text-ft-muted text-sm">&rarr;</span>
-                  </div>
+                    );
+                  })}
                 </div>
-              </Card>
-            </Link>
-          ))}
+              )}
+            </>
+          ) : (
+            <Card className="border-dashed">
+              <p className="text-ft-muted font-mono text-sm text-center py-8">
+                Create a block to get started
+              </p>
+            </Card>
+          )}
         </div>
-      )}
+      </div>
     </div>
   );
 }

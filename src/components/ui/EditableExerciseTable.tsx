@@ -1,0 +1,389 @@
+"use client";
+
+import { useState, useRef, useEffect, useCallback } from "react";
+
+interface ExerciseRow {
+  id: string;
+  exercise: { name: string; equipment: string | null; movementPattern?: string | null };
+  altExercise: { name: string; equipment: string | null } | null;
+  targetSets: number | null;
+  targetRepRange: string | null;
+  targetRpe: string | null;
+  progressionType: string;
+  progressionIncrement: number | null;
+  notes: string | null;
+  sortOrder: number;
+}
+
+interface SearchResult {
+  id: string;
+  name: string;
+  primaryMuscle: string | null;
+}
+
+interface EditableExerciseTableProps {
+  dayId: string;
+  exercises: ExerciseRow[];
+  onUpdate: (exerciseId: string, field: string, value: string | number | null) => void;
+  onDelete: (exerciseId: string) => void;
+  onReorder: (exerciseIds: string[]) => void;
+  onAddExercise: (dayId: string, exerciseId: string, data: {
+    targetSets: number | null;
+    targetRepRange: string | null;
+    targetRpe: string | null;
+    progressionType: string;
+  }) => void;
+}
+
+const PROGRESSION_TYPES = ["none", "linear", "double", "wave", "rpe_based", "percentage_based"];
+
+export default function EditableExerciseTable({
+  dayId,
+  exercises,
+  onUpdate,
+  onDelete,
+  onReorder,
+  onAddExercise,
+}: EditableExerciseTableProps) {
+  const [editingCell, setEditingCell] = useState<{ id: string; field: string } | null>(null);
+  const [editValue, setEditValue] = useState("");
+  const [menuOpen, setMenuOpen] = useState<string | null>(null);
+  const [dragIdx, setDragIdx] = useState<number | null>(null);
+  const [dragOverIdx, setDragOverIdx] = useState<number | null>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  // New exercise row state
+  const [addingNew, setAddingNew] = useState(false);
+  const [newSearch, setNewSearch] = useState("");
+  const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
+  const [selectedNew, setSelectedNew] = useState<SearchResult | null>(null);
+  const [newSets, setNewSets] = useState("3");
+  const [newReps, setNewReps] = useState("8-12");
+  const [newRpe, setNewRpe] = useState("");
+  const [newProg, setNewProg] = useState("none");
+
+  // Search for new exercise
+  useEffect(() => {
+    if (!newSearch.trim() || newSearch.length < 2) {
+      setSearchResults([]);
+      return;
+    }
+    const timer = setTimeout(() => {
+      fetch(`/api/exercises?search=${encodeURIComponent(newSearch)}`)
+        .then((r) => r.json())
+        .then((d) => setSearchResults(d.exercises ?? []))
+        .catch(() => setSearchResults([]));
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [newSearch]);
+
+  useEffect(() => {
+    if (editingCell && inputRef.current) {
+      inputRef.current.focus();
+      inputRef.current.select();
+    }
+  }, [editingCell]);
+
+  const startEdit = (id: string, field: string, currentValue: string | number | null) => {
+    setEditingCell({ id, field });
+    setEditValue(currentValue?.toString() ?? "");
+  };
+
+  const commitEdit = useCallback(() => {
+    if (!editingCell) return;
+    const { id, field } = editingCell;
+    let val: string | number | null = editValue.trim() || null;
+    if (field === "targetSets" && val) val = parseInt(val as string) || null;
+    onUpdate(id, field, val);
+    setEditingCell(null);
+  }, [editingCell, editValue, onUpdate]);
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === "Enter") {
+      commitEdit();
+    } else if (e.key === "Escape") {
+      setEditingCell(null);
+    } else if (e.key === "Tab") {
+      e.preventDefault();
+      commitEdit();
+      // Move to next cell
+      if (editingCell) {
+        const fields = ["targetSets", "targetRepRange", "targetRpe"];
+        const curFieldIdx = fields.indexOf(editingCell.field);
+        const curRowIdx = exercises.findIndex((ex) => ex.id === editingCell.id);
+        let nextFieldIdx = curFieldIdx + (e.shiftKey ? -1 : 1);
+        let nextRowIdx = curRowIdx;
+        if (nextFieldIdx >= fields.length) {
+          nextFieldIdx = 0;
+          nextRowIdx++;
+        } else if (nextFieldIdx < 0) {
+          nextFieldIdx = fields.length - 1;
+          nextRowIdx--;
+        }
+        if (nextRowIdx >= 0 && nextRowIdx < exercises.length) {
+          const nextEx = exercises[nextRowIdx];
+          const nextField = fields[nextFieldIdx];
+          const val = nextEx[nextField as keyof ExerciseRow];
+          startEdit(nextEx.id, nextField, val as string | number | null);
+        }
+      }
+    }
+  };
+
+  // Drag and drop
+  const handleDragStart = (idx: number) => setDragIdx(idx);
+  const handleDragOver = (e: React.DragEvent, idx: number) => {
+    e.preventDefault();
+    setDragOverIdx(idx);
+  };
+  const handleDrop = (idx: number) => {
+    if (dragIdx === null || dragIdx === idx) {
+      setDragIdx(null);
+      setDragOverIdx(null);
+      return;
+    }
+    const newOrder = [...exercises];
+    const [moved] = newOrder.splice(dragIdx, 1);
+    newOrder.splice(idx, 0, moved);
+    onReorder(newOrder.map((e) => e.id));
+    setDragIdx(null);
+    setDragOverIdx(null);
+  };
+
+  const handleAddNew = () => {
+    if (!selectedNew) return;
+    onAddExercise(dayId, selectedNew.id, {
+      targetSets: newSets ? parseInt(newSets) : null,
+      targetRepRange: newReps.trim() || null,
+      targetRpe: newRpe.trim() || null,
+      progressionType: newProg,
+    });
+    setAddingNew(false);
+    setSelectedNew(null);
+    setNewSearch("");
+    setNewSets("3");
+    setNewReps("8-12");
+    setNewRpe("");
+    setNewProg("none");
+  };
+
+  const renderCell = (ex: ExerciseRow, field: string, value: string | number | null, width: string) => {
+    const isEditing = editingCell?.id === ex.id && editingCell?.field === field;
+    if (isEditing) {
+      return (
+        <input
+          ref={inputRef}
+          type={field === "targetSets" ? "number" : "text"}
+          value={editValue}
+          onChange={(e) => setEditValue(e.target.value)}
+          onBlur={commitEdit}
+          onKeyDown={handleKeyDown}
+          className={`${width} bg-ft-bg border border-ft-dim rounded px-1.5 py-0.5 text-xs font-mono text-ft-white focus:outline-none`}
+        />
+      );
+    }
+    return (
+      <button
+        onClick={() => startEdit(ex.id, field, value)}
+        className={`${width} text-left text-xs font-mono text-ft-light hover:text-ft-white hover:bg-ft-card/50 px-1.5 py-0.5 rounded transition-colors`}
+      >
+        {value ?? "—"}
+      </button>
+    );
+  };
+
+  return (
+    <div>
+      {/* Header */}
+      <div className="grid grid-cols-[20px_24px_1fr_52px_64px_44px_52px_24px] gap-1 text-[10px] font-mono uppercase tracking-wider text-ft-muted mb-1 px-1">
+        <span></span>
+        <span>#</span>
+        <span>Exercise</span>
+        <span>Sets</span>
+        <span>Reps</span>
+        <span>RPE</span>
+        <span>Prog</span>
+        <span></span>
+      </div>
+
+      {/* Rows */}
+      {exercises.map((ex, idx) => (
+        <div
+          key={ex.id}
+          draggable
+          onDragStart={() => handleDragStart(idx)}
+          onDragOver={(e) => handleDragOver(e, idx)}
+          onDrop={() => handleDrop(idx)}
+          onDragEnd={() => { setDragIdx(null); setDragOverIdx(null); }}
+          className={`grid grid-cols-[20px_24px_1fr_52px_64px_44px_52px_24px] gap-1 items-center py-1 px-1 rounded transition-colors ${
+            dragOverIdx === idx ? "bg-ft-card/50" : "hover:bg-ft-surface/50"
+          }`}
+        >
+          {/* Drag handle */}
+          <span className="text-ft-muted text-[10px] cursor-grab select-none">⋮⋮</span>
+          <span className="text-ft-muted text-xs font-mono">{idx + 1}</span>
+          <span className="text-ft-light text-xs font-mono font-bold truncate" title={ex.exercise.name}>
+            {ex.exercise.name}
+          </span>
+          {renderCell(ex, "targetSets", ex.targetSets, "w-full")}
+          {renderCell(ex, "targetRepRange", ex.targetRepRange, "w-full")}
+          {renderCell(ex, "targetRpe", ex.targetRpe, "w-full")}
+          {/* Progression (select) */}
+          <select
+            value={ex.progressionType}
+            onChange={(e) => onUpdate(ex.id, "progressionType", e.target.value)}
+            className="w-full bg-transparent text-[10px] font-mono text-ft-dim focus:outline-none cursor-pointer"
+            title={ex.progressionType}
+          >
+            {PROGRESSION_TYPES.map((t) => (
+              <option key={t} value={t}>{t === "none" ? "—" : t.slice(0, 3)}</option>
+            ))}
+          </select>
+          {/* Menu */}
+          <div className="relative">
+            <button
+              onClick={() => setMenuOpen(menuOpen === ex.id ? null : ex.id)}
+              className="text-ft-muted text-xs hover:text-ft-light w-full text-center"
+            >
+              ⋮
+            </button>
+            {menuOpen === ex.id && (
+              <div className="absolute right-0 top-full mt-1 bg-ft-surface border border-ft-card rounded shadow-lg z-30 min-w-[120px]">
+                <button
+                  onClick={() => {
+                    if (idx > 0) {
+                      const newOrder = [...exercises];
+                      [newOrder[idx - 1], newOrder[idx]] = [newOrder[idx], newOrder[idx - 1]];
+                      onReorder(newOrder.map((e) => e.id));
+                    }
+                    setMenuOpen(null);
+                  }}
+                  disabled={idx === 0}
+                  className="w-full text-left px-3 py-1.5 text-xs font-mono text-ft-light hover:bg-ft-card disabled:opacity-30"
+                >
+                  Move Up
+                </button>
+                <button
+                  onClick={() => {
+                    if (idx < exercises.length - 1) {
+                      const newOrder = [...exercises];
+                      [newOrder[idx], newOrder[idx + 1]] = [newOrder[idx + 1], newOrder[idx]];
+                      onReorder(newOrder.map((e) => e.id));
+                    }
+                    setMenuOpen(null);
+                  }}
+                  disabled={idx === exercises.length - 1}
+                  className="w-full text-left px-3 py-1.5 text-xs font-mono text-ft-light hover:bg-ft-card disabled:opacity-30"
+                >
+                  Move Down
+                </button>
+                <button
+                  onClick={() => {
+                    onDelete(ex.id);
+                    setMenuOpen(null);
+                  }}
+                  className="w-full text-left px-3 py-1.5 text-xs font-mono text-ft-danger hover:bg-ft-card"
+                >
+                  Delete
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      ))}
+
+      {/* Add row */}
+      {addingNew ? (
+        <div className="mt-2 pt-2 border-t border-ft-border/50 space-y-2">
+          {selectedNew ? (
+            <div className="flex items-center gap-2">
+              <span className="text-ft-white text-xs font-mono flex-1">{selectedNew.name}</span>
+              <button
+                onClick={() => { setSelectedNew(null); setNewSearch(""); }}
+                className="text-ft-dim text-[10px] hover:text-ft-light"
+              >
+                Change
+              </button>
+            </div>
+          ) : (
+            <div className="relative">
+              <input
+                type="text"
+                value={newSearch}
+                onChange={(e) => setNewSearch(e.target.value)}
+                placeholder="Type to search exercises..."
+                className="w-full bg-ft-bg border border-ft-card rounded px-2 py-1.5 text-xs font-mono text-ft-white placeholder:text-ft-muted focus:outline-none focus:border-ft-dim"
+                autoFocus
+              />
+              {searchResults.length > 0 && (
+                <div className="absolute top-full left-0 right-0 mt-1 bg-ft-surface border border-ft-card rounded max-h-36 overflow-y-auto z-20">
+                  {searchResults.map((r) => (
+                    <button
+                      key={r.id}
+                      onClick={() => { setSelectedNew(r); setSearchResults([]); }}
+                      className="w-full text-left px-2 py-1.5 text-xs font-mono text-ft-light hover:bg-ft-card"
+                    >
+                      {r.name}
+                      {r.primaryMuscle && <span className="text-ft-muted ml-2">{r.primaryMuscle}</span>}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+          {selectedNew && (
+            <div className="grid grid-cols-4 gap-2">
+              <input
+                type="number"
+                value={newSets}
+                onChange={(e) => setNewSets(e.target.value)}
+                placeholder="Sets"
+                className="bg-ft-bg border border-ft-card rounded px-2 py-1 text-xs font-mono text-ft-white placeholder:text-ft-muted focus:outline-none focus:border-ft-dim"
+              />
+              <input
+                type="text"
+                value={newReps}
+                onChange={(e) => setNewReps(e.target.value)}
+                placeholder="Reps"
+                className="bg-ft-bg border border-ft-card rounded px-2 py-1 text-xs font-mono text-ft-white placeholder:text-ft-muted focus:outline-none focus:border-ft-dim"
+              />
+              <input
+                type="text"
+                value={newRpe}
+                onChange={(e) => setNewRpe(e.target.value)}
+                placeholder="RPE"
+                className="bg-ft-bg border border-ft-card rounded px-2 py-1 text-xs font-mono text-ft-white placeholder:text-ft-muted focus:outline-none focus:border-ft-dim"
+              />
+              <select
+                value={newProg}
+                onChange={(e) => setNewProg(e.target.value)}
+                className="bg-ft-bg border border-ft-card rounded px-2 py-1 text-xs font-mono text-ft-white focus:outline-none focus:border-ft-dim"
+              >
+                {PROGRESSION_TYPES.map((t) => (
+                  <option key={t} value={t}>{t.replace("_", " ")}</option>
+                ))}
+              </select>
+            </div>
+          )}
+          <div className="flex gap-2">
+            <button onClick={() => { setAddingNew(false); setSelectedNew(null); setNewSearch(""); }} className="text-ft-dim text-xs font-mono hover:text-ft-light">
+              Cancel
+            </button>
+            {selectedNew && (
+              <button onClick={handleAddNew} className="bg-ft-white text-ft-bg font-mono text-xs font-bold px-3 py-1 rounded hover:bg-ft-light">
+                Add
+              </button>
+            )}
+          </div>
+        </div>
+      ) : (
+        <button
+          onClick={() => setAddingNew(true)}
+          className="mt-1 text-ft-dim text-xs font-mono hover:text-ft-light transition-colors py-1"
+        >
+          + Add Exercise
+        </button>
+      )}
+    </div>
+  );
+}
