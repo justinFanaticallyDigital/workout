@@ -1,11 +1,24 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, SectionHeader } from "@/components/ui";
 
+function getStoredUnit(key: string, fallback: string): string {
+  if (typeof window === "undefined") return fallback;
+  return localStorage.getItem(key) ?? fallback;
+}
+
 export default function SettingsPage() {
-  const [weightUnit, setWeightUnit] = useState("lbs");
-  const [distanceUnit, setDistanceUnit] = useState("miles");
+  const [weightUnit, setWeightUnit] = useState(() => getStoredUnit("ft-weight-unit", "lbs"));
+  const [distanceUnit, setDistanceUnit] = useState(() => getStoredUnit("ft-distance-unit", "miles"));
+
+  useEffect(() => {
+    localStorage.setItem("ft-weight-unit", weightUnit);
+  }, [weightUnit]);
+
+  useEffect(() => {
+    localStorage.setItem("ft-distance-unit", distanceUnit);
+  }, [distanceUnit]);
   const [exporting, setExporting] = useState(false);
 
   const handleExport = async () => {
