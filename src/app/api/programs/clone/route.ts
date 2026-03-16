@@ -66,7 +66,7 @@ export async function POST(request: NextRequest) {
           blockId: block.id,
           dayNumber: di + 1,
           name: tDay.name,
-          dayType: tDay.type,
+          dayType: tDay.type as "lifting" | "cardio" | "conditioning" | "mobility" | "rest",
           sortOrder: di + 1,
         },
       });
