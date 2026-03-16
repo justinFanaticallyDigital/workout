@@ -4,6 +4,12 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { Card, SectionHeader, Tag } from "@/components/ui";
 
+function toLocalDatetime(iso: string): string {
+  const d = new Date(iso);
+  const pad = (n: number) => n.toString().padStart(2, "0");
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
 interface SetDetail {
   setNumber: number;
   weight: number | null;
@@ -48,6 +54,11 @@ export default function WorkoutDetailPage({
   const { workoutId } = params;
   const [workout, setWorkout] = useState<WorkoutDetail | null>(null);
   const [loading, setLoading] = useState(true);
+  const [editing, setEditing] = useState(false);
+  const [editStart, setEditStart] = useState("");
+  const [editEnd, setEditEnd] = useState("");
+  const [editNotes, setEditNotes] = useState("");
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     fetch(`/api/workouts/${workoutId}`)
@@ -61,6 +72,57 @@ export default function WorkoutDetailPage({
       })
       .catch(() => setLoading(false));
   }, [workoutId]);
+
+  const startEditing = () => {
+    if (!workout) return;
+    setEditStart(workout.startTime ? toLocalDatetime(workout.startTime) : "");
+    setEditEnd(workout.endTime ? toLocalDatetime(workout.endTime) : "");
+    setEditNotes(workout.notes ?? "");
+    setEditing(true);
+  };
+
+  const handleSave = async () => {
+    setSaving(true);
+    try {
+      const start = editStart ? new Date(editStart) : null;
+      const end = editEnd ? new Date(editEnd) : null;
+
+      const res = await fetch(`/api/workouts/${workoutId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          date: start?.toISOString() ?? undefined,
+          startTime: start?.toISOString() ?? undefined,
+          endTime: end?.toISOString() ?? undefined,
+          notes: editNotes || null,
+        }),
+      });
+
+      if (!res.ok) {
+        const err = await res.json().catch(() => null);
+        alert(err?.error ?? "Failed to update workout.");
+        setSaving(false);
+        return;
+      }
+
+      const updated = await res.json();
+      setWorkout((prev) =>
+        prev
+          ? {
+              ...prev,
+              date: updated.date,
+              startTime: updated.startTime,
+              endTime: updated.endTime,
+              notes: updated.notes,
+            }
+          : prev
+      );
+      setEditing(false);
+    } catch {
+      alert("Failed to update workout.");
+    }
+    setSaving(false);
+  };
 
   if (loading) {
     return (
@@ -129,7 +191,77 @@ export default function WorkoutDetailPage({
             </span>
           </div>
         </div>
+        {!editing && (
+          <button
+            onClick={startEditing}
+            className="text-ft-dim text-xs font-mono hover:text-ft-light transition-colors border border-ft-border rounded px-3 py-1"
+          >
+            Edit
+          </button>
+        )}
       </div>
+
+      {/* Edit Form */}
+      {editing && (
+        <Card className="mb-6">
+          <div className="space-y-3">
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-ft-dim text-xs font-mono uppercase tracking-wider mb-1">
+                  Start Time
+                </label>
+                <input
+                  type="datetime-local"
+                  value={editStart}
+                  onChange={(e) => setEditStart(e.target.value)}
+                  className="w-full bg-ft-bg border border-ft-card rounded px-3 py-2 text-sm font-mono text-ft-white focus:outline-none focus:border-ft-dim transition-colors"
+                />
+              </div>
+              <div>
+                <label className="block text-ft-dim text-xs font-mono uppercase tracking-wider mb-1">
+                  End Time
+                </label>
+                <input
+                  type="datetime-local"
+                  value={editEnd}
+                  onChange={(e) => setEditEnd(e.target.value)}
+                  className="w-full bg-ft-bg border border-ft-card rounded px-3 py-2 text-sm font-mono text-ft-white focus:outline-none focus:border-ft-dim transition-colors"
+                />
+              </div>
+            </div>
+            <div>
+              <label className="block text-ft-dim text-xs font-mono uppercase tracking-wider mb-1">
+                Notes
+              </label>
+              <textarea
+                rows={2}
+                value={editNotes}
+                onChange={(e) => setEditNotes(e.target.value)}
+                placeholder="Session notes..."
+                className="w-full bg-ft-bg border border-ft-card rounded px-3 py-2 text-sm font-mono text-ft-light placeholder:text-ft-muted focus:outline-none focus:border-ft-dim resize-none transition-colors"
+              />
+            </div>
+            <div className="flex justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => setEditing(false)}
+                disabled={saving}
+                className="px-3 py-1.5 text-ft-dim text-xs font-mono hover:text-ft-light disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleSave}
+                disabled={saving}
+                className="bg-ft-white text-ft-bg font-mono text-xs font-bold px-4 py-1.5 rounded hover:bg-ft-light transition-colors disabled:opacity-50"
+              >
+                {saving ? "Saving..." : "Save Changes"}
+              </button>
+            </div>
+          </div>
+        </Card>
+      )}
 
       {/* Stats Row */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
