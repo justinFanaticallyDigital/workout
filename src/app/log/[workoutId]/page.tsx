@@ -133,18 +133,30 @@ function ExercisePicker({
 
   useEffect(() => {
     if (query.length < 2) {
-      setResults([]);
+      setResults((prev) => (prev.length > 0 ? [] : prev));
       return;
     }
+    const controller = new AbortController();
     const timer = setTimeout(() => {
       setSearching(true);
-      fetch(`/api/exercises?search=${encodeURIComponent(query)}`)
-        .then((r) => r.json())
+      fetch(`/api/exercises?search=${encodeURIComponent(query)}`, {
+        signal: controller.signal,
+      })
+        .then((r) => {
+          if (!r.ok) throw new Error(`Search failed: ${r.status}`);
+          return r.json();
+        })
         .then((data) => setResults(data.exercises?.slice(0, 20) ?? []))
-        .catch(() => setResults([]))
+        .catch((err) => {
+          if (err instanceof DOMException && err.name === "AbortError") return;
+          setResults([]);
+        })
         .finally(() => setSearching(false));
     }, 300);
-    return () => clearTimeout(timer);
+    return () => {
+      clearTimeout(timer);
+      controller.abort();
+    };
   }, [query]);
 
   return (
@@ -395,10 +407,12 @@ export default function ActiveWorkoutPage({
       lastSets: [],
       suggestedWeight: null,
     };
-    setExercises((prev) => [...prev, newEx]);
-    setActiveEx(exercises.length);
+    setExercises((prev) => {
+      setActiveEx(prev.length);
+      return [...prev, newEx];
+    });
     setShowPicker(false);
-  }, [exercises.length]);
+  }, []);
 
   // Finish workout handler
   const handleFinish = async () => {
