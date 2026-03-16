@@ -100,9 +100,10 @@ model Goal {
   status      GoalStatus @default(active)
   createdAt   DateTime   @default(now()) @map("created_at")
 
-  user     User      @relation(fields: [userId], references: [id])
+  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   programs Program[]
 
+  @@index([userId])
   @@map("goals")
 }
 
@@ -125,12 +126,14 @@ model Program {
   status        ProgramStatus @default(active)
   createdAt     DateTime      @default(now()) @map("created_at")
 
-  user           User               @relation(fields: [userId], references: [id])
-  goal           Goal?              @relation(fields: [goalId], references: [id])
+  user           User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  goal           Goal?              @relation(fields: [goalId], references: [id], onDelete: SetNull)
   blocks         Block[]
   benchmarks     ProgramBenchmark[]
   progressPhotos ProgressPhoto[]
 
+  @@index([userId])
+  @@index([userId, status])
   @@map("programs")
 }
 
@@ -144,8 +147,9 @@ model ProgramBenchmark {
   actualValue Decimal?  @map("actual_value")
   achievedAt  DateTime? @map("achieved_at")
 
-  program Program @relation(fields: [programId], references: [id])
+  program Program @relation(fields: [programId], references: [id], onDelete: Cascade)
 
+  @@index([programId])
   @@map("program_benchmarks")
 }
 
@@ -170,10 +174,11 @@ model Block {
   status              BlockStatus @default(upcoming)
   createdAt           DateTime    @default(now()) @map("created_at")
 
-  program  Program    @relation(fields: [programId], references: [id])
+  program  Program    @relation(fields: [programId], references: [id], onDelete: Cascade)
   days     BlockDay[]
   workouts Workout[]
 
+  @@index([programId])
   @@map("blocks")
 }
 
@@ -194,10 +199,11 @@ model BlockDay {
   dayType   DayType @default(lifting) @map("day_type")
   sortOrder Int     @map("sort_order")
 
-  block     Block              @relation(fields: [blockId], references: [id])
+  block     Block              @relation(fields: [blockId], references: [id], onDelete: Cascade)
   exercises BlockDayExercise[]
   workouts  Workout[]
 
+  @@index([blockId])
   @@map("block_days")
 }
 
@@ -224,10 +230,12 @@ model BlockDayExercise {
   progressionIncrement  Decimal?        @map("progression_increment")
   notes                 String?
 
-  blockDay    BlockDay  @relation(fields: [blockDayId], references: [id])
-  exercise    Exercise  @relation("primary", fields: [exerciseId], references: [id])
-  altExercise Exercise? @relation("alternate", fields: [altExerciseId], references: [id])
+  blockDay    BlockDay  @relation(fields: [blockDayId], references: [id], onDelete: Cascade)
+  exercise    Exercise  @relation("primary", fields: [exerciseId], references: [id], onDelete: Cascade)
+  altExercise Exercise? @relation("alternate", fields: [altExerciseId], references: [id], onDelete: SetNull)
 
+  @@index([blockDayId])
+  @@index([exerciseId])
   @@map("block_day_exercises")
 }
 
@@ -246,11 +254,14 @@ model Workout {
   bodyWeight Decimal?  @map("body_weight")
   createdAt  DateTime  @default(now()) @map("created_at")
 
-  user      User              @relation(fields: [userId], references: [id])
-  block     Block?            @relation(fields: [blockId], references: [id])
-  blockDay  BlockDay?         @relation(fields: [blockDayId], references: [id])
+  user      User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  block     Block?            @relation(fields: [blockId], references: [id], onDelete: SetNull)
+  blockDay  BlockDay?         @relation(fields: [blockDayId], references: [id], onDelete: SetNull)
   exercises WorkoutExercise[]
 
+  @@index([userId])
+  @@index([userId, date])
+  @@index([blockId])
   @@map("workouts")
 }
 
@@ -261,10 +272,12 @@ model WorkoutExercise {
   sortOrder  Int     @map("sort_order")
   notes      String?
 
-  workout  Workout  @relation(fields: [workoutId], references: [id])
-  exercise Exercise @relation(fields: [exerciseId], references: [id])
+  workout  Workout  @relation(fields: [workoutId], references: [id], onDelete: Cascade)
+  exercise Exercise @relation(fields: [exerciseId], references: [id], onDelete: Cascade)
   sets     Set[]
 
+  @@index([workoutId])
+  @@index([exerciseId])
   @@map("workout_exercises")
 }
 
@@ -280,9 +293,10 @@ model Set {
   isPr              Boolean  @default(false) @map("is_pr")
   notes             String?
 
-  workoutExercise WorkoutExercise @relation(fields: [workoutExerciseId], references: [id])
+  workoutExercise WorkoutExercise @relation(fields: [workoutExerciseId], references: [id], onDelete: Cascade)
   exercisePrs     ExercisePr[]
 
+  @@index([workoutExerciseId])
   @@map("sets")
 }
 
@@ -290,7 +304,7 @@ model Set {
 model Exercise {
   id               String  @id @default(uuid()) @db.Uuid
   userId           String? @map("user_id") @db.Uuid
-  name             String  @unique
+  name             String
   movementPattern  String? @map("movement_pattern")
   primaryMuscle    String? @map("primary_muscle")
   secondaryMuscle1 String? @map("secondary_muscle_1")
@@ -299,12 +313,14 @@ model Exercise {
   isCustom         Boolean @default(false) @map("is_custom")
   createdAt        DateTime @default(now()) @map("created_at")
 
-  user               User?              @relation(fields: [userId], references: [id])
+  user               User?              @relation(fields: [userId], references: [id], onDelete: Cascade)
   exercisePrs        ExercisePr[]
   workoutExercises   WorkoutExercise[]
   blockDayExercises  BlockDayExercise[] @relation("primary")
   blockDayExercisesAlt BlockDayExercise[] @relation("alternate")
 
+  @@unique([name])
+  @@index([primaryMuscle])
   @@map("exercises")
 }
 
@@ -318,10 +334,12 @@ model ExercisePr {
   setId        String?  @map("set_id") @db.Uuid
   achievedAt   DateTime @default(now()) @map("achieved_at")
 
-  user     User     @relation(fields: [userId], references: [id])
-  exercise Exercise @relation(fields: [exerciseId], references: [id])
-  set      Set?     @relation(fields: [setId], references: [id])
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  exercise Exercise @relation(fields: [exerciseId], references: [id], onDelete: Cascade)
+  set      Set?     @relation(fields: [setId], references: [id], onDelete: SetNull)
 
+  @@index([userId, exerciseId])
+  @@index([userId, exerciseId, prType])
   @@map("exercise_prs")
 }
 
@@ -336,8 +354,10 @@ model BodyMetric {
   notes     String?
   createdAt DateTime @default(now()) @map("created_at")
 
-  user User @relation(fields: [userId], references: [id])
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
+  @@index([userId])
+  @@index([userId, date])
   @@map("body_metrics")
 }
 
@@ -351,9 +371,10 @@ model ProgressPhoto {
   notes     String?
   createdAt DateTime @default(now()) @map("created_at")
 
-  user    User     @relation(fields: [userId], references: [id])
-  program Program? @relation(fields: [programId], references: [id])
+  user    User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  program Program? @relation(fields: [programId], references: [id], onDelete: SetNull)
 
+  @@index([userId])
   @@map("progress_photos")
 }
 
@@ -369,9 +390,10 @@ model Injury {
   status       String    @default("active") // active, monitoring, resolved
   createdAt    DateTime  @default(now()) @map("created_at")
 
-  user  User         @relation(fields: [userId], references: [id])
+  user  User         @relation(fields: [userId], references: [id], onDelete: Cascade)
   notes InjuryNote[]
 
+  @@index([userId])
   @@map("injuries")
 }
 
@@ -383,7 +405,8 @@ model InjuryNote {
   treatment   String?
   followUpDate DateTime? @map("follow_up_date") @db.Date
 
-  injury Injury @relation(fields: [injuryId], references: [id])
+  injury Injury @relation(fields: [injuryId], references: [id], onDelete: Cascade)
 
+  @@index([injuryId])
   @@map("injury_notes")
 }
