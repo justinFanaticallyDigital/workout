@@ -1,5 +1,9 @@
 # FitTrack - Claude Reference Document
 
+## Developer Environment
+- **Local OS:** Windows (PowerShell terminal)
+- When giving CLI instructions, always use PowerShell syntax (e.g. `$env:VAR="value"` instead of `VAR=value command`)
+
 ## Overview
 FitTrack is a personal workout tracking app built with Next.js 14, Prisma, PostgreSQL (Railway), and NextAuth (Google OAuth). Deployed on Vercel.
 
