@@ -4,9 +4,11 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Card, SectionHeader } from "@/components/ui";
+import { useToast } from "@/components/ui/Toast";
 
 export default function NewProgramPage() {
   const router = useRouter();
+  const toast = useToast();
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [durationWeeks, setDurationWeeks] = useState("");
@@ -36,7 +38,7 @@ export default function NewProgramPage() {
       const program = await res.json();
       router.push(`/programs/${program.id}`);
     } catch {
-      alert("Failed to create program. Please try again.");
+      toast.error("Failed to create program. Please try again.");
       setSaving(false);
     }
   };

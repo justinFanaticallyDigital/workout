@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Card, SectionHeader, Tag } from "@/components/ui";
+import { useToast } from "@/components/ui/Toast";
 import { addToQueue } from "@/lib/offline-queue";
 
 interface SearchExercise {
@@ -218,6 +219,7 @@ export default function ActiveWorkoutPage({
   params: { workoutId: string };
 }) {
   const router = useRouter();
+  const toast = useToast();
   const { workoutId } = params;
   const [blockDayId, setBlockDayId] = useState<string>("");
   const [blockId, setBlockId] = useState<string>("");
@@ -421,7 +423,7 @@ export default function ActiveWorkoutPage({
       ex.sets.some((s) => s.done && s.weight !== null && s.reps !== null)
     );
     if (!hasCompletedSets) {
-      alert("Complete at least one set before finishing.");
+      toast.warn("Complete at least one set before finishing.");
       return;
     }
 
@@ -463,7 +465,7 @@ export default function ActiveWorkoutPage({
 
         // Log each completed set
         for (const s of completedSets) {
-          await fetch("/api/sets", {
+          const setRes = await fetch("/api/sets", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
@@ -473,6 +475,12 @@ export default function ActiveWorkoutPage({
               rir: s.rir,
             }),
           });
+          if (setRes.ok) {
+            const setData = await setRes.json();
+            if (setData.isPr) {
+              toast.success(`New PR! ${ex.name}: ${s.weight} × ${s.reps}`);
+            }
+          }
         }
       }
 
@@ -519,12 +527,12 @@ export default function ActiveWorkoutPage({
         });
 
         localStorage.removeItem(`workout-draft-${workoutId}`);
-        alert("You're offline. Workout saved and will sync when you reconnect.");
+        toast.info("You're offline. Workout saved and will sync when you reconnect.");
         router.push("/");
         return;
       }
 
-      alert("Failed to save workout. Please try again.");
+      toast.error("Failed to save workout. Please try again.");
       setFinishing(false);
     }
   };
@@ -770,10 +778,12 @@ export default function ActiveWorkoutPage({
                         s.done ? "bg-ft-card" : "bg-ft-bg"
                       } border border-ft-card rounded px-2 py-1.5 text-center text-sm font-mono text-ft-white placeholder:text-ft-muted focus:outline-none focus:border-ft-dim transition-colors`}
                     />
-                    <div className="flex items-center justify-center">
+                    <div
+                      onClick={() => updateSet(activeEx, si, "done", !s.done)}
+                      className="flex items-center justify-center cursor-pointer touch-target"
+                    >
                       <div
-                        onClick={() => updateSet(activeEx, si, "done", !s.done)}
-                        className={`w-5 h-5 rounded border flex items-center justify-center cursor-pointer transition-colors ${
+                        className={`w-6 h-6 rounded border flex items-center justify-center transition-colors ${
                           s.done
                             ? "bg-ft-success/20 border-ft-success text-ft-success"
                             : "border-ft-card hover:border-ft-dim"

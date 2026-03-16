@@ -70,12 +70,16 @@ export default function ExerciseDetailPage({
   const [history, setHistory] = useState<HistorySession[]>([]);
   const [sessionCount, setSessionCount] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [est1RM, setEst1RM] = useState<number | null>(null);
+  const [progressionStatus, setProgressionStatus] = useState<string | null>(null);
 
   useEffect(() => {
     Promise.all([
       fetch(`/api/exercises/${exerciseId}`).then((r) => r.ok ? r.json() : null),
       fetch(`/api/exercises/${exerciseId}/history`).then((r) => r.ok ? r.json() : null),
-    ]).then(([exData, histData]) => {
+      fetch(`/api/exercises/${exerciseId}/estimated-1rm`).then((r) => r.ok ? r.json() : null),
+      fetch(`/api/exercises/${exerciseId}/progression-status`).then((r) => r.ok ? r.json() : null),
+    ]).then(([exData, histData, e1rmData, progData]) => {
       if (exData) setExercise(exData);
       if (histData?.history) {
         setHistory(histData.history);
@@ -97,6 +101,8 @@ export default function ExerciseDetailPage({
           setPrs([{ weight: bestWeight, reps: bestReps, date: bestDate }]);
         }
       }
+      if (e1rmData?.estimated1RM) setEst1RM(e1rmData.estimated1RM);
+      if (progData?.status) setProgressionStatus(progData.status);
       setLoading(false);
     }).catch(() => setLoading(false));
   }, [exerciseId]);
@@ -192,17 +198,33 @@ export default function ExerciseDetailPage({
               }
               sub={bestPR?.date}
             />
-            <Stat label="Est. 1RM" value="—" />
+            <Stat label="Est. 1RM" value={est1RM ? `${est1RM}` : "—"} sub={est1RM ? "Epley" : undefined} />
             <Stat label="Total Sessions" value={sessionCount} />
             <Stat
-              label="Avg Frequency"
+              label="Progression"
               value={
-                sessionCount > 0
-                  ? `${(sessionCount / 12).toFixed(1)}/mo`
+                progressionStatus === "stalled"
+                  ? "Stalled"
+                  : progressionStatus === "progressing"
+                  ? "On Track"
                   : "—"
+              }
+              sub={
+                progressionStatus === "stalled"
+                  ? "Consider changing weight/reps"
+                  : progressionStatus === "progressing"
+                  ? "Keep it up"
+                  : undefined
               }
             />
           </div>
+          {progressionStatus === "stalled" && (
+            <div className="mt-4 p-3 bg-ft-warn/10 border border-ft-warn/20 rounded">
+              <p className="text-ft-warn text-xs font-mono">
+                Weight has been the same for 3+ sessions. Consider increasing weight, adding reps, or trying an alternative exercise.
+              </p>
+            </div>
+          )}
         </Card>
       </div>
 

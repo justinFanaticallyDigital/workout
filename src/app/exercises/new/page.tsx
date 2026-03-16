@@ -4,6 +4,7 @@ import { useState, useMemo } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Card } from "@/components/ui";
+import { useToast } from "@/components/ui/Toast";
 
 const MOVEMENT_PATTERNS = [
   "Horizontal Push",
@@ -55,6 +56,7 @@ const labelClasses =
 
 export default function NewExercisePage() {
   const router = useRouter();
+  const toast = useToast();
   const [name, setName] = useState("");
   const [modification, setModification] = useState("");
   const [pattern, setPattern] = useState("");
@@ -89,7 +91,7 @@ export default function NewExercisePage() {
       if (!res.ok) throw new Error("Failed to create exercise");
       router.push("/exercises");
     } catch {
-      alert("Failed to create exercise. Please try again.");
+      toast.error("Failed to create exercise. Please try again.");
       setSaving(false);
     }
   };

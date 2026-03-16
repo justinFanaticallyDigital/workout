@@ -41,3 +41,19 @@ input:focus, textarea:focus, select:focus {
 input::placeholder, textarea::placeholder {
   color: #666666;
 }
+
+/* Safe area padding for notched devices */
+.pb-safe {
+  padding-bottom: max(1rem, env(safe-area-inset-bottom));
+}
+.pt-safe {
+  padding-top: env(safe-area-inset-top);
+}
+
+/* Minimum touch target for interactive elements */
+@layer utilities {
+  .touch-target {
+    min-height: 44px;
+    min-width: 44px;
+  }
+}

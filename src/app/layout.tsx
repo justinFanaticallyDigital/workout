@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import Nav from "@/components/ui/Nav";
+import { ToastProvider } from "@/components/ui/Toast";
 import SessionProvider from "@/components/SessionProvider";
 import OfflineSyncProvider from "@/components/OfflineSyncProvider";
 
@@ -22,6 +23,7 @@ export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
   maximumScale: 1,
+  viewportFit: "cover",
   themeColor: "#1a1a1a",
 };
 
@@ -35,10 +37,12 @@ export default function RootLayout({
       <body className="bg-ft-bg min-h-screen antialiased">
         <SessionProvider>
           <OfflineSyncProvider>
-            <Nav />
-            <div className="max-w-[1100px] mx-auto px-4 sm:px-6 py-4 sm:py-7">
-              {children}
-            </div>
+            <ToastProvider>
+              <Nav />
+              <div className="max-w-[1100px] mx-auto px-4 sm:px-6 py-4 sm:py-7 pb-safe">
+                {children}
+              </div>
+            </ToastProvider>
           </OfflineSyncProvider>
         </SessionProvider>
       </body>

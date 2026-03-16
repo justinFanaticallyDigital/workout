@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { Card, SectionHeader, Tag } from "@/components/ui";
+import { useToast } from "@/components/ui/Toast";
 
 interface ProgressPhoto {
   id: string;
@@ -22,6 +23,7 @@ export default function ProgressPhotosPage() {
   const [poseType, setPoseType] = useState("front");
   const [notes, setNotes] = useState("");
   const [saving, setSaving] = useState(false);
+  const toast = useToast();
 
   const fetchPhotos = () => {
     fetch("/api/progress/photos")
@@ -59,7 +61,7 @@ export default function ProgressPhotosPage() {
       setPoseType("front");
       fetchPhotos();
     } catch {
-      alert("Failed to save photo.");
+      toast.error("Failed to save photo.");
     }
     setSaving(false);
   };
