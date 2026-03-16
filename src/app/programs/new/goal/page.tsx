@@ -8,9 +8,9 @@ import { useToast } from "@/components/ui/Toast";
 
 const GOAL_TYPES = [
   { value: "strength", label: "Strength PR", icon: "🏋️", desc: "Hit a specific weight on a lift" },
-  { value: "bodyweight", label: "Body Weight", icon: "⚖️", desc: "Reach a target body weight" },
+  { value: "weight", label: "Body Weight", icon: "⚖️", desc: "Reach a target body weight" },
   { value: "frequency", label: "Frequency", icon: "📅", desc: "Train a set number of days per week" },
-  { value: "powerlifting", label: "Powerlifting", icon: "🏆", desc: "Prepare for a competition" },
+  { value: "competition", label: "Powerlifting", icon: "🏆", desc: "Prepare for a competition" },
 ];
 
 export default function GoalWizardPage() {
@@ -117,7 +117,7 @@ export default function GoalWizardPage() {
               />
             </div>
 
-            {(goalType === "strength" || goalType === "bodyweight" || goalType === "powerlifting") && (
+            {(goalType === "strength" || goalType === "weight" || goalType === "competition") && (
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-ft-dim text-xs font-mono uppercase tracking-wider mb-1.5">
