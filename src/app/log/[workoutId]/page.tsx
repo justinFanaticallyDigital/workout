@@ -145,7 +145,10 @@ export default function ActiveWorkoutPage({
 
   // Load block day exercises
   useEffect(() => {
-    if (!workoutId || workoutId === "new-blank") return;
+    if (!workoutId || workoutId === "new-blank") {
+      setLoading(false);
+      return;
+    }
 
     fetch(`/api/blocks/day/${workoutId}`)
       .then((res) => {
