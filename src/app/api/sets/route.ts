@@ -6,6 +6,20 @@ export async function POST(request: NextRequest) {
   const userId = await requireAuthUserId();
   const body = await request.json();
 
+  if (!body.workoutExerciseId) {
+    return NextResponse.json({ error: "workoutExerciseId is required" }, { status: 400 });
+  }
+
+  // Verify ownership through workout → user chain
+  const workoutExercise = await prisma.workoutExercise.findUnique({
+    where: { id: body.workoutExerciseId },
+    select: { exerciseId: true, workout: { select: { userId: true } } },
+  });
+
+  if (!workoutExercise || workoutExercise.workout.userId !== userId) {
+    return NextResponse.json({ error: "Workout exercise not found" }, { status: 404 });
+  }
+
   // Get the next set number
   const last = await prisma.set.findFirst({
     where: { workoutExerciseId: body.workoutExerciseId },
@@ -16,28 +30,20 @@ export async function POST(request: NextRequest) {
 
   // Check if this is a PR (weight PR)
   let isPr = false;
-  let exerciseId: string | null = null;
+  const exerciseId = workoutExercise.exerciseId;
 
   if (body.weight && body.reps && !body.isWarmup) {
-    const workoutExercise = await prisma.workoutExercise.findUnique({
-      where: { id: body.workoutExerciseId },
-      select: { exerciseId: true },
+    const currentPr = await prisma.exercisePr.findFirst({
+      where: {
+        userId,
+        exerciseId,
+        prType: "weight",
+      },
+      orderBy: { value: "desc" },
     });
 
-    if (workoutExercise) {
-      exerciseId = workoutExercise.exerciseId;
-      const currentPr = await prisma.exercisePr.findFirst({
-        where: {
-          userId,
-          exerciseId: workoutExercise.exerciseId,
-          prType: "weight",
-        },
-        orderBy: { value: "desc" },
-      });
-
-      if (!currentPr || Number(body.weight) > Number(currentPr.value)) {
-        isPr = true;
-      }
+    if (!currentPr || Number(body.weight) > Number(currentPr.value)) {
+      isPr = true;
     }
   }
 
@@ -56,7 +62,7 @@ export async function POST(request: NextRequest) {
   });
 
   // Record PR if applicable
-  if (isPr && exerciseId) {
+  if (isPr) {
     await prisma.exercisePr.create({
       data: {
         userId,

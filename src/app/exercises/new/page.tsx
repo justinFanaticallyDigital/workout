@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Card } from "@/components/ui";
@@ -61,17 +61,37 @@ export default function NewExercisePage() {
   const [primaryMuscle, setPrimaryMuscle] = useState("");
   const [secondaryMuscles, setSecondaryMuscles] = useState("");
   const [equipment, setEquipment] = useState("");
+  const [saving, setSaving] = useState(false);
 
-  const generatedName = [name, modification, equipment]
-    .filter(Boolean)
-    .join(" ")
-    ? `${name}${modification ? ` - ${modification}` : ""}${equipment ? ` ${equipment}` : ""}`
-    : "";
+  const generatedName = useMemo(() => {
+    if (!name) return "";
+    return `${name}${modification ? ` - ${modification}` : ""}${equipment ? ` ${equipment}` : ""}`;
+  }, [name, modification, equipment]);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Placeholder: would save the exercise
-    router.push("/exercises");
+    if (!generatedName.trim()) return;
+    setSaving(true);
+    try {
+      const secondaries = secondaryMuscles.split(",").map((s) => s.trim()).filter(Boolean);
+      const res = await fetch("/api/exercises", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: generatedName.trim(),
+          equipment: equipment || null,
+          movementPattern: pattern || null,
+          primaryMuscle: primaryMuscle || null,
+          secondaryMuscle1: secondaries[0] ?? null,
+          secondaryMuscle2: secondaries[1] ?? null,
+        }),
+      });
+      if (!res.ok) throw new Error("Failed to create exercise");
+      router.push("/exercises");
+    } catch {
+      alert("Failed to create exercise. Please try again.");
+      setSaving(false);
+    }
   };
 
   return (
@@ -205,9 +225,10 @@ export default function NewExercisePage() {
         <div className="flex items-center gap-4 pt-2">
           <button
             type="submit"
-            className="bg-ft-white text-ft-bg font-mono text-sm font-bold px-6 py-2.5 rounded-lg hover:bg-ft-light transition-colors"
+            disabled={saving || !name.trim()}
+            className="bg-ft-white text-ft-bg font-mono text-sm font-bold px-6 py-2.5 rounded-lg hover:bg-ft-light transition-colors disabled:opacity-50"
           >
-            Create Exercise
+            {saving ? "Creating..." : "Create Exercise"}
           </button>
           <Link
             href="/exercises"

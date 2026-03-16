@@ -33,6 +33,10 @@ export async function POST(request: NextRequest) {
   const userId = await requireAuthUserId();
   const body = await request.json();
 
+  if (!body.bodyPart?.trim()) {
+    return NextResponse.json({ error: "bodyPart is required" }, { status: 400 });
+  }
+
   const injury = await prisma.injury.create({
     data: {
       userId,

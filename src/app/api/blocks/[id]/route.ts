@@ -1,14 +1,16 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { requireAuthUserId } from "@/lib/auth-helpers";
 
 export async function GET(
   _request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const userId = await requireAuthUserId();
   const { id } = await params;
 
   const block = await prisma.block.findUnique({
-    where: { id },
+    where: { id, program: { userId } },
     include: {
       program: { select: { name: true } },
       _count: { select: { workouts: true } },
