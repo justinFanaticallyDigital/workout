@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, use } from "react";
 import Link from "next/link";
 import { Card, SectionHeader, Tag } from "@/components/ui";
 
@@ -45,16 +45,11 @@ export default function WorkoutDetailPage({
 }: {
   params: Promise<{ workoutId: string }>;
 }) {
-  const [workoutId, setWorkoutId] = useState("");
+  const { workoutId } = use(params);
   const [workout, setWorkout] = useState<WorkoutDetail | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    params.then((p) => setWorkoutId(p.workoutId));
-  }, [params]);
-
-  useEffect(() => {
-    if (!workoutId) return;
     fetch(`/api/workouts/${workoutId}`)
       .then((res) => {
         if (!res.ok) return null;

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, use } from "react";
 import Link from "next/link";
 import Card from "@/components/ui/Card";
 import Tag from "@/components/ui/Tag";
@@ -42,8 +42,7 @@ export default function BlockDetailPage({
 }: {
   params: Promise<{ programId: string; blockId: string }>;
 }) {
-  const [programId, setProgramId] = useState("");
-  const [blockId, setBlockId] = useState("");
+  const { programId, blockId } = use(params);
   const [block, setBlock] = useState<Block | null>(null);
   const [loading, setLoading] = useState(true);
   const [showDayForm, setShowDayForm] = useState(false);
@@ -52,14 +51,6 @@ export default function BlockDetailPage({
   const [savingDay, setSavingDay] = useState(false);
 
   useEffect(() => {
-    params.then((p) => {
-      setProgramId(p.programId);
-      setBlockId(p.blockId);
-    });
-  }, [params]);
-
-  useEffect(() => {
-    if (!blockId) return;
     fetch(`/api/blocks/${blockId}`)
       .then((res) => {
         if (!res.ok) return null;
