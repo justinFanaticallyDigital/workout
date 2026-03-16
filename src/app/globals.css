@@ -2,14 +2,37 @@
 @tailwind components;
 @tailwind utilities;
 
+@layer base {
+  :root {
+    /* FitTrack theme — RGB triplets for Tailwind alpha support */
+    --ft-bg: 26 26 26;
+    --ft-surface: 46 46 46;
+    --ft-card: 67 67 67;
+    --ft-border: 85 85 85;
+    --ft-muted: 102 102 102;
+    --ft-dim: 136 136 136;
+    --ft-light: 204 204 204;
+    --ft-pale: 239 239 239;
+    --ft-white: 255 255 255;
+    --ft-accent: 224 224 224;
+    --ft-success: 111 191 115;
+    --ft-warn: 230 162 60;
+    --ft-danger: 239 83 80;
+
+    /* Font stacks */
+    --ft-font-mono: 'Courier New', Courier, monospace;
+    --ft-font-sans: system-ui, -apple-system, sans-serif;
+  }
+}
+
 * {
   box-sizing: border-box;
 }
 
 body {
-  background: #1a1a1a;
-  color: #ffffff;
-  font-family: system-ui, -apple-system, sans-serif;
+  background: rgb(var(--ft-bg));
+  color: rgb(var(--ft-white));
+  font-family: var(--ft-font-sans);
   margin: 0;
 }
 
@@ -19,27 +42,27 @@ body {
   height: 6px;
 }
 ::-webkit-scrollbar-track {
-  background: #1a1a1a;
+  background: rgb(var(--ft-bg));
 }
 ::-webkit-scrollbar-thumb {
-  background: #434343;
+  background: rgb(var(--ft-card));
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #555555;
+  background: rgb(var(--ft-border));
 }
 
 /* Input resets for the dark theme */
 input, textarea, select {
-  font-family: 'Courier New', Courier, monospace;
+  font-family: var(--ft-font-mono);
 }
 
 input:focus, textarea:focus, select:focus {
-  outline: 1px solid #888888;
+  outline: 1px solid rgb(var(--ft-dim));
   outline-offset: -1px;
 }
 
 input::placeholder, textarea::placeholder {
-  color: #666666;
+  color: rgb(var(--ft-muted));
 }
 
 /* Safe area padding for notched devices */

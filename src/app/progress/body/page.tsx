@@ -1,8 +1,9 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Card, SectionHeader } from "@/components/ui";
 import { useToast } from "@/components/ui/Toast";
+import { chartTheme } from "@/lib/theme";
 import {
   LineChart,
   Line,
@@ -30,6 +31,7 @@ export default function BodyMetricsPage() {
   const [notes, setNotes] = useState("");
   const [saving, setSaving] = useState(false);
   const toast = useToast();
+  const ct = useMemo(() => chartTheme(), []);
 
   const fetchEntries = () => {
     fetch("/api/progress/weight")
@@ -197,33 +199,27 @@ export default function BodyMetricsPage() {
               <LineChart data={chartData}>
                 <XAxis
                   dataKey="date"
-                  tick={{ fontSize: 10, fill: "#888888", fontFamily: "monospace" }}
+                  tick={ct.tick}
                   tickLine={false}
-                  axisLine={{ stroke: "#555555" }}
+                  axisLine={ct.axisLine}
                 />
                 <YAxis
                   domain={["dataMin - 2", "dataMax + 2"]}
-                  tick={{ fontSize: 10, fill: "#888888", fontFamily: "monospace" }}
+                  tick={ct.tick}
                   tickLine={false}
-                  axisLine={{ stroke: "#555555" }}
+                  axisLine={ct.axisLine}
                   width={45}
                 />
                 <Tooltip
-                  contentStyle={{
-                    backgroundColor: "#2e2e2e",
-                    border: "1px solid #555555",
-                    borderRadius: 4,
-                    fontFamily: "monospace",
-                    fontSize: 12,
-                  }}
-                  labelStyle={{ color: "#cccccc" }}
+                  contentStyle={ct.tooltipStyle}
+                  labelStyle={ct.labelStyle}
                 />
                 <Line
                   type="monotone"
                   dataKey="weight"
-                  stroke="#ffffff"
+                  stroke={ct.lineStroke}
                   strokeWidth={2}
-                  dot={{ fill: "#ffffff", r: 3 }}
+                  dot={ct.dot}
                   name="Weight (lbs)"
                 />
               </LineChart>

@@ -23,13 +23,16 @@ export async function POST(
     return NextResponse.json({ error: "name is required" }, { status: 400 });
   }
 
-  // Get the next block number
-  const last = await prisma.block.findFirst({
-    where: { programId },
-    orderBy: { blockNumber: "desc" },
-    select: { blockNumber: true },
-  });
-  const blockNumber = (last?.blockNumber ?? 0) + 1;
+  // Use provided blockNumber or auto-increment
+  let blockNumber = body.blockNumber;
+  if (!blockNumber) {
+    const last = await prisma.block.findFirst({
+      where: { programId },
+      orderBy: { blockNumber: "desc" },
+      select: { blockNumber: true },
+    });
+    blockNumber = (last?.blockNumber ?? 0) + 1;
+  }
 
   const block = await prisma.block.create({
     data: {
@@ -37,6 +40,7 @@ export async function POST(
       name: body.name,
       description: body.description ?? null,
       blockNumber,
+      phase: body.phase ?? null,
       durationWeeks: body.durationWeeks ?? null,
       scheduleDaysPerWeek: body.scheduleDaysPerWeek ?? null,
       focus: body.focus ?? null,

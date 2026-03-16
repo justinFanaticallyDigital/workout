@@ -1,5 +1,9 @@
 import type { Config } from "tailwindcss";
 
+function ftColor(varName: string) {
+  return `rgb(var(--ft-${varName}) / <alpha-value>)`;
+}
+
 const config: Config = {
   content: [
     "./src/pages/**/*.{js,ts,jsx,tsx,mdx}",
@@ -10,24 +14,24 @@ const config: Config = {
     extend: {
       colors: {
         ft: {
-          bg: "#1a1a1a",
-          surface: "#2e2e2e",
-          card: "#434343",
-          muted: "#666666",
-          border: "#555555",
-          light: "#cccccc",
-          pale: "#efefef",
-          white: "#ffffff",
-          accent: "#e0e0e0",
-          dim: "#888888",
-          success: "#6fbf73",
-          warn: "#e6a23c",
-          danger: "#ef5350",
+          bg: ftColor("bg"),
+          surface: ftColor("surface"),
+          card: ftColor("card"),
+          muted: ftColor("muted"),
+          border: ftColor("border"),
+          light: ftColor("light"),
+          pale: ftColor("pale"),
+          white: ftColor("white"),
+          accent: ftColor("accent"),
+          dim: ftColor("dim"),
+          success: ftColor("success"),
+          warn: ftColor("warn"),
+          danger: ftColor("danger"),
         },
       },
       fontFamily: {
-        mono: ["'Courier New'", "Courier", "monospace"],
-        sans: ["system-ui", "-apple-system", "sans-serif"],
+        mono: ["var(--ft-font-mono)"],
+        sans: ["var(--ft-font-sans)"],
       },
     },
   },

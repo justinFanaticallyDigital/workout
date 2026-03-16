@@ -4,6 +4,7 @@ import Nav from "@/components/ui/Nav";
 import { ToastProvider } from "@/components/ui/Toast";
 import SessionProvider from "@/components/SessionProvider";
 import OfflineSyncProvider from "@/components/OfflineSyncProvider";
+import ThemeInit from "@/components/ThemeInit";
 
 export const metadata: Metadata = {
   title: "FitTrack",
@@ -35,6 +36,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className="bg-ft-bg min-h-screen antialiased">
+        <ThemeInit />
         <SessionProvider>
           <OfflineSyncProvider>
             <ToastProvider>

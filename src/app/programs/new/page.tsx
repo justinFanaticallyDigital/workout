@@ -8,8 +8,16 @@ import { useToast } from "@/components/ui/Toast";
 
 const tiers = [
   {
+    id: "builder",
+    icon: "//",
+    title: "Program Builder",
+    subtitle: "Visual block-by-block design",
+    desc: "Design your program with a visual timeline. Set goals, define block phases, configure training days — all in one view.",
+    href: "/programs/new/builder",
+  },
+  {
     id: "template",
-    icon: "📋",
+    icon: "[]",
     title: "Use a Template",
     subtitle: "Start from a proven program",
     desc: "Pick from pre-built templates like PPL, Upper/Lower, Full Body, or 5/3/1. Clone it and start training immediately.",
@@ -17,7 +25,7 @@ const tiers = [
   },
   {
     id: "quick",
-    icon: "⚡",
+    icon: ">>",
     title: "Build As You Go",
     subtitle: "Start with just a name",
     desc: "Create a blank program and add blocks, days, and exercises as you train. Maximum flexibility.",
@@ -25,7 +33,7 @@ const tiers = [
   },
   {
     id: "goal",
-    icon: "🎯",
+    icon: "^^",
     title: "Goal-Driven",
     subtitle: "Plan backward from a goal",
     desc: "Set a strength, body weight, or frequency target. We'll suggest a program structure to get you there.",
