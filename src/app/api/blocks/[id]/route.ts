@@ -6,11 +6,11 @@ export async function GET(
   _request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  await requireAuthUserId();
+  const userId = await requireAuthUserId();
   const { id } = await params;
 
   const block = await prisma.block.findUnique({
-    where: { id },
+    where: { id, program: { userId } },
     include: {
       program: { select: { name: true } },
       _count: { select: { workouts: true } },

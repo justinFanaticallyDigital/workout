@@ -1,14 +1,19 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { requireAuthUserId } from "@/lib/auth-helpers";
 
 export async function GET(
   _request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const userId = await requireAuthUserId();
   const { id } = await params;
 
   const workoutExercises = await prisma.workoutExercise.findMany({
-    where: { exerciseId: id },
+    where: {
+      exerciseId: id,
+      workout: { userId },
+    },
     include: {
       sets: { orderBy: { setNumber: "asc" } },
       workout: { select: { date: true } },

@@ -6,9 +6,22 @@ export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  await requireAuthUserId();
+  const userId = await requireAuthUserId();
   const { id: workoutId } = await params;
   const body = await request.json();
+
+  // Verify ownership
+  const workout = await prisma.workout.findUnique({
+    where: { id: workoutId, userId },
+    select: { id: true },
+  });
+  if (!workout) {
+    return NextResponse.json({ error: "Workout not found" }, { status: 404 });
+  }
+
+  if (!body.exerciseId) {
+    return NextResponse.json({ error: "exerciseId is required" }, { status: 400 });
+  }
 
   const last = await prisma.workoutExercise.findFirst({
     where: { workoutId },

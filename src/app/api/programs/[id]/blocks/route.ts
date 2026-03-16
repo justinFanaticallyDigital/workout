@@ -6,9 +6,22 @@ export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  await requireAuthUserId();
+  const userId = await requireAuthUserId();
   const { id: programId } = await params;
   const body = await request.json();
+
+  // Verify ownership
+  const program = await prisma.program.findUnique({
+    where: { id: programId, userId },
+    select: { id: true },
+  });
+  if (!program) {
+    return NextResponse.json({ error: "Program not found" }, { status: 404 });
+  }
+
+  if (!body.name?.trim()) {
+    return NextResponse.json({ error: "name is required" }, { status: 400 });
+  }
 
   // Get the next block number
   const last = await prisma.block.findFirst({

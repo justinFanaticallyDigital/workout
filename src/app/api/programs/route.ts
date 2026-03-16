@@ -26,6 +26,10 @@ export async function POST(request: NextRequest) {
   const userId = await requireAuthUserId();
   const body = await request.json();
 
+  if (!body.name?.trim()) {
+    return NextResponse.json({ error: "name is required" }, { status: 400 });
+  }
+
   const program = await prisma.program.create({
     data: {
       userId,

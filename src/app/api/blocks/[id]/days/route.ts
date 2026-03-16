@@ -6,9 +6,22 @@ export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  await requireAuthUserId();
+  const userId = await requireAuthUserId();
   const { id: blockId } = await params;
   const body = await request.json();
+
+  // Verify ownership
+  const block = await prisma.block.findUnique({
+    where: { id: blockId, program: { userId } },
+    select: { id: true },
+  });
+  if (!block) {
+    return NextResponse.json({ error: "Block not found" }, { status: 404 });
+  }
+
+  if (!body.name?.trim()) {
+    return NextResponse.json({ error: "name is required" }, { status: 400 });
+  }
 
   // Get the next sort order
   const last = await prisma.blockDay.findFirst({
