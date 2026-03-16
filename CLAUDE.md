@@ -77,7 +77,8 @@ src/
 │   ├── prisma.ts                 # Singleton PrismaClient (PrismaPg adapter)
 │   ├── auth.ts                   # NextAuth config (Google, Prisma adapter)
 │   ├── auth-helpers.ts           # getAuthUserId(), requireAuth(), requireAuthUserId()
-│   └── demo-user.ts             # Demo user fallback for dev
+│   ├── demo-user.ts             # Demo user fallback for dev
+│   └── offline-queue.ts         # Offline workout queue (localStorage + sync)
 ├── types/
 │   └── next-auth.d.ts            # Session type extension (adds user.id)
 └── generated/prisma/             # Auto-generated Prisma client (gitignored)
@@ -126,12 +127,16 @@ NEXTAUTH_SECRET=...                    # Session encryption
 ## Key Implementation Patterns
 - **Server components** use direct Prisma queries with `getAuthUserId()` + `redirect("/signin")`
 - **Client components** use `fetch("/api/...")` to API routes
-- **Dynamic routes** use `params: Promise<{ id: string }>` pattern (Next.js 14+)
+- **Dynamic routes** use `params: Promise<{ id: string }>` pattern (Next.js 14+) in server components; plain `{ params: { id: string } }` in client components
 - **All dynamic pages** export `const dynamic = "force-dynamic"` to prevent caching
 - **Auth in API routes** uses `requireAuthUserId()` which throws on unauthenticated
 - **PR detection** is automatic in POST /api/sets (compares weight to user's max)
 - **Volume calculation** = weight x reps (excluding warmup sets)
 - **Streak** = consecutive days with workouts, starting from today or yesterday
+- **Workout logger** (`/log/[workoutId]`) supports both template-based (blockDayId) and blank (`new-blank`) workouts with exercise picker
+- **Exercise search** uses debounced fetch (300ms) with AbortController cleanup against GET `/api/exercises?search=`
+- **Offline queue** (`/lib/offline-queue.ts`) queues failed workout saves and syncs on `online` event
+- **Auto-save** uses debounced (2s) localStorage with `workout-draft-{id}` keys, 24h TTL
 
 ## Build Plan (Original Spec)
 
@@ -145,16 +150,18 @@ NEXTAUTH_SECRET=...                    # Session encryption
 7. Deploy to Vercel with environment variables
 8. Make all pages dynamic — replace hardcoded data with Prisma queries/API fetches
 
-### Phase 2: Core Functionality (IN PROGRESS)
-1. **Program/Block/Day creation UI** — API routes exist (POST) but no creation pages yet
-2. **Wire up "Finish" button in workout logger** — needs to POST workout + sets to API
-3. **Workout auto-save** — currently loses data on page close
-4. **Exercise history charts** — placeholders on exercise detail page
-5. **Body metrics page** (`/progress/body`) — placeholder, API ready
-6. **Progress photos** (`/progress/photos`) — placeholder, upload not wired
-7. **Injury tracker UI** (`/injuries`) — placeholder, API exists
-8. **Settings page** — placeholder
-9. **Data export** — xlsx dependency installed but not wired up
+### Phase 2: Core Functionality (COMPLETE)
+1. **Program/Block/Day creation UI** — `/programs/new` page, inline block/day forms on detail pages
+2. **Finish button in workout logger** — creates workout, adds exercises, logs sets, finalizes with endTime
+3. **Workout auto-save** — 2s debounced localStorage drafts, restored on reload (24h TTL)
+4. **Exercise history charts** — Recharts volume-over-time chart + PR display on exercise detail page
+5. **Body metrics page** (`/progress/body`) — weight logging form, trend chart, history table
+6. **Progress photos** (`/progress/photos`) — photo gallery with pose types (front/side/back/custom)
+7. **Injury tracker UI** (`/injuries`) — full CRUD with severity levels, notes, treatment tracking
+8. **Settings page** — unit preferences (localStorage), data export
+9. **Data export** — CSV export for workouts, body metrics, and PRs
+10. **Exercise picker in workout logger** — search overlay for adding exercises to blank/template workouts
+11. **Offline support** — queue system for offline workouts, auto-sync on reconnect
 
 ### Phase 3: Polish & Enhancements (FUTURE)
 - Workout history / session replay
@@ -164,11 +171,16 @@ NEXTAUTH_SECRET=...                    # Session encryption
 - PWA support for offline logging
 
 ## Current State
-**Phase 1 is fully complete.** All infrastructure is built and deployed:
+**Phase 1 and Phase 2 are fully complete.** The app is functional end-to-end:
 - 367 exercises seeded
-- All 16 API routes connected to real Prisma queries
+- All API routes connected to real Prisma queries
 - All pages fetch from database (no hardcoded data)
 - Google OAuth working
 - Deployed on Vercel + Railway PostgreSQL
+- Full workout logging flow: pick template or start blank → search/add exercises → log sets → finish
+- Program/block/day creation UI wired up
+- Body metrics, progress photos, injury tracker all functional
+- Offline queue + auto-save for data resilience
+- CSV data export from settings page
 
-**Phase 2 priority:** Seed a real training program and wire up the Finish button so workouts can actually be logged end-to-end.
+**Phase 3 priority:** Workout history/replay and mobile responsiveness pass.
