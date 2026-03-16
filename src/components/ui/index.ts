@@ -7,3 +7,7 @@ export { default as SectionHeader } from "./SectionHeader";
 export { default as DataTable } from "./DataTable";
 export { ToastProvider, useToast } from "./Toast";
 export { Skeleton, SkeletonCard, SkeletonStat } from "./Skeleton";
+export { default as StatusIcon } from "./StatusIcon";
+export { default as Timeline } from "./Timeline";
+export { default as EditableExerciseTable } from "./EditableExerciseTable";
+export { default as SyncIndicator } from "./SyncIndicator";

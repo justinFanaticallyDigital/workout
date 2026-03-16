@@ -41,7 +41,7 @@ interface ExerciseData {
   sets: SetData[];
   notes: string;
   lastSets: LastSet[];
-  suggestedWeight: number | null;
+  suggestedWeight: Suggestion | null;
 }
 
 interface BlockDayData {
@@ -93,27 +93,47 @@ function WorkoutTimer({ startTime }: { startTime: number }) {
   );
 }
 
+interface Suggestion {
+  weight: number;
+  hint: string; // e.g. "+5 lbs" or "Same weight, try +1 rep"
+}
+
 function calcSuggestion(
   progressionType: string,
   increment: number | null,
   lastSets: LastSet[],
   targetRepRange: string
-): number | null {
+): Suggestion | null {
   if (lastSets.length === 0) return null;
   const lastWeight = lastSets[0]?.weight;
   if (!lastWeight) return null;
 
   if (progressionType === "linear" && increment) {
-    return lastWeight + increment;
+    return { weight: lastWeight + increment, hint: `+${increment}` };
   }
   if (progressionType === "double") {
-    // If all reps hit top of range, increase weight
     const topReps = parseInt(targetRepRange.split("-").pop() ?? "12");
     const allHitTop = lastSets.every((s) => s.reps && s.reps >= topReps);
-    if (allHitTop) return lastWeight + (increment ?? 5);
-    return lastWeight; // keep same weight, increase reps
+    if (allHitTop) {
+      const inc = increment ?? 5;
+      return { weight: lastWeight + inc, hint: `+${inc} (hit top reps)` };
+    }
+    return { weight: lastWeight, hint: "Same weight, try +1 rep" };
+  }
+  if (progressionType === "rpe_based") {
+    // If last RPE was low, suggest increase
+    const lastRpe = lastSets[0]?.rir != null ? 10 - lastSets[0].rir : null;
+    if (lastRpe && lastRpe < 7) {
+      const inc = increment ?? 5;
+      return { weight: lastWeight + inc, hint: `+${inc} (RPE was ${lastRpe})` };
+    }
+    return { weight: lastWeight, hint: "RPE on target" };
   }
   return null;
+}
+
+interface RecentExercise extends SearchExercise {
+  sessionCount: number;
 }
 
 function ExercisePicker({
@@ -125,11 +145,17 @@ function ExercisePicker({
 }) {
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<SearchExercise[]>([]);
+  const [recents, setRecents] = useState<RecentExercise[]>([]);
   const [searching, setSearching] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     inputRef.current?.focus();
+    // Load recent exercises
+    fetch("/api/exercises/recent")
+      .then((r) => r.ok ? r.json() : null)
+      .then((data) => { if (data?.exercises) setRecents(data.exercises); })
+      .catch(() => {});
   }, []);
 
   useEffect(() => {
@@ -183,6 +209,33 @@ function ExercisePicker({
           className="w-full bg-ft-surface border border-ft-card rounded px-3 py-2.5 text-sm font-mono text-ft-white placeholder:text-ft-muted focus:outline-none focus:border-ft-dim mb-3"
         />
         <div className="flex-1 overflow-y-auto pb-8">
+          {/* Recent exercises (shown when no search query) */}
+          {query.length < 2 && recents.length > 0 && (
+            <div className="mb-4">
+              <p className="text-ft-dim text-[10px] font-mono uppercase tracking-wider mb-2 px-3">
+                Recent Exercises
+              </p>
+              {recents.map((ex) => (
+                <button
+                  key={ex.id}
+                  onClick={() => onSelect(ex)}
+                  className="w-full text-left px-3 py-2.5 border-b border-ft-card hover:bg-ft-surface transition-colors"
+                >
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-ft-white text-sm font-mono">{ex.name}</p>
+                      <p className="text-ft-dim text-xs font-mono mt-0.5">
+                        {[ex.primaryMuscle, ex.movementPattern].filter(Boolean).join(" · ")}
+                      </p>
+                    </div>
+                    <span className="text-ft-muted text-[10px] font-mono">
+                      {ex.sessionCount} sessions
+                    </span>
+                  </div>
+                </button>
+              ))}
+            </div>
+          )}
           {searching && (
             <p className="text-ft-dim text-xs font-mono text-center py-4">
               Searching...
@@ -345,16 +398,21 @@ export default function ActiveWorkoutPage({
   const updateSet = useCallback(
     (exIdx: number, setIdx: number, field: keyof SetData, value: unknown) => {
       setExercises((prev) =>
-        prev.map((ex, ei) =>
-          ei !== exIdx
-            ? ex
-            : {
-                ...ex,
-                sets: ex.sets.map((s, si) =>
-                  si !== setIdx ? s : { ...s, [field]: value }
-                ),
+        prev.map((ex, ei) => {
+          if (ei !== exIdx) return ex;
+          const newSets = ex.sets.map((s, si) =>
+            si !== setIdx ? s : { ...s, [field]: value }
+          );
+          // Weight carry-forward: when weight is entered, fill empty subsequent sets
+          if (field === "weight" && value != null && typeof value === "number") {
+            for (let i = setIdx + 1; i < newSets.length; i++) {
+              if (newSets[i].weight === null) {
+                newSets[i] = { ...newSets[i], weight: value as number };
               }
-        )
+            }
+          }
+          return { ...ex, sets: newSets };
+        })
       );
     },
     []
@@ -706,7 +764,10 @@ export default function ActiveWorkoutPage({
                       Suggested
                     </p>
                     <p className="text-ft-success text-sm font-mono font-bold">
-                      {current.suggestedWeight} lbs
+                      {current.suggestedWeight.weight} lbs
+                    </p>
+                    <p className="text-ft-success/70 text-[10px] font-mono mt-0.5">
+                      {current.suggestedWeight.hint}
                     </p>
                   </div>
                 )}

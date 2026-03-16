@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useSession, signIn, signOut } from "next-auth/react";
 import { useState, useEffect, useRef } from "react";
+import SyncIndicator from "./SyncIndicator";
 
 const navItems = [
   { label: "Dashboard", icon: "◆", href: "/" },
@@ -83,6 +84,8 @@ export default function Nav() {
       </div>
 
       <div className="flex items-center gap-2">
+        {/* Sync status */}
+        <SyncIndicator />
         {/* User menu */}
         <div className="relative" ref={menuRef}>
           {status === "loading" ? (

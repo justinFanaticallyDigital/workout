@@ -6,6 +6,7 @@ import Card from "@/components/ui/Card";
 import Tag from "@/components/ui/Tag";
 import Stat from "@/components/ui/Stat";
 import SectionHeader from "@/components/ui/SectionHeader";
+import StatusIcon from "@/components/ui/StatusIcon";
 import { useToast } from "@/components/ui/Toast";
 
 interface BlockDayExercise {
@@ -241,10 +242,18 @@ export default function BlockDetailPage({
             >
               <Card className="hover:border-ft-dim transition-colors h-full">
                 <div className="flex items-center justify-between mb-3">
-                  <h3 className="font-mono text-sm font-bold">
-                    Day {day.dayNumber} &middot; {day.name}
-                  </h3>
-                  <Tag>{day.dayType}</Tag>
+                  <div className="flex items-center gap-2">
+                    <StatusIcon type="day" dayType={day.dayType as "lifting" | "cardio" | "conditioning" | "mobility" | "rest"} />
+                    <h3 className="font-mono text-sm font-bold">
+                      Day {day.dayNumber} &middot; {day.name}
+                    </h3>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Tag>{day.dayType}</Tag>
+                    <span className="text-ft-dim text-[10px] font-mono">
+                      {day.exercises.length}
+                    </span>
+                  </div>
                 </div>
                 {day.exercises.length > 0 ? (
                   <ul className="space-y-1.5">
