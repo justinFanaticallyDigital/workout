@@ -62,3 +62,35 @@ export async function POST(
 
   return NextResponse.json(benchmark, { status: 201 });
 }
+
+export async function PATCH(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const userId = await requireAuthUserId();
+  const { id: programId } = await params;
+  const body = await request.json();
+
+  if (!body.benchmarkId) {
+    return NextResponse.json({ error: "benchmarkId is required" }, { status: 400 });
+  }
+
+  const benchmark = await prisma.programBenchmark.findUnique({
+    where: { id: body.benchmarkId, programId, program: { userId } },
+    select: { id: true },
+  });
+  if (!benchmark) {
+    return NextResponse.json({ error: "Benchmark not found" }, { status: 404 });
+  }
+
+  const updated = await prisma.programBenchmark.update({
+    where: { id: body.benchmarkId },
+    data: {
+      actualValue: body.actualValue !== undefined ? body.actualValue : undefined,
+      achievedAt: body.actualValue != null ? new Date() : null,
+    },
+    include: { block: { select: { name: true, blockNumber: true } } },
+  });
+
+  return NextResponse.json(updated);
+}

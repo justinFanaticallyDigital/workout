@@ -1,4 +1,4 @@
-import { Card, SectionHeader } from "@/components/ui";
+import { Card, SectionHeader, ProgressBar, Tag } from "@/components/ui";
 import { prisma } from "@/lib/prisma";
 import { getAuthUserId } from "@/lib/auth-helpers";
 import { redirect } from "next/navigation";
@@ -50,7 +50,7 @@ export default async function ProgressPage() {
   const userId = await getAuthUserId();
   if (!userId) redirect("/signin");
 
-  const [bodyMetrics, prs, recentWorkouts] = await Promise.all([
+  const [bodyMetrics, prs, recentWorkouts, goals, totalWorkoutCount] = await Promise.all([
     prisma.bodyMetric.findMany({
       where: { userId },
       orderBy: { date: "asc" },
@@ -79,7 +79,60 @@ export default async function ProgressPage() {
       },
       orderBy: { date: "asc" },
     }),
+    // Active goals with linked program info
+    prisma.goal.findMany({
+      where: { userId, status: "active" },
+      include: {
+        program: { select: { id: true, name: true, status: true } },
+      },
+      orderBy: { createdAt: "desc" },
+    }),
+    // Total workout count (for frequency goals)
+    prisma.workout.count({ where: { userId } }),
   ]);
+
+  // Calculate current value for each goal based on type
+  const latestWeight = bodyMetrics.length > 0 ? Number(bodyMetrics[bodyMetrics.length - 1].weight) : null;
+  const goalProgressData = goals.map((goal) => {
+    const startVal = goal.startValue ? Number(goal.startValue) : 0;
+    const targetVal = goal.targetValue ? Number(goal.targetValue) : 0;
+    let currentVal = startVal;
+
+    switch (goal.type) {
+      case "bodyweight":
+      case "weight":
+      case "bodycomp":
+        currentVal = latestWeight ?? startVal;
+        break;
+      case "strength":
+      case "powerlifting": {
+        // Find best PR value for this goal's metric (or any PR if no metric specified)
+        const relevantPr = prs.find((pr) =>
+          goal.metric ? pr.exercise.name.toLowerCase().includes(goal.metric.toLowerCase()) : true
+        );
+        currentVal = relevantPr ? Number(relevantPr.value) : startVal;
+        break;
+      }
+      case "frequency":
+        currentVal = totalWorkoutCount;
+        break;
+      default:
+        break;
+    }
+
+    // Calculate progress percentage
+    const range = targetVal - startVal;
+    const progress = range !== 0 ? ((currentVal - startVal) / range) * 100 : 0;
+    const pct = Math.max(0, Math.min(100, progress));
+
+    return {
+      ...goal,
+      currentVal,
+      startVal,
+      targetVal,
+      pct,
+    };
+  });
 
   // Build body weight chart data (last 6 entries)
   const weightData = bodyMetrics
@@ -146,6 +199,49 @@ export default async function ProgressPage() {
           Track body metrics, training volume, and strength
         </p>
       </div>
+
+      {/* Active Goals */}
+      {goalProgressData.length > 0 && (
+        <Card>
+          <SectionHeader title="Active Goals" subtitle={`${goalProgressData.length} goal${goalProgressData.length !== 1 ? "s" : ""}`} />
+          <div className="space-y-4">
+            {goalProgressData.map((g) => (
+              <div key={g.id} className="flex flex-col gap-1.5">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <span className="text-ft-white text-sm font-mono font-bold">{g.title}</span>
+                    <Tag>{g.type}</Tag>
+                    {g.priority === "primary" && <Tag variant="success">Primary</Tag>}
+                  </div>
+                  <span className="text-ft-dim text-xs font-mono">
+                    {g.currentVal.toFixed(g.currentVal % 1 !== 0 ? 1 : 0)} / {g.targetVal} {g.targetUnit ?? ""}
+                  </span>
+                </div>
+                <ProgressBar
+                  value={g.pct}
+                  max={100}
+                />
+                <div className="flex items-center justify-between">
+                  <span className="text-ft-muted text-[10px] font-mono">
+                    Start: {g.startVal} {g.targetUnit ?? ""}
+                  </span>
+                  <span className="text-ft-dim text-[10px] font-mono">
+                    {Math.round(g.pct)}% complete
+                  </span>
+                  {g.program && (
+                    <Link
+                      href={`/programs/${g.program.id}`}
+                      className="text-ft-muted text-[10px] font-mono hover:text-ft-light"
+                    >
+                      {g.program.name} &rarr;
+                    </Link>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        </Card>
+      )}
 
       {/* Body Weight Chart */}
       <Card>
