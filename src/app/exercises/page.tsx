@@ -27,6 +27,13 @@ export default function ExerciseLibraryPage() {
   const [filters, setFilters] = useState<string[]>(["All"]);
   const router = useRouter();
 
+  // Read ?pattern= from URL on mount
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const pattern = params.get("pattern");
+    if (pattern) setActiveFilter(pattern);
+  }, []);
+
   useEffect(() => {
     fetch("/api/exercises")
       .then((res) => res.json())
