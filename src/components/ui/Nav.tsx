@@ -13,6 +13,7 @@ const navItems = [
   { label: "Log", icon: "▶", href: "/log" },
   { label: "History", icon: "◷", href: "/history" },
   { label: "Progress", icon: "◈", href: "/progress" },
+  { label: "Nutrition", icon: "◉", href: "/nutrition" },
 ];
 
 const secondaryItems = [

@@ -69,6 +69,9 @@ model User {
   bodyMetrics    BodyMetric[]
   progressPhotos ProgressPhoto[]
   injuries       Injury[]
+  foodItems      FoodItem[]
+  meals          Meal[]
+  nutritionTargets NutritionTarget[]
 
   @@map("users")
 }
@@ -424,4 +427,88 @@ model InjuryNote {
 
   @@index([injuryId])
   @@map("injury_notes")
+}
+
+// ─── Nutrition ──────────────────────────────────────────
+model FoodItem {
+  id          String   @id @default(uuid()) @db.Uuid
+  userId      String?  @map("user_id") @db.Uuid
+  name        String
+  brand       String?
+  barcode     String?
+  servingSize Decimal  @default(100) @map("serving_size")
+  servingUnit String   @default("g") @map("serving_unit")
+  calories    Decimal  @default(0)
+  protein     Decimal  @default(0)
+  carbs       Decimal  @default(0)
+  fat         Decimal  @default(0)
+  fiber       Decimal? @default(0)
+  sugar       Decimal? @default(0)
+  sodium      Decimal? @default(0)
+  source      String   @default("custom") // custom, usda, openfoodfacts
+  externalId  String?  @map("external_id")
+  isCustom    Boolean  @default(true) @map("is_custom")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  user      User?      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  mealItems MealItem[]
+
+  @@index([userId])
+  @@index([barcode])
+  @@index([name])
+  @@map("food_items")
+}
+
+enum MealType {
+  breakfast
+  lunch
+  dinner
+  snack
+}
+
+model Meal {
+  id       String   @id @default(uuid()) @db.Uuid
+  userId   String   @map("user_id") @db.Uuid
+  date     DateTime @db.Date
+  mealType MealType @map("meal_type")
+  notes    String?
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user  User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  items MealItem[]
+
+  @@index([userId])
+  @@index([userId, date])
+  @@map("meals")
+}
+
+model MealItem {
+  id         String  @id @default(uuid()) @db.Uuid
+  mealId     String  @map("meal_id") @db.Uuid
+  foodItemId String  @map("food_item_id") @db.Uuid
+  quantity   Decimal @default(1)
+  sortOrder  Int     @default(0) @map("sort_order")
+
+  meal     Meal     @relation(fields: [mealId], references: [id], onDelete: Cascade)
+  foodItem FoodItem @relation(fields: [foodItemId], references: [id], onDelete: Cascade)
+
+  @@index([mealId])
+  @@map("meal_items")
+}
+
+model NutritionTarget {
+  id        String   @id @default(uuid()) @db.Uuid
+  userId    String   @map("user_id") @db.Uuid
+  label     String   @default("Default")
+  calories  Decimal?
+  protein   Decimal?
+  carbs     Decimal?
+  fat       Decimal?
+  isActive  Boolean  @default(true) @map("is_active")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("nutrition_targets")
 }
