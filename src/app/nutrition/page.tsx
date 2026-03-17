@@ -553,7 +553,15 @@ export default function NutritionPage() {
       )}
 
       {/* Header */}
-      <h1 className="text-2xl font-mono font-bold tracking-wide mb-1">Nutrition</h1>
+      <div className="flex items-center justify-between mb-1">
+        <h1 className="text-2xl font-mono font-bold tracking-wide">Nutrition</h1>
+        <a
+          href="/nutrition/plans"
+          className="px-3 py-1.5 text-sm font-mono text-ft-dim hover:text-ft-light border border-ft-border rounded transition-colors"
+        >
+          Meal Plans
+        </a>
+      </div>
       <p className="text-ft-dim text-sm font-mono mb-4">Track your daily food intake</p>
 
       {/* Date Picker */}
@@ -705,7 +713,19 @@ export default function NutritionPage() {
                   {/* Meal subtotal */}
                   {typeMeals.some((m) => m.items.length > 0) && (
                     <div className="flex items-center justify-between pt-1.5 text-ft-dim">
-                      <span className="text-[10px] font-mono uppercase">Subtotal</span>
+                      <div className="flex items-center gap-2">
+                        <span className="text-[10px] font-mono uppercase">Subtotal</span>
+                        {typeMeals.map((m) => (
+                          <button
+                            key={m.id}
+                            onClick={() => handleDeleteMeal(m.id)}
+                            className="text-[10px] font-mono text-ft-muted hover:text-ft-danger transition-colors"
+                            title="Delete meal"
+                          >
+                            Delete
+                          </button>
+                        ))}
+                      </div>
                       <span className="text-[10px] font-mono">
                         {typeMeals.reduce(
                           (sum, m) => sum + m.items.reduce((s, i) => s + Math.round(Number(i.foodItem.calories) * Number(i.quantity)), 0),
