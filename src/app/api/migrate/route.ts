@@ -6,6 +6,11 @@ import { requireAuthUserId } from "@/lib/auth-helpers";
 export async function POST() {
   await requireAuthUserId(); // must be logged in
 
+  // Only allow in development
+  if (process.env.NODE_ENV === "production") {
+    return NextResponse.json({ error: "Not available in production" }, { status: 403 });
+  }
+
   const results: string[] = [];
 
   const migrations = [
