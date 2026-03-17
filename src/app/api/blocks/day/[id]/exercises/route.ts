@@ -40,6 +40,7 @@ export async function POST(
       targetRepRange: body.targetRepRange ?? null,
       targetRpe: body.targetRpe ?? null,
       progressionType: body.progressionType ?? "none",
+      progressionIncrement: body.progressionIncrement ?? null,
       notes: body.notes ?? null,
     },
     include: {

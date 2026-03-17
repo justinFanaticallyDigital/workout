@@ -285,6 +285,7 @@ export default function ProgramWorkspacePage({
     targetRepRange: string | null;
     targetRpe: string | null;
     progressionType: string;
+    progressionIncrement: number | null;
   }) => {
     try {
       const res = await fetch(`/api/blocks/day/${dayId}/exercises`, {
@@ -302,7 +303,7 @@ export default function ProgramWorkspacePage({
             ...b,
             days: b.days.map((d) =>
               d.id === dayId
-                ? { ...d, exercises: [...d.exercises, { ...bde, altExercise: null, progressionIncrement: null }] }
+                ? { ...d, exercises: [...d.exercises, { ...bde, altExercise: null, progressionIncrement: bde.progressionIncrement ?? null }] }
                 : d
             ),
           })),

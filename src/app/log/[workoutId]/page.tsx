@@ -42,6 +42,7 @@ interface ExerciseData {
   notes: string;
   lastSets: LastSet[];
   suggestedWeight: Suggestion | null;
+  progressionInfo: ProgressionInfo;
 }
 
 interface BlockDayData {
@@ -96,13 +97,22 @@ function WorkoutTimer({ startTime }: { startTime: number }) {
 interface Suggestion {
   weight: number;
   hint: string; // e.g. "+5 lbs" or "Same weight, try +1 rep"
+  reps?: number;
+  sets?: number;
+}
+
+interface ProgressionInfo {
+  estimated1RM: number | null;
+  progressionStatus: "stalled" | "progressing" | "insufficient_data" | null;
+  stalledSessions: number;
 }
 
 function calcSuggestion(
   progressionType: string,
   increment: number | null,
   lastSets: LastSet[],
-  targetRepRange: string
+  targetRepRange: string,
+  progressionInfo?: ProgressionInfo
 ): Suggestion | null {
   if (lastSets.length === 0) return null;
   const lastWeight = lastSets[0]?.weight;
@@ -121,13 +131,46 @@ function calcSuggestion(
     return { weight: lastWeight, hint: "Same weight, try +1 rep" };
   }
   if (progressionType === "rpe_based") {
-    // If last RPE was low, suggest increase
     const lastRpe = lastSets[0]?.rir != null ? 10 - lastSets[0].rir : null;
     if (lastRpe && lastRpe < 7) {
       const inc = increment ?? 5;
       return { weight: lastWeight + inc, hint: `+${inc} (RPE was ${lastRpe})` };
     }
     return { weight: lastWeight, hint: "RPE on target" };
+  }
+  if (progressionType === "wave") {
+    // Use estimated 1RM as the base weight for wave calculations
+    const baseWeight = progressionInfo?.estimated1RM ?? lastWeight;
+    // Determine week in cycle from increment field (default to week 0)
+    const weekInCycle = increment ? Math.round(increment) % 4 : 0;
+    const phases = ["Accumulation", "Intensify", "Peak", "Deload"];
+    const multipliers = [0.75, 0.82, 0.9, 0.6];
+    const repSchemes = [
+      { sets: 3, reps: 10 },
+      { sets: 4, reps: 8 },
+      { sets: 5, reps: 5 },
+      { sets: 3, reps: 10 },
+    ];
+    const cycle = weekInCycle % 4;
+    const suggestedWeight = Math.round(baseWeight * multipliers[cycle]);
+    return {
+      weight: suggestedWeight,
+      hint: `${phases[cycle]} (${Math.round(multipliers[cycle] * 100)}% of 1RM)`,
+      sets: repSchemes[cycle].sets,
+      reps: repSchemes[cycle].reps,
+    };
+  }
+  if (progressionType === "percentage_based") {
+    const est1rm = progressionInfo?.estimated1RM;
+    if (est1rm && increment) {
+      const suggestedWeight = Math.round(est1rm * (increment / 100));
+      return { weight: suggestedWeight, hint: `${increment}% of e1RM (${est1rm})` };
+    }
+    if (est1rm) {
+      // Default to 75% if no percentage specified
+      const suggestedWeight = Math.round(est1rm * 0.75);
+      return { weight: suggestedWeight, hint: `75% of e1RM (${est1rm})` };
+    }
   }
   return null;
 }
@@ -333,7 +376,12 @@ export default function ActiveWorkoutPage({
             const draft = JSON.parse(saved);
             // Only restore if less than 24 hours old
             if (draft.savedAt && Date.now() - draft.savedAt < 24 * 60 * 60 * 1000) {
-              setExercises(draft.exercises);
+              // Ensure progressionInfo exists for backward compatibility with older drafts
+              const restoredExercises = (draft.exercises as ExerciseData[]).map((ex) => ({
+                ...ex,
+                progressionInfo: ex.progressionInfo ?? { estimated1RM: null, progressionStatus: null, stalledSessions: 0 },
+              }));
+              setExercises(restoredExercises);
               setWorkoutNotes(draft.workoutNotes || "");
               setRestored(true);
               setLoading(false);
@@ -363,31 +411,45 @@ export default function ActiveWorkoutPage({
           notes: "",
           lastSets: [],
           suggestedWeight: null,
+          progressionInfo: { estimated1RM: null, progressionStatus: null, stalledSessions: 0 },
         }));
         setExercises(exerciseList);
         setLoading(false);
 
-        // Fetch last performance for all exercises, then apply in one update
+        // Fetch last performance, estimated 1RM, and progression status for all exercises
         Promise.all(
           data.exercises.map((bde) =>
-            fetch(`/api/exercises/${bde.exerciseId}/last-performance`)
-              .then((r) => r.ok ? r.json() : null)
-              .catch(() => null)
+            Promise.all([
+              fetch(`/api/exercises/${bde.exerciseId}/last-performance`)
+                .then((r) => r.ok ? r.json() : null)
+                .catch(() => null),
+              fetch(`/api/exercises/${bde.exerciseId}/estimated-1rm`)
+                .then((r) => r.ok ? r.json() : null)
+                .catch(() => null),
+              fetch(`/api/exercises/${bde.exerciseId}/progression-status`)
+                .then((r) => r.ok ? r.json() : null)
+                .catch(() => null),
+            ])
           )
         ).then((results) => {
           setExercises((prev) =>
             prev.map((ex, i) => {
-              const perf = results[i];
-              if (!perf?.lastPerformance) return ex;
-              const lastSets = perf.lastPerformance.sets as LastSet[];
+              const [perf, e1rmData, statusData] = results[i];
+              const lastSets = perf?.lastPerformance?.sets as LastSet[] ?? [];
               const bde = data.exercises[i];
+              const progressionInfo: ProgressionInfo = {
+                estimated1RM: e1rmData?.estimated1RM ?? null,
+                progressionStatus: statusData?.status ?? null,
+                stalledSessions: statusData?.sessions ?? 0,
+              };
               const suggested = calcSuggestion(
                 bde.progressionType,
                 bde.progressionIncrement ? Number(bde.progressionIncrement) : null,
                 lastSets,
-                bde.targetRepRange ?? "8-12"
+                bde.targetRepRange ?? "8-12",
+                progressionInfo
               );
-              return { ...ex, lastSets, suggestedWeight: suggested };
+              return { ...ex, lastSets, suggestedWeight: suggested, progressionInfo };
             })
           );
         });
@@ -447,8 +509,9 @@ export default function ActiveWorkoutPage({
   }, []);
 
   const addExercise = useCallback((ex: SearchExercise) => {
+    const newId = `added-${Date.now()}`;
     const newEx: ExerciseData = {
-      id: `added-${Date.now()}`,
+      id: newId,
       exerciseId: ex.id,
       name: ex.name,
       shortName: makeShortName(ex.name),
@@ -466,12 +529,34 @@ export default function ActiveWorkoutPage({
       notes: "",
       lastSets: [],
       suggestedWeight: null,
+      progressionInfo: { estimated1RM: null, progressionStatus: null, stalledSessions: 0 },
     };
     setExercises((prev) => {
       setActiveEx(prev.length);
       return [...prev, newEx];
     });
     setShowPicker(false);
+
+    // Fetch progression data for the newly added exercise
+    Promise.all([
+      fetch(`/api/exercises/${ex.id}/last-performance`).then((r) => r.ok ? r.json() : null).catch(() => null),
+      fetch(`/api/exercises/${ex.id}/estimated-1rm`).then((r) => r.ok ? r.json() : null).catch(() => null),
+      fetch(`/api/exercises/${ex.id}/progression-status`).then((r) => r.ok ? r.json() : null).catch(() => null),
+    ]).then(([perf, e1rmData, statusData]) => {
+      const lastSets = perf?.lastPerformance?.sets as LastSet[] ?? [];
+      const progressionInfo: ProgressionInfo = {
+        estimated1RM: e1rmData?.estimated1RM ?? null,
+        progressionStatus: statusData?.status ?? null,
+        stalledSessions: statusData?.sessions ?? 0,
+      };
+      setExercises((prev) =>
+        prev.map((exercise) =>
+          exercise.id === newId
+            ? { ...exercise, lastSets, progressionInfo }
+            : exercise
+        )
+      );
+    });
   }, []);
 
   // Finish workout handler
@@ -734,32 +819,64 @@ export default function ActiveWorkoutPage({
                 </div>
               </div>
 
-              {/* Target + Last Performance */}
-              <div className="flex gap-3 mb-4">
-                <div className="flex-1 bg-ft-bg rounded p-2.5">
+              {/* Stall Warning */}
+              {current.progressionInfo.progressionStatus === "stalled" && (
+                <div className="bg-ft-warn/10 border border-ft-warn/20 rounded p-2.5 mb-3">
+                  <div className="flex items-center gap-2">
+                    <span className="text-ft-warn text-sm">&#9888;</span>
+                    <div>
+                      <p className="text-ft-warn text-xs font-mono font-bold">
+                        Progression stalled
+                      </p>
+                      <p className="text-ft-warn/70 text-[10px] font-mono mt-0.5">
+                        Same weight for {current.progressionInfo.stalledSessions}+ sessions. Consider a deload week or adjusting your approach.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Target + Last Performance + e1RM */}
+              <div className="flex gap-3 mb-4 flex-wrap">
+                <div className="flex-1 min-w-[80px] bg-ft-bg rounded p-2.5">
                   <p className="text-ft-dim text-[11px] font-mono uppercase tracking-wider mb-0.5">
                     Target
                   </p>
                   <p className="text-ft-light text-sm font-mono font-bold">
-                    {current.targetSets}&times;{current.targetRepRange}
+                    {current.suggestedWeight?.sets ?? current.targetSets}&times;{current.suggestedWeight?.reps ?? current.targetRepRange}
                   </p>
+                  {current.progressionType !== "none" && (
+                    <p className="text-ft-muted text-[10px] font-mono mt-0.5">
+                      {current.progressionType.replace("_", " ")}
+                    </p>
+                  )}
                 </div>
                 {current.lastSets.length > 0 && (
-                  <div className="flex-1 bg-ft-bg rounded p-2.5">
+                  <div className="flex-1 min-w-[80px] bg-ft-bg rounded p-2.5">
                     <p className="text-ft-dim text-[11px] font-mono uppercase tracking-wider mb-0.5">
                       Last
                     </p>
                     <p className="text-ft-light text-sm font-mono font-bold">
                       {current.lastSets
                         .slice(0, 3)
-                        .map((s) => `${s.weight ?? 0}×${s.reps ?? 0}`)
+                        .map((s) => `${s.weight ?? 0}\u00d7${s.reps ?? 0}`)
                         .join(", ")}
                       {current.lastSets.length > 3 && "..."}
                     </p>
                   </div>
                 )}
+                {current.progressionInfo.estimated1RM && (
+                  <div className="flex-1 min-w-[80px] bg-ft-bg rounded p-2.5">
+                    <p className="text-ft-dim text-[11px] font-mono uppercase tracking-wider mb-0.5">
+                      Est. 1RM
+                    </p>
+                    <p className="text-ft-light text-sm font-mono font-bold">
+                      {current.progressionInfo.estimated1RM} lbs
+                    </p>
+                  </div>
+                )}
                 {current.suggestedWeight && (
-                  <div className="flex-1 bg-ft-success/10 border border-ft-success/20 rounded p-2.5">
+                  <div className="flex-1 min-w-[80px] bg-ft-success/10 border border-ft-success/20 rounded p-2.5">
                     <p className="text-ft-success text-[11px] font-mono uppercase tracking-wider mb-0.5">
                       Suggested
                     </p>

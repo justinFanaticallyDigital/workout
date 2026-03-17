@@ -32,10 +32,29 @@ interface EditableExerciseTableProps {
     targetRepRange: string | null;
     targetRpe: string | null;
     progressionType: string;
+    progressionIncrement: number | null;
   }) => void;
 }
 
 const PROGRESSION_TYPES = ["none", "linear", "double", "wave", "rpe_based", "percentage_based"];
+
+const PROGRESSION_LABELS: Record<string, string> = {
+  none: "None",
+  linear: "Linear",
+  double: "Double",
+  wave: "Wave",
+  rpe_based: "RPE",
+  percentage_based: "%1RM",
+};
+
+const PROGRESSION_DESCRIPTIONS: Record<string, string> = {
+  none: "No auto-progression",
+  linear: "Add fixed weight each session",
+  double: "Increase reps first, then weight",
+  wave: "4-week wave: accumulate \u2192 intensify \u2192 peak \u2192 deload",
+  rpe_based: "Adjust weight based on RPE target",
+  percentage_based: "Work at % of estimated 1RM",
+};
 
 export default function EditableExerciseTable({
   dayId,
@@ -61,6 +80,7 @@ export default function EditableExerciseTable({
   const [newReps, setNewReps] = useState("8-12");
   const [newRpe, setNewRpe] = useState("");
   const [newProg, setNewProg] = useState("none");
+  const [newIncrement, setNewIncrement] = useState("5");
 
   // Search for new exercise
   useEffect(() => {
@@ -94,6 +114,7 @@ export default function EditableExerciseTable({
     const { id, field } = editingCell;
     let val: string | number | null = editValue.trim() || null;
     if (field === "targetSets" && val) val = parseInt(val as string) || null;
+    if (field === "progressionIncrement" && val) val = parseFloat(val as string) || null;
     onUpdate(id, field, val);
     setEditingCell(null);
   }, [editingCell, editValue, onUpdate]);
@@ -108,7 +129,7 @@ export default function EditableExerciseTable({
       commitEdit();
       // Move to next cell
       if (editingCell) {
-        const fields = ["targetSets", "targetRepRange", "targetRpe"];
+        const fields = ["targetSets", "targetRepRange", "targetRpe", "progressionIncrement"];
         const curFieldIdx = fields.indexOf(editingCell.field);
         const curRowIdx = exercises.findIndex((ex) => ex.id === editingCell.id);
         let nextFieldIdx = curFieldIdx + (e.shiftKey ? -1 : 1);
@@ -157,6 +178,7 @@ export default function EditableExerciseTable({
       targetRepRange: newReps.trim() || null,
       targetRpe: newRpe.trim() || null,
       progressionType: newProg,
+      progressionIncrement: newProg !== "none" && newIncrement ? parseFloat(newIncrement) : null,
     });
     setAddingNew(false);
     setSelectedNew(null);
@@ -165,15 +187,18 @@ export default function EditableExerciseTable({
     setNewReps("8-12");
     setNewRpe("");
     setNewProg("none");
+    setNewIncrement("5");
   };
 
   const renderCell = (ex: ExerciseRow, field: string, value: string | number | null, width: string) => {
     const isEditing = editingCell?.id === ex.id && editingCell?.field === field;
+    const isNumeric = field === "targetSets" || field === "progressionIncrement";
     if (isEditing) {
       return (
         <input
           ref={inputRef}
-          type={field === "targetSets" ? "number" : "text"}
+          type={isNumeric ? "number" : "text"}
+          step={field === "progressionIncrement" ? "0.5" : undefined}
           value={editValue}
           onChange={(e) => setEditValue(e.target.value)}
           onBlur={commitEdit}
@@ -195,7 +220,7 @@ export default function EditableExerciseTable({
   return (
     <div>
       {/* Header */}
-      <div className="grid grid-cols-[20px_24px_1fr_52px_64px_44px_52px_24px] gap-1 text-[10px] font-mono uppercase tracking-wider text-ft-muted mb-1 px-1">
+      <div className="grid grid-cols-[20px_24px_1fr_52px_64px_44px_72px_44px_24px] gap-1 text-[10px] font-mono uppercase tracking-wider text-ft-muted mb-1 px-1">
         <span></span>
         <span>#</span>
         <span>Exercise</span>
@@ -203,6 +228,7 @@ export default function EditableExerciseTable({
         <span>Reps</span>
         <span>RPE</span>
         <span>Prog</span>
+        <span>Inc</span>
         <span></span>
       </div>
 
@@ -215,7 +241,7 @@ export default function EditableExerciseTable({
           onDragOver={(e) => handleDragOver(e, idx)}
           onDrop={() => handleDrop(idx)}
           onDragEnd={() => { setDragIdx(null); setDragOverIdx(null); }}
-          className={`grid grid-cols-[20px_24px_1fr_52px_64px_44px_52px_24px] gap-1 items-center py-1 px-1 rounded transition-colors ${
+          className={`grid grid-cols-[20px_24px_1fr_52px_64px_44px_72px_44px_24px] gap-1 items-center py-1 px-1 rounded transition-colors ${
             dragOverIdx === idx ? "bg-ft-card/50" : "hover:bg-ft-surface/50"
           }`}
         >
@@ -233,12 +259,18 @@ export default function EditableExerciseTable({
             value={ex.progressionType}
             onChange={(e) => onUpdate(ex.id, "progressionType", e.target.value)}
             className="w-full bg-transparent text-[10px] font-mono text-ft-dim focus:outline-none cursor-pointer"
-            title={ex.progressionType}
+            title={PROGRESSION_DESCRIPTIONS[ex.progressionType] ?? ex.progressionType}
           >
             {PROGRESSION_TYPES.map((t) => (
-              <option key={t} value={t}>{t === "none" ? "—" : t.slice(0, 3)}</option>
+              <option key={t} value={t}>{PROGRESSION_LABELS[t] ?? t}</option>
             ))}
           </select>
+          {/* Progression Increment */}
+          {ex.progressionType !== "none" ? (
+            renderCell(ex, "progressionIncrement", ex.progressionIncrement, "w-full")
+          ) : (
+            <span className="text-ft-muted text-[10px] font-mono px-1.5">—</span>
+          )}
           {/* Menu */}
           <div className="relative">
             <button
@@ -332,37 +364,58 @@ export default function EditableExerciseTable({
             </div>
           )}
           {selectedNew && (
-            <div className="grid grid-cols-4 gap-2">
-              <input
-                type="number"
-                value={newSets}
-                onChange={(e) => setNewSets(e.target.value)}
-                placeholder="Sets"
-                className="bg-ft-bg border border-ft-card rounded px-2 py-1 text-xs font-mono text-ft-white placeholder:text-ft-muted focus:outline-none focus:border-ft-dim"
-              />
-              <input
-                type="text"
-                value={newReps}
-                onChange={(e) => setNewReps(e.target.value)}
-                placeholder="Reps"
-                className="bg-ft-bg border border-ft-card rounded px-2 py-1 text-xs font-mono text-ft-white placeholder:text-ft-muted focus:outline-none focus:border-ft-dim"
-              />
-              <input
-                type="text"
-                value={newRpe}
-                onChange={(e) => setNewRpe(e.target.value)}
-                placeholder="RPE"
-                className="bg-ft-bg border border-ft-card rounded px-2 py-1 text-xs font-mono text-ft-white placeholder:text-ft-muted focus:outline-none focus:border-ft-dim"
-              />
-              <select
-                value={newProg}
-                onChange={(e) => setNewProg(e.target.value)}
-                className="bg-ft-bg border border-ft-card rounded px-2 py-1 text-xs font-mono text-ft-white focus:outline-none focus:border-ft-dim"
-              >
-                {PROGRESSION_TYPES.map((t) => (
-                  <option key={t} value={t}>{t.replace("_", " ")}</option>
-                ))}
-              </select>
+            <div className="space-y-2">
+              <div className="grid grid-cols-3 gap-2">
+                <input
+                  type="number"
+                  value={newSets}
+                  onChange={(e) => setNewSets(e.target.value)}
+                  placeholder="Sets"
+                  className="bg-ft-bg border border-ft-card rounded px-2 py-1 text-xs font-mono text-ft-white placeholder:text-ft-muted focus:outline-none focus:border-ft-dim"
+                />
+                <input
+                  type="text"
+                  value={newReps}
+                  onChange={(e) => setNewReps(e.target.value)}
+                  placeholder="Reps"
+                  className="bg-ft-bg border border-ft-card rounded px-2 py-1 text-xs font-mono text-ft-white placeholder:text-ft-muted focus:outline-none focus:border-ft-dim"
+                />
+                <input
+                  type="text"
+                  value={newRpe}
+                  onChange={(e) => setNewRpe(e.target.value)}
+                  placeholder="RPE"
+                  className="bg-ft-bg border border-ft-card rounded px-2 py-1 text-xs font-mono text-ft-white placeholder:text-ft-muted focus:outline-none focus:border-ft-dim"
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <select
+                    value={newProg}
+                    onChange={(e) => setNewProg(e.target.value)}
+                    className="w-full bg-ft-bg border border-ft-card rounded px-2 py-1 text-xs font-mono text-ft-white focus:outline-none focus:border-ft-dim"
+                  >
+                    {PROGRESSION_TYPES.map((t) => (
+                      <option key={t} value={t}>{PROGRESSION_LABELS[t] ?? t}</option>
+                    ))}
+                  </select>
+                  {newProg !== "none" && (
+                    <p className="text-ft-muted text-[10px] font-mono mt-0.5">
+                      {PROGRESSION_DESCRIPTIONS[newProg]}
+                    </p>
+                  )}
+                </div>
+                {newProg !== "none" && (
+                  <input
+                    type="number"
+                    step="0.5"
+                    value={newIncrement}
+                    onChange={(e) => setNewIncrement(e.target.value)}
+                    placeholder={newProg === "percentage_based" ? "% (e.g. 75)" : "Increment (lbs)"}
+                    className="bg-ft-bg border border-ft-card rounded px-2 py-1 text-xs font-mono text-ft-white placeholder:text-ft-muted focus:outline-none focus:border-ft-dim"
+                  />
+                )}
+              </div>
             </div>
           )}
           <div className="flex gap-2">
