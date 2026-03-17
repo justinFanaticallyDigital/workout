@@ -5,6 +5,7 @@ import ProgressBar from "@/components/ui/ProgressBar";
 import Stat from "@/components/ui/Stat";
 import StatusIcon from "@/components/ui/StatusIcon";
 import Timeline from "@/components/ui/Timeline";
+import EmptyState from "@/components/ui/EmptyState";
 import { prisma } from "@/lib/prisma";
 import { getAuthUserId } from "@/lib/auth-helpers";
 import { redirect } from "next/navigation";
@@ -146,15 +147,12 @@ export default async function ProgramsPage() {
         </Link>
       ) : (
         <Card className="mb-10 border-dashed">
-          <div className="flex flex-col items-center justify-center py-8 text-center">
-            <span className="text-ft-dim text-3xl mb-3">+</span>
-            <p className="text-ft-light font-mono font-bold">
-              No active program
-            </p>
-            <p className="text-ft-muted font-mono text-sm mt-1">
-              Create a program to organize your training
-            </p>
-          </div>
+          <EmptyState
+            title="No active program"
+            description="Create a program to organize your training into blocks, days, and exercises."
+            actionLabel="Create Program"
+            actionHref="/programs/new"
+          />
         </Card>
       )}
 

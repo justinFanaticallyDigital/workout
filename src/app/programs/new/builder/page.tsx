@@ -7,19 +7,20 @@ import Card from "@/components/ui/Card";
 import Tag from "@/components/ui/Tag";
 import Timeline from "@/components/ui/Timeline";
 import ExerciseBrowserPanel from "@/components/ui/ExerciseBrowserPanel";
+import Tooltip from "@/components/ui/Tooltip";
 import { useToast } from "@/components/ui/Toast";
 import { saveDraft, loadDraft, clearDraft } from "@/lib/draft-store";
 
 // ─── Types ──────────────────────────────────────────────
 const BLOCK_PHASES = [
-  { value: "volume", label: "Volume", color: "text-blue-400" },
+  { value: "volume", label: "Volume", color: "text-ft-data-1" },
   { value: "strength", label: "Strength", color: "text-ft-warn" },
-  { value: "peak", label: "Peak", color: "text-red-400" },
+  { value: "peak", label: "Peak", color: "text-ft-data-3" },
   { value: "deload", label: "Deload", color: "text-ft-success" },
-  { value: "cut", label: "Cut", color: "text-purple-400" },
+  { value: "cut", label: "Cut", color: "text-ft-data-4" },
   { value: "maintain", label: "Maintain", color: "text-ft-dim" },
-  { value: "bulk", label: "Bulk", color: "text-orange-400" },
-  { value: "taper", label: "Taper", color: "text-cyan-400" },
+  { value: "bulk", label: "Bulk", color: "text-ft-data-5" },
+  { value: "taper", label: "Taper", color: "text-ft-data-6" },
   { value: "custom", label: "Custom", color: "text-ft-light" },
 ] as const;
 
@@ -1014,7 +1015,7 @@ export default function ProgramBuilderPage() {
                   </button>
                   <button
                     onClick={() => removeBlock(activeBlock.id)}
-                    className="text-ft-danger text-xs font-mono hover:text-red-400 ml-2 px-1.5 py-0.5"
+                    className="text-ft-danger text-xs font-mono hover:text-ft-danger/70 ml-2 px-1.5 py-0.5"
                   >
                     Delete
                   </button>
@@ -1038,8 +1039,11 @@ export default function ProgramBuilderPage() {
                     />
                   </div>
                   <div>
-                    <label className="block text-ft-dim text-[10px] font-mono uppercase tracking-wider mb-1">
+                    <label className="flex items-center gap-1 text-ft-dim text-[10px] font-mono uppercase tracking-wider mb-1">
                       Phase
+                      <Tooltip content="Volume: high reps, moderate weight. Strength: heavy weight, low reps. Peak: max intensity. Deload: reduced load for recovery. Cut/Bulk/Maintain: body composition focus. Taper: pre-competition reduction.">
+                        <span className="text-ft-muted cursor-help">(?)</span>
+                      </Tooltip>
                     </label>
                     <select
                       value={activeBlock.phase ?? ""}

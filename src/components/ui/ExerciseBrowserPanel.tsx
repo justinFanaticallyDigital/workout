@@ -160,7 +160,7 @@ export default function ExerciseBrowserPanel({
   return (
     <>
       {/* Backdrop */}
-      <div className="fixed inset-0 bg-black/50 z-40" onClick={onClose} />
+      <div className="fixed inset-0 bg-ft-bg/60 z-40" onClick={onClose} />
 
       {/* Panel */}
       <div className="fixed top-0 right-0 bottom-0 w-full max-w-md bg-ft-surface border-l border-ft-border z-50 flex flex-col">
@@ -209,7 +209,7 @@ export default function ExerciseBrowserPanel({
             {totalFilters > 0 && (
               <button
                 onClick={clearAllFilters}
-                className="text-ft-danger text-[10px] font-mono hover:text-red-400 px-1.5 py-0.5"
+                className="text-ft-danger text-[10px] font-mono hover:text-ft-danger/70 px-1.5 py-0.5"
               >
                 Clear {totalFilters}
               </button>

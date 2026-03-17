@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Card, SectionHeader, Tag } from "@/components/ui";
+import { Card, SectionHeader, Tag, EmptyState } from "@/components/ui";
 import { useToast } from "@/components/ui/Toast";
 
 interface InjuryNote {
@@ -231,14 +231,12 @@ export default function InjuriesPage() {
         )}
 
         {activeInjuries.length === 0 && !showForm ? (
-          <div className="flex flex-col items-center justify-center py-12">
-            <p className="text-ft-muted text-sm font-mono">
-              No active injuries
-            </p>
-            <p className="text-ft-dim text-xs font-mono mt-1">
-              Stay healthy — log any issues here to track recovery
-            </p>
-          </div>
+          <EmptyState
+            title="No active injuries"
+            description="Stay healthy — log any issues here to track recovery."
+            actionLabel="+ Log Injury"
+            onAction={() => setShowForm(true)}
+          />
         ) : (
           <div className="space-y-3">
             {activeInjuries.map((injury) => (

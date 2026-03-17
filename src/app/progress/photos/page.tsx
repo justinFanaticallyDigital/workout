@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Card, SectionHeader, Tag } from "@/components/ui";
+import { Card, SectionHeader, Tag, EmptyState } from "@/components/ui";
 import { useToast } from "@/components/ui/Toast";
 
 interface ProgressPhoto {
@@ -174,14 +174,13 @@ export default function ProgressPhotosPage() {
         )}
 
         {photos.length === 0 && !showForm ? (
-          <div className="flex flex-col items-center justify-center py-16">
-            <p className="text-ft-muted text-sm font-mono">
-              No photos uploaded yet
-            </p>
-            <p className="text-ft-dim text-xs font-mono mt-1">
-              Add your first progress photo to start tracking
-            </p>
-          </div>
+          <EmptyState
+            icon="&#x1F4F7;"
+            title="No photos uploaded yet"
+            description="Add your first progress photo to track visual changes over time."
+            actionLabel="+ Add Photo"
+            onAction={() => setShowForm(true)}
+          />
         ) : (
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
             {photos.map((photo) => (
