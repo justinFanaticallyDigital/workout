@@ -160,10 +160,10 @@ export default function ExerciseBrowserPanel({
   return (
     <>
       {/* Backdrop */}
-      <div className="fixed inset-0 bg-ft-bg/60 z-40" onClick={onClose} />
+      <div className="fixed inset-0 bg-ft-bg/60 z-40" onClick={onClose} aria-hidden="true" />
 
       {/* Panel */}
-      <div className="fixed top-0 right-0 bottom-0 w-full max-w-md bg-ft-surface border-l border-ft-border z-50 flex flex-col">
+      <div role="dialog" aria-modal="true" aria-label={title} className="fixed top-0 right-0 bottom-0 w-full max-w-md bg-ft-surface border-l border-ft-border z-50 flex flex-col">
         {/* Header */}
         <div className="p-4 border-b border-ft-border flex items-center justify-between shrink-0">
           <h2 className="font-mono text-sm font-bold text-ft-white">{title}</h2>

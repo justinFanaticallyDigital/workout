@@ -95,6 +95,9 @@ export default function Nav() {
             <>
               <button
                 onClick={() => setMenuOpen(!menuOpen)}
+                aria-expanded={menuOpen}
+                aria-haspopup="true"
+                aria-label="User menu"
                 className="w-8 h-8 rounded-full bg-ft-card border border-ft-border flex items-center justify-center text-ft-dim text-xs font-mono overflow-hidden hover:border-ft-light transition-colors"
               >
                 {session.user.image ? (
@@ -110,7 +113,7 @@ export default function Nav() {
                 )}
               </button>
               {menuOpen && (
-                <div className="absolute right-0 top-10 bg-ft-card border border-ft-border rounded-md shadow-lg py-1 min-w-[160px] z-50">
+                <div role="menu" className="absolute right-0 top-10 bg-ft-card border border-ft-border rounded-md shadow-lg py-1 min-w-[160px] z-50">
                   <div className="px-3 py-2 border-b border-ft-border">
                     <p className="text-ft-white text-sm font-mono truncate">
                       {session.user.name}
@@ -151,7 +154,8 @@ export default function Nav() {
         <button
           onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
           className="md:hidden flex flex-col gap-1 p-2 touch-target items-center justify-center"
-          aria-label="Toggle menu"
+          aria-label="Navigation menu"
+          aria-expanded={mobileMenuOpen}
         >
           <span className={`w-5 h-0.5 bg-ft-light transition-transform ${mobileMenuOpen ? "rotate-45 translate-y-1.5" : ""}`} />
           <span className={`w-5 h-0.5 bg-ft-light transition-opacity ${mobileMenuOpen ? "opacity-0" : ""}`} />
@@ -162,7 +166,7 @@ export default function Nav() {
       {/* Mobile menu dropdown */}
       {mobileMenuOpen && (
         <div className="absolute top-14 left-0 right-0 bg-ft-bg border-b border-ft-border z-50 md:hidden">
-          <div className="px-4 py-2 space-y-1">
+          <nav role="menu" aria-label="Main navigation" className="px-4 py-2 space-y-1">
             {navItems.map((item) => {
               const active = isActive(item.href);
               return (
@@ -195,7 +199,7 @@ export default function Nav() {
                 </Link>
               ))}
             </div>
-          </div>
+          </nav>
         </div>
       )}
     </nav>

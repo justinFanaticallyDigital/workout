@@ -232,10 +232,15 @@ function ExercisePicker({
   return (
     <>
       {/* Backdrop */}
-      <div className="fixed inset-0 z-40 bg-ft-bg/60" onClick={onClose} />
+      <div className="fixed inset-0 z-40 bg-ft-bg/60" onClick={onClose} aria-hidden="true" />
 
       {/* Bottom sheet on mobile, centered panel on desktop */}
-      <div className="fixed inset-x-0 bottom-0 z-50 sm:inset-auto sm:top-[10%] sm:left-1/2 sm:-translate-x-1/2 sm:w-full sm:max-w-lg bg-ft-surface border-t sm:border border-ft-border sm:rounded-lg flex flex-col max-h-[85vh] sm:max-h-[70vh]">
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-label="Add exercise"
+        className="fixed inset-x-0 bottom-0 z-50 sm:inset-auto sm:top-[10%] sm:left-1/2 sm:-translate-x-1/2 sm:w-full sm:max-w-lg bg-ft-surface border-t sm:border border-ft-border sm:rounded-lg flex flex-col max-h-[85vh] sm:max-h-[70vh]"
+      >
         {/* Handle bar (mobile) */}
         <div className="flex justify-center pt-2 pb-1 sm:hidden">
           <div className="w-10 h-1 rounded-full bg-ft-border" />
