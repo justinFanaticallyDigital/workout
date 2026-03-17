@@ -7,9 +7,16 @@ interface TimelineSegment {
   current?: boolean;
 }
 
+interface TimelineMilestone {
+  label: string;
+  position: number; // 0-100 percentage along the timeline
+  achieved?: boolean;
+}
+
 interface TimelineProps {
   segments: TimelineSegment[];
   currentPosition?: number; // 0-100 percentage for marker position
+  milestones?: TimelineMilestone[];
   className?: string;
 }
 
@@ -25,7 +32,7 @@ const STATUS_TEXT: Record<string, string> = {
   upcoming: "text-ft-muted",
 };
 
-export default function Timeline({ segments, currentPosition, className = "" }: TimelineProps) {
+export default function Timeline({ segments, currentPosition, milestones, className = "" }: TimelineProps) {
   const totalWidth = segments.reduce((sum, s) => sum + (s.width || 1), 0);
 
   return (
@@ -52,6 +59,23 @@ export default function Timeline({ segments, currentPosition, className = "" }: 
             style={{ left: `${Math.min(currentPosition, 100)}%` }}
           />
         )}
+        {/* Milestone markers */}
+        {milestones?.map((ms, i) => (
+          <div
+            key={`ms-${i}`}
+            className="absolute z-10 flex flex-col items-center"
+            style={{ left: `${Math.min(ms.position, 100)}%`, top: "-2px" }}
+            title={ms.label}
+          >
+            <div
+              className={`w-2.5 h-2.5 rounded-full border-2 ${
+                ms.achieved
+                  ? "bg-ft-success border-ft-success"
+                  : "bg-ft-bg border-ft-dim"
+              }`}
+            />
+          </div>
+        ))}
       </div>
       {/* Labels */}
       <div className="flex gap-0.5 mt-1.5">
@@ -66,6 +90,22 @@ export default function Timeline({ segments, currentPosition, className = "" }: 
           );
         })}
       </div>
+      {/* Milestone labels (below segment labels) */}
+      {milestones && milestones.length > 0 && (
+        <div className="relative h-4 mt-0.5">
+          {milestones.map((ms, i) => (
+            <span
+              key={`ms-label-${i}`}
+              className={`absolute text-[9px] font-mono whitespace-nowrap ${
+                ms.achieved ? "text-ft-success" : "text-ft-muted"
+              }`}
+              style={{ left: `${Math.min(ms.position, 100)}%`, transform: "translateX(-50%)" }}
+            >
+              {ms.label}
+            </span>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

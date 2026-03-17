@@ -5,6 +5,7 @@ import Link from "next/link";
 import Card from "@/components/ui/Card";
 import Tag from "@/components/ui/Tag";
 import Stat from "@/components/ui/Stat";
+import ProgressBar from "@/components/ui/ProgressBar";
 import StatusIcon from "@/components/ui/StatusIcon";
 import Timeline from "@/components/ui/Timeline";
 import EditableExerciseTable from "@/components/ui/EditableExerciseTable";
@@ -57,6 +58,17 @@ interface Program {
   blocks: Block[];
 }
 
+interface Benchmark {
+  id: string;
+  label: string;
+  targetValue: number;
+  targetUnit: string;
+  targetDate: string | null;
+  actualValue: number | null;
+  achievedAt: string | null;
+  block: { name: string; blockNumber: number } | null;
+}
+
 const DAY_TYPES = ["lifting", "cardio", "conditioning", "mobility", "rest"];
 
 export default function ProgramWorkspacePage({
@@ -85,6 +97,16 @@ export default function ProgramWorkspacePage({
   const [dayType, setDayType] = useState("lifting");
   const [savingDay, setSavingDay] = useState(false);
 
+  // Benchmarks
+  const [benchmarks, setBenchmarks] = useState<Benchmark[]>([]);
+  const [showBenchmarkForm, setShowBenchmarkForm] = useState(false);
+  const [bmLabel, setBmLabel] = useState("");
+  const [bmTarget, setBmTarget] = useState("");
+  const [bmUnit, setBmUnit] = useState("lbs");
+  const [bmDate, setBmDate] = useState("");
+  const [bmBlockId, setBmBlockId] = useState("");
+  const [savingBm, setSavingBm] = useState(false);
+
 
   useEffect(() => {
     fetch(`/api/programs/${programId}`)
@@ -99,6 +121,12 @@ export default function ProgramWorkspacePage({
         setLoading(false);
       })
       .catch(() => setLoading(false));
+
+    // Fetch benchmarks
+    fetch(`/api/programs/${programId}/benchmarks`)
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => { if (data?.benchmarks) setBenchmarks(data.benchmarks); })
+      .catch(() => {});
   }, [programId]);
 
   const activeBlock = program?.blocks.find((b) => b.id === activeBlockId) ?? null;
@@ -285,6 +313,7 @@ export default function ProgramWorkspacePage({
     targetRepRange: string | null;
     targetRpe: string | null;
     progressionType: string;
+    progressionIncrement: number | null;
   }) => {
     try {
       const res = await fetch(`/api/blocks/day/${dayId}/exercises`, {
@@ -302,7 +331,7 @@ export default function ProgramWorkspacePage({
             ...b,
             days: b.days.map((d) =>
               d.id === dayId
-                ? { ...d, exercises: [...d.exercises, { ...bde, altExercise: null, progressionIncrement: null }] }
+                ? { ...d, exercises: [...d.exercises, { ...bde, altExercise: null, progressionIncrement: bde.progressionIncrement ?? null }] }
                 : d
             ),
           })),
@@ -310,6 +339,57 @@ export default function ProgramWorkspacePage({
       });
     } catch {
       toast.error("Failed to add exercise.");
+    }
+  };
+
+  // Benchmark handlers
+  const handleAddBenchmark = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!bmLabel.trim() || !bmTarget) return;
+    setSavingBm(true);
+    try {
+      const res = await fetch(`/api/programs/${programId}/benchmarks`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          label: bmLabel.trim(),
+          targetValue: parseFloat(bmTarget),
+          targetUnit: bmUnit,
+          targetDate: bmDate || null,
+          blockId: bmBlockId || null,
+        }),
+      });
+      if (!res.ok) throw new Error("Failed");
+      const bm = await res.json();
+      setBenchmarks((prev) => [...prev, bm]);
+      setShowBenchmarkForm(false);
+      setBmLabel("");
+      setBmTarget("");
+      setBmUnit("lbs");
+      setBmDate("");
+      setBmBlockId("");
+    } catch {
+      toast.error("Failed to create benchmark.");
+    }
+    setSavingBm(false);
+  };
+
+  const handleUpdateBenchmarkActual = async (bmId: string, actualValue: string) => {
+    const val = actualValue ? parseFloat(actualValue) : null;
+    try {
+      const res = await fetch(`/api/programs/${programId}/benchmarks`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ benchmarkId: bmId, actualValue: val }),
+      });
+      if (res.ok) {
+        const updated = await res.json();
+        setBenchmarks((prev) =>
+          prev.map((b) => b.id === bmId ? updated : b)
+        );
+      }
+    } catch {
+      toast.error("Failed to update benchmark.");
     }
   };
 
@@ -380,6 +460,19 @@ export default function ProgramWorkspacePage({
             status: b.status as "active" | "completed" | "upcoming",
           }))}
           currentPosition={progressPct > 0 ? progressPct : undefined}
+          milestones={benchmarks
+            .filter((bm) => bm.targetDate && program.startDate && totalWeeks > 0)
+            .map((bm) => {
+              const start = new Date(program.startDate!).getTime();
+              const end = start + totalWeeks * 7 * 24 * 60 * 60 * 1000;
+              const target = new Date(bm.targetDate!).getTime();
+              const pos = Math.max(0, Math.min(100, ((target - start) / (end - start)) * 100));
+              return {
+                label: bm.label,
+                position: pos,
+                achieved: bm.actualValue != null && bm.actualValue >= bm.targetValue,
+              };
+            })}
         />
       )}
 
@@ -396,6 +489,141 @@ export default function ProgramWorkspacePage({
         </Card>
         <Card><Stat label="Goal" value={program.goals?.[0]?.title ?? program.goal?.title ?? "—"} small /></Card>
       </div>
+
+      {/* Benchmarks */}
+      {(benchmarks.length > 0 || showBenchmarkForm) && (
+        <Card className="mb-6">
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="font-mono text-sm font-bold text-ft-white">Benchmarks</h3>
+            {!showBenchmarkForm && (
+              <button
+                onClick={() => setShowBenchmarkForm(true)}
+                className="text-ft-dim text-xs font-mono hover:text-ft-light"
+              >
+                + Add
+              </button>
+            )}
+          </div>
+          <div className="space-y-3">
+            {benchmarks.map((bm) => {
+              const pct = bm.actualValue != null
+                ? Math.min(100, Math.round((bm.actualValue / bm.targetValue) * 100))
+                : 0;
+              const achieved = bm.actualValue != null && bm.actualValue >= bm.targetValue;
+              return (
+                <div key={bm.id} className="flex flex-col gap-1">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <span className="text-ft-light text-xs font-mono font-bold">{bm.label}</span>
+                      {bm.block && (
+                        <span className="text-ft-muted text-[10px] font-mono">{bm.block.name}</span>
+                      )}
+                      {achieved && <Tag variant="success">Hit</Tag>}
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="number"
+                        placeholder="Actual"
+                        defaultValue={bm.actualValue ?? ""}
+                        onBlur={(e) => handleUpdateBenchmarkActual(bm.id, e.target.value)}
+                        className="w-16 bg-ft-bg border border-ft-card rounded px-1.5 py-0.5 text-xs font-mono text-ft-white text-center focus:outline-none focus:border-ft-dim"
+                      />
+                      <span className="text-ft-dim text-[10px] font-mono">
+                        / {bm.targetValue} {bm.targetUnit}
+                      </span>
+                    </div>
+                  </div>
+                  <ProgressBar value={pct} max={100} />
+                  {bm.targetDate && (
+                    <span className="text-ft-muted text-[10px] font-mono">
+                      Target: {new Date(bm.targetDate).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
+                      {bm.achievedAt && ` · Achieved: ${new Date(bm.achievedAt).toLocaleDateString("en-US", { month: "short", day: "numeric" })}`}
+                    </span>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+          {showBenchmarkForm && (
+            <form onSubmit={handleAddBenchmark} className="mt-3 pt-3 border-t border-ft-border space-y-2">
+              <div className="grid grid-cols-2 gap-2">
+                <input
+                  type="text"
+                  value={bmLabel}
+                  onChange={(e) => setBmLabel(e.target.value)}
+                  placeholder="Benchmark label"
+                  required
+                  className="bg-ft-bg border border-ft-card rounded px-2 py-1.5 text-xs font-mono text-ft-white placeholder:text-ft-muted focus:outline-none focus:border-ft-dim"
+                />
+                <div className="flex gap-1">
+                  <input
+                    type="number"
+                    value={bmTarget}
+                    onChange={(e) => setBmTarget(e.target.value)}
+                    placeholder="Target"
+                    required
+                    className="flex-1 bg-ft-bg border border-ft-card rounded px-2 py-1.5 text-xs font-mono text-ft-white placeholder:text-ft-muted focus:outline-none focus:border-ft-dim"
+                  />
+                  <select
+                    value={bmUnit}
+                    onChange={(e) => setBmUnit(e.target.value)}
+                    className="bg-ft-bg border border-ft-card rounded px-1 py-1.5 text-xs font-mono text-ft-white focus:outline-none focus:border-ft-dim"
+                  >
+                    <option value="lbs">lbs</option>
+                    <option value="kg">kg</option>
+                    <option value="reps">reps</option>
+                    <option value="%">%</option>
+                  </select>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <input
+                  type="date"
+                  value={bmDate}
+                  onChange={(e) => setBmDate(e.target.value)}
+                  className="bg-ft-bg border border-ft-card rounded px-2 py-1.5 text-xs font-mono text-ft-white focus:outline-none focus:border-ft-dim"
+                />
+                <select
+                  value={bmBlockId}
+                  onChange={(e) => setBmBlockId(e.target.value)}
+                  className="bg-ft-bg border border-ft-card rounded px-2 py-1.5 text-xs font-mono text-ft-white focus:outline-none focus:border-ft-dim"
+                >
+                  <option value="">All blocks</option>
+                  {program.blocks.map((b) => (
+                    <option key={b.id} value={b.id}>{b.name}</option>
+                  ))}
+                </select>
+              </div>
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => setShowBenchmarkForm(false)}
+                  className="text-ft-dim text-xs font-mono hover:text-ft-light"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={savingBm || !bmLabel.trim() || !bmTarget}
+                  className="bg-ft-white text-ft-bg font-mono text-xs font-bold px-3 py-1 rounded hover:bg-ft-light disabled:opacity-50"
+                >
+                  {savingBm ? "..." : "Add Benchmark"}
+                </button>
+              </div>
+            </form>
+          )}
+        </Card>
+      )}
+      {benchmarks.length === 0 && !showBenchmarkForm && (
+        <div className="mb-6">
+          <button
+            onClick={() => setShowBenchmarkForm(true)}
+            className="text-ft-muted text-xs font-mono hover:text-ft-light transition-colors"
+          >
+            + Add Benchmarks
+          </button>
+        </div>
+      )}
 
       {/* Workspace: Blocks panel + Day details */}
       <div className="grid grid-cols-1 lg:grid-cols-[200px_1fr] gap-4">
