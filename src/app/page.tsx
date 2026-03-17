@@ -85,6 +85,16 @@ export default async function Home() {
     }),
   ]);
 
+  // Fetch benchmarks for active program (if any)
+  const programBenchmarks = currentProgram
+    ? await prisma.programBenchmark.findMany({
+        where: { programId: currentProgram.id },
+        include: { block: { select: { name: true, blockNumber: true } } },
+        orderBy: { targetDate: "asc" },
+        take: 4,
+      })
+    : [];
+
   // Calculate weekly volume
   let weeklyVolume = 0;
   const muscleVolumeMap: Record<string, number> = {};
@@ -347,13 +357,45 @@ export default async function Home() {
           )}
         </Card>
 
-        {/* Block Benchmarks placeholder */}
+        {/* Block Benchmarks */}
         <Card>
-          <SectionHeader title="Block Benchmarks" />
-          {recentWorkouts.length === 0 ? (
-            <p className="text-ft-muted text-sm font-mono">
-              Log workouts to see benchmarks
-            </p>
+          <SectionHeader
+            title="Block Benchmarks"
+            action={
+              currentProgram ? (
+                <Link
+                  href={`/programs/${currentProgram.id}`}
+                  className="text-ft-dim text-xs font-mono hover:text-ft-light transition-colors"
+                >
+                  {currentProgram.name} &rarr;
+                </Link>
+              ) : undefined
+            }
+          />
+          {programBenchmarks.length > 0 ? (
+            <div className="space-y-3">
+              {programBenchmarks.map((bm) => {
+                const target = Number(bm.targetValue);
+                const actual = bm.actualValue ? Number(bm.actualValue) : null;
+                const pct = actual && target > 0 ? Math.min(100, (actual / target) * 100) : 0;
+                return (
+                  <div key={bm.id} className="space-y-1">
+                    <div className="flex items-center justify-between">
+                      <span className="text-ft-light text-sm font-mono">{bm.label}</span>
+                      <span className="text-ft-dim text-xs font-mono">
+                        {actual != null ? actual : "—"} / {target} {bm.targetUnit}
+                      </span>
+                    </div>
+                    <ProgressBar value={pct} max={100} />
+                    {bm.block && (
+                      <span className="text-ft-muted text-[10px] font-mono">
+                        {bm.block.name}
+                      </span>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
           ) : (
             <div className="space-y-4">
               <ProgressBar
@@ -362,6 +404,18 @@ export default async function Home() {
                 label="Weekly Frequency"
                 showValues
               />
+              {currentProgram ? (
+                <p className="text-ft-muted text-xs font-mono text-center">
+                  Add benchmarks on your{" "}
+                  <Link href={`/programs/${currentProgram.id}`} className="text-ft-dim hover:text-ft-light">
+                    program page
+                  </Link>
+                </p>
+              ) : (
+                <p className="text-ft-muted text-sm font-mono">
+                  No active program
+                </p>
+              )}
             </div>
           )}
         </Card>

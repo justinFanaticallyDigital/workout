@@ -69,6 +69,10 @@ model User {
   bodyMetrics    BodyMetric[]
   progressPhotos ProgressPhoto[]
   injuries       Injury[]
+  foodItems        FoodItem[]
+  meals            Meal[]
+  nutritionTargets NutritionTarget[]
+  mealPlans        MealPlan[]
 
   @@map("users")
 }
@@ -107,9 +111,10 @@ model Goal {
   status      GoalStatus @default(active)
   createdAt   DateTime   @default(now()) @map("created_at")
 
-  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  program  Program?  @relation("GoalProgram", fields: [programId], references: [id], onDelete: SetNull)
-  programs Program[] @relation("ProgramGoal")
+  user             User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  program          Program?          @relation("GoalProgram", fields: [programId], references: [id], onDelete: SetNull)
+  programs         Program[]         @relation("ProgramGoal")
+  nutritionTargets NutritionTarget[]
 
   @@index([userId])
   @@index([programId])
@@ -188,10 +193,11 @@ model Block {
   status              BlockStatus @default(upcoming)
   createdAt           DateTime    @default(now()) @map("created_at")
 
-  program    Program            @relation(fields: [programId], references: [id], onDelete: Cascade)
-  days       BlockDay[]
-  workouts   Workout[]
-  benchmarks ProgramBenchmark[]
+  program          Program            @relation(fields: [programId], references: [id], onDelete: Cascade)
+  days             BlockDay[]
+  workouts         Workout[]
+  benchmarks       ProgramBenchmark[]
+  nutritionTargets NutritionTarget[]
 
   @@index([programId])
   @@map("blocks")
@@ -424,4 +430,157 @@ model InjuryNote {
 
   @@index([injuryId])
   @@map("injury_notes")
+}
+
+// ─── Nutrition ──────────────────────────────────────────
+model FoodItem {
+  id          String   @id @default(uuid()) @db.Uuid
+  userId      String?  @map("user_id") @db.Uuid
+  name        String
+  brand       String?
+  barcode     String?
+  servingSize Decimal  @default(100) @map("serving_size")
+  servingUnit String   @default("g") @map("serving_unit")
+  calories    Decimal  @default(0)
+  protein     Decimal  @default(0)
+  carbs       Decimal  @default(0)
+  fat         Decimal  @default(0)
+  fiber       Decimal? @default(0)
+  sugar       Decimal? @default(0)
+  sodium      Decimal? @default(0)
+  source      String   @default("custom") // custom, usda, openfoodfacts
+  externalId  String?  @map("external_id")
+  isCustom    Boolean  @default(true) @map("is_custom")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  user          User?          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  mealItems     MealItem[]
+  mealPlanItems MealPlanItem[]
+
+  @@index([userId])
+  @@index([barcode])
+  @@index([name])
+  @@map("food_items")
+}
+
+enum MealType {
+  breakfast
+  lunch
+  dinner
+  snack
+}
+
+model Meal {
+  id       String   @id @default(uuid()) @db.Uuid
+  userId   String   @map("user_id") @db.Uuid
+  date     DateTime @db.Date
+  mealType MealType @map("meal_type")
+  notes    String?
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user  User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  items MealItem[]
+
+  @@index([userId])
+  @@index([userId, date])
+  @@map("meals")
+}
+
+model MealItem {
+  id         String  @id @default(uuid()) @db.Uuid
+  mealId     String  @map("meal_id") @db.Uuid
+  foodItemId String  @map("food_item_id") @db.Uuid
+  quantity   Decimal @default(1)
+  sortOrder  Int     @default(0) @map("sort_order")
+
+  meal     Meal     @relation(fields: [mealId], references: [id], onDelete: Cascade)
+  foodItem FoodItem @relation(fields: [foodItemId], references: [id], onDelete: Cascade)
+
+  @@index([mealId])
+  @@map("meal_items")
+}
+
+model NutritionTarget {
+  id        String   @id @default(uuid()) @db.Uuid
+  userId    String   @map("user_id") @db.Uuid
+  label     String   @default("Default")
+  calories  Decimal?
+  protein   Decimal?
+  carbs     Decimal?
+  fat       Decimal?
+  isActive  Boolean  @default(true) @map("is_active")
+  blockId   String?  @map("block_id") @db.Uuid
+  goalId    String?  @map("goal_id") @db.Uuid
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user  User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  block Block? @relation(fields: [blockId], references: [id], onDelete: SetNull)
+  goal  Goal?  @relation(fields: [goalId], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+  @@index([blockId])
+  @@index([goalId])
+  @@map("nutrition_targets")
+}
+
+// ─── Meal Plans ──────────────────────────────────────────
+model MealPlan {
+  id              String   @id @default(uuid()) @db.Uuid
+  userId          String   @map("user_id") @db.Uuid
+  name            String
+  days            Int      @default(7)
+  calorieTarget   Decimal? @map("calorie_target")
+  proteinPct      Decimal? @map("protein_pct")
+  carbsPct        Decimal? @map("carbs_pct")
+  fatPct          Decimal? @map("fat_pct")
+  mealsPerDay     Int      @default(3) @map("meals_per_day")
+  preferences     String?
+  isActive        Boolean  @default(true) @map("is_active")
+  createdAt       DateTime @default(now()) @map("created_at")
+
+  user     User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  planDays MealPlanDay[]
+
+  @@index([userId])
+  @@map("meal_plans")
+}
+
+model MealPlanDay {
+  id         String   @id @default(uuid()) @db.Uuid
+  planId     String   @map("plan_id") @db.Uuid
+  dayNumber  Int      @map("day_number")
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  plan  MealPlan       @relation(fields: [planId], references: [id], onDelete: Cascade)
+  meals MealPlanMeal[]
+
+  @@index([planId])
+  @@map("meal_plan_days")
+}
+
+model MealPlanMeal {
+  id       String  @id @default(uuid()) @db.Uuid
+  dayId    String  @map("day_id") @db.Uuid
+  mealType MealType @map("meal_type")
+  sortOrder Int    @default(0) @map("sort_order")
+
+  day   MealPlanDay      @relation(fields: [dayId], references: [id], onDelete: Cascade)
+  items MealPlanItem[]
+
+  @@index([dayId])
+  @@map("meal_plan_meals")
+}
+
+model MealPlanItem {
+  id         String  @id @default(uuid()) @db.Uuid
+  mealId     String  @map("meal_id") @db.Uuid
+  foodItemId String  @map("food_item_id") @db.Uuid
+  quantity   Decimal @default(1)
+  sortOrder  Int     @default(0) @map("sort_order")
+
+  meal     MealPlanMeal @relation(fields: [mealId], references: [id], onDelete: Cascade)
+  foodItem FoodItem     @relation(fields: [foodItemId], references: [id], onDelete: Cascade)
+
+  @@index([mealId])
+  @@map("meal_plan_items")
 }

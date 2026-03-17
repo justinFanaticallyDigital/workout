@@ -75,7 +75,7 @@ export async function PATCH(
     return NextResponse.json({ error: "benchmarkId is required" }, { status: 400 });
   }
 
-  const benchmark = await prisma.programBenchmark.findUnique({
+  const benchmark = await prisma.programBenchmark.findFirst({
     where: { id: body.benchmarkId, programId, program: { userId } },
     select: { id: true },
   });

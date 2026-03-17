@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import Card from "@/components/ui/Card";
 import Tag from "@/components/ui/Tag";
@@ -107,6 +107,18 @@ export default function ProgramWorkspacePage({
   const [bmBlockId, setBmBlockId] = useState("");
   const [savingBm, setSavingBm] = useState(false);
 
+  // Nutrition targets per block
+  const [blockNutrition, setBlockNutrition] = useState<Record<string, {
+    calories: number | null; protein: number | null; carbs: number | null; fat: number | null; label: string;
+  } | null>>({});
+  const [showNutritionForm, setShowNutritionForm] = useState(false);
+  const [ntGoalType, setNtGoalType] = useState("maintenance");
+  const [ntCalories, setNtCalories] = useState("");
+  const [ntProtein, setNtProtein] = useState("");
+  const [ntCarbs, setNtCarbs] = useState("");
+  const [ntFat, setNtFat] = useState("");
+  const [savingNt, setSavingNt] = useState(false);
+
 
   useEffect(() => {
     fetch(`/api/programs/${programId}`)
@@ -130,6 +142,80 @@ export default function ProgramWorkspacePage({
   }, [programId]);
 
   const activeBlock = program?.blocks.find((b) => b.id === activeBlockId) ?? null;
+
+  // Track which blocks we've already fetched nutrition for
+  const fetchedNutritionRef = useRef<Set<string>>(new Set());
+
+  // Fetch nutrition target when active block changes
+  useEffect(() => {
+    if (!activeBlockId) return;
+    if (fetchedNutritionRef.current.has(activeBlockId)) return;
+    fetchedNutritionRef.current.add(activeBlockId);
+
+    fetch(`/api/nutrition/targets?blockId=${activeBlockId}`)
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (data?.target) {
+          setBlockNutrition((prev) => ({
+            ...prev,
+            [activeBlockId]: {
+              calories: data.target.calories ? Number(data.target.calories) : null,
+              protein: data.target.protein ? Number(data.target.protein) : null,
+              carbs: data.target.carbs ? Number(data.target.carbs) : null,
+              fat: data.target.fat ? Number(data.target.fat) : null,
+              label: data.target.label,
+            },
+          }));
+        } else {
+          setBlockNutrition((prev) => ({ ...prev, [activeBlockId]: null }));
+        }
+      })
+      .catch(() => {
+        setBlockNutrition((prev) => ({ ...prev, [activeBlockId]: null }));
+      });
+  }, [activeBlockId]);
+
+  const handleSetBlockNutrition = async (autoCalc: boolean) => {
+    if (!activeBlockId) return;
+    setSavingNt(true);
+    try {
+      const payload: Record<string, unknown> = {
+        blockId: activeBlockId,
+        label: activeBlock?.name ? `${activeBlock.name} Target` : "Block Target",
+      };
+      if (autoCalc) {
+        payload.autoCalc = true;
+        payload.goalType = ntGoalType;
+      } else {
+        payload.calories = ntCalories ? Number(ntCalories) : null;
+        payload.protein = ntProtein ? Number(ntProtein) : null;
+        payload.carbs = ntCarbs ? Number(ntCarbs) : null;
+        payload.fat = ntFat ? Number(ntFat) : null;
+      }
+      const res = await fetch("/api/nutrition/targets", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      if (res.ok) {
+        const target = await res.json();
+        setBlockNutrition((prev) => ({
+          ...prev,
+          [activeBlockId]: {
+            calories: target.calories ? Number(target.calories) : null,
+            protein: target.protein ? Number(target.protein) : null,
+            carbs: target.carbs ? Number(target.carbs) : null,
+            fat: target.fat ? Number(target.fat) : null,
+            label: target.label,
+          },
+        }));
+        setShowNutritionForm(false);
+        toast.success("Nutrition target set");
+      }
+    } finally {
+      setSavingNt(false);
+    }
+  };
 
   const toggleDay = (dayId: string) => {
     setExpandedDays((prev) => {
@@ -623,6 +709,120 @@ export default function ProgramWorkspacePage({
             + Add Benchmarks
           </button>
         </div>
+      )}
+
+      {/* Block Nutrition Target */}
+      {activeBlockId && (
+        <Card className="mb-6">
+          <div className="flex items-center justify-between mb-2">
+            <h3 className="font-mono text-sm font-bold text-ft-white">
+              Nutrition Target
+              {activeBlock && <span className="text-ft-dim font-normal ml-2">({activeBlock.name})</span>}
+            </h3>
+            {!showNutritionForm && (
+              <button
+                onClick={() => setShowNutritionForm(true)}
+                className="text-ft-dim text-xs font-mono hover:text-ft-light"
+              >
+                {blockNutrition[activeBlockId] ? "Edit" : "+ Set Target"}
+              </button>
+            )}
+          </div>
+          {blockNutrition[activeBlockId] ? (
+            <div className="grid grid-cols-4 gap-3">
+              <div>
+                <span className="text-ft-dim text-xs font-mono block">Calories</span>
+                <span className="text-ft-white text-sm font-mono font-bold">
+                  {blockNutrition[activeBlockId]!.calories ?? "—"}
+                </span>
+              </div>
+              <div>
+                <span className="text-ft-dim text-xs font-mono block">Protein</span>
+                <span className="text-ft-white text-sm font-mono font-bold">
+                  {blockNutrition[activeBlockId]!.protein ? `${blockNutrition[activeBlockId]!.protein}g` : "—"}
+                </span>
+              </div>
+              <div>
+                <span className="text-ft-dim text-xs font-mono block">Carbs</span>
+                <span className="text-ft-white text-sm font-mono font-bold">
+                  {blockNutrition[activeBlockId]!.carbs ? `${blockNutrition[activeBlockId]!.carbs}g` : "—"}
+                </span>
+              </div>
+              <div>
+                <span className="text-ft-dim text-xs font-mono block">Fat</span>
+                <span className="text-ft-white text-sm font-mono font-bold">
+                  {blockNutrition[activeBlockId]!.fat ? `${blockNutrition[activeBlockId]!.fat}g` : "—"}
+                </span>
+              </div>
+            </div>
+          ) : !showNutritionForm ? (
+            <p className="text-ft-muted text-xs font-mono">No nutrition target set for this block</p>
+          ) : null}
+
+          {showNutritionForm && (
+            <div className="mt-3 border-t border-ft-border pt-3 space-y-3">
+              <div>
+                <label className="text-ft-dim text-xs font-mono block mb-1">Auto-calculate from body weight</label>
+                <div className="flex gap-2 items-center">
+                  <select
+                    value={ntGoalType}
+                    onChange={(e) => setNtGoalType(e.target.value)}
+                    className="bg-ft-bg border border-ft-border rounded px-2 py-1 text-xs font-mono text-ft-white"
+                  >
+                    <option value="bulk">Bulk (+300 cal)</option>
+                    <option value="maintenance">Maintenance</option>
+                    <option value="cut">Cut (-400 cal)</option>
+                  </select>
+                  <button
+                    onClick={() => handleSetBlockNutrition(true)}
+                    disabled={savingNt}
+                    className="px-3 py-1 text-xs font-mono bg-ft-success text-ft-bg rounded hover:opacity-90 disabled:opacity-50"
+                  >
+                    Auto Calculate
+                  </button>
+                </div>
+              </div>
+              <div className="text-ft-muted text-xs font-mono text-center">— or set manually —</div>
+              <div className="grid grid-cols-4 gap-2">
+                <input
+                  type="number" placeholder="Calories" value={ntCalories}
+                  onChange={(e) => setNtCalories(e.target.value)}
+                  className="bg-ft-bg border border-ft-border rounded px-2 py-1 text-xs font-mono text-ft-white"
+                />
+                <input
+                  type="number" placeholder="Protein (g)" value={ntProtein}
+                  onChange={(e) => setNtProtein(e.target.value)}
+                  className="bg-ft-bg border border-ft-border rounded px-2 py-1 text-xs font-mono text-ft-white"
+                />
+                <input
+                  type="number" placeholder="Carbs (g)" value={ntCarbs}
+                  onChange={(e) => setNtCarbs(e.target.value)}
+                  className="bg-ft-bg border border-ft-border rounded px-2 py-1 text-xs font-mono text-ft-white"
+                />
+                <input
+                  type="number" placeholder="Fat (g)" value={ntFat}
+                  onChange={(e) => setNtFat(e.target.value)}
+                  className="bg-ft-bg border border-ft-border rounded px-2 py-1 text-xs font-mono text-ft-white"
+                />
+              </div>
+              <div className="flex gap-2 justify-end">
+                <button
+                  onClick={() => setShowNutritionForm(false)}
+                  className="text-ft-dim text-xs font-mono hover:text-ft-light"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={() => handleSetBlockNutrition(false)}
+                  disabled={savingNt || !ntCalories}
+                  className="px-3 py-1 text-xs font-mono bg-ft-white text-ft-bg rounded hover:bg-ft-light disabled:opacity-50"
+                >
+                  Save
+                </button>
+              </div>
+            </div>
+          )}
+        </Card>
       )}
 
       {/* Workspace: Blocks panel + Day details */}

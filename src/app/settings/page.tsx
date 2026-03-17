@@ -23,6 +23,71 @@ export default function SettingsPage() {
   const [exporting, setExporting] = useState(false);
   const toast = useToast();
 
+  // Fitbit integration state
+  const [fitbitConnected, setFitbitConnected] = useState(false);
+  const [fitbitLoading, setFitbitLoading] = useState(true);
+  const [fitbitSyncing, setFitbitSyncing] = useState(false);
+  const [fitbitUserId, setFitbitUserId] = useState<string | null>(null);
+
+  useEffect(() => {
+    fetch("/api/integrations/fitbit/sync")
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (data) {
+          setFitbitConnected(data.connected);
+          setFitbitUserId(data.userId);
+        }
+      })
+      .catch(() => {})
+      .finally(() => setFitbitLoading(false));
+
+    // Check URL params for fitbit callback result
+    const params = new URLSearchParams(window.location.search);
+    const fitbitStatus = params.get("fitbit");
+    if (fitbitStatus === "connected") {
+      toast.success("Fitbit connected successfully!");
+      setFitbitConnected(true);
+      // Clean up URL
+      window.history.replaceState({}, "", "/settings");
+    } else if (fitbitStatus === "error") {
+      toast.error(`Fitbit connection failed: ${params.get("reason") || "unknown error"}`);
+      window.history.replaceState({}, "", "/settings");
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const handleFitbitConnect = async () => {
+    try {
+      const res = await fetch("/api/integrations/fitbit");
+      if (res.ok) {
+        const data = await res.json();
+        window.location.href = data.authUrl;
+      } else {
+        const data = await res.json();
+        toast.error(data.error || "Failed to start Fitbit connection");
+      }
+    } catch {
+      toast.error("Failed to connect to Fitbit");
+    }
+  };
+
+  const handleFitbitSync = async () => {
+    setFitbitSyncing(true);
+    try {
+      const res = await fetch("/api/integrations/fitbit/sync", { method: "POST" });
+      const data = await res.json();
+      if (res.ok) {
+        toast.success(data.message || "Fitbit data synced");
+      } else {
+        toast.error(data.error || "Sync failed");
+      }
+    } catch {
+      toast.error("Sync failed");
+    } finally {
+      setFitbitSyncing(false);
+    }
+  };
+
   const handleExport = async () => {
     setExporting(true);
     try {
@@ -142,6 +207,46 @@ export default function SettingsPage() {
               <option value="km">km</option>
             </select>
           </div>
+        </div>
+      </Card>
+
+      <Card>
+        <SectionHeader title="Integrations" />
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <span className="text-ft-light text-sm font-mono block">Fitbit</span>
+              <span className="text-ft-dim text-xs font-mono">
+                {fitbitLoading
+                  ? "Checking..."
+                  : fitbitConnected
+                  ? `Connected${fitbitUserId ? ` (${fitbitUserId})` : ""}`
+                  : "Not connected"}
+              </span>
+            </div>
+            <div className="flex gap-2">
+              {fitbitConnected ? (
+                <button
+                  onClick={handleFitbitSync}
+                  disabled={fitbitSyncing}
+                  className="bg-ft-success text-ft-bg font-mono text-xs font-bold px-3 py-1.5 rounded hover:opacity-90 transition-colors disabled:opacity-50"
+                >
+                  {fitbitSyncing ? "Syncing..." : "Sync Now"}
+                </button>
+              ) : (
+                <button
+                  onClick={handleFitbitConnect}
+                  disabled={fitbitLoading}
+                  className="bg-ft-white text-ft-bg font-mono text-xs font-bold px-3 py-1.5 rounded hover:bg-ft-light transition-colors disabled:opacity-50"
+                >
+                  Connect Fitbit
+                </button>
+              )}
+            </div>
+          </div>
+          <p className="text-ft-muted text-xs font-mono">
+            Sync body weight and body fat data from your Fitbit account. Requires Fitbit environment variables to be configured.
+          </p>
         </div>
       </Card>
 
