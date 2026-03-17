@@ -67,6 +67,7 @@ export default function EditableExerciseTable({
   const [editingCell, setEditingCell] = useState<{ id: string; field: string } | null>(null);
   const [editValue, setEditValue] = useState("");
   const [menuOpen, setMenuOpen] = useState<string | null>(null);
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
   const [dragIdx, setDragIdx] = useState<number | null>(null);
   const [dragOverIdx, setDragOverIdx] = useState<number | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -274,7 +275,7 @@ export default function EditableExerciseTable({
           {/* Menu */}
           <div className="relative">
             <button
-              onClick={() => setMenuOpen(menuOpen === ex.id ? null : ex.id)}
+              onClick={() => { setMenuOpen(menuOpen === ex.id ? null : ex.id); setConfirmDeleteId(null); }}
               className="text-ft-muted text-xs hover:text-ft-light w-full text-center"
             >
               ⋮
@@ -309,15 +310,25 @@ export default function EditableExerciseTable({
                 >
                   Move Down
                 </button>
-                <button
-                  onClick={() => {
-                    onDelete(ex.id);
-                    setMenuOpen(null);
-                  }}
-                  className="w-full text-left px-3 py-1.5 text-xs font-mono text-ft-danger hover:bg-ft-card"
-                >
-                  Delete
-                </button>
+                {confirmDeleteId === ex.id ? (
+                  <button
+                    onClick={() => {
+                      onDelete(ex.id);
+                      setMenuOpen(null);
+                      setConfirmDeleteId(null);
+                    }}
+                    className="w-full text-left px-3 py-1.5 text-xs font-mono text-ft-danger font-bold bg-ft-danger/10 hover:bg-ft-danger/20"
+                  >
+                    Confirm Delete?
+                  </button>
+                ) : (
+                  <button
+                    onClick={() => setConfirmDeleteId(ex.id)}
+                    className="w-full text-left px-3 py-1.5 text-xs font-mono text-ft-danger hover:bg-ft-card"
+                  >
+                    Delete
+                  </button>
+                )}
               </div>
             )}
           </div>

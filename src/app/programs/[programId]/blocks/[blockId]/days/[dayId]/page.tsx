@@ -105,9 +105,33 @@ export default function DayTemplatePage({
     return () => clearTimeout(timer);
   }, [exerciseSearch]);
 
+  const [formErrors, setFormErrors] = useState<Record<string, string>>({});
+
+  const validateExerciseForm = (): boolean => {
+    const errors: Record<string, string> = {};
+    if (!selectedExercise) errors.exercise = "Select an exercise";
+    const sets = parseInt(targetSets);
+    if (targetSets && (isNaN(sets) || sets < 1 || sets > 20)) errors.sets = "1-20";
+    if (targetRepRange.trim() && !/^\d+(-\d+)?$/.test(targetRepRange.trim())) {
+      errors.repRange = "Format: 8 or 8-12";
+    }
+    if (targetRpe.trim()) {
+      const rpeMatch = targetRpe.trim().match(/^(\d+(?:\.\d+)?)(?:-(\d+(?:\.\d+)?))?$/);
+      if (!rpeMatch) {
+        errors.rpe = "Format: 7 or 7-9";
+      } else {
+        const low = parseFloat(rpeMatch[1]);
+        const high = rpeMatch[2] ? parseFloat(rpeMatch[2]) : low;
+        if (low < 1 || high > 10) errors.rpe = "Range: 1-10";
+      }
+    }
+    setFormErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
   const handleAddExercise = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!selectedExercise) return;
+    if (!validateExerciseForm() || !selectedExercise) return;
     setSavingExercise(true);
     try {
       const res = await fetch(`/api/blocks/day/${dayId}/exercises`, {
@@ -274,10 +298,12 @@ export default function DayTemplatePage({
                 <input
                   type="number"
                   value={targetSets}
-                  onChange={(e) => setTargetSets(e.target.value)}
+                  onChange={(e) => { setTargetSets(e.target.value); setFormErrors((p) => { const n = { ...p }; delete n.sets; return n; }); }}
                   min="1"
-                  className="w-full bg-ft-bg border border-ft-card rounded px-3 py-2 text-sm font-mono text-ft-white focus:outline-none focus:border-ft-dim transition-colors"
+                  max="20"
+                  className={`w-full bg-ft-bg border rounded px-3 py-2 text-sm font-mono text-ft-white focus:outline-none focus:border-ft-dim transition-colors ${formErrors.sets ? "border-ft-danger" : "border-ft-card"}`}
                 />
+                {formErrors.sets && <span className="text-ft-danger text-[10px] font-mono">{formErrors.sets}</span>}
               </div>
               <div>
                 <label className="block text-ft-dim text-xs font-mono uppercase tracking-wider mb-1">
@@ -286,10 +312,11 @@ export default function DayTemplatePage({
                 <input
                   type="text"
                   value={targetRepRange}
-                  onChange={(e) => setTargetRepRange(e.target.value)}
+                  onChange={(e) => { setTargetRepRange(e.target.value); setFormErrors((p) => { const n = { ...p }; delete n.repRange; return n; }); }}
                   placeholder="8-12"
-                  className="w-full bg-ft-bg border border-ft-card rounded px-3 py-2 text-sm font-mono text-ft-white placeholder:text-ft-muted focus:outline-none focus:border-ft-dim transition-colors"
+                  className={`w-full bg-ft-bg border rounded px-3 py-2 text-sm font-mono text-ft-white placeholder:text-ft-muted focus:outline-none focus:border-ft-dim transition-colors ${formErrors.repRange ? "border-ft-danger" : "border-ft-card"}`}
                 />
+                {formErrors.repRange && <span className="text-ft-danger text-[10px] font-mono">{formErrors.repRange}</span>}
               </div>
               <div>
                 <label className="flex items-center gap-1.5 text-ft-dim text-xs font-mono uppercase tracking-wider mb-1">
@@ -301,10 +328,11 @@ export default function DayTemplatePage({
                 <input
                   type="text"
                   value={targetRpe}
-                  onChange={(e) => setTargetRpe(e.target.value)}
+                  onChange={(e) => { setTargetRpe(e.target.value); setFormErrors((p) => { const n = { ...p }; delete n.rpe; return n; }); }}
                   placeholder="e.g. 7-8"
-                  className="w-full bg-ft-bg border border-ft-card rounded px-3 py-2 text-sm font-mono text-ft-white placeholder:text-ft-muted focus:outline-none focus:border-ft-dim transition-colors"
+                  className={`w-full bg-ft-bg border rounded px-3 py-2 text-sm font-mono text-ft-white placeholder:text-ft-muted focus:outline-none focus:border-ft-dim transition-colors ${formErrors.rpe ? "border-ft-danger" : "border-ft-card"}`}
                 />
+                {formErrors.rpe && <span className="text-ft-danger text-[10px] font-mono">{formErrors.rpe}</span>}
               </div>
               <div>
                 <label className="flex items-center gap-1.5 text-ft-dim text-xs font-mono uppercase tracking-wider mb-1">

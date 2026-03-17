@@ -119,6 +119,27 @@ export default function ProgramWorkspacePage({
   const [ntFat, setNtFat] = useState("");
   const [savingNt, setSavingNt] = useState(false);
 
+  // Deletion undo state
+  const [pendingDelete, setPendingDelete] = useState<{
+    exerciseId: string;
+    dayId: string;
+    exercise: BlockDayExercise;
+    timer: ReturnType<typeof setTimeout>;
+  } | null>(null);
+
+  // Close all forms except the one being opened
+  const closeAllForms = () => {
+    setShowBlockForm(false);
+    setShowDayForm(false);
+    setShowBenchmarkForm(false);
+    setShowNutritionForm(false);
+  };
+
+  const openForm = (setter: (v: boolean) => void) => {
+    closeAllForms();
+    setter(true);
+  };
+
 
   useEffect(() => {
     fetch(`/api/programs/${programId}`)
@@ -335,34 +356,81 @@ export default function ProgramWorkspacePage({
 
   const handleExerciseDelete = async (exerciseId: string) => {
     let dayId: string | null = null;
+    let deletedExercise: BlockDayExercise | null = null;
     for (const b of program?.blocks ?? []) {
       for (const d of b.days) {
-        if (d.exercises.some((e) => e.id === exerciseId)) {
+        const found = d.exercises.find((e) => e.id === exerciseId);
+        if (found) {
           dayId = d.id;
+          deletedExercise = found;
           break;
         }
       }
     }
-    if (!dayId) return;
+    if (!dayId || !deletedExercise) return;
 
-    try {
-      await fetch(`/api/blocks/day/${dayId}/exercises/${exerciseId}`, { method: "DELETE" });
-      setProgram((prev) => {
-        if (!prev) return prev;
-        return {
-          ...prev,
-          blocks: prev.blocks.map((b) => ({
-            ...b,
-            days: b.days.map((d) => ({
-              ...d,
-              exercises: d.exercises.filter((e) => e.id !== exerciseId),
-            })),
-          })),
-        };
-      });
-    } catch {
-      toast.error("Failed to delete exercise.");
+    // Cancel any existing pending delete
+    if (pendingDelete) {
+      clearTimeout(pendingDelete.timer);
+      // Execute the previous pending delete immediately
+      fetch(`/api/blocks/day/${pendingDelete.dayId}/exercises/${pendingDelete.exerciseId}`, { method: "DELETE" }).catch(() => {});
     }
+
+    // Optimistically remove from UI
+    const capturedDayId = dayId;
+    setProgram((prev) => {
+      if (!prev) return prev;
+      return {
+        ...prev,
+        blocks: prev.blocks.map((b) => ({
+          ...b,
+          days: b.days.map((d) => ({
+            ...d,
+            exercises: d.exercises.filter((e) => e.id !== exerciseId),
+          })),
+        })),
+      };
+    });
+
+    // Set up undo window (10 seconds)
+    const timer = setTimeout(async () => {
+      try {
+        await fetch(`/api/blocks/day/${capturedDayId}/exercises/${exerciseId}`, { method: "DELETE" });
+      } catch {
+        toast.error("Failed to delete exercise.");
+      }
+      setPendingDelete(null);
+    }, 10000);
+
+    setPendingDelete({ exerciseId, dayId: capturedDayId, exercise: deletedExercise, timer });
+
+    toast.success(
+      `Removed ${deletedExercise.exercise.name}`,
+      10000,
+      {
+        label: "Undo",
+        onClick: () => {
+          clearTimeout(timer);
+          // Restore the exercise in UI
+          setProgram((prev) => {
+            if (!prev) return prev;
+            return {
+              ...prev,
+              blocks: prev.blocks.map((b) => ({
+                ...b,
+                days: b.days.map((d) =>
+                  d.id === capturedDayId
+                    ? { ...d, exercises: [...d.exercises, deletedExercise!] }
+                    : d
+                ),
+              })),
+            };
+          });
+          setPendingDelete(null);
+          toast.success("Exercise restored");
+        },
+      }
+    );
   };
 
   const handleExerciseReorder = async (dayId: string, exerciseIds: string[]) => {
@@ -583,7 +651,7 @@ export default function ProgramWorkspacePage({
             <h3 className="font-mono text-sm font-bold text-ft-white">Benchmarks</h3>
             {!showBenchmarkForm && (
               <button
-                onClick={() => setShowBenchmarkForm(true)}
+                onClick={() => openForm(setShowBenchmarkForm)}
                 className="text-ft-dim text-xs font-mono hover:text-ft-light"
               >
                 + Add
@@ -703,7 +771,7 @@ export default function ProgramWorkspacePage({
       {benchmarks.length === 0 && !showBenchmarkForm && (
         <div className="mb-6">
           <button
-            onClick={() => setShowBenchmarkForm(true)}
+            onClick={() => openForm(setShowBenchmarkForm)}
             className="text-ft-muted text-xs font-mono hover:text-ft-light transition-colors"
           >
             + Add Benchmarks
@@ -721,7 +789,7 @@ export default function ProgramWorkspacePage({
             </h3>
             {!showNutritionForm && (
               <button
-                onClick={() => setShowNutritionForm(true)}
+                onClick={() => openForm(setShowNutritionForm)}
                 className="text-ft-dim text-xs font-mono hover:text-ft-light"
               >
                 {blockNutrition[activeBlockId] ? "Edit" : "+ Set Target"}
@@ -849,7 +917,7 @@ export default function ProgramWorkspacePage({
               </button>
             ))}
             <button
-              onClick={() => setShowBlockForm(!showBlockForm)}
+              onClick={() => showBlockForm ? setShowBlockForm(false) : openForm(setShowBlockForm)}
               className="flex items-center gap-1 px-3 py-2 rounded font-mono text-xs text-ft-muted hover:text-ft-light border border-dashed border-ft-border hover:border-ft-dim transition-colors whitespace-nowrap"
             >
               + Block
@@ -930,7 +998,7 @@ export default function ProgramWorkspacePage({
                   </p>
                 </div>
                 <button
-                  onClick={() => setShowDayForm(!showDayForm)}
+                  onClick={() => showDayForm ? setShowDayForm(false) : openForm(setShowDayForm)}
                   className="text-ft-dim text-xs font-mono hover:text-ft-light border border-ft-border rounded px-3 py-1 transition-colors"
                 >
                   + Day

@@ -4,18 +4,24 @@ import { createContext, useContext, useState, useCallback, useRef } from "react"
 
 type ToastVariant = "success" | "error" | "info" | "warn";
 
+interface ToastAction {
+  label: string;
+  onClick: () => void;
+}
+
 interface Toast {
   id: number;
   message: string;
   variant: ToastVariant;
   exiting?: boolean;
+  action?: ToastAction;
 }
 
 interface ToastContextType {
-  success: (message: string) => void;
-  error: (message: string) => void;
-  info: (message: string) => void;
-  warn: (message: string) => void;
+  success: (message: string, duration?: number, action?: ToastAction) => void;
+  error: (message: string, duration?: number, action?: ToastAction) => void;
+  info: (message: string, duration?: number, action?: ToastAction) => void;
+  warn: (message: string, duration?: number, action?: ToastAction) => void;
 }
 
 const ToastContext = createContext<ToastContextType | null>(null);
@@ -35,6 +41,17 @@ function ToastItem({ toast, onRemove }: { toast: Toast; onRemove: (id: number) =
       } ${toast.exiting ? "opacity-0 translate-x-4" : "opacity-100 translate-x-0"}`}
     >
       <span className="flex-1">{toast.message}</span>
+      {toast.action && (
+        <button
+          onClick={() => {
+            toast.action!.onClick();
+            onRemove(toast.id);
+          }}
+          className="font-bold text-xs underline underline-offset-2 hover:opacity-80 whitespace-nowrap"
+        >
+          {toast.action.label}
+        </button>
+      )}
       <button
         onClick={() => onRemove(toast.id)}
         className="opacity-60 hover:opacity-100 text-xs ml-2"
@@ -57,19 +74,19 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const addToast = useCallback(
-    (message: string, variant: ToastVariant) => {
+    (message: string, variant: ToastVariant, duration?: number, action?: ToastAction) => {
       const id = ++idRef.current;
-      setToasts((prev) => [...prev.slice(-4), { id, message, variant }]);
-      setTimeout(() => removeToast(id), 4000);
+      setToasts((prev) => [...prev.slice(-4), { id, message, variant, action }]);
+      setTimeout(() => removeToast(id), duration ?? 4000);
     },
     [removeToast]
   );
 
   const ctx: ToastContextType = {
-    success: useCallback((msg: string) => addToast(msg, "success"), [addToast]),
-    error: useCallback((msg: string) => addToast(msg, "error"), [addToast]),
-    info: useCallback((msg: string) => addToast(msg, "info"), [addToast]),
-    warn: useCallback((msg: string) => addToast(msg, "warn"), [addToast]),
+    success: useCallback((msg: string, dur?: number, action?: ToastAction) => addToast(msg, "success", dur, action), [addToast]),
+    error: useCallback((msg: string, dur?: number, action?: ToastAction) => addToast(msg, "error", dur, action), [addToast]),
+    info: useCallback((msg: string, dur?: number, action?: ToastAction) => addToast(msg, "info", dur, action), [addToast]),
+    warn: useCallback((msg: string, dur?: number, action?: ToastAction) => addToast(msg, "warn", dur, action), [addToast]),
   };
 
   return (
