@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
-import { Card, Tag } from "@/components/ui";
+import { Card, Tag, EmptyState } from "@/components/ui";
 
 interface WorkoutSummary {
   id: string;
@@ -42,10 +42,15 @@ export default function HistoryPage() {
   const [loading, setLoading] = useState(true);
   const [offset, setOffset] = useState(0);
   const [hasMore, setHasMore] = useState(true);
+  const [dateFrom, setDateFrom] = useState("");
+  const [dateTo, setDateTo] = useState("");
   const limit = 20;
 
-  const fetchWorkouts = (off: number, append: boolean) => {
-    fetch(`/api/workouts?limit=${limit}&offset=${off}`)
+  const fetchWorkouts = useCallback((off: number, append: boolean, from?: string, to?: string) => {
+    const params = new URLSearchParams({ limit: String(limit), offset: String(off) });
+    if (from) params.set("from", from);
+    if (to) params.set("to", to);
+    fetch(`/api/workouts?${params}`)
       .then((res) => res.json())
       .then((data) => {
         const fetched = data.workouts ?? [];
@@ -58,16 +63,30 @@ export default function HistoryPage() {
         setLoading(false);
       })
       .catch(() => setLoading(false));
-  };
+  }, []);
 
   useEffect(() => {
     fetchWorkouts(0, false);
-  }, []);
+  }, [fetchWorkouts]);
+
+  const applyDateFilter = () => {
+    setOffset(0);
+    setLoading(true);
+    fetchWorkouts(0, false, dateFrom || undefined, dateTo || undefined);
+  };
+
+  const clearDateFilter = () => {
+    setDateFrom("");
+    setDateTo("");
+    setOffset(0);
+    setLoading(true);
+    fetchWorkouts(0, false);
+  };
 
   const loadMore = () => {
     const newOffset = offset + limit;
     setOffset(newOffset);
-    fetchWorkouts(newOffset, true);
+    fetchWorkouts(newOffset, true, dateFrom || undefined, dateTo || undefined);
   };
 
   if (loading) {
@@ -91,18 +110,51 @@ export default function HistoryPage() {
         </p>
       </div>
 
+      {/* Date Range Filter */}
+      <div className="flex flex-wrap items-end gap-3 mb-5">
+        <div>
+          <label className="block text-ft-dim text-[10px] font-mono uppercase tracking-wider mb-1">From</label>
+          <input
+            type="date"
+            value={dateFrom}
+            onChange={(e) => setDateFrom(e.target.value)}
+            className="bg-ft-surface border border-ft-card rounded px-3 py-1.5 text-sm font-mono text-ft-white"
+          />
+        </div>
+        <div>
+          <label className="block text-ft-dim text-[10px] font-mono uppercase tracking-wider mb-1">To</label>
+          <input
+            type="date"
+            value={dateTo}
+            onChange={(e) => setDateTo(e.target.value)}
+            className="bg-ft-surface border border-ft-card rounded px-3 py-1.5 text-sm font-mono text-ft-white"
+          />
+        </div>
+        <button
+          onClick={applyDateFilter}
+          disabled={!dateFrom && !dateTo}
+          className="px-3 py-1.5 text-xs font-mono font-bold bg-ft-accent text-ft-bg rounded hover:opacity-90 transition-opacity disabled:opacity-40"
+        >
+          Filter
+        </button>
+        {(dateFrom || dateTo) && (
+          <button
+            onClick={clearDateFilter}
+            className="px-3 py-1.5 text-xs font-mono text-ft-dim hover:text-ft-light transition-colors"
+          >
+            Clear
+          </button>
+        )}
+      </div>
+
       {workouts.length === 0 ? (
-        <Card className="border-dashed">
-          <div className="flex flex-col items-center justify-center py-12">
-            <p className="text-ft-muted text-sm font-mono">No workouts yet</p>
-            <Link
-              href="/log"
-              className="mt-3 text-ft-dim text-xs font-mono hover:text-ft-light transition-colors border border-ft-border rounded px-3 py-1"
-            >
-              Log your first workout
-            </Link>
-          </div>
-        </Card>
+        <EmptyState
+          icon="barbell"
+          title={dateFrom || dateTo ? "No workouts in this range" : "No workouts yet"}
+          description={dateFrom || dateTo ? "Try adjusting your date range." : "Start logging workouts to see your history here."}
+          actionLabel={dateFrom || dateTo ? undefined : "Log a workout"}
+          actionHref={dateFrom || dateTo ? undefined : "/log"}
+        />
       ) : (
         <div className="space-y-3">
           {workouts.map((w) => {

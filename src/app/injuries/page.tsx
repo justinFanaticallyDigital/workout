@@ -31,11 +31,11 @@ const BODY_PARTS = [
   "Bicep", "Tricep", "Forearm", "Shin",
 ];
 
-const severityColor: Record<string, string> = {
-  tweak: "bg-ft-dim/20 text-ft-dim",
-  mild: "bg-ft-warn/20 text-ft-warn",
-  moderate: "bg-ft-warn/30 text-ft-warn",
-  severe: "bg-ft-danger/20 text-ft-danger",
+const severityConfig: Record<string, { classes: string; icon: string }> = {
+  tweak: { classes: "bg-ft-dim/20 text-ft-dim", icon: "·" },
+  mild: { classes: "bg-ft-warn/20 text-ft-warn", icon: "▴" },
+  moderate: { classes: "bg-ft-warn/30 text-ft-warn", icon: "▴▴" },
+  severe: { classes: "bg-ft-danger/20 text-ft-danger", icon: "▴▴▴" },
 };
 
 export default function InjuriesPage() {
@@ -246,8 +246,12 @@ export default function InjuriesPage() {
                     <h3 className="text-ft-white text-sm font-mono font-bold">
                       {injury.bodyPart}
                     </h3>
-                    <span className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded ${severityColor[injury.severity] ?? "text-ft-dim"}`}>
-                      {injury.severity}
+                    <span
+                      className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded ${severityConfig[injury.severity]?.classes ?? "text-ft-dim"}`}
+                      role="img"
+                      aria-label={`Severity: ${injury.severity}`}
+                    >
+                      {severityConfig[injury.severity]?.icon ?? "·"} {injury.severity}
                     </span>
                     <Tag>{injury.status}</Tag>
                   </div>

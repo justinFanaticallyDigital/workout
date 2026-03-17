@@ -250,23 +250,23 @@ export default async function Home() {
       {/* Week View + Quick Log */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {/* Week View */}
-        <Card className="col-span-2">
+        <Card className="md:col-span-2">
           <SectionHeader title="Week View" />
-          <div className="grid grid-cols-7 gap-2 mb-4">
+          <div className="grid grid-cols-7 gap-1 sm:gap-2 mb-4">
             {weekDays.map(({ day, completed }) => (
               <div
                 key={day}
-                className={`flex flex-col items-center gap-2 py-3 rounded-md border ${
+                className={`flex flex-col items-center gap-1 sm:gap-2 py-2 sm:py-3 rounded-md border ${
                   completed
                     ? "border-ft-light bg-ft-card"
                     : "border-ft-border bg-ft-surface"
                 }`}
               >
-                <span className="text-ft-dim text-[10px] font-mono uppercase">
+                <span className="text-ft-dim text-[9px] sm:text-[10px] font-mono uppercase">
                   {day}
                 </span>
                 <span
-                  className={`text-lg ${
+                  className={`text-base sm:text-lg ${
                     completed ? "text-ft-white" : "text-ft-muted"
                   }`}
                 >

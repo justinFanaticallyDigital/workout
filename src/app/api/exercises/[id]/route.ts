@@ -17,5 +17,19 @@ export async function GET(
     return NextResponse.json({ error: "Exercise not found" }, { status: 404 });
   }
 
-  return NextResponse.json(exercise);
+  // Fetch adjacent exercises alphabetically for prev/next navigation
+  const [prev, next] = await Promise.all([
+    prisma.exercise.findFirst({
+      where: { name: { lt: exercise.name } },
+      orderBy: { name: "desc" },
+      select: { id: true, name: true },
+    }),
+    prisma.exercise.findFirst({
+      where: { name: { gt: exercise.name } },
+      orderBy: { name: "asc" },
+      select: { id: true, name: true },
+    }),
+  ]);
+
+  return NextResponse.json({ ...exercise, adjacent: { prev, next } });
 }

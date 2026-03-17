@@ -138,6 +138,18 @@ input:focus, textarea:focus, select:focus {
   outline-offset: -1px;
 }
 
+/* Visible focus ring for keyboard navigation */
+:focus-visible {
+  outline: 2px solid rgb(var(--ft-accent));
+  outline-offset: 2px;
+}
+
+/* Remove focus-visible ring from inputs (they have their own style) */
+input:focus-visible, textarea:focus-visible, select:focus-visible {
+  outline: 1px solid rgb(var(--ft-dim));
+  outline-offset: -1px;
+}
+
 input::placeholder, textarea::placeholder {
   color: rgb(var(--ft-muted));
 }
