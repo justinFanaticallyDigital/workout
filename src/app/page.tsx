@@ -189,6 +189,36 @@ export default async function Home() {
         </p>
       </div>
 
+      {/* Onboarding banner for new users */}
+      {!currentProgram && allWorkoutDates.length === 0 && (
+        <Card className="border-ft-accent/40">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+            <div className="flex-1">
+              <h2 className="text-ft-white font-mono font-bold text-base mb-1">
+                Welcome to FitTrack
+              </h2>
+              <p className="text-ft-dim text-sm font-mono">
+                Get started by creating a training program or jumping straight into a workout.
+              </p>
+            </div>
+            <div className="flex gap-2">
+              <Link
+                href="/programs/new"
+                className="bg-ft-accent text-ft-bg font-mono text-sm font-bold px-4 py-2 rounded hover:opacity-90 transition-colors whitespace-nowrap"
+              >
+                Create Program
+              </Link>
+              <Link
+                href="/log"
+                className="border border-ft-border text-ft-light font-mono text-sm px-4 py-2 rounded hover:border-ft-dim transition-colors whitespace-nowrap"
+              >
+                Quick Workout
+              </Link>
+            </div>
+          </div>
+        </Card>
+      )}
+
       {/* Top Stats Grid */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
         <Card>

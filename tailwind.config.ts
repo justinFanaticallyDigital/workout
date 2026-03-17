@@ -27,6 +27,12 @@ const config: Config = {
           success: ftColor("success"),
           warn: ftColor("warn"),
           danger: ftColor("danger"),
+          "data-1": ftColor("data-1"),
+          "data-2": ftColor("data-2"),
+          "data-3": ftColor("data-3"),
+          "data-4": ftColor("data-4"),
+          "data-5": ftColor("data-5"),
+          "data-6": ftColor("data-6"),
         },
       },
       fontFamily: {

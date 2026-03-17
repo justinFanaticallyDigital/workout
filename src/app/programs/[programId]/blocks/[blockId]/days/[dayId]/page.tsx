@@ -5,6 +5,7 @@ import Link from "next/link";
 import Card from "@/components/ui/Card";
 import Tag from "@/components/ui/Tag";
 import SectionHeader from "@/components/ui/SectionHeader";
+import Tooltip from "@/components/ui/Tooltip";
 import { useToast } from "@/components/ui/Toast";
 
 interface Exercise {
@@ -274,8 +275,11 @@ export default function DayTemplatePage({
                 />
               </div>
               <div>
-                <label className="block text-ft-dim text-xs font-mono uppercase tracking-wider mb-1">
+                <label className="flex items-center gap-1.5 text-ft-dim text-xs font-mono uppercase tracking-wider mb-1">
                   RPE
+                  <Tooltip content="Rate of Perceived Exertion (1-10). RPE 10 = failure, RPE 8 = 2 reps left in the tank, RPE 6 = 4 reps left. Most training sets are RPE 7-9.">
+                    <span className="text-ft-muted text-[10px] cursor-help">(?)</span>
+                  </Tooltip>
                 </label>
                 <input
                   type="text"
@@ -286,8 +290,11 @@ export default function DayTemplatePage({
                 />
               </div>
               <div>
-                <label className="block text-ft-dim text-xs font-mono uppercase tracking-wider mb-1">
+                <label className="flex items-center gap-1.5 text-ft-dim text-xs font-mono uppercase tracking-wider mb-1">
                   Progression
+                  <Tooltip content="Linear: add weight each session. Double: increase reps first, then weight. Wave: cycle intensity over weeks. RPE-based: auto-regulate by effort. Percentage: use % of 1RM.">
+                    <span className="text-ft-muted text-[10px] cursor-help">(?)</span>
+                  </Tooltip>
                 </label>
                 <select
                   value={progressionType}

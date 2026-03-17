@@ -331,22 +331,22 @@ export default function MealPlansPage() {
               {/* Visual macro bar */}
               <div className="flex h-2 mt-2 rounded overflow-hidden">
                 <div
-                  className="bg-blue-500"
+                  className="bg-ft-data-1"
                   style={{ width: `${genProtein}%` }}
                 />
                 <div
-                  className="bg-yellow-500"
+                  className="bg-ft-data-2"
                   style={{ width: `${genCarbs}%` }}
                 />
                 <div
-                  className="bg-red-400"
+                  className="bg-ft-data-3"
                   style={{ width: `${genFat}%` }}
                 />
               </div>
               <div className="flex justify-between text-xs font-mono text-ft-dim mt-1">
-                <span className="text-blue-400">P: {genProtein}%</span>
-                <span className="text-yellow-400">C: {genCarbs}%</span>
-                <span className="text-red-400">F: {genFat}%</span>
+                <span className="text-ft-data-1">P: {genProtein}%</span>
+                <span className="text-ft-data-2">C: {genCarbs}%</span>
+                <span className="text-ft-data-3">F: {genFat}%</span>
               </div>
             </div>
 
@@ -439,13 +439,13 @@ export default function MealPlansPage() {
                   {/* Macro split summary */}
                   {plan.proteinPct && (
                     <div className="flex gap-4 text-xs font-mono">
-                      <span className="text-blue-400">
+                      <span className="text-ft-data-1">
                         Protein: {Number(plan.proteinPct)}%
                       </span>
-                      <span className="text-yellow-400">
+                      <span className="text-ft-data-2">
                         Carbs: {Number(plan.carbsPct)}%
                       </span>
-                      <span className="text-red-400">
+                      <span className="text-ft-data-3">
                         Fat: {Number(plan.fatPct)}%
                       </span>
                     </div>

@@ -3,6 +3,14 @@
 import { useState, useEffect } from "react";
 import { Card, SectionHeader } from "@/components/ui";
 import { useToast } from "@/components/ui/Toast";
+import { getTheme, setTheme as applyTheme } from "@/lib/theme";
+
+const THEMES = [
+  { id: "default", label: "Default", desc: "Neutral dark gray" },
+  { id: "midnight", label: "Midnight", desc: "Deep blue-black" },
+  { id: "iron", label: "Iron", desc: "Warm gray with amber" },
+  { id: "forest", label: "Forest", desc: "Deep green tones" },
+] as const;
 
 function getStoredUnit(key: string, fallback: string): string {
   if (typeof window === "undefined") return fallback;
@@ -12,6 +20,7 @@ function getStoredUnit(key: string, fallback: string): string {
 export default function SettingsPage() {
   const [weightUnit, setWeightUnit] = useState(() => getStoredUnit("ft-weight-unit", "lbs"));
   const [distanceUnit, setDistanceUnit] = useState(() => getStoredUnit("ft-distance-unit", "miles"));
+  const [theme, setThemeState] = useState(() => getTheme());
 
   useEffect(() => {
     localStorage.setItem("ft-weight-unit", weightUnit);
@@ -207,6 +216,29 @@ export default function SettingsPage() {
               <option value="km">km</option>
             </select>
           </div>
+        </div>
+      </Card>
+
+      <Card>
+        <SectionHeader title="Theme" />
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          {THEMES.map((t) => (
+            <button
+              key={t.id}
+              onClick={() => {
+                setThemeState(t.id);
+                applyTheme(t.id);
+              }}
+              className={`flex flex-col items-center gap-1.5 rounded-md border px-3 py-3 transition-colors ${
+                theme === t.id
+                  ? "border-ft-accent bg-ft-surface"
+                  : "border-ft-border bg-ft-card hover:border-ft-dim"
+              }`}
+            >
+              <span className="text-ft-white text-sm font-mono font-bold">{t.label}</span>
+              <span className="text-ft-dim text-[10px] font-mono">{t.desc}</span>
+            </button>
+          ))}
         </div>
       </Card>
 
