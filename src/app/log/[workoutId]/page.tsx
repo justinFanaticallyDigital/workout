@@ -230,39 +230,55 @@ function ExercisePicker({
   }, [query]);
 
   return (
-    <div className="fixed inset-0 z-50 bg-ft-bg/90 flex flex-col">
-      <div className="max-w-2xl mx-auto w-full px-4 pt-4 flex flex-col h-full">
-        <div className="flex items-center gap-3 mb-4">
-          <button
-            onClick={onClose}
-            className="text-ft-dim hover:text-ft-light text-sm font-mono"
-          >
-            &larr; Cancel
-          </button>
-          <h2 className="font-mono text-lg font-bold text-ft-white">
+    <>
+      {/* Backdrop */}
+      <div className="fixed inset-0 z-40 bg-ft-bg/60" onClick={onClose} />
+
+      {/* Bottom sheet on mobile, centered panel on desktop */}
+      <div className="fixed inset-x-0 bottom-0 z-50 sm:inset-auto sm:top-[10%] sm:left-1/2 sm:-translate-x-1/2 sm:w-full sm:max-w-lg bg-ft-surface border-t sm:border border-ft-border sm:rounded-lg flex flex-col max-h-[85vh] sm:max-h-[70vh]">
+        {/* Handle bar (mobile) */}
+        <div className="flex justify-center pt-2 pb-1 sm:hidden">
+          <div className="w-10 h-1 rounded-full bg-ft-border" />
+        </div>
+
+        {/* Header */}
+        <div className="px-4 pt-2 sm:pt-4 pb-3 flex items-center justify-between border-b border-ft-border">
+          <h2 className="font-mono text-base font-bold text-ft-white">
             Add Exercise
           </h2>
+          <button
+            onClick={onClose}
+            className="text-ft-dim hover:text-ft-light text-lg font-mono transition-colors px-1"
+          >
+            &times;
+          </button>
         </div>
-        <input
-          ref={inputRef}
-          type="text"
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          placeholder="Search exercises..."
-          className="w-full bg-ft-surface border border-ft-card rounded px-3 py-2.5 text-sm font-mono text-ft-white placeholder:text-ft-muted focus:outline-none focus:border-ft-dim mb-3"
-        />
-        <div className="flex-1 overflow-y-auto pb-8">
+
+        {/* Search */}
+        <div className="px-4 py-3">
+          <input
+            ref={inputRef}
+            type="text"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Search exercises..."
+            className="w-full bg-ft-bg border border-ft-card rounded-lg px-3 py-3 text-base font-mono text-ft-white placeholder:text-ft-muted focus:outline-none focus:border-ft-dim touch-target"
+          />
+        </div>
+
+        {/* Results */}
+        <div className="flex-1 overflow-y-auto px-4 pb-safe">
           {/* Recent exercises (shown when no search query) */}
           {query.length < 2 && recents.length > 0 && (
             <div className="mb-4">
-              <p className="text-ft-dim text-[10px] font-mono uppercase tracking-wider mb-2 px-3">
+              <p className="text-ft-dim text-[10px] font-mono uppercase tracking-wider mb-2">
                 Recent Exercises
               </p>
               {recents.map((ex) => (
                 <button
                   key={ex.id}
                   onClick={() => onSelect(ex)}
-                  className="w-full text-left px-3 py-2.5 border-b border-ft-card hover:bg-ft-surface transition-colors"
+                  className="w-full text-left px-3 py-3 border-b border-ft-card hover:bg-ft-card/50 transition-colors touch-target rounded"
                 >
                   <div className="flex items-center justify-between">
                     <div>
@@ -272,7 +288,7 @@ function ExercisePicker({
                       </p>
                     </div>
                     <span className="text-ft-muted text-[10px] font-mono">
-                      {ex.sessionCount} sessions
+                      {ex.sessionCount}x
                     </span>
                   </div>
                 </button>
@@ -293,7 +309,7 @@ function ExercisePicker({
             <button
               key={ex.id}
               onClick={() => onSelect(ex)}
-              className="w-full text-left px-3 py-2.5 border-b border-ft-card hover:bg-ft-surface transition-colors"
+              className="w-full text-left px-3 py-3 border-b border-ft-card hover:bg-ft-card/50 transition-colors touch-target rounded"
             >
               <p className="text-ft-white text-sm font-mono">{ex.name}</p>
               <p className="text-ft-dim text-xs font-mono mt-0.5">
@@ -305,7 +321,7 @@ function ExercisePicker({
           ))}
         </div>
       </div>
-    </div>
+    </>
   );
 }
 
@@ -328,6 +344,7 @@ export default function ActiveWorkoutPage({
   const [startTime] = useState(() => Date.now());
   const [restored, setRestored] = useState(false);
   const [showPicker, setShowPicker] = useState(false);
+  const [showRir, setShowRir] = useState(false);
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Auto-save to localStorage (debounced 2s)
@@ -892,7 +909,8 @@ export default function ActiveWorkoutPage({
 
               {/* Set Table */}
               <div className="mb-3">
-                <div className="grid grid-cols-[40px_1fr_1fr_1fr_36px] gap-1.5 mb-1.5">
+                {/* Header row — RIR hidden on mobile unless toggled */}
+                <div className={`grid gap-1.5 mb-1.5 ${showRir ? "grid-cols-[36px_1fr_1fr_1fr_40px]" : "grid-cols-[36px_1fr_1fr_40px] sm:grid-cols-[36px_1fr_1fr_1fr_40px]"}`}>
                   <span className="text-ft-dim text-[11px] font-mono uppercase text-center">
                     Set
                   </span>
@@ -902,7 +920,7 @@ export default function ActiveWorkoutPage({
                   <span className="text-ft-dim text-[11px] font-mono uppercase text-center">
                     Reps
                   </span>
-                  <span className="text-ft-dim text-[11px] font-mono uppercase text-center">
+                  <span className={`text-ft-dim text-[11px] font-mono uppercase text-center ${showRir ? "" : "hidden sm:block"}`}>
                     RIR
                   </span>
                   <span className="text-ft-dim text-[11px] font-mono uppercase text-center">
@@ -913,7 +931,7 @@ export default function ActiveWorkoutPage({
                 {current.sets.map((s, si) => (
                   <div
                     key={si}
-                    className="grid grid-cols-[40px_1fr_1fr_1fr_36px] gap-1.5 mb-1.5"
+                    className={`grid gap-1.5 mb-1.5 ${showRir ? "grid-cols-[36px_1fr_1fr_1fr_40px]" : "grid-cols-[36px_1fr_1fr_40px] sm:grid-cols-[36px_1fr_1fr_1fr_40px]"}`}
                   >
                     <div className="flex items-center justify-center">
                       <span className="text-ft-dim text-sm font-mono">
@@ -921,7 +939,8 @@ export default function ActiveWorkoutPage({
                       </span>
                     </div>
                     <input
-                      type="text"
+                      type="number"
+                      inputMode="decimal"
                       value={s.weight ?? ""}
                       onChange={(e) => {
                         const val = e.target.value === "" ? null : Number(e.target.value);
@@ -930,10 +949,11 @@ export default function ActiveWorkoutPage({
                       placeholder="-"
                       className={`${
                         s.done ? "bg-ft-card" : "bg-ft-bg"
-                      } border border-ft-card rounded px-2 py-1.5 text-center text-sm font-mono text-ft-white placeholder:text-ft-muted focus:outline-none focus:border-ft-dim transition-colors`}
+                      } border border-ft-card rounded px-2 py-2.5 text-center text-base font-mono text-ft-white placeholder:text-ft-muted focus:outline-none focus:border-ft-dim transition-colors touch-target`}
                     />
                     <input
-                      type="text"
+                      type="number"
+                      inputMode="numeric"
                       value={s.reps ?? ""}
                       onChange={(e) => {
                         const val = e.target.value === "" ? null : Number(e.target.value);
@@ -942,10 +962,11 @@ export default function ActiveWorkoutPage({
                       placeholder="-"
                       className={`${
                         s.done ? "bg-ft-card" : "bg-ft-bg"
-                      } border border-ft-card rounded px-2 py-1.5 text-center text-sm font-mono text-ft-white placeholder:text-ft-muted focus:outline-none focus:border-ft-dim transition-colors`}
+                      } border border-ft-card rounded px-2 py-2.5 text-center text-base font-mono text-ft-white placeholder:text-ft-muted focus:outline-none focus:border-ft-dim transition-colors touch-target`}
                     />
                     <input
-                      type="text"
+                      type="number"
+                      inputMode="numeric"
                       value={s.rir ?? ""}
                       onChange={(e) => {
                         const val = e.target.value === "" ? null : Number(e.target.value);
@@ -954,31 +975,43 @@ export default function ActiveWorkoutPage({
                       placeholder="-"
                       className={`${
                         s.done ? "bg-ft-card" : "bg-ft-bg"
-                      } border border-ft-card rounded px-2 py-1.5 text-center text-sm font-mono text-ft-white placeholder:text-ft-muted focus:outline-none focus:border-ft-dim transition-colors`}
+                      } border border-ft-card rounded px-2 py-2.5 text-center text-base font-mono text-ft-white placeholder:text-ft-muted focus:outline-none focus:border-ft-dim transition-colors touch-target ${showRir ? "" : "hidden sm:block"}`}
                     />
                     <div
                       onClick={() => updateSet(activeEx, si, "done", !s.done)}
                       className="flex items-center justify-center cursor-pointer touch-target"
                     >
                       <div
-                        className={`w-6 h-6 rounded border flex items-center justify-center transition-colors ${
+                        className={`w-7 h-7 rounded border-2 flex items-center justify-center transition-colors ${
                           s.done
                             ? "bg-ft-success/20 border-ft-success text-ft-success"
                             : "border-ft-card hover:border-ft-dim"
                         }`}
                       >
-                        {s.done && <span className="text-xs">&#10003;</span>}
+                        {s.done && <span className="text-sm">&#10003;</span>}
                       </div>
                     </div>
                   </div>
                 ))}
 
-                <button
-                  onClick={() => addSet(activeEx)}
-                  className="w-full mt-1 border border-dashed border-ft-card rounded py-2 text-ft-dim text-xs font-mono hover:border-ft-dim hover:text-ft-light transition-colors"
-                >
-                  + Add Set
-                </button>
+                <div className="flex items-center gap-2 mt-1">
+                  <button
+                    onClick={() => addSet(activeEx)}
+                    className="flex-1 border border-dashed border-ft-card rounded py-2.5 text-ft-dim text-xs font-mono hover:border-ft-dim hover:text-ft-light transition-colors touch-target"
+                  >
+                    + Add Set
+                  </button>
+                  <button
+                    onClick={() => setShowRir(!showRir)}
+                    className={`sm:hidden border rounded py-2.5 px-3 text-xs font-mono transition-colors touch-target ${
+                      showRir
+                        ? "border-ft-dim text-ft-light bg-ft-surface"
+                        : "border-ft-card text-ft-muted hover:text-ft-dim"
+                    }`}
+                  >
+                    RIR
+                  </button>
+                </div>
               </div>
             </Card>
 
