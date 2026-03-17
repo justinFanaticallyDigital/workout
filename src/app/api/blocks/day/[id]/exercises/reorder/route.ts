@@ -25,6 +25,15 @@ export async function PATCH(
     return NextResponse.json({ error: "order must be an array" }, { status: 400 });
   }
 
+  // Verify all exercise IDs belong to this block day
+  const exercises = await prisma.blockDayExercise.findMany({
+    where: { blockDayId, id: { in: order } },
+    select: { id: true },
+  });
+  if (exercises.length !== order.length) {
+    return NextResponse.json({ error: "Invalid exercise IDs" }, { status: 400 });
+  }
+
   await prisma.$transaction(
     order.map((id, idx) =>
       prisma.blockDayExercise.update({

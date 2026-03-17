@@ -6,8 +6,12 @@ export async function POST(request: NextRequest) {
   const userId = await requireAuthUserId();
   const body = await request.json();
 
+  const validGoalTypes = ["weight", "bodyweight", "strength", "powerlifting", "competition", "frequency", "bodycomp", "custom"];
   if (!body.title?.trim() || !body.type) {
     return NextResponse.json({ error: "title and type are required" }, { status: 400 });
+  }
+  if (!validGoalTypes.includes(body.type)) {
+    return NextResponse.json({ error: `Invalid goal type. Must be one of: ${validGoalTypes.join(", ")}` }, { status: 400 });
   }
 
   // Auto-create a linked program if requested

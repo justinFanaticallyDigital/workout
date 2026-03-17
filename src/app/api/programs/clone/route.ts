@@ -59,14 +59,18 @@ export async function POST(request: NextRequest) {
     });
 
     // Create days
+    const validDayTypes = ["lifting", "cardio", "conditioning", "mobility", "rest"] as const;
     for (let di = 0; di < tBlock.days.length; di++) {
       const tDay = tBlock.days[di];
+      const dayType = validDayTypes.includes(tDay.type as typeof validDayTypes[number])
+        ? (tDay.type as typeof validDayTypes[number])
+        : "lifting";
       const day = await prisma.blockDay.create({
         data: {
           blockId: block.id,
           dayNumber: di + 1,
           name: tDay.name,
-          dayType: tDay.type as "lifting" | "cardio" | "conditioning" | "mobility" | "rest",
+          dayType,
           sortOrder: di + 1,
         },
       });
