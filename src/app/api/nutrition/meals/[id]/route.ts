@@ -78,6 +78,7 @@ export async function PATCH(
           mealId: id,
           foodItemId,
           quantity: body.addItem.quantity ?? 1,
+          sortOrder: 0,
         },
       });
     }
