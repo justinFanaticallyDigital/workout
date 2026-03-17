@@ -76,7 +76,9 @@ model User {
 // ─── Goals ───────────────────────────────────────────────
 enum GoalType {
   weight
+  bodyweight
   strength
+  powerlifting
   competition
   frequency
   bodycomp
