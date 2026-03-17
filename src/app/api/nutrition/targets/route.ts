@@ -56,6 +56,7 @@ export async function POST(request: NextRequest) {
   let fat = body.fat ?? null;
 
   // Auto-calculate macros from body weight and goal type
+  // Uses Mifflin-St Jeor with estimated height (170cm) and age (30) — approximate only
   if (body.autoCalc) {
     const latestWeight = await prisma.bodyMetric.findFirst({
       where: { userId, weight: { not: null } },
@@ -64,28 +65,32 @@ export async function POST(request: NextRequest) {
     });
 
     if (latestWeight?.weight) {
+      // Body weight stored in lbs by default
       const weightLbs = Number(latestWeight.weight);
       const weightKg = weightLbs * 0.453592;
-      const bmr = 10 * weightKg + 6.25 * 175 - 5 * 30 + 5; // Mifflin-St Jeor (estimated height/age)
-      const tdee = bmr * 1.55; // Moderate activity
+      const heightCm = body.heightCm ?? 170;
+      const age = body.age ?? 30;
+      const bmr = 10 * weightKg + 6.25 * heightCm - 5 * age + 5;
+      const activityMultiplier = body.activityLevel ?? 1.55;
+      const tdee = bmr * activityMultiplier;
 
       const goalType = body.goalType || "maintenance";
       if (goalType === "bulk" || goalType === "weight") {
         calories = Math.round(tdee + 300);
         protein = Math.round(weightLbs * 1.0);
         fat = Math.round((calories * 0.25) / 9);
-        carbs = Math.round((calories - protein * 4 - fat * 9) / 4);
+        carbs = Math.max(0, Math.round((calories - protein * 4 - fat * 9) / 4));
       } else if (goalType === "cut" || goalType === "bodyweight") {
         calories = Math.round(tdee - 400);
         protein = Math.round(weightLbs * 1.2);
         fat = Math.round((calories * 0.25) / 9);
-        carbs = Math.round((calories - protein * 4 - fat * 9) / 4);
+        carbs = Math.max(0, Math.round((calories - protein * 4 - fat * 9) / 4));
       } else {
         // maintenance
         calories = Math.round(tdee);
         protein = Math.round(weightLbs * 0.8);
         fat = Math.round((calories * 0.3) / 9);
-        carbs = Math.round((calories - protein * 4 - fat * 9) / 4);
+        carbs = Math.max(0, Math.round((calories - protein * 4 - fat * 9) / 4));
       }
     }
   }

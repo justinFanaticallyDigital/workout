@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import Card from "@/components/ui/Card";
 import Tag from "@/components/ui/Tag";
@@ -143,10 +143,14 @@ export default function ProgramWorkspacePage({
 
   const activeBlock = program?.blocks.find((b) => b.id === activeBlockId) ?? null;
 
+  // Track which blocks we've already fetched nutrition for
+  const fetchedNutritionRef = useRef<Set<string>>(new Set());
+
   // Fetch nutrition target when active block changes
   useEffect(() => {
     if (!activeBlockId) return;
-    if (blockNutrition[activeBlockId] !== undefined) return; // already fetched
+    if (fetchedNutritionRef.current.has(activeBlockId)) return;
+    fetchedNutritionRef.current.add(activeBlockId);
 
     fetch(`/api/nutrition/targets?blockId=${activeBlockId}`)
       .then((res) => (res.ok ? res.json() : null))
@@ -169,7 +173,7 @@ export default function ProgramWorkspacePage({
       .catch(() => {
         setBlockNutrition((prev) => ({ ...prev, [activeBlockId]: null }));
       });
-  }, [activeBlockId, blockNutrition]);
+  }, [activeBlockId]);
 
   const handleSetBlockNutrition = async (autoCalc: boolean) => {
     if (!activeBlockId) return;

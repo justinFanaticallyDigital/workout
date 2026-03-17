@@ -197,31 +197,44 @@ const TEMPLATE_FOODS: Omit<TemplateFood, "id">[] = [
 ];
 
 async function ensureTemplateFoods(): Promise<TemplateFood[]> {
-  const result: TemplateFood[] = [];
+  const templateNames = TEMPLATE_FOODS.map((t) => t.name);
 
-  for (const tmpl of TEMPLATE_FOODS) {
-    // Try to find existing food with this name
-    let food = await prisma.foodItem.findFirst({
-      where: { name: tmpl.name, source: "template" },
+  // Batch fetch all existing template foods
+  const existingFoods = await prisma.foodItem.findMany({
+    where: { name: { in: templateNames }, source: "template" },
+  });
+  const existingByName = new Map(existingFoods.map((f) => [f.name, f]));
+
+  // Create any missing template foods
+  const missing = TEMPLATE_FOODS.filter((t) => !existingByName.has(t.name));
+  if (missing.length > 0) {
+    await prisma.foodItem.createMany({
+      data: missing.map((tmpl) => ({
+        name: tmpl.name,
+        calories: tmpl.calories,
+        protein: tmpl.protein,
+        carbs: tmpl.carbs,
+        fat: tmpl.fat,
+        servingSize: 1,
+        servingUnit: "serving",
+        source: "template",
+        isCustom: false,
+      })),
+      skipDuplicates: true,
     });
 
-    if (!food) {
-      food = await prisma.foodItem.create({
-        data: {
-          name: tmpl.name,
-          calories: tmpl.calories,
-          protein: tmpl.protein,
-          carbs: tmpl.carbs,
-          fat: tmpl.fat,
-          servingSize: 1,
-          servingUnit: "serving",
-          source: "template",
-          isCustom: false,
-        },
-      });
+    // Re-fetch to get IDs of newly created foods
+    const newFoods = await prisma.foodItem.findMany({
+      where: { name: { in: missing.map((t) => t.name) }, source: "template" },
+    });
+    for (const f of newFoods) {
+      existingByName.set(f.name, f);
     }
+  }
 
-    result.push({
+  return TEMPLATE_FOODS.map((tmpl) => {
+    const food = existingByName.get(tmpl.name)!;
+    return {
       id: food.id,
       name: tmpl.name,
       calories: Number(food.calories),
@@ -230,10 +243,8 @@ async function ensureTemplateFoods(): Promise<TemplateFood[]> {
       fat: Number(food.fat),
       category: tmpl.category,
       mealTypes: tmpl.mealTypes,
-    });
-  }
-
-  return result;
+    };
+  });
 }
 
 function pickMealCombo(

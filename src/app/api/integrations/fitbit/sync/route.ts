@@ -26,8 +26,14 @@ export async function POST() {
 
   // Check if token is expired and refresh if needed
   if (fitbitAccount.expires_at && fitbitAccount.expires_at < Math.floor(Date.now() / 1000)) {
+    if (!fitbitAccount.refresh_token) {
+      return NextResponse.json(
+        { error: "No refresh token available. Please reconnect Fitbit." },
+        { status: 401 }
+      );
+    }
     const refreshed = await refreshFitbitToken(
-      fitbitAccount.refresh_token!,
+      fitbitAccount.refresh_token,
       fitbitAccount.id
     );
     if (!refreshed) {
@@ -45,6 +51,17 @@ export async function POST() {
     const startDate = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)
       .toISOString()
       .split("T")[0];
+
+    // Fetch user profile to determine weight unit
+    const profileRes = await fetch(
+      "https://api.fitbit.com/1/user/-/profile.json",
+      { headers: { Authorization: `Bearer ${accessToken}` } }
+    );
+    let fitbitWeightUnit = "en_US"; // default to lbs
+    if (profileRes.ok) {
+      const profile = await profileRes.json();
+      fitbitWeightUnit = profile.user?.weightUnit ?? "en_US";
+    }
 
     const weightRes = await fetch(
       `https://api.fitbit.com/1/user/-/body/log/weight/date/${startDate}/${endDate}.json`,
@@ -76,7 +93,16 @@ export async function POST() {
 
       for (const entry of weightData.weight || []) {
         const date = new Date(entry.date);
-        const weightLbs = entry.weight * 2.20462; // Fitbit returns kg, convert to lbs
+        // Fitbit returns weight in user's unit preference
+        // en_US = lbs, METRIC = kg, en_GB = stone
+        let weightLbs: number;
+        if (fitbitWeightUnit === "METRIC") {
+          weightLbs = entry.weight * 2.20462;
+        } else if (fitbitWeightUnit === "en_GB") {
+          weightLbs = entry.weight * 14; // stone to lbs
+        } else {
+          weightLbs = entry.weight; // already lbs
+        }
 
         // Upsert: only create if no entry exists for this date+source
         const existing = await prisma.bodyMetric.findFirst({

@@ -4,8 +4,6 @@ import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import Card from "@/components/ui/Card";
 
-export const dynamic = "force-dynamic";
-
 interface FoodItem {
   id: string;
   name: string;
