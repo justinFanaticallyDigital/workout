@@ -13,6 +13,11 @@ import {
   ResponsiveContainer,
 } from "recharts";
 
+interface AdjacentExercise {
+  id: string;
+  name: string;
+}
+
 interface ExerciseDetail {
   id: string;
   name: string;
@@ -20,6 +25,7 @@ interface ExerciseDetail {
   primaryMuscle: string | null;
   secondaryMuscle1: string | null;
   secondaryMuscle2: string | null;
+  adjacent?: { prev: AdjacentExercise | null; next: AdjacentExercise | null };
 }
 
 interface PR {
@@ -145,13 +151,40 @@ export default function ExerciseDetailPage({
 
   return (
     <div className="min-h-screen bg-ft-bg p-6">
-      {/* Breadcrumb */}
-      <Link
-        href="/exercises"
-        className="text-ft-dim font-mono text-xs uppercase tracking-wider hover:text-ft-light transition-colors"
-      >
-        &larr; Exercises
-      </Link>
+      {/* Breadcrumb + Prev/Next */}
+      <div className="flex items-center justify-between">
+        <Link
+          href="/exercises"
+          className="text-ft-dim font-mono text-xs uppercase tracking-wider hover:text-ft-light transition-colors"
+        >
+          &larr; Exercises
+        </Link>
+        <div className="flex items-center gap-3">
+          {exercise.adjacent?.prev ? (
+            <Link
+              href={`/exercises/${exercise.adjacent.prev.id}`}
+              className="text-ft-dim font-mono text-xs hover:text-ft-light transition-colors"
+              title={exercise.adjacent.prev.name}
+            >
+              &larr; Prev
+            </Link>
+          ) : (
+            <span className="text-ft-muted/40 font-mono text-xs">&larr; Prev</span>
+          )}
+          <span className="text-ft-border text-xs">|</span>
+          {exercise.adjacent?.next ? (
+            <Link
+              href={`/exercises/${exercise.adjacent.next.id}`}
+              className="text-ft-dim font-mono text-xs hover:text-ft-light transition-colors"
+              title={exercise.adjacent.next.name}
+            >
+              Next &rarr;
+            </Link>
+          ) : (
+            <span className="text-ft-muted/40 font-mono text-xs">Next &rarr;</span>
+          )}
+        </div>
+      </div>
 
       {/* Exercise Header */}
       <div className="mt-4 mb-6">

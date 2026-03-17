@@ -9,9 +9,24 @@ export async function GET(request: NextRequest) {
   const { searchParams } = request.nextUrl;
   const limit = parseInt(searchParams.get("limit") ?? "20", 10);
   const offset = parseInt(searchParams.get("offset") ?? "0", 10);
+  const blockDayId = searchParams.get("blockDayId");
+  const from = searchParams.get("from");
+  const to = searchParams.get("to");
+
+  const dateFilter: Record<string, Date> = {};
+  if (from) dateFilter.gte = new Date(from);
+  if (to) {
+    const toDate = new Date(to);
+    toDate.setHours(23, 59, 59, 999);
+    dateFilter.lte = toDate;
+  }
 
   const workouts = await prisma.workout.findMany({
-    where: { userId },
+    where: {
+      userId,
+      ...(blockDayId ? { blockDayId } : {}),
+      ...(Object.keys(dateFilter).length > 0 ? { date: dateFilter } : {}),
+    },
     include: {
       exercises: {
         include: {

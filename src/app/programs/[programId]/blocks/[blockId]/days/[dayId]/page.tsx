@@ -27,6 +27,14 @@ interface BlockDayExercise {
   notes: string | null;
 }
 
+interface DayWorkout {
+  id: string;
+  date: string;
+  startTime: string | null;
+  endTime: string | null;
+  exercises: { sets: { weight: number | null; reps: number | null; isWarmup: boolean }[] }[];
+}
+
 interface DayData {
   id: string;
   dayNumber: number;
@@ -47,6 +55,7 @@ export default function DayTemplatePage({
   const toast = useToast();
   const [day, setDay] = useState<DayData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [dayWorkouts, setDayWorkouts] = useState<DayWorkout[]>([]);
 
   // Add exercise form state
   const [showAddExercise, setShowAddExercise] = useState(false);
@@ -71,6 +80,14 @@ export default function DayTemplatePage({
         setLoading(false);
       })
       .catch(() => setLoading(false));
+
+    // Fetch recent workouts using this day template
+    fetch(`/api/workouts?blockDayId=${dayId}&limit=5`)
+      .then((res) => res.ok ? res.json() : null)
+      .then((data) => {
+        if (data?.workouts) setDayWorkouts(data.workouts);
+      })
+      .catch(() => {});
   }, [dayId]);
 
   // Search exercises
@@ -410,6 +427,48 @@ export default function DayTemplatePage({
               )}
             </Card>
           ))}
+        </div>
+      )}
+
+      {/* Recent Workouts Using This Template */}
+      {dayWorkouts.length > 0 && (
+        <div className="mt-8">
+          <SectionHeader
+            title="Recent Workouts"
+            subtitle={`${dayWorkouts.length} session${dayWorkouts.length !== 1 ? "s" : ""} using this template`}
+          />
+          <div className="space-y-2 mt-3">
+            {dayWorkouts.map((w) => {
+              const vol = w.exercises.reduce((sum, ex) =>
+                sum + ex.sets.reduce((s, set) =>
+                  set.weight && set.reps && !set.isWarmup ? s + Number(set.weight) * set.reps : s, 0
+                ), 0);
+              const sets = w.exercises.reduce((sum, ex) =>
+                sum + ex.sets.filter((s) => !s.isWarmup).length, 0);
+              const duration = w.startTime && w.endTime
+                ? `${Math.round((new Date(w.endTime).getTime() - new Date(w.startTime).getTime()) / 60000)}m`
+                : "—";
+              return (
+                <Link key={w.id} href={`/history/${w.id}`}>
+                  <Card className="hover:border-ft-dim transition-colors">
+                    <div className="flex items-center justify-between">
+                      <span className="text-ft-white text-sm font-mono font-bold">
+                        {new Date(w.date).toLocaleDateString("en-US", {
+                          weekday: "short", month: "short", day: "numeric",
+                        })}
+                      </span>
+                      <div className="flex items-center gap-4 text-ft-dim text-xs font-mono">
+                        <span>{sets} sets</span>
+                        <span>{vol > 0 ? `${vol.toLocaleString()} lbs` : "—"}</span>
+                        <span>{duration}</span>
+                        <span className="text-ft-muted">&rarr;</span>
+                      </div>
+                    </div>
+                  </Card>
+                </Link>
+              );
+            })}
+          </div>
         </div>
       )}
     </div>
