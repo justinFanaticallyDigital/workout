@@ -602,6 +602,27 @@ export default function ProgramWorkspacePage({
             <p className="text-ft-dim text-sm font-mono">{program.description}</p>
           )}
         </div>
+        {program.status === "paused" && (
+          <button
+            onClick={async () => {
+              try {
+                const res = await fetch(`/api/programs/${programId}`, {
+                  method: "PATCH",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({ status: "active" }),
+                });
+                if (!res.ok) throw new Error("Failed");
+                setProgram({ ...program, status: "active" });
+                toast.success("Program reactivated");
+              } catch {
+                toast.error("Failed to reactivate program");
+              }
+            }}
+            className="bg-ft-white text-ft-bg font-mono text-sm font-bold px-4 py-2 rounded hover:bg-ft-light transition-colors whitespace-nowrap"
+          >
+            Reactivate
+          </button>
+        )}
       </div>
 
       {/* Timeline */}

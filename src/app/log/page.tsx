@@ -21,6 +21,7 @@ export default async function LogWorkoutPage() {
   // Find active program's active block
   const activeProgram = await prisma.program.findFirst({
     where: { userId, status: "active" },
+    orderBy: { createdAt: "desc" },
     include: {
       blocks: {
         where: { status: "active" },

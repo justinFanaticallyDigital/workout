@@ -32,6 +32,12 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "template is required" }, { status: 400 });
   }
 
+  // Pause any currently active program
+  await prisma.program.updateMany({
+    where: { userId, status: "active" },
+    data: { status: "paused" },
+  });
+
   // Create program
   const program = await prisma.program.create({
     data: {

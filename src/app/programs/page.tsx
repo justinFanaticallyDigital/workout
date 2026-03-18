@@ -37,6 +37,7 @@ export default async function ProgramsPage() {
 
   // Count workouts per program (via blocks)
   const activeProgram = programs.find((p) => p.status === "active");
+  const pausedPrograms = programs.filter((p) => p.status === "paused");
   const completedPrograms = programs.filter((p) => p.status === "completed");
 
   // Get workout count for active program
@@ -154,6 +155,42 @@ export default async function ProgramsPage() {
             actionHref="/programs/new"
           />
         </Card>
+      )}
+
+      {/* Paused Programs */}
+      {pausedPrograms.length > 0 && (
+        <div className="mb-10">
+          <h2 className="font-mono text-lg font-bold text-ft-light mb-4">
+            Paused Programs
+          </h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {pausedPrograms.map((program) => (
+              <Link key={program.id} href={`/programs/${program.id}`}>
+                <Card className="hover:border-ft-dim transition-colors border-l-4 border-l-ft-warn">
+                  <div className="flex items-center gap-2 mb-2">
+                    <StatusIcon type="program" status="paused" />
+                    <Tag className="bg-ft-warn/20 text-ft-warn">Paused</Tag>
+                  </div>
+                  <h3 className="font-mono text-base font-bold mb-1">
+                    {program.name}
+                  </h3>
+                  {program.description && (
+                    <p className="text-ft-dim text-sm font-mono mb-3">
+                      {program.description}
+                    </p>
+                  )}
+                  <div className="flex items-center gap-4 text-xs font-mono text-ft-muted">
+                    {program.durationWeeks && (
+                      <span>{program.durationWeeks} weeks</span>
+                    )}
+                    <span>&middot;</span>
+                    <span>{program._count.blocks} blocks</span>
+                  </div>
+                </Card>
+              </Link>
+            ))}
+          </div>
+        </div>
       )}
 
       {/* Past Programs */}
