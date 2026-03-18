@@ -1,6 +1,43 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireAuthUserId } from "@/lib/auth-helpers";
+
+export async function PATCH(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const userId = await requireAuthUserId();
+  const { id } = await params;
+  const body = await request.json();
+
+  const program = await prisma.program.findUnique({
+    where: { id, userId },
+    select: { id: true },
+  });
+  if (!program) {
+    return NextResponse.json({ error: "Program not found" }, { status: 404 });
+  }
+
+  // If setting to active, pause any currently active program first
+  if (body.status === "active") {
+    await prisma.program.updateMany({
+      where: { userId, status: "active", id: { not: id } },
+      data: { status: "paused" },
+    });
+  }
+
+  const updated = await prisma.program.update({
+    where: { id },
+    data: {
+      ...(body.name !== undefined && { name: body.name }),
+      ...(body.description !== undefined && { description: body.description }),
+      ...(body.status !== undefined && { status: body.status }),
+      ...(body.durationWeeks !== undefined && { durationWeeks: body.durationWeeks }),
+    },
+  });
+
+  return NextResponse.json(updated);
+}
 
 export async function GET(
   _request: Request,

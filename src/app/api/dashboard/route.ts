@@ -10,6 +10,7 @@ export async function GET() {
   // Current active program
   const currentProgram = await prisma.program.findFirst({
     where: { userId, status: "active" },
+    orderBy: { createdAt: "desc" },
     select: { id: true, name: true, startDate: true, durationWeeks: true },
   });
 

@@ -31,6 +31,15 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "name is required" }, { status: 400 });
   }
 
+  // If creating as active, pause any currently active program
+  const newStatus = body.status ?? "active";
+  if (newStatus === "active") {
+    await prisma.program.updateMany({
+      where: { userId, status: "active" },
+      data: { status: "paused" },
+    });
+  }
+
   const program = await prisma.program.create({
     data: {
       userId,
@@ -39,7 +48,7 @@ export async function POST(request: NextRequest) {
       startDate: body.startDate ? new Date(body.startDate) : null,
       endDate: body.endDate ? new Date(body.endDate) : null,
       durationWeeks: body.durationWeeks ?? null,
-      status: body.status ?? "active",
+      status: newStatus,
     },
   });
 

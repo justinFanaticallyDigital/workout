@@ -19,6 +19,12 @@ export async function POST(request: NextRequest) {
     const durationWeeks = body.programWeeks ?? 12;
     const daysPerWeek = body.daysPerWeek ?? 4;
 
+    // Pause any currently active program
+    await prisma.program.updateMany({
+      where: { userId, status: "active" },
+      data: { status: "paused" },
+    });
+
     const program = await prisma.program.create({
       data: {
         userId,

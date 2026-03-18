@@ -48,6 +48,7 @@ export default async function Home() {
   ] = await Promise.all([
     prisma.program.findFirst({
       where: { userId, status: "active" },
+      orderBy: { createdAt: "desc" },
       include: {
         blocks: {
           where: { status: "active" },
