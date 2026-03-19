@@ -285,21 +285,28 @@ export default function ProgramWorkspacePage({
     e.preventDefault();
     if (!dayName.trim() || !activeBlockId) return;
     setSavingDay(true);
+
+    // Support comma-separated bulk creation
+    const names = dayName.split(",").map((n) => n.trim()).filter(Boolean);
     try {
-      const res = await fetch(`/api/blocks/${activeBlockId}/days`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: dayName.trim(), dayType }),
-      });
-      if (!res.ok) throw new Error("Failed");
-      const day = await res.json();
+      const created: BlockDay[] = [];
+      for (const name of names) {
+        const res = await fetch(`/api/blocks/${activeBlockId}/days`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ name, dayType }),
+        });
+        if (!res.ok) throw new Error("Failed");
+        const day = await res.json();
+        created.push({ ...day, exercises: [] });
+      }
       setProgram((prev) => {
         if (!prev) return prev;
         return {
           ...prev,
           blocks: prev.blocks.map((b) =>
             b.id === activeBlockId
-              ? { ...b, days: [...b.days, { ...day, exercises: [] }] }
+              ? { ...b, days: [...b.days, ...created] }
               : b
           ),
         };
@@ -307,6 +314,7 @@ export default function ProgramWorkspacePage({
       setShowDayForm(false);
       setDayName("");
       setDayType("lifting");
+      if (names.length > 1) toast.success(`Created ${names.length} days`);
     } catch {
       toast.error("Failed to create day.");
     }
@@ -493,6 +501,71 @@ export default function ProgramWorkspacePage({
       });
     } catch {
       toast.error("Failed to add exercise.");
+    }
+  };
+
+  const handleSetAlternative = async (exerciseId: string, altExerciseId: string | null) => {
+    let dayId: string | null = null;
+    for (const b of program?.blocks ?? []) {
+      for (const d of b.days) {
+        if (d.exercises.some((e) => e.id === exerciseId)) {
+          dayId = d.id;
+          break;
+        }
+      }
+    }
+    if (!dayId) return;
+
+    try {
+      const res = await fetch(`/api/blocks/day/${dayId}/exercises/${exerciseId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ altExerciseId }),
+      });
+      if (!res.ok) throw new Error("Failed");
+      const updated = await res.json();
+      setProgram((prev) => {
+        if (!prev) return prev;
+        return {
+          ...prev,
+          blocks: prev.blocks.map((b) => ({
+            ...b,
+            days: b.days.map((d) => ({
+              ...d,
+              exercises: d.exercises.map((e) =>
+                e.id === exerciseId
+                  ? { ...e, altExercise: updated.altExercise }
+                  : e
+              ),
+            })),
+          })),
+        };
+      });
+      toast.success(altExerciseId ? "Alternative set" : "Alternative removed");
+    } catch {
+      toast.error("Failed to set alternative.");
+    }
+  };
+
+  const handleCloneDay = async (dayId: string) => {
+    try {
+      const res = await fetch(`/api/blocks/day/${dayId}/clone`, { method: "POST" });
+      if (!res.ok) throw new Error("Failed");
+      const cloned = await res.json();
+      setProgram((prev) => {
+        if (!prev) return prev;
+        return {
+          ...prev,
+          blocks: prev.blocks.map((b) => {
+            const dayInBlock = b.days.some((d) => d.id === dayId);
+            if (!dayInBlock) return b;
+            return { ...b, days: [...b.days, cloned] };
+          }),
+        };
+      });
+      toast.success(`Cloned as "${cloned.name}"`);
+    } catch {
+      toast.error("Failed to clone day.");
     }
   };
 
@@ -1036,7 +1109,7 @@ export default function ProgramWorkspacePage({
                         type="text"
                         value={dayName}
                         onChange={(e) => setDayName(e.target.value)}
-                        placeholder="e.g. Upper Push"
+                        placeholder="e.g. Upper Push, Upper Pull, Lower"
                         required
                         className="w-full bg-ft-bg border border-ft-card rounded px-2 py-1.5 text-xs font-mono text-ft-white placeholder:text-ft-muted focus:outline-none focus:border-ft-dim"
                       />
@@ -1103,6 +1176,16 @@ export default function ProgramWorkspacePage({
                             <span className="text-ft-dim text-xs font-mono">
                               {day.exercises.length} exercises
                             </span>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleCloneDay(day.id);
+                              }}
+                              title="Clone day"
+                              className="text-ft-muted text-[10px] font-mono hover:text-ft-light transition-colors px-1"
+                            >
+                              ⧉
+                            </button>
                             <span className="text-ft-muted text-xs">
                               {isExpanded ? "▾" : "▸"}
                             </span>
@@ -1119,6 +1202,7 @@ export default function ProgramWorkspacePage({
                               onDelete={handleExerciseDelete}
                               onReorder={(ids) => handleExerciseReorder(day.id, ids)}
                               onAddExercise={handleAddExerciseToDay}
+                              onSetAlternative={handleSetAlternative}
                             />
                           </div>
                         )}
