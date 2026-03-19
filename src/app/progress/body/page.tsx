@@ -4,6 +4,7 @@ import { useState, useEffect, useMemo } from "react";
 import { Card, SectionHeader } from "@/components/ui";
 import { useToast } from "@/components/ui/Toast";
 import { chartTheme } from "@/lib/theme";
+import FitbitIcon from "@/components/ui/FitbitIcon";
 import {
   LineChart,
   Line,
@@ -11,6 +12,7 @@ import {
   YAxis,
   Tooltip,
   ResponsiveContainer,
+  Legend,
 } from "recharts";
 
 interface WeightEntry {
@@ -18,6 +20,7 @@ interface WeightEntry {
   date: string;
   weight: number | null;
   bodyFatPct: number | null;
+  source: string;
   notes: string | null;
 }
 
@@ -30,6 +33,7 @@ export default function BodyMetricsPage() {
   const [bodyFat, setBodyFat] = useState("");
   const [notes, setNotes] = useState("");
   const [saving, setSaving] = useState(false);
+  const [chartMode, setChartMode] = useState<"weight" | "bodyfat" | "both">("weight");
   const toast = useToast();
   const ct = useMemo(() => chartTheme(), []);
 
@@ -84,15 +88,23 @@ export default function BodyMetricsPage() {
   }
 
   const chartData = entries
-    .filter((e) => e.weight)
+    .filter((e) => e.weight || e.bodyFatPct)
     .map((e) => ({
       date: e.date,
       weight: e.weight,
+      bodyFat: e.bodyFatPct,
     }));
+
+  const hasBodyFat = entries.some((e) => e.bodyFatPct != null);
+  const hasFitbitData = entries.some((e) => e.source === "fitbit");
 
   const latestWeight = entries.length > 0 ? entries[entries.length - 1]?.weight : null;
   const firstWeight = entries.length > 0 ? entries[0]?.weight : null;
   const weightChange = latestWeight && firstWeight ? (latestWeight - firstWeight).toFixed(1) : null;
+
+  const latestBf = [...entries].reverse().find((e) => e.bodyFatPct)?.bodyFatPct;
+  const firstBf = entries.find((e) => e.bodyFatPct)?.bodyFatPct;
+  const bfChange = latestBf && firstBf ? (latestBf - firstBf).toFixed(1) : null;
 
   return (
     <div className="min-h-screen bg-ft-bg p-6 max-w-4xl mx-auto space-y-6">
@@ -102,20 +114,44 @@ export default function BodyMetricsPage() {
         </h1>
         <p className="text-ft-dim text-sm font-mono mt-1">
           Track weight, measurements, and body composition
+          {hasFitbitData && (
+            <span className="inline-flex items-center gap-1 ml-2 text-[#00B0B9]">
+              <FitbitIcon size={12} color="#00B0B9" /> Fitbit synced
+            </span>
+          )}
         </p>
       </div>
 
-      {/* Weight Chart */}
+      {/* Charts */}
       <Card>
         <SectionHeader
-          title="Weight Trend"
+          title="Trends"
           action={
-            <button
-              onClick={() => setShowForm(!showForm)}
-              className="text-ft-dim text-xs font-mono hover:text-ft-light transition-colors border border-ft-border rounded px-3 py-1"
-            >
-              + Log Weight
-            </button>
+            <div className="flex items-center gap-2">
+              {hasBodyFat && (
+                <div className="flex bg-ft-bg rounded border border-ft-card overflow-hidden">
+                  {(["weight", "bodyfat", "both"] as const).map((mode) => (
+                    <button
+                      key={mode}
+                      onClick={() => setChartMode(mode)}
+                      className={`px-2 py-1 text-[10px] font-mono transition-colors ${
+                        chartMode === mode
+                          ? "bg-ft-card text-ft-white"
+                          : "text-ft-muted hover:text-ft-dim"
+                      }`}
+                    >
+                      {mode === "weight" ? "Weight" : mode === "bodyfat" ? "Body Fat" : "Both"}
+                    </button>
+                  ))}
+                </div>
+              )}
+              <button
+                onClick={() => setShowForm(!showForm)}
+                className="text-ft-dim text-xs font-mono hover:text-ft-light transition-colors border border-ft-border rounded px-3 py-1"
+              >
+                + Log
+              </button>
+            </div>
           }
         />
 
@@ -194,7 +230,7 @@ export default function BodyMetricsPage() {
         )}
 
         {chartData.length > 1 ? (
-          <div className="h-48">
+          <div className="h-52">
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={chartData}>
                 <XAxis
@@ -203,25 +239,57 @@ export default function BodyMetricsPage() {
                   tickLine={false}
                   axisLine={ct.axisLine}
                 />
-                <YAxis
-                  domain={["dataMin - 2", "dataMax + 2"]}
-                  tick={ct.tick}
-                  tickLine={false}
-                  axisLine={ct.axisLine}
-                  width={45}
-                />
+                {(chartMode === "weight" || chartMode === "both") && (
+                  <YAxis
+                    yAxisId="weight"
+                    domain={["dataMin - 2", "dataMax + 2"]}
+                    tick={ct.tick}
+                    tickLine={false}
+                    axisLine={ct.axisLine}
+                    width={45}
+                  />
+                )}
+                {(chartMode === "bodyfat" || chartMode === "both") && (
+                  <YAxis
+                    yAxisId="bf"
+                    orientation={chartMode === "both" ? "right" : "left"}
+                    domain={["dataMin - 1", "dataMax + 1"]}
+                    tick={ct.tick}
+                    tickLine={false}
+                    axisLine={ct.axisLine}
+                    width={40}
+                    tickFormatter={(v: number) => `${v}%`}
+                  />
+                )}
                 <Tooltip
                   contentStyle={ct.tooltipStyle}
                   labelStyle={ct.labelStyle}
                 />
-                <Line
-                  type="monotone"
-                  dataKey="weight"
-                  stroke={ct.lineStroke}
-                  strokeWidth={2}
-                  dot={ct.dot}
-                  name="Weight (lbs)"
-                />
+                {chartMode === "both" && <Legend />}
+                {(chartMode === "weight" || chartMode === "both") && (
+                  <Line
+                    yAxisId="weight"
+                    type="monotone"
+                    dataKey="weight"
+                    stroke={ct.lineStroke}
+                    strokeWidth={2}
+                    dot={ct.dot}
+                    name="Weight (lbs)"
+                    connectNulls
+                  />
+                )}
+                {(chartMode === "bodyfat" || chartMode === "both") && (
+                  <Line
+                    yAxisId={chartMode === "both" ? "bf" : "bf"}
+                    type="monotone"
+                    dataKey="bodyFat"
+                    stroke="#00B0B9"
+                    strokeWidth={2}
+                    dot={{ fill: "#00B0B9", r: 3 }}
+                    name="Body Fat %"
+                    connectNulls
+                  />
+                )}
               </LineChart>
             </ResponsiveContainer>
           </div>
@@ -243,6 +311,26 @@ export default function BodyMetricsPage() {
             )}
           </div>
         )}
+
+        {/* Summary stats */}
+        {(weightChange || bfChange) && (
+          <div className="mt-3 pt-3 border-t border-ft-border flex gap-6">
+            {weightChange && (
+              <span className="text-ft-dim text-xs font-mono">
+                Weight: <span className={`font-bold ${Number(weightChange) > 0 ? "text-ft-warn" : "text-ft-success"}`}>
+                  {Number(weightChange) > 0 ? "+" : ""}{weightChange} lbs
+                </span>
+              </span>
+            )}
+            {bfChange && (
+              <span className="text-ft-dim text-xs font-mono">
+                Body Fat: <span className={`font-bold ${Number(bfChange) > 0 ? "text-ft-warn" : "text-ft-success"}`}>
+                  {Number(bfChange) > 0 ? "+" : ""}{bfChange}%
+                </span>
+              </span>
+            )}
+          </div>
+        )}
       </Card>
 
       {/* Weight Log Table */}
@@ -250,30 +338,32 @@ export default function BodyMetricsPage() {
         <Card>
           <SectionHeader title="Weight Log" subtitle={`${entries.length} entries`} />
           <div className="space-y-2 max-h-72 overflow-y-auto">
-            <div className="grid grid-cols-4 gap-2 text-ft-muted text-[10px] font-mono uppercase tracking-wider">
+            <div className="grid grid-cols-5 gap-2 text-ft-muted text-[10px] font-mono uppercase tracking-wider">
               <span>Date</span>
               <span>Weight</span>
               <span>Body Fat</span>
+              <span>Source</span>
               <span>Notes</span>
             </div>
             {[...entries].reverse().map((entry) => (
-              <div key={entry.id} className="grid grid-cols-4 gap-2 text-xs font-mono border-t border-ft-border pt-1.5">
+              <div key={entry.id} className="grid grid-cols-5 gap-2 text-xs font-mono border-t border-ft-border pt-1.5">
                 <span className="text-ft-dim">{entry.date}</span>
                 <span className="text-ft-light">{entry.weight ?? "—"} lbs</span>
                 <span className="text-ft-dim">{entry.bodyFatPct ? `${entry.bodyFatPct}%` : "—"}</span>
+                <span className="flex items-center gap-1">
+                  {entry.source === "fitbit" ? (
+                    <span className="inline-flex items-center gap-1 text-[#00B0B9]">
+                      <FitbitIcon size={10} color="#00B0B9" />
+                      <span className="text-[10px]">Fitbit</span>
+                    </span>
+                  ) : (
+                    <span className="text-ft-muted text-[10px]">Manual</span>
+                  )}
+                </span>
                 <span className="text-ft-muted truncate">{entry.notes ?? "—"}</span>
               </div>
             ))}
           </div>
-          {weightChange && (
-            <div className="mt-3 pt-3 border-t border-ft-border">
-              <span className="text-ft-dim text-xs font-mono">
-                Change: <span className={`font-bold ${Number(weightChange) > 0 ? "text-ft-warn" : "text-ft-success"}`}>
-                  {Number(weightChange) > 0 ? "+" : ""}{weightChange} lbs
-                </span>
-              </span>
-            </div>
-          )}
         </Card>
       )}
     </div>

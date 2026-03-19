@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { Card, SectionHeader } from "@/components/ui";
 import { useToast } from "@/components/ui/Toast";
 import { getTheme, setTheme as applyTheme } from "@/lib/theme";
+import FitbitIcon from "@/components/ui/FitbitIcon";
 
 const THEMES = [
   { id: "default", label: "Default", desc: "Neutral dark gray" },
@@ -37,6 +38,7 @@ export default function SettingsPage() {
   const [fitbitLoading, setFitbitLoading] = useState(true);
   const [fitbitSyncing, setFitbitSyncing] = useState(false);
   const [fitbitUserId, setFitbitUserId] = useState<string | null>(null);
+  const [fitbitLastSynced, setFitbitLastSynced] = useState<string | null>(null);
 
   useEffect(() => {
     fetch("/api/integrations/fitbit/sync")
@@ -45,6 +47,7 @@ export default function SettingsPage() {
         if (data) {
           setFitbitConnected(data.connected);
           setFitbitUserId(data.userId);
+          setFitbitLastSynced(data.lastSyncedAt);
         }
       })
       .catch(() => {})
@@ -246,22 +249,34 @@ export default function SettingsPage() {
         <SectionHeader title="Integrations" />
         <div className="space-y-4">
           <div className="flex items-center justify-between">
-            <div>
-              <span className="text-ft-light text-sm font-mono block">Fitbit</span>
-              <span className="text-ft-dim text-xs font-mono">
-                {fitbitLoading
-                  ? "Checking..."
-                  : fitbitConnected
-                  ? `Connected${fitbitUserId ? ` (${fitbitUserId})` : ""}`
-                  : "Not connected"}
-              </span>
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 rounded-md bg-[#00B0B9] flex items-center justify-center">
+                <FitbitIcon size={18} color="white" />
+              </div>
+              <div>
+                <span className="text-ft-light text-sm font-mono block">Fitbit</span>
+                <span className="text-ft-dim text-xs font-mono">
+                  {fitbitLoading
+                    ? "Checking..."
+                    : fitbitConnected
+                    ? `Connected${fitbitUserId ? ` (${fitbitUserId})` : ""}`
+                    : "Not connected"}
+                </span>
+                {fitbitLastSynced && (
+                  <span className="text-ft-muted text-[10px] font-mono block">
+                    Last synced: {new Date(fitbitLastSynced).toLocaleDateString("en-US", {
+                      month: "short", day: "numeric", hour: "numeric", minute: "2-digit",
+                    })}
+                  </span>
+                )}
+              </div>
             </div>
             <div className="flex gap-2">
               {fitbitConnected ? (
                 <button
                   onClick={handleFitbitSync}
                   disabled={fitbitSyncing}
-                  className="bg-ft-success text-ft-bg font-mono text-xs font-bold px-3 py-1.5 rounded hover:opacity-90 transition-colors disabled:opacity-50"
+                  className="bg-[#00B0B9] text-white font-mono text-xs font-bold px-3 py-1.5 rounded hover:opacity-90 transition-colors disabled:opacity-50"
                 >
                   {fitbitSyncing ? "Syncing..." : "Sync Now"}
                 </button>
@@ -277,7 +292,7 @@ export default function SettingsPage() {
             </div>
           </div>
           <p className="text-ft-muted text-xs font-mono">
-            Sync body weight and body fat data from your Fitbit account. Requires Fitbit environment variables to be configured.
+            Sync body weight, body fat, activity, sleep, and heart rate data from your Fitbit account.
           </p>
         </div>
       </Card>

@@ -6,6 +6,7 @@ import ProgressBar from "@/components/ui/ProgressBar";
 import SectionHeader from "@/components/ui/SectionHeader";
 import { prisma } from "@/lib/prisma";
 import { getAuthUserId } from "@/lib/auth-helpers";
+import RecoveryCard from "@/components/ui/RecoveryCard";
 
 const DAY_LABELS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 
@@ -247,6 +248,9 @@ export default async function Home() {
           />
         </Card>
       </div>
+
+      {/* Recovery (Fitbit) — renders only if connected + has data */}
+      <RecoveryCard />
 
       {/* Week View + Quick Log */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">

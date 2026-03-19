@@ -67,6 +67,7 @@ model User {
   exercises      Exercise[]
   exercisePrs    ExercisePr[]
   bodyMetrics    BodyMetric[]
+  dailyMetrics   DailyMetric[]
   progressPhotos ProgressPhoto[]
   injuries       Injury[]
   foodItems        FoodItem[]
@@ -380,6 +381,35 @@ model BodyMetric {
   @@index([userId])
   @@index([userId, date])
   @@map("body_metrics")
+}
+
+// ─── Daily Metrics (Fitbit activity/sleep/HR) ───────────
+model DailyMetric {
+  id               String   @id @default(uuid()) @db.Uuid
+  userId           String   @map("user_id") @db.Uuid
+  date             DateTime @db.Date
+  // Activity
+  steps            Int?
+  activeMinutes    Int?     @map("active_minutes")
+  caloriesBurned   Int?     @map("calories_burned")
+  // Sleep
+  sleepMinutes     Int?     @map("sleep_minutes")
+  sleepDeep        Int?     @map("sleep_deep")       // minutes
+  sleepLight       Int?     @map("sleep_light")      // minutes
+  sleepRem         Int?     @map("sleep_rem")        // minutes
+  sleepWake        Int?     @map("sleep_wake")       // minutes
+  // Heart Rate
+  restingHr        Int?     @map("resting_hr")
+  // Source
+  source           String   @default("fitbit")
+  createdAt        DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, date, source])
+  @@index([userId])
+  @@index([userId, date])
+  @@map("daily_metrics")
 }
 
 model ProgressPhoto {

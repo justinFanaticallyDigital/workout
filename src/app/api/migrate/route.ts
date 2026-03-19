@@ -6,11 +6,6 @@ import { requireAuthUserId } from "@/lib/auth-helpers";
 export async function POST() {
   await requireAuthUserId(); // must be logged in
 
-  // Only allow in development
-  if (process.env.NODE_ENV === "production") {
-    return NextResponse.json({ error: "Not available in production" }, { status: 403 });
-  }
-
   const results: string[] = [];
 
   const migrations = [
@@ -27,6 +22,27 @@ export async function POST() {
     // ProgramBenchmark: add blockId
     `ALTER TABLE program_benchmarks ADD COLUMN IF NOT EXISTS block_id UUID REFERENCES blocks(id) ON DELETE SET NULL`,
     `CREATE INDEX IF NOT EXISTS program_benchmarks_block_id_idx ON program_benchmarks(block_id)`,
+
+    // DailyMetric: activity, sleep, HR data from Fitbit
+    `CREATE TABLE IF NOT EXISTS daily_metrics (
+      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      date DATE NOT NULL,
+      steps INT,
+      active_minutes INT,
+      calories_burned INT,
+      sleep_minutes INT,
+      sleep_deep INT,
+      sleep_light INT,
+      sleep_rem INT,
+      sleep_wake INT,
+      resting_hr INT,
+      source TEXT NOT NULL DEFAULT 'fitbit',
+      created_at TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      UNIQUE(user_id, date, source)
+    )`,
+    `CREATE INDEX IF NOT EXISTS daily_metrics_user_id_idx ON daily_metrics(user_id)`,
+    `CREATE INDEX IF NOT EXISTS daily_metrics_user_id_date_idx ON daily_metrics(user_id, date)`,
   ];
 
   for (const sql of migrations) {

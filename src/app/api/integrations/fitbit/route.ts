@@ -20,7 +20,7 @@ export async function GET() {
   }
 
   const redirectUri = `${baseUrl}/api/integrations/fitbit/callback`;
-  const scope = "weight profile";
+  const scope = "weight profile activity heartrate sleep";
   const state = crypto.randomBytes(16).toString("hex");
 
   const authUrl = new URL("https://www.fitbit.com/oauth2/authorize");
