@@ -15,6 +15,7 @@ export async function GET() {
       date: true,
       weight: true,
       bodyFatPct: true,
+      source: true,
       notes: true,
     },
   });
@@ -25,6 +26,7 @@ export async function GET() {
       date: e.date.toISOString().split("T")[0],
       weight: e.weight ? Number(e.weight) : null,
       bodyFatPct: e.bodyFatPct ? Number(e.bodyFatPct) : null,
+      source: e.source,
       notes: e.notes,
     })),
   });

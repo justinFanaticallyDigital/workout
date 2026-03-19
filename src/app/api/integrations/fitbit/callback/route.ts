@@ -72,6 +72,17 @@ export async function GET(request: NextRequest) {
       },
     });
 
+    // Auto-trigger initial sync after connecting
+    try {
+      const syncUrl = `${baseUrl}/api/integrations/fitbit/sync`;
+      await fetch(syncUrl, {
+        method: "POST",
+        headers: { cookie: request.headers.get("cookie") ?? "" },
+      });
+    } catch {
+      // Non-blocking — sync failure doesn't break connection
+    }
+
     return NextResponse.redirect(
       `${baseUrl}/settings?fitbit=connected`
     );

@@ -1,10 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import Card from "@/components/ui/Card";
 import { useToast } from "@/components/ui/Toast";
+import FitbitIcon from "@/components/ui/FitbitIcon";
 
 const GOAL_TYPES = [
   { value: "strength", label: "Strength PR", icon: "🏋️", desc: "Hit a specific weight on a lift" },
@@ -26,6 +27,25 @@ export default function GoalWizardPage() {
   const [daysPerWeek, setDaysPerWeek] = useState("4");
   const [programWeeks, setProgramWeeks] = useState("12");
   const [saving, setSaving] = useState(false);
+  const [startValue, setStartValue] = useState("");
+  const [startValueSource, setStartValueSource] = useState<string | null>(null);
+
+  // Auto-fetch current body weight for weight-based goals
+  useEffect(() => {
+    fetch("/api/progress/weight")
+      .then((r) => r.json())
+      .then((data) => {
+        const entries = data.entries ?? [];
+        if (entries.length > 0) {
+          const latest = entries[entries.length - 1];
+          if (latest.weight) {
+            setStartValue(latest.weight.toString());
+            setStartValueSource(latest.source ?? "manual");
+          }
+        }
+      })
+      .catch(() => {});
+  }, []);
 
   const handleSelectType = (type: string) => {
     setGoalType(type);
@@ -45,6 +65,7 @@ export default function GoalWizardPage() {
         body: JSON.stringify({
           type: goalType,
           title: title.trim(),
+          startValue: (goalType === "weight" || goalType === "competition") && startValue ? parseFloat(startValue) : null,
           targetValue: targetValue ? parseFloat(targetValue) : null,
           targetUnit: targetUnit || null,
           targetDate: targetDate || null,
@@ -116,6 +137,19 @@ export default function GoalWizardPage() {
                 className="w-full bg-ft-bg border border-ft-card rounded px-3 py-2 text-sm font-mono text-ft-white placeholder:text-ft-muted focus:outline-none focus:border-ft-dim"
               />
             </div>
+
+            {(goalType === "weight" || goalType === "competition") && startValue && (
+              <div className="flex items-center gap-2 p-2 bg-ft-bg rounded border border-ft-card">
+                <span className="text-ft-dim text-xs font-mono">Current weight:</span>
+                <span className="text-ft-white text-sm font-mono font-bold">{startValue} lbs</span>
+                {startValueSource === "fitbit" && (
+                  <span className="inline-flex items-center gap-1 text-[#00B0B9]">
+                    <FitbitIcon size={10} color="#00B0B9" />
+                    <span className="text-[10px] font-mono">Fitbit</span>
+                  </span>
+                )}
+              </div>
+            )}
 
             {(goalType === "strength" || goalType === "weight" || goalType === "competition") && (
               <div className="grid grid-cols-2 gap-3">
