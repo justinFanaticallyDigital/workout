@@ -34,6 +34,7 @@ interface EditableExerciseTableProps {
     progressionType: string;
     progressionIncrement: number | null;
   }) => void;
+  onSetAlternative?: (exerciseId: string, altExerciseId: string | null) => void;
 }
 
 const PROGRESSION_TYPES = ["none", "linear", "double", "wave", "rpe_based", "percentage_based"];
@@ -63,14 +64,19 @@ export default function EditableExerciseTable({
   onDelete,
   onReorder,
   onAddExercise,
+  onSetAlternative,
 }: EditableExerciseTableProps) {
   const [editingCell, setEditingCell] = useState<{ id: string; field: string } | null>(null);
   const [editValue, setEditValue] = useState("");
   const [menuOpen, setMenuOpen] = useState<string | null>(null);
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
+  const [altPickerOpen, setAltPickerOpen] = useState<string | null>(null);
+  const [altSearch, setAltSearch] = useState("");
+  const [altResults, setAltResults] = useState<SearchResult[]>([]);
   const [dragIdx, setDragIdx] = useState<number | null>(null);
   const [dragOverIdx, setDragOverIdx] = useState<number | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const altInputRef = useRef<HTMLInputElement>(null);
 
   // New exercise row state
   const [addingNew, setAddingNew] = useState(false);
@@ -82,6 +88,25 @@ export default function EditableExerciseTable({
   const [newRpe, setNewRpe] = useState("");
   const [newProg, setNewProg] = useState("none");
   const [newIncrement, setNewIncrement] = useState("5");
+
+  // Search for alternative exercise
+  useEffect(() => {
+    if (!altSearch.trim() || altSearch.length < 2) {
+      setAltResults([]);
+      return;
+    }
+    const timer = setTimeout(() => {
+      fetch(`/api/exercises?search=${encodeURIComponent(altSearch)}`)
+        .then((r) => r.json())
+        .then((d) => setAltResults(d.exercises?.slice(0, 10) ?? []))
+        .catch(() => setAltResults([]));
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [altSearch]);
+
+  useEffect(() => {
+    if (altPickerOpen && altInputRef.current) altInputRef.current.focus();
+  }, [altPickerOpen]);
 
   // Search for new exercise
   useEffect(() => {
@@ -249,9 +274,16 @@ export default function EditableExerciseTable({
           {/* Drag handle */}
           <span className="text-ft-muted text-[10px] cursor-grab select-none">⋮⋮</span>
           <span className="text-ft-muted text-xs font-mono">{idx + 1}</span>
-          <span className="text-ft-light text-xs font-mono font-bold truncate" title={ex.exercise.name}>
-            {ex.exercise.name}
-          </span>
+          <div className="truncate">
+            <span className="text-ft-light text-xs font-mono font-bold" title={ex.exercise.name}>
+              {ex.exercise.name}
+            </span>
+            {ex.altExercise && (
+              <span className="text-ft-muted text-[10px] font-mono ml-1" title={`Alt: ${ex.altExercise.name}`}>
+                / {ex.altExercise.name}
+              </span>
+            )}
+          </div>
           {renderCell(ex, "targetSets", ex.targetSets, "w-full")}
           {renderCell(ex, "targetRepRange", ex.targetRepRange, "w-full")}
           {renderCell(ex, "targetRpe", ex.targetRpe, "w-full")}
@@ -310,6 +342,31 @@ export default function EditableExerciseTable({
                 >
                   Move Down
                 </button>
+                {onSetAlternative && (
+                  <button
+                    onClick={() => {
+                      setMenuOpen(null);
+                      setAltPickerOpen(ex.id);
+                      setAltSearch("");
+                      setAltResults([]);
+                    }}
+                    className="w-full text-left px-3 py-1.5 text-xs font-mono text-ft-light hover:bg-ft-card"
+                  >
+                    {ex.altExercise ? "Change Alt" : "Set Alternative"}
+                  </button>
+                )}
+                {onSetAlternative && ex.altExercise && (
+                  <button
+                    onClick={() => {
+                      onSetAlternative(ex.id, null);
+                      setMenuOpen(null);
+                    }}
+                    className="w-full text-left px-3 py-1.5 text-xs font-mono text-ft-warn hover:bg-ft-card"
+                  >
+                    Remove Alt
+                  </button>
+                )}
+                <div className="border-t border-ft-border/50" />
                 {confirmDeleteId === ex.id ? (
                   <button
                     onClick={() => {
@@ -334,6 +391,51 @@ export default function EditableExerciseTable({
           </div>
         </div>
       ))}
+
+      {/* Alt exercise picker */}
+      {altPickerOpen && (
+        <div className="my-2 p-3 bg-ft-surface border border-ft-card rounded">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-ft-dim text-[10px] font-mono uppercase tracking-wider">
+              Set Alternative Exercise
+            </span>
+            <button
+              onClick={() => { setAltPickerOpen(null); setAltSearch(""); }}
+              className="text-ft-dim text-xs hover:text-ft-light"
+            >
+              &times;
+            </button>
+          </div>
+          <div className="relative">
+            <input
+              ref={altInputRef}
+              type="text"
+              value={altSearch}
+              onChange={(e) => setAltSearch(e.target.value)}
+              placeholder="Search for alternative..."
+              className="w-full bg-ft-bg border border-ft-card rounded px-2 py-1.5 text-xs font-mono text-ft-white placeholder:text-ft-muted focus:outline-none focus:border-ft-dim"
+            />
+            {altResults.length > 0 && (
+              <div className="absolute top-full left-0 right-0 mt-1 bg-ft-surface border border-ft-card rounded max-h-36 overflow-y-auto z-20">
+                {altResults.map((r) => (
+                  <button
+                    key={r.id}
+                    onClick={() => {
+                      if (onSetAlternative) onSetAlternative(altPickerOpen, r.id);
+                      setAltPickerOpen(null);
+                      setAltSearch("");
+                    }}
+                    className="w-full text-left px-2 py-1.5 text-xs font-mono text-ft-light hover:bg-ft-card"
+                  >
+                    {r.name}
+                    {r.primaryMuscle && <span className="text-ft-muted ml-2">{r.primaryMuscle}</span>}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Add row */}
       {addingNew ? (
