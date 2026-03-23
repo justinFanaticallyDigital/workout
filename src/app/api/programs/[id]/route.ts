@@ -98,19 +98,6 @@ export async function DELETE(
     return NextResponse.json({ error: "Program not found" }, { status: 404 });
   }
 
-  // Delete related data in order (benchmarks, block day exercises, block days, blocks, then program)
-  await prisma.programBenchmark.deleteMany({ where: { programId: id } });
-  const blocks = await prisma.block.findMany({ where: { programId: id }, select: { id: true } });
-  const blockIds = blocks.map((b) => b.id);
-  if (blockIds.length > 0) {
-    const days = await prisma.blockDay.findMany({ where: { blockId: { in: blockIds } }, select: { id: true } });
-    const dayIds = days.map((d) => d.id);
-    if (dayIds.length > 0) {
-      await prisma.blockDayExercise.deleteMany({ where: { blockDayId: { in: dayIds } } });
-      await prisma.blockDay.deleteMany({ where: { id: { in: dayIds } } });
-    }
-    await prisma.block.deleteMany({ where: { id: { in: blockIds } } });
-  }
   await prisma.program.delete({ where: { id } });
 
   return NextResponse.json({ deleted: true });

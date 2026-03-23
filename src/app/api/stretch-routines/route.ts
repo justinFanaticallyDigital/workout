@@ -71,7 +71,6 @@ export async function DELETE(req: NextRequest) {
     return NextResponse.json({ error: "Routine not found" }, { status: 404 });
   }
 
-  await prisma.stretchRoutineItem.deleteMany({ where: { routineId: id } });
   await prisma.stretchRoutine.delete({ where: { id } });
 
   return NextResponse.json({ deleted: true });

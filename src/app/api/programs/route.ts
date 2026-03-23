@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireAuth } from "@/lib/auth-helpers";
+import type { ProgramStatus } from "@/generated/prisma/enums";
 
 export const dynamic = "force-dynamic";
 
@@ -14,7 +15,7 @@ export async function GET(request: NextRequest) {
   const programs = await prisma.program.findMany({
     where: {
       userId,
-      ...(status ? { status: status as "active" | "completed" | "paused" } : {}),
+      ...(status ? { status: status as ProgramStatus } : {}),
     },
     include: {
       blocks: {

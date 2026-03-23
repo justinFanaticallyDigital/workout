@@ -67,10 +67,6 @@ export async function DELETE(
     return NextResponse.json({ error: "Workout not found" }, { status: 404 });
   }
 
-  await prisma.set.deleteMany({
-    where: { workoutExercise: { workoutId: id } },
-  });
-  await prisma.workoutExercise.deleteMany({ where: { workoutId: id } });
   await prisma.workout.delete({ where: { id } });
 
   return NextResponse.json({ deleted: true });

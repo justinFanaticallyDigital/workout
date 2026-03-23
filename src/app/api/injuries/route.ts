@@ -95,7 +95,6 @@ export async function DELETE(request: NextRequest) {
     return NextResponse.json({ error: "Injury not found" }, { status: 404 });
   }
 
-  await prisma.injuryNote.deleteMany({ where: { injuryId: id } });
   await prisma.injury.delete({ where: { id } });
 
   return NextResponse.json({ deleted: true });
