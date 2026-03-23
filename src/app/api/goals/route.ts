@@ -1,17 +1,18 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireAuth } from "@/lib/auth-helpers";
+import type { GoalType, GoalStatus, ProgramStatus, BlockStatus } from "@/generated/prisma/enums";
 
 export async function POST(request: NextRequest) {
   const [userId, authError] = await requireAuth();
   if (authError) return authError;
   const body = await request.json();
 
-  const validGoalTypes = ["weight", "bodyweight", "strength", "powerlifting", "competition", "frequency", "bodycomp", "custom"];
+  const validGoalTypes: GoalType[] = ["weight", "bodyweight", "strength", "powerlifting", "competition", "frequency", "bodycomp", "custom"];
   if (!body.title?.trim() || !body.type) {
     return NextResponse.json({ error: "title and type are required" }, { status: 400 });
   }
-  if (!validGoalTypes.includes(body.type)) {
+  if (!validGoalTypes.includes(body.type as GoalType)) {
     return NextResponse.json({ error: `Invalid goal type. Must be one of: ${validGoalTypes.join(", ")}` }, { status: 400 });
   }
 
@@ -22,8 +23,8 @@ export async function POST(request: NextRequest) {
 
     // Pause any currently active program
     await prisma.program.updateMany({
-      where: { userId, status: "active" },
-      data: { status: "paused" },
+      where: { userId, status: "active" as ProgramStatus },
+      data: { status: "paused" as ProgramStatus },
     });
 
     const program = await prisma.program.create({
@@ -33,7 +34,7 @@ export async function POST(request: NextRequest) {
         description: `Goal: ${body.title.trim()}`,
         durationWeeks,
         startDate: new Date(),
-        status: "active",
+        status: "active" as ProgramStatus,
       },
     });
 
@@ -42,7 +43,7 @@ export async function POST(request: NextRequest) {
       data: {
         userId,
         programId: program.id,
-        type: body.type,
+        type: body.type as GoalType,
         priority: body.priority ?? "primary",
         title: body.title.trim(),
         description: body.description?.trim() || null,
@@ -51,7 +52,7 @@ export async function POST(request: NextRequest) {
         targetValue: body.targetValue ?? null,
         targetUnit: body.targetUnit ?? null,
         targetDate: body.targetDate ? new Date(body.targetDate) : null,
-        status: "active",
+        status: "active" as GoalStatus,
       },
     });
 
@@ -67,7 +68,7 @@ export async function POST(request: NextRequest) {
           blockNumber: i + 1,
           durationWeeks: i === blockCount - 1 ? durationWeeks - weeksPerBlock * (blockCount - 1) : weeksPerBlock,
           scheduleDaysPerWeek: daysPerWeek,
-          status: i === 0 ? "active" : "upcoming",
+          status: (i === 0 ? "active" : "upcoming") as BlockStatus,
         },
       });
     }
@@ -80,7 +81,7 @@ export async function POST(request: NextRequest) {
     data: {
       userId,
       programId: body.programId ?? null,
-      type: body.type,
+      type: body.type as GoalType,
       priority: body.priority ?? "primary",
       title: body.title.trim(),
       description: body.description?.trim() || null,
@@ -89,7 +90,7 @@ export async function POST(request: NextRequest) {
       targetValue: body.targetValue ?? null,
       targetUnit: body.targetUnit ?? null,
       targetDate: body.targetDate ? new Date(body.targetDate) : null,
-      status: "active",
+      status: "active" as GoalStatus,
     },
   });
 

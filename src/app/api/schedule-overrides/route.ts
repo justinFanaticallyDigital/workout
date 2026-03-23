@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireAuth } from "@/lib/auth-helpers";
+import type { OverrideScope, OverrideAction } from "@/generated/prisma/enums";
 
 export async function GET(req: NextRequest) {
   const [userId, errorRes] = await requireAuth();
@@ -40,10 +41,10 @@ export async function POST(req: NextRequest) {
         userId,
         programId: body.programId,
         blockId: body.blockId,
-        scope: body.scope,
+        scope: body.scope as OverrideScope,
         weekNumber: body.weekNumber,
         dayOfWeek: body.dayOfWeek ?? null,
-        action: body.action,
+        action: body.action as OverrideAction,
         payload: body.payload || {},
       },
     });

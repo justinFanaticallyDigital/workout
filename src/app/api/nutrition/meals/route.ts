@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireAuth } from "@/lib/auth-helpers";
+import type { MealType } from "@/generated/prisma/enums";
 
 /**
  * GET /api/nutrition/meals?date=2026-03-17
@@ -115,7 +116,7 @@ export async function POST(request: NextRequest) {
     data: {
       userId,
       date: new Date(body.date),
-      mealType: body.mealType,
+      mealType: body.mealType as MealType,
       notes: body.notes ?? null,
       items: {
         create: items,
