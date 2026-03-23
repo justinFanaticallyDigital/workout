@@ -2,6 +2,7 @@
 
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { themes, ThemeConfig } from '@/themes';
+import ThemePickerModal from '@/components/themed/ThemePickerModal';
 
 interface ThemeContextType {
   themeId: string;
@@ -121,11 +122,17 @@ function applyThemeCssVars(theme: ThemeConfig) {
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
   const [themeId, setThemeId] = useState('graffiti');
+  const [showPicker, setShowPicker] = useState(false);
 
   useEffect(() => {
     const saved = localStorage.getItem(THEME_KEY);
     if (saved && themes[saved]) {
       setThemeId(saved);
+    }
+    // Show theme picker on first visit (no theme chosen yet)
+    const hasChosen = localStorage.getItem('fittrack-theme-chosen');
+    if (!hasChosen) {
+      setShowPicker(true);
     }
   }, []);
 
@@ -144,6 +151,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   return (
     <ThemeContext.Provider value={{ themeId, theme, setTheme }}>
       {children}
+      {showPicker && <ThemePickerModal onClose={() => setShowPicker(false)} />}
     </ThemeContext.Provider>
   );
 }
