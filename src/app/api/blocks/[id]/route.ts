@@ -58,7 +58,7 @@ export async function PATCH(
     where: { id },
     data: {
       ...(body.name !== undefined && { name: body.name as string }),
-      ...(body.status !== undefined && { status: body.status as string }),
+      ...(body.status !== undefined && { status: body.status as "active" | "completed" | "upcoming" }),
       ...(body.durationWeeks !== undefined && { durationWeeks: body.durationWeeks as number | null }),
       ...(body.phase !== undefined && { phase: body.phase as string | null }),
     },
