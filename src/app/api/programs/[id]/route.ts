@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireAuth } from "@/lib/auth-helpers";
+import type { ProgramStatus } from "@/generated/prisma/enums";
 
 export async function PATCH(
   request: NextRequest,
@@ -32,7 +33,7 @@ export async function PATCH(
     data: {
       ...(body.name !== undefined && { name: body.name }),
       ...(body.description !== undefined && { description: body.description }),
-      ...(body.status !== undefined && { status: body.status }),
+      ...(body.status !== undefined && { status: body.status as ProgramStatus }),
       ...(body.durationWeeks !== undefined && { durationWeeks: body.durationWeeks }),
     },
   });

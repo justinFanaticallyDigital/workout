@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireAuth } from "@/lib/auth-helpers";
+import type { ProgramStatus, BlockStatus, DayType } from "@/generated/prisma/enums";
 
 interface TemplateDay {
   name: string;
@@ -35,8 +36,8 @@ export async function POST(request: NextRequest) {
 
   // Pause any currently active program
   await prisma.program.updateMany({
-    where: { userId, status: "active" },
-    data: { status: "paused" },
+    where: { userId, status: "active" as ProgramStatus },
+    data: { status: "paused" as ProgramStatus },
   });
 
   // Create program
@@ -47,7 +48,7 @@ export async function POST(request: NextRequest) {
       description: template.description ?? null,
       durationWeeks: template.durationWeeks ?? null,
       startDate: new Date(),
-      status: "active",
+      status: "active" as ProgramStatus,
     },
   });
 
@@ -61,16 +62,16 @@ export async function POST(request: NextRequest) {
         blockNumber: bi + 1,
         durationWeeks: tBlock.weeks,
         scheduleDaysPerWeek: tBlock.days.length,
-        status: bi === 0 ? "active" : "upcoming",
+        status: (bi === 0 ? "active" : "upcoming") as BlockStatus,
       },
     });
 
     // Create days
-    const validDayTypes = ["lifting", "cardio", "conditioning", "mobility", "rest"] as const;
+    const validDayTypes: DayType[] = ["lifting", "cardio", "conditioning", "mobility", "rest"];
     for (let di = 0; di < tBlock.days.length; di++) {
       const tDay = tBlock.days[di];
-      const dayType = validDayTypes.includes(tDay.type as typeof validDayTypes[number])
-        ? (tDay.type as typeof validDayTypes[number])
+      const dayType: DayType = validDayTypes.includes(tDay.type as DayType)
+        ? (tDay.type as DayType)
         : "lifting";
       const day = await prisma.blockDay.create({
         data: {

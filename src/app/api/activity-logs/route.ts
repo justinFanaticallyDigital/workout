@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireAuth } from "@/lib/auth-helpers";
+import type { ActivityType, Intensity } from "@/generated/prisma/enums";
 
 export async function GET(req: NextRequest) {
   const [userId, errorRes] = await requireAuth();
@@ -33,10 +34,10 @@ export async function POST(req: NextRequest) {
       data: {
         userId,
         date: new Date(body.date),
-        activityType: body.activityType,
+        activityType: body.activityType as ActivityType,
         subType: body.subType,
         durationMin: body.durationMin,
-        intensity: body.intensity,
+        intensity: body.intensity as Intensity,
         distanceKm: body.distanceKm,
         avgHeartRate: body.avgHeartRate,
         caloriesBurned: body.caloriesBurned,
