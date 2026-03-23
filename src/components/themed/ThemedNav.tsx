@@ -23,8 +23,9 @@ export default function ThemedNavItem({ children, active, className = '' }: Them
       case 'glow-dot':
         break;
       case 'bg-fill':
-        itemStyle.background = activeStyle.background || `${theme.colors.accent}22`;
+        itemStyle.background = activeStyle.bgColor || activeStyle.background || `${theme.colors.accent}22`;
         if (activeStyle.borderRadius) itemStyle.borderRadius = activeStyle.borderRadius;
+        if (activeStyle.textColor) itemStyle.color = activeStyle.textColor;
         break;
       case 'border-bottom':
         itemStyle.borderBottom = `${activeStyle.borderWidth || '2px'} solid ${activeStyle.borderColor || theme.colors.accent}`;

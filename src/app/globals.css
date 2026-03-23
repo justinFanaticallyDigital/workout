@@ -811,3 +811,103 @@ body > * {
   text-transform: uppercase;
   line-height: 1.6;
 }
+
+/* === Lab Report theme utilities === */
+
+/* Card shadow — very subtle, clinical depth */
+.lab-card-shadow {
+  box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+}
+
+/* Alternating row shading for data tables */
+.lab-row-alt:nth-child(even) {
+  background: rgba(0,0,0,0.02);
+}
+
+/* Status pills — small, filled badges */
+.lab-status-pill {
+  font-family: 'Inter', sans-serif;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  padding: 2px 8px;
+  border-radius: 10px;
+  display: inline-block;
+}
+.lab-status-complete {
+  background: rgba(5,150,105,0.08);
+  color: #059669;
+}
+.lab-status-pending {
+  background: rgba(107,114,128,0.08);
+  color: #6B7280;
+}
+
+/* Specimen ID / sample number convention */
+.lab-specimen-id {
+  font-family: 'Inter', sans-serif;
+  font-size: 10px;
+  font-weight: 400;
+  letter-spacing: 0.08em;
+  color: #9CA3AF;
+}
+
+/* Delta comparison values */
+.lab-delta {
+  font-family: 'Inter', sans-serif;
+  font-size: 12px;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+}
+.lab-delta-positive { color: #059669; }
+.lab-delta-negative { color: #DC2626; }
+.lab-delta-neutral { color: #6B7280; }
+
+/* Protocol adherence badge */
+.lab-protocol {
+  font-family: 'Inter', sans-serif;
+  font-size: 11px;
+  font-weight: 500;
+  color: #6B7280;
+}
+
+/* Lab typography scale — all Inter, varying by weight */
+.lab-section-header {
+  font-family: 'Inter', sans-serif;
+  font-size: 16px;
+  font-weight: 600;
+  color: #1A1A1A;
+}
+.lab-exercise-name {
+  font-family: 'Inter', sans-serif;
+  font-size: 15px;
+  font-weight: 600;
+  color: #1A1A1A;
+}
+.lab-set-data {
+  font-family: 'Inter', sans-serif;
+  font-size: 14px;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+  color: #1A1A1A;
+}
+.lab-column-header {
+  font-family: 'Inter', sans-serif;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #6B7280;
+}
+.lab-meta {
+  font-family: 'Inter', sans-serif;
+  font-size: 12px;
+  font-weight: 400;
+  color: #6B7280;
+}
+.lab-nav {
+  font-family: 'Inter', sans-serif;
+  font-size: 12px;
+  font-weight: 500;
+}
