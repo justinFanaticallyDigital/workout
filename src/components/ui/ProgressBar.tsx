@@ -20,12 +20,12 @@ export default function ProgressBar({
       {(label || showValues) && (
         <div className="flex items-center justify-between">
           {label && (
-            <span className="text-ft-dim text-[11px] font-mono uppercase tracking-wider">
+            <span className="text-ft-dim text-[11px] font-body uppercase tracking-wider">
               {label}
             </span>
           )}
           {showValues && (
-            <span className="text-ft-dim text-[11px] font-mono">
+            <span className="text-ft-dim text-[11px] font-body">
               {value}/{max}
             </span>
           )}

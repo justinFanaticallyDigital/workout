@@ -186,10 +186,10 @@ export default function SettingsPage() {
   return (
     <div className="min-h-screen bg-ft-bg p-6 max-w-4xl mx-auto space-y-6">
       <div>
-        <h1 className="text-2xl font-mono font-bold text-ft-white tracking-wide">
+        <h1 className="text-2xl font-body font-bold text-ft-white tracking-wide">
           Settings
         </h1>
-        <p className="text-ft-dim text-sm font-mono mt-1">
+        <p className="text-ft-dim text-sm font-body mt-1">
           App preferences and configuration
         </p>
       </div>
@@ -198,22 +198,22 @@ export default function SettingsPage() {
         <SectionHeader title="Units" />
         <div className="space-y-3">
           <div className="flex items-center justify-between">
-            <span className="text-ft-light text-sm font-mono">Weight unit</span>
+            <span className="text-ft-light text-sm font-body">Weight unit</span>
             <select
               value={weightUnit}
               onChange={(e) => setWeightUnit(e.target.value)}
-              className="bg-ft-bg border border-ft-card rounded px-3 py-1.5 text-sm font-mono text-ft-white focus:outline-none focus:border-ft-dim transition-colors"
+              className="bg-ft-bg border border-ft-card rounded px-3 py-1.5 text-sm font-body text-ft-white focus:outline-none focus:border-ft-dim transition-colors"
             >
               <option value="lbs">lbs</option>
               <option value="kg">kg</option>
             </select>
           </div>
           <div className="flex items-center justify-between">
-            <span className="text-ft-light text-sm font-mono">Distance unit</span>
+            <span className="text-ft-light text-sm font-body">Distance unit</span>
             <select
               value={distanceUnit}
               onChange={(e) => setDistanceUnit(e.target.value)}
-              className="bg-ft-bg border border-ft-card rounded px-3 py-1.5 text-sm font-mono text-ft-white focus:outline-none focus:border-ft-dim transition-colors"
+              className="bg-ft-bg border border-ft-card rounded px-3 py-1.5 text-sm font-body text-ft-white focus:outline-none focus:border-ft-dim transition-colors"
             >
               <option value="miles">miles</option>
               <option value="km">km</option>
@@ -222,6 +222,7 @@ export default function SettingsPage() {
         </div>
       </Card>
 
+      <div className="section-divider" />
       <Card>
         <SectionHeader title="Theme" />
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
@@ -238,13 +239,14 @@ export default function SettingsPage() {
                   : "border-ft-border bg-ft-card hover:border-ft-dim"
               }`}
             >
-              <span className="text-ft-white text-sm font-mono font-bold">{t.label}</span>
-              <span className="text-ft-dim text-[10px] font-mono">{t.desc}</span>
+              <span className="text-ft-white text-sm font-body font-bold">{t.label}</span>
+              <span className="text-ft-dim text-[10px] font-body">{t.desc}</span>
             </button>
           ))}
         </div>
       </Card>
 
+      <div className="section-divider" />
       <Card>
         <SectionHeader title="Integrations" />
         <div className="space-y-4">
@@ -254,8 +256,8 @@ export default function SettingsPage() {
                 <FitbitIcon size={18} color="white" />
               </div>
               <div>
-                <span className="text-ft-light text-sm font-mono block">Fitbit</span>
-                <span className="text-ft-dim text-xs font-mono">
+                <span className="text-ft-light text-sm font-body block">Fitbit</span>
+                <span className="text-ft-dim text-xs font-body">
                   {fitbitLoading
                     ? "Checking..."
                     : fitbitConnected
@@ -263,7 +265,7 @@ export default function SettingsPage() {
                     : "Not connected"}
                 </span>
                 {fitbitLastSynced && (
-                  <span className="text-ft-muted text-[10px] font-mono block">
+                  <span className="text-ft-muted text-[10px] font-body block">
                     Last synced: {new Date(fitbitLastSynced).toLocaleDateString("en-US", {
                       month: "short", day: "numeric", hour: "numeric", minute: "2-digit",
                     })}
@@ -276,7 +278,7 @@ export default function SettingsPage() {
                 <button
                   onClick={handleFitbitSync}
                   disabled={fitbitSyncing}
-                  className="bg-[#00B0B9] text-white font-mono text-xs font-bold px-3 py-1.5 rounded hover:opacity-90 transition-colors disabled:opacity-50"
+                  className="bg-[#00B0B9] text-white font-body text-xs font-bold px-3 py-1.5 rounded hover:opacity-90 transition-colors disabled:opacity-50"
                 >
                   {fitbitSyncing ? "Syncing..." : "Sync Now"}
                 </button>
@@ -284,29 +286,30 @@ export default function SettingsPage() {
                 <button
                   onClick={handleFitbitConnect}
                   disabled={fitbitLoading}
-                  className="bg-ft-white text-ft-bg font-mono text-xs font-bold px-3 py-1.5 rounded hover:bg-ft-light transition-colors disabled:opacity-50"
+                  className="bg-ft-white text-ft-bg font-body text-xs font-bold px-3 py-1.5 rounded hover:bg-ft-light transition-colors disabled:opacity-50"
                 >
                   Connect Fitbit
                 </button>
               )}
             </div>
           </div>
-          <p className="text-ft-muted text-xs font-mono">
+          <p className="text-ft-muted text-xs font-body">
             Sync body weight, body fat, activity, sleep, and heart rate data from your Fitbit account.
           </p>
         </div>
       </Card>
 
+      <div className="section-divider" />
       <Card>
         <SectionHeader title="Data" />
         <div className="space-y-4">
-          <p className="text-ft-dim text-sm font-mono">
+          <p className="text-ft-dim text-sm font-body">
             Export your workout data, body metrics, and personal records as CSV files.
           </p>
           <button
             onClick={handleExport}
             disabled={exporting}
-            className="bg-ft-white text-ft-bg font-mono text-sm font-bold px-4 py-2 rounded hover:bg-ft-light transition-colors disabled:opacity-50"
+            className="bg-ft-white text-ft-bg font-body text-sm font-bold px-4 py-2 rounded hover:bg-ft-light transition-colors disabled:opacity-50"
           >
             {exporting ? "Exporting..." : "Export All Data (CSV)"}
           </button>

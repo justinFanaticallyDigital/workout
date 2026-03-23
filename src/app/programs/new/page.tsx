@@ -74,20 +74,20 @@ export default function NewProgramPage() {
     <div className="min-h-screen bg-ft-bg text-ft-white p-6 max-w-3xl mx-auto">
       <Link
         href="/programs"
-        className="inline-flex items-center gap-1.5 text-ft-dim text-sm font-mono hover:text-ft-light transition-colors mb-6"
+        className="inline-flex items-center gap-1.5 text-ft-dim text-sm font-body hover:text-ft-light transition-colors mb-6"
       >
         <span>&larr;</span>
         <span>Programs</span>
       </Link>
 
-      <h1 className="font-mono text-2xl font-bold tracking-tight mb-2">
+      <h1 className="font-body text-2xl font-bold tracking-tight mb-2">
         New Program
       </h1>
-      <p className="text-ft-dim text-sm font-mono mb-4">
+      <p className="text-ft-dim text-sm font-body mb-4">
         Choose how you want to set up your training
       </p>
       <div className="bg-ft-surface border border-ft-border rounded-md px-4 py-3 mb-6">
-        <p className="text-ft-light text-xs font-mono">
+        <p className="text-ft-light text-xs font-body">
           <span className="text-ft-white font-bold">New to training?</span>{" "}
           Start with a <span className="text-ft-white font-bold">Template</span> — pick a proven program and customize it later.
         </p>
@@ -102,13 +102,13 @@ export default function NewProgramPage() {
                   <div className="flex items-start gap-4">
                     <span className="text-2xl">{tier.icon}</span>
                     <div>
-                      <h2 className="font-mono text-base font-bold mb-0.5">
+                      <h2 className="font-body text-base font-bold mb-0.5">
                         {tier.title}
                       </h2>
-                      <p className="text-ft-light text-xs font-mono mb-2">
+                      <p className="text-ft-light text-xs font-body mb-2">
                         {tier.subtitle}
                       </p>
-                      <p className="text-ft-dim text-xs font-mono">
+                      <p className="text-ft-dim text-xs font-body">
                         {tier.desc}
                       </p>
                     </div>
@@ -126,13 +126,13 @@ export default function NewProgramPage() {
                     <div className="flex items-start gap-4">
                       <span className="text-2xl">{tier.icon}</span>
                       <div>
-                        <h2 className="font-mono text-base font-bold mb-0.5">
+                        <h2 className="font-body text-base font-bold mb-0.5">
                           {tier.title}
                         </h2>
-                        <p className="text-ft-light text-xs font-mono mb-2">
+                        <p className="text-ft-light text-xs font-body mb-2">
                           {tier.subtitle}
                         </p>
-                        <p className="text-ft-dim text-xs font-mono">
+                        <p className="text-ft-dim text-xs font-body">
                           {tier.desc}
                         </p>
                       </div>
@@ -147,7 +147,7 @@ export default function NewProgramPage() {
                   <Card className="mt-2 border-ft-white">
                     <div className="flex items-end gap-3">
                       <div className="flex-1">
-                        <label className="block text-ft-dim text-[10px] font-mono uppercase tracking-wider mb-1">
+                        <label className="block text-ft-dim text-[10px] font-body uppercase tracking-wider mb-1">
                           Program Name
                         </label>
                         <input
@@ -157,13 +157,13 @@ export default function NewProgramPage() {
                           placeholder="e.g. My Training"
                           autoFocus
                           onKeyDown={(e) => e.key === "Enter" && handleQuickCreate()}
-                          className="w-full bg-ft-bg border border-ft-card rounded px-3 py-2 text-sm font-mono text-ft-white placeholder:text-ft-muted focus:outline-none focus:border-ft-dim transition-colors"
+                          className="w-full bg-ft-bg border border-ft-card rounded px-3 py-2 text-sm font-body text-ft-white placeholder:text-ft-muted focus:outline-none focus:border-ft-dim transition-colors"
                         />
                       </div>
                       <button
                         onClick={handleQuickCreate}
                         disabled={saving || !quickName.trim()}
-                        className="bg-ft-white text-ft-bg font-mono text-sm font-bold px-4 py-2 rounded hover:bg-ft-light transition-colors disabled:opacity-50"
+                        className="bg-ft-white text-ft-bg font-body text-sm font-bold px-4 py-2 rounded hover:bg-ft-light transition-colors disabled:opacity-50"
                       >
                         {saving ? "..." : "Create & Start"}
                       </button>

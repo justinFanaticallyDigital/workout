@@ -635,7 +635,7 @@ export default function ProgramWorkspacePage({
   if (loading) {
     return (
       <div className="min-h-screen bg-ft-bg text-ft-white flex items-center justify-center">
-        <p className="text-ft-dim font-mono text-sm">Loading...</p>
+        <p className="text-ft-dim font-body text-sm">Loading...</p>
       </div>
     );
   }
@@ -643,7 +643,7 @@ export default function ProgramWorkspacePage({
   if (!program) {
     return (
       <div className="min-h-screen bg-ft-bg text-ft-white p-6">
-        <p className="text-ft-light font-mono">Program not found.</p>
+        <p className="text-ft-light font-body">Program not found.</p>
       </div>
     );
   }
@@ -653,7 +653,7 @@ export default function ProgramWorkspacePage({
       {/* Breadcrumb */}
       <Link
         href="/programs"
-        className="inline-flex items-center gap-1.5 text-ft-dim text-sm font-mono hover:text-ft-light transition-colors mb-4"
+        className="inline-flex items-center gap-1.5 text-ft-dim text-sm font-body hover:text-ft-light transition-colors mb-4"
       >
         <span>&larr;</span>
         <span>Programs</span>
@@ -664,7 +664,7 @@ export default function ProgramWorkspacePage({
         <div>
           <div className="flex items-center gap-3 mb-1">
             <StatusIcon type="program" status={program.status as "active" | "paused" | "completed"} size="md" />
-            <h1 className="font-mono text-2xl font-bold tracking-tight">
+            <h1 className="font-body text-2xl font-bold tracking-tight">
               {program.name}
             </h1>
             {program.status === "active" && <Tag className="bg-ft-white text-ft-bg">Active</Tag>}
@@ -672,7 +672,7 @@ export default function ProgramWorkspacePage({
             {program.status === "paused" && <Tag variant="warn">Paused</Tag>}
           </div>
           {program.description && (
-            <p className="text-ft-dim text-sm font-mono">{program.description}</p>
+            <p className="text-ft-dim text-sm font-body">{program.description}</p>
           )}
         </div>
         {program.status === "paused" && (
@@ -691,7 +691,7 @@ export default function ProgramWorkspacePage({
                 toast.error("Failed to reactivate program");
               }
             }}
-            className="bg-ft-white text-ft-bg font-mono text-sm font-bold px-4 py-2 rounded hover:bg-ft-light transition-colors whitespace-nowrap"
+            className="bg-ft-white text-ft-bg font-body text-sm font-bold px-4 py-2 rounded hover:bg-ft-light transition-colors whitespace-nowrap"
           >
             Reactivate
           </button>
@@ -742,11 +742,11 @@ export default function ProgramWorkspacePage({
       {(benchmarks.length > 0 || showBenchmarkForm) && (
         <Card className="mb-6">
           <div className="flex items-center justify-between mb-3">
-            <h3 className="font-mono text-sm font-bold text-ft-white">Benchmarks</h3>
+            <h3 className="font-body text-sm font-bold text-ft-white">Benchmarks</h3>
             {!showBenchmarkForm && (
               <button
                 onClick={() => openForm(setShowBenchmarkForm)}
-                className="text-ft-dim text-xs font-mono hover:text-ft-light"
+                className="text-ft-dim text-xs font-body hover:text-ft-light"
               >
                 + Add
               </button>
@@ -762,9 +762,9 @@ export default function ProgramWorkspacePage({
                 <div key={bm.id} className="flex flex-col gap-1">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
-                      <span className="text-ft-light text-xs font-mono font-bold">{bm.label}</span>
+                      <span className="text-ft-light text-xs font-body font-bold">{bm.label}</span>
                       {bm.block && (
-                        <span className="text-ft-muted text-[10px] font-mono">{bm.block.name}</span>
+                        <span className="text-ft-muted text-[10px] font-body">{bm.block.name}</span>
                       )}
                       {achieved && <Tag variant="success">Hit</Tag>}
                     </div>
@@ -774,16 +774,16 @@ export default function ProgramWorkspacePage({
                         placeholder="Actual"
                         defaultValue={bm.actualValue ?? ""}
                         onBlur={(e) => handleUpdateBenchmarkActual(bm.id, e.target.value)}
-                        className="w-16 bg-ft-bg border border-ft-card rounded px-1.5 py-0.5 text-xs font-mono text-ft-white text-center focus:outline-none focus:border-ft-dim"
+                        className="w-16 bg-ft-bg border border-ft-card rounded px-1.5 py-0.5 text-xs font-body text-ft-white text-center focus:outline-none focus:border-ft-dim"
                       />
-                      <span className="text-ft-dim text-[10px] font-mono">
+                      <span className="text-ft-dim text-[10px] font-body">
                         / {bm.targetValue} {bm.targetUnit}
                       </span>
                     </div>
                   </div>
                   <ProgressBar value={pct} max={100} />
                   {bm.targetDate && (
-                    <span className="text-ft-muted text-[10px] font-mono">
+                    <span className="text-ft-muted text-[10px] font-body">
                       Target: {new Date(bm.targetDate).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
                       {bm.achievedAt && ` · Achieved: ${new Date(bm.achievedAt).toLocaleDateString("en-US", { month: "short", day: "numeric" })}`}
                     </span>
@@ -801,7 +801,7 @@ export default function ProgramWorkspacePage({
                   onChange={(e) => setBmLabel(e.target.value)}
                   placeholder="Benchmark label"
                   required
-                  className="bg-ft-bg border border-ft-card rounded px-2 py-1.5 text-xs font-mono text-ft-white placeholder:text-ft-muted focus:outline-none focus:border-ft-dim"
+                  className="bg-ft-bg border border-ft-card rounded px-2 py-1.5 text-xs font-body text-ft-white placeholder:text-ft-muted focus:outline-none focus:border-ft-dim"
                 />
                 <div className="flex gap-1">
                   <input
@@ -810,12 +810,12 @@ export default function ProgramWorkspacePage({
                     onChange={(e) => setBmTarget(e.target.value)}
                     placeholder="Target"
                     required
-                    className="flex-1 bg-ft-bg border border-ft-card rounded px-2 py-1.5 text-xs font-mono text-ft-white placeholder:text-ft-muted focus:outline-none focus:border-ft-dim"
+                    className="flex-1 bg-ft-bg border border-ft-card rounded px-2 py-1.5 text-xs font-body text-ft-white placeholder:text-ft-muted focus:outline-none focus:border-ft-dim"
                   />
                   <select
                     value={bmUnit}
                     onChange={(e) => setBmUnit(e.target.value)}
-                    className="bg-ft-bg border border-ft-card rounded px-1 py-1.5 text-xs font-mono text-ft-white focus:outline-none focus:border-ft-dim"
+                    className="bg-ft-bg border border-ft-card rounded px-1 py-1.5 text-xs font-body text-ft-white focus:outline-none focus:border-ft-dim"
                   >
                     <option value="lbs">lbs</option>
                     <option value="kg">kg</option>
@@ -829,12 +829,12 @@ export default function ProgramWorkspacePage({
                   type="date"
                   value={bmDate}
                   onChange={(e) => setBmDate(e.target.value)}
-                  className="bg-ft-bg border border-ft-card rounded px-2 py-1.5 text-xs font-mono text-ft-white focus:outline-none focus:border-ft-dim"
+                  className="bg-ft-bg border border-ft-card rounded px-2 py-1.5 text-xs font-body text-ft-white focus:outline-none focus:border-ft-dim"
                 />
                 <select
                   value={bmBlockId}
                   onChange={(e) => setBmBlockId(e.target.value)}
-                  className="bg-ft-bg border border-ft-card rounded px-2 py-1.5 text-xs font-mono text-ft-white focus:outline-none focus:border-ft-dim"
+                  className="bg-ft-bg border border-ft-card rounded px-2 py-1.5 text-xs font-body text-ft-white focus:outline-none focus:border-ft-dim"
                 >
                   <option value="">All blocks</option>
                   {program.blocks.map((b) => (
@@ -846,14 +846,14 @@ export default function ProgramWorkspacePage({
                 <button
                   type="button"
                   onClick={() => setShowBenchmarkForm(false)}
-                  className="text-ft-dim text-xs font-mono hover:text-ft-light"
+                  className="text-ft-dim text-xs font-body hover:text-ft-light"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={savingBm || !bmLabel.trim() || !bmTarget}
-                  className="bg-ft-white text-ft-bg font-mono text-xs font-bold px-3 py-1 rounded hover:bg-ft-light disabled:opacity-50"
+                  className="bg-ft-white text-ft-bg font-body text-xs font-bold px-3 py-1 rounded hover:bg-ft-light disabled:opacity-50"
                 >
                   {savingBm ? "..." : "Add Benchmark"}
                 </button>
@@ -866,7 +866,7 @@ export default function ProgramWorkspacePage({
         <div className="mb-6">
           <button
             onClick={() => openForm(setShowBenchmarkForm)}
-            className="text-ft-muted text-xs font-mono hover:text-ft-light transition-colors"
+            className="text-ft-muted text-xs font-body hover:text-ft-light transition-colors"
           >
             + Add Benchmarks
           </button>
@@ -877,14 +877,14 @@ export default function ProgramWorkspacePage({
       {activeBlockId && (
         <Card className="mb-6">
           <div className="flex items-center justify-between mb-2">
-            <h3 className="font-mono text-sm font-bold text-ft-white">
+            <h3 className="font-body text-sm font-bold text-ft-white">
               Nutrition Target
               {activeBlock && <span className="text-ft-dim font-normal ml-2">({activeBlock.name})</span>}
             </h3>
             {!showNutritionForm && (
               <button
                 onClick={() => openForm(setShowNutritionForm)}
-                className="text-ft-dim text-xs font-mono hover:text-ft-light"
+                className="text-ft-dim text-xs font-body hover:text-ft-light"
               >
                 {blockNutrition[activeBlockId] ? "Edit" : "+ Set Target"}
               </button>
@@ -893,43 +893,43 @@ export default function ProgramWorkspacePage({
           {blockNutrition[activeBlockId] ? (
             <div className="grid grid-cols-4 gap-3">
               <div>
-                <span className="text-ft-dim text-xs font-mono block">Calories</span>
-                <span className="text-ft-white text-sm font-mono font-bold">
+                <span className="text-ft-dim text-xs font-body block">Calories</span>
+                <span className="text-ft-white text-sm font-body font-bold">
                   {blockNutrition[activeBlockId]!.calories ?? "—"}
                 </span>
               </div>
               <div>
-                <span className="text-ft-dim text-xs font-mono block">Protein</span>
-                <span className="text-ft-white text-sm font-mono font-bold">
+                <span className="text-ft-dim text-xs font-body block">Protein</span>
+                <span className="text-ft-white text-sm font-body font-bold">
                   {blockNutrition[activeBlockId]!.protein ? `${blockNutrition[activeBlockId]!.protein}g` : "—"}
                 </span>
               </div>
               <div>
-                <span className="text-ft-dim text-xs font-mono block">Carbs</span>
-                <span className="text-ft-white text-sm font-mono font-bold">
+                <span className="text-ft-dim text-xs font-body block">Carbs</span>
+                <span className="text-ft-white text-sm font-body font-bold">
                   {blockNutrition[activeBlockId]!.carbs ? `${blockNutrition[activeBlockId]!.carbs}g` : "—"}
                 </span>
               </div>
               <div>
-                <span className="text-ft-dim text-xs font-mono block">Fat</span>
-                <span className="text-ft-white text-sm font-mono font-bold">
+                <span className="text-ft-dim text-xs font-body block">Fat</span>
+                <span className="text-ft-white text-sm font-body font-bold">
                   {blockNutrition[activeBlockId]!.fat ? `${blockNutrition[activeBlockId]!.fat}g` : "—"}
                 </span>
               </div>
             </div>
           ) : !showNutritionForm ? (
-            <p className="text-ft-muted text-xs font-mono">No nutrition target set for this block</p>
+            <p className="text-ft-muted text-xs font-body">No nutrition target set for this block</p>
           ) : null}
 
           {showNutritionForm && (
             <div className="mt-3 border-t border-ft-border pt-3 space-y-3">
               <div>
-                <label className="text-ft-dim text-xs font-mono block mb-1">Auto-calculate from body weight</label>
+                <label className="text-ft-dim text-xs font-body block mb-1">Auto-calculate from body weight</label>
                 <div className="flex gap-2 items-center">
                   <select
                     value={ntGoalType}
                     onChange={(e) => setNtGoalType(e.target.value)}
-                    className="bg-ft-bg border border-ft-border rounded px-2 py-1 text-xs font-mono text-ft-white"
+                    className="bg-ft-bg border border-ft-border rounded px-2 py-1 text-xs font-body text-ft-white"
                   >
                     <option value="bulk">Bulk (+300 cal)</option>
                     <option value="maintenance">Maintenance</option>
@@ -938,46 +938,46 @@ export default function ProgramWorkspacePage({
                   <button
                     onClick={() => handleSetBlockNutrition(true)}
                     disabled={savingNt}
-                    className="px-3 py-1 text-xs font-mono bg-ft-success text-ft-bg rounded hover:opacity-90 disabled:opacity-50"
+                    className="px-3 py-1 text-xs font-body bg-ft-success text-ft-bg rounded hover:opacity-90 disabled:opacity-50"
                   >
                     Auto Calculate
                   </button>
                 </div>
               </div>
-              <div className="text-ft-muted text-xs font-mono text-center">— or set manually —</div>
+              <div className="text-ft-muted text-xs font-body text-center">— or set manually —</div>
               <div className="grid grid-cols-4 gap-2">
                 <input
                   type="number" placeholder="Calories" value={ntCalories}
                   onChange={(e) => setNtCalories(e.target.value)}
-                  className="bg-ft-bg border border-ft-border rounded px-2 py-1 text-xs font-mono text-ft-white"
+                  className="bg-ft-bg border border-ft-border rounded px-2 py-1 text-xs font-body text-ft-white"
                 />
                 <input
                   type="number" placeholder="Protein (g)" value={ntProtein}
                   onChange={(e) => setNtProtein(e.target.value)}
-                  className="bg-ft-bg border border-ft-border rounded px-2 py-1 text-xs font-mono text-ft-white"
+                  className="bg-ft-bg border border-ft-border rounded px-2 py-1 text-xs font-body text-ft-white"
                 />
                 <input
                   type="number" placeholder="Carbs (g)" value={ntCarbs}
                   onChange={(e) => setNtCarbs(e.target.value)}
-                  className="bg-ft-bg border border-ft-border rounded px-2 py-1 text-xs font-mono text-ft-white"
+                  className="bg-ft-bg border border-ft-border rounded px-2 py-1 text-xs font-body text-ft-white"
                 />
                 <input
                   type="number" placeholder="Fat (g)" value={ntFat}
                   onChange={(e) => setNtFat(e.target.value)}
-                  className="bg-ft-bg border border-ft-border rounded px-2 py-1 text-xs font-mono text-ft-white"
+                  className="bg-ft-bg border border-ft-border rounded px-2 py-1 text-xs font-body text-ft-white"
                 />
               </div>
               <div className="flex gap-2 justify-end">
                 <button
                   onClick={() => setShowNutritionForm(false)}
-                  className="text-ft-dim text-xs font-mono hover:text-ft-light"
+                  className="text-ft-dim text-xs font-body hover:text-ft-light"
                 >
                   Cancel
                 </button>
                 <button
                   onClick={() => handleSetBlockNutrition(false)}
                   disabled={savingNt || !ntCalories}
-                  className="px-3 py-1 text-xs font-mono bg-ft-white text-ft-bg rounded hover:bg-ft-light disabled:opacity-50"
+                  className="px-3 py-1 text-xs font-body bg-ft-white text-ft-bg rounded hover:bg-ft-light disabled:opacity-50"
                 >
                   Save
                 </button>
@@ -997,7 +997,7 @@ export default function ProgramWorkspacePage({
               <button
                 key={block.id}
                 onClick={() => setActiveBlockId(block.id)}
-                className={`flex items-center gap-2 px-3 py-2 rounded font-mono text-sm text-left whitespace-nowrap transition-colors ${
+                className={`flex items-center gap-2 px-3 py-2 rounded font-body text-sm text-left whitespace-nowrap transition-colors ${
                   block.id === activeBlockId
                     ? "bg-ft-surface border border-ft-white text-ft-white"
                     : "bg-ft-bg border border-ft-border text-ft-dim hover:text-ft-light hover:border-ft-dim"
@@ -1012,7 +1012,7 @@ export default function ProgramWorkspacePage({
             ))}
             <button
               onClick={() => showBlockForm ? setShowBlockForm(false) : openForm(setShowBlockForm)}
-              className="flex items-center gap-1 px-3 py-2 rounded font-mono text-xs text-ft-muted hover:text-ft-light border border-dashed border-ft-border hover:border-ft-dim transition-colors whitespace-nowrap"
+              className="flex items-center gap-1 px-3 py-2 rounded font-body text-xs text-ft-muted hover:text-ft-light border border-dashed border-ft-border hover:border-ft-dim transition-colors whitespace-nowrap"
             >
               + Block
             </button>
@@ -1027,14 +1027,14 @@ export default function ProgramWorkspacePage({
                 onChange={(e) => setBlockName(e.target.value)}
                 placeholder="Block name"
                 required
-                className="w-full bg-ft-bg border border-ft-card rounded px-2 py-1.5 text-xs font-mono text-ft-white placeholder:text-ft-muted focus:outline-none focus:border-ft-dim"
+                className="w-full bg-ft-bg border border-ft-card rounded px-2 py-1.5 text-xs font-body text-ft-white placeholder:text-ft-muted focus:outline-none focus:border-ft-dim"
               />
               <input
                 type="text"
                 value={blockFocus}
                 onChange={(e) => setBlockFocus(e.target.value)}
                 placeholder="Focus (optional)"
-                className="w-full bg-ft-bg border border-ft-card rounded px-2 py-1.5 text-xs font-mono text-ft-white placeholder:text-ft-muted focus:outline-none focus:border-ft-dim"
+                className="w-full bg-ft-bg border border-ft-card rounded px-2 py-1.5 text-xs font-body text-ft-white placeholder:text-ft-muted focus:outline-none focus:border-ft-dim"
               />
               <div className="grid grid-cols-2 gap-2">
                 <input
@@ -1042,7 +1042,7 @@ export default function ProgramWorkspacePage({
                   value={blockDesc}
                   onChange={(e) => setBlockDesc(e.target.value)}
                   placeholder="Description"
-                  className="bg-ft-bg border border-ft-card rounded px-2 py-1.5 text-xs font-mono text-ft-white placeholder:text-ft-muted focus:outline-none focus:border-ft-dim"
+                  className="bg-ft-bg border border-ft-card rounded px-2 py-1.5 text-xs font-body text-ft-white placeholder:text-ft-muted focus:outline-none focus:border-ft-dim"
                 />
                 <input
                   type="number"
@@ -1050,21 +1050,21 @@ export default function ProgramWorkspacePage({
                   onChange={(e) => setBlockWeeks(e.target.value)}
                   placeholder="Weeks"
                   min="1"
-                  className="bg-ft-bg border border-ft-card rounded px-2 py-1.5 text-xs font-mono text-ft-white placeholder:text-ft-muted focus:outline-none focus:border-ft-dim"
+                  className="bg-ft-bg border border-ft-card rounded px-2 py-1.5 text-xs font-body text-ft-white placeholder:text-ft-muted focus:outline-none focus:border-ft-dim"
                 />
               </div>
               <div className="flex gap-2">
                 <button
                   type="button"
                   onClick={() => setShowBlockForm(false)}
-                  className="text-ft-dim text-xs font-mono hover:text-ft-light"
+                  className="text-ft-dim text-xs font-body hover:text-ft-light"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={savingBlock || !blockName.trim()}
-                  className="bg-ft-white text-ft-bg font-mono text-xs font-bold px-3 py-1 rounded hover:bg-ft-light disabled:opacity-50"
+                  className="bg-ft-white text-ft-bg font-body text-xs font-bold px-3 py-1 rounded hover:bg-ft-light disabled:opacity-50"
                 >
                   {savingBlock ? "..." : "Add"}
                 </button>
@@ -1081,19 +1081,19 @@ export default function ProgramWorkspacePage({
               <div className="flex items-center justify-between mb-4">
                 <div>
                   <div className="flex items-center gap-2">
-                    <h2 className="font-mono text-lg font-bold">{activeBlock.name}</h2>
+                    <h2 className="font-body text-lg font-bold">{activeBlock.name}</h2>
                     {activeBlock.focus && (
-                      <span className="text-ft-dim text-xs font-mono">&middot; {activeBlock.focus}</span>
+                      <span className="text-ft-dim text-xs font-body">&middot; {activeBlock.focus}</span>
                     )}
                   </div>
-                  <p className="text-ft-muted text-xs font-mono">
+                  <p className="text-ft-muted text-xs font-body">
                     {activeBlock.durationWeeks ? `${activeBlock.durationWeeks} weeks · ` : ""}
                     {activeBlock.days.length} days · {activeBlock._count.workouts} sessions
                   </p>
                 </div>
                 <button
                   onClick={() => showDayForm ? setShowDayForm(false) : openForm(setShowDayForm)}
-                  className="text-ft-dim text-xs font-mono hover:text-ft-light border border-ft-border rounded px-3 py-1 transition-colors"
+                  className="text-ft-dim text-xs font-body hover:text-ft-light border border-ft-border rounded px-3 py-1 transition-colors"
                 >
                   + Day
                 </button>
@@ -1104,22 +1104,22 @@ export default function ProgramWorkspacePage({
                 <Card className="mb-4">
                   <form onSubmit={handleAddDay} className="flex items-end gap-3">
                     <div className="flex-1">
-                      <label className="block text-ft-dim text-[10px] font-mono uppercase tracking-wider mb-1">Name</label>
+                      <label className="block text-ft-dim text-[10px] font-body uppercase tracking-wider mb-1">Name</label>
                       <input
                         type="text"
                         value={dayName}
                         onChange={(e) => setDayName(e.target.value)}
                         placeholder="e.g. Upper Push, Upper Pull, Lower"
                         required
-                        className="w-full bg-ft-bg border border-ft-card rounded px-2 py-1.5 text-xs font-mono text-ft-white placeholder:text-ft-muted focus:outline-none focus:border-ft-dim"
+                        className="w-full bg-ft-bg border border-ft-card rounded px-2 py-1.5 text-xs font-body text-ft-white placeholder:text-ft-muted focus:outline-none focus:border-ft-dim"
                       />
                     </div>
                     <div>
-                      <label className="block text-ft-dim text-[10px] font-mono uppercase tracking-wider mb-1">Type</label>
+                      <label className="block text-ft-dim text-[10px] font-body uppercase tracking-wider mb-1">Type</label>
                       <select
                         value={dayType}
                         onChange={(e) => setDayType(e.target.value)}
-                        className="bg-ft-bg border border-ft-card rounded px-2 py-1.5 text-xs font-mono text-ft-white focus:outline-none focus:border-ft-dim"
+                        className="bg-ft-bg border border-ft-card rounded px-2 py-1.5 text-xs font-body text-ft-white focus:outline-none focus:border-ft-dim"
                       >
                         {DAY_TYPES.map((t) => (
                           <option key={t} value={t}>{t.charAt(0).toUpperCase() + t.slice(1)}</option>
@@ -1129,14 +1129,14 @@ export default function ProgramWorkspacePage({
                     <button
                       type="button"
                       onClick={() => setShowDayForm(false)}
-                      className="text-ft-dim text-xs font-mono hover:text-ft-light px-2 py-1.5"
+                      className="text-ft-dim text-xs font-body hover:text-ft-light px-2 py-1.5"
                     >
                       Cancel
                     </button>
                     <button
                       type="submit"
                       disabled={savingDay || !dayName.trim()}
-                      className="bg-ft-white text-ft-bg font-mono text-xs font-bold px-3 py-1.5 rounded hover:bg-ft-light disabled:opacity-50"
+                      className="bg-ft-white text-ft-bg font-body text-xs font-bold px-3 py-1.5 rounded hover:bg-ft-light disabled:opacity-50"
                     >
                       {savingDay ? "..." : "Add"}
                     </button>
@@ -1147,7 +1147,7 @@ export default function ProgramWorkspacePage({
               {/* Days list (accordion) */}
               {activeBlock.days.length === 0 && !showDayForm ? (
                 <Card className="border-dashed">
-                  <p className="text-ft-muted font-mono text-sm text-center py-6">
+                  <p className="text-ft-muted font-body text-sm text-center py-6">
                     No training days yet. Click &ldquo;+ Day&rdquo; to start building.
                   </p>
                 </Card>
@@ -1167,13 +1167,13 @@ export default function ProgramWorkspacePage({
                               type="day"
                               dayType={day.dayType as "lifting" | "cardio" | "conditioning" | "mobility" | "rest"}
                             />
-                            <span className="font-mono text-sm font-bold text-ft-white">
+                            <span className="font-body text-sm font-bold text-ft-white">
                               Day {day.dayNumber} &middot; {day.name}
                             </span>
                             <Tag>{day.dayType}</Tag>
                           </div>
                           <div className="flex items-center gap-3">
-                            <span className="text-ft-dim text-xs font-mono">
+                            <span className="text-ft-dim text-xs font-body">
                               {day.exercises.length} exercises
                             </span>
                             <button
@@ -1182,7 +1182,7 @@ export default function ProgramWorkspacePage({
                                 handleCloneDay(day.id);
                               }}
                               title="Clone day"
-                              className="text-ft-muted text-[10px] font-mono hover:text-ft-light transition-colors px-1"
+                              className="text-ft-muted text-[10px] font-body hover:text-ft-light transition-colors px-1"
                             >
                               ⧉
                             </button>
@@ -1214,7 +1214,7 @@ export default function ProgramWorkspacePage({
             </>
           ) : (
             <Card className="border-dashed">
-              <p className="text-ft-muted font-mono text-sm text-center py-8">
+              <p className="text-ft-muted font-body text-sm text-center py-8">
                 Create a block to get started
               </p>
             </Card>

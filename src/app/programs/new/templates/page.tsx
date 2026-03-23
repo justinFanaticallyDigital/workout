@@ -161,16 +161,16 @@ export default function TemplateBrowserPage() {
     <div className="min-h-screen bg-ft-bg text-ft-white p-6 max-w-4xl mx-auto">
       <Link
         href="/programs/new"
-        className="inline-flex items-center gap-1.5 text-ft-dim text-sm font-mono hover:text-ft-light transition-colors mb-6"
+        className="inline-flex items-center gap-1.5 text-ft-dim text-sm font-body hover:text-ft-light transition-colors mb-6"
       >
         <span>&larr;</span>
         <span>New Program</span>
       </Link>
 
-      <h1 className="font-mono text-2xl font-bold tracking-tight mb-2">
+      <h1 className="font-body text-2xl font-bold tracking-tight mb-2">
         Program Templates
       </h1>
-      <p className="text-ft-dim text-sm font-mono mb-8">
+      <p className="text-ft-dim text-sm font-body mb-8">
         Pick a template to clone into your account
       </p>
 
@@ -187,11 +187,11 @@ export default function TemplateBrowserPage() {
               }`}
             >
               <div className="flex items-center gap-2 mb-2">
-                <h2 className="font-mono text-sm font-bold">{t.name}</h2>
+                <h2 className="font-body text-sm font-bold">{t.name}</h2>
                 <Tag>{t.level}</Tag>
               </div>
-              <p className="text-ft-dim text-xs font-mono mb-3">{t.description}</p>
-              <div className="flex items-center gap-3 text-[10px] font-mono text-ft-muted">
+              <p className="text-ft-dim text-xs font-body mb-3">{t.description}</p>
+              <div className="flex items-center gap-3 text-[10px] font-body text-ft-muted">
                 <span>{t.durationWeeks} weeks</span>
                 <span>&middot;</span>
                 <span>{t.daysPerWeek} days/week</span>
@@ -201,7 +201,7 @@ export default function TemplateBrowserPage() {
               {t.tags.length > 0 && (
                 <div className="flex gap-1.5 mt-2">
                   {t.tags.map((tag) => (
-                    <span key={tag} className="text-[10px] font-mono text-ft-dim bg-ft-card px-1.5 py-0.5 rounded">
+                    <span key={tag} className="text-[10px] font-body text-ft-dim bg-ft-card px-1.5 py-0.5 rounded">
                       {tag}
                     </span>
                   ))}
@@ -217,11 +217,11 @@ export default function TemplateBrowserPage() {
         <div className="mt-6">
           <Card className="border-ft-white">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="font-mono text-lg font-bold">{selected.name}</h2>
+              <h2 className="font-body text-lg font-bold">{selected.name}</h2>
               <button
                 onClick={() => handleClone(selected)}
                 disabled={cloning}
-                className="bg-ft-white text-ft-bg font-mono text-sm font-bold px-6 py-2 rounded hover:bg-ft-light transition-colors disabled:opacity-50"
+                className="bg-ft-white text-ft-bg font-body text-sm font-bold px-6 py-2 rounded hover:bg-ft-light transition-colors disabled:opacity-50"
               >
                 {cloning ? "Creating..." : "Use This Template"}
               </button>
@@ -231,20 +231,20 @@ export default function TemplateBrowserPage() {
               {selected.blocks.map((block, bi) => (
                 <div key={bi} className="border border-ft-border rounded p-3">
                   <div className="flex items-center gap-2 mb-2">
-                    <span className="text-ft-light text-xs font-mono font-bold">
+                    <span className="text-ft-light text-xs font-body font-bold">
                       Block {bi + 1}: {block.name}
                     </span>
-                    <span className="text-ft-muted text-[10px] font-mono">
+                    <span className="text-ft-muted text-[10px] font-body">
                       {block.weeks} weeks
                     </span>
                   </div>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                     {block.days.map((day, di) => (
                       <div key={di} className="bg-ft-bg rounded px-2 py-1.5">
-                        <span className="text-ft-light text-xs font-mono font-bold">
+                        <span className="text-ft-light text-xs font-body font-bold">
                           {day.name}
                         </span>
-                        <div className="text-ft-dim text-[10px] font-mono mt-0.5">
+                        <div className="text-ft-dim text-[10px] font-body mt-0.5">
                           {day.exercises.slice(0, 3).join(", ")}
                           {day.exercises.length > 3 && ` +${day.exercises.length - 3} more`}
                         </div>

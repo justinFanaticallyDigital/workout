@@ -70,16 +70,16 @@ export default async function ProgramsPage() {
       {/* Header */}
       <div className="flex items-start justify-between mb-8">
         <div>
-          <h1 className="font-mono text-3xl font-bold tracking-tight mb-1">
+          <h1 className="font-body text-3xl font-bold tracking-tight mb-1">
             Programs
           </h1>
-          <p className="text-ft-dim font-mono text-sm">
+          <p className="text-ft-dim font-body text-sm">
             Goal-driven training plans
           </p>
         </div>
         <Link
           href="/programs/new"
-          className="bg-ft-white text-ft-bg font-mono text-sm font-bold px-4 py-2 rounded hover:bg-ft-light transition-colors"
+          className="bg-ft-white text-ft-bg font-body text-sm font-bold px-4 py-2 rounded hover:bg-ft-light transition-colors"
         >
           + New Program
         </Link>
@@ -94,16 +94,16 @@ export default async function ProgramsPage() {
               <Tag className="bg-ft-white text-ft-bg">Active</Tag>
             </div>
 
-            <h2 className="font-mono text-xl font-bold mb-1">
+            <h2 className="font-body text-xl font-bold mb-1">
               {activeProgram.name}
             </h2>
             {activeProgram.description && (
-              <p className="text-ft-dim text-sm font-mono mb-1">
+              <p className="text-ft-dim text-sm font-body mb-1">
                 {activeProgram.description}
               </p>
             )}
             {activeProgram.durationWeeks && (
-              <p className="text-ft-muted text-xs font-mono mb-5">
+              <p className="text-ft-muted text-xs font-body mb-5">
                 {activeProgram.durationWeeks} weeks
               </p>
             )}
@@ -125,7 +125,7 @@ export default async function ProgramsPage() {
             {totalWeeks > 0 && (
               <div className="mb-4">
                 <div className="flex items-center justify-between mb-1.5">
-                  <span className="text-ft-dim text-xs font-mono">
+                  <span className="text-ft-dim text-xs font-body">
                     Week {currentWeek} of {totalWeeks} &middot; {progressPct}%
                   </span>
                 </div>
@@ -160,7 +160,7 @@ export default async function ProgramsPage() {
       {/* Paused Programs */}
       {pausedPrograms.length > 0 && (
         <div className="mb-10">
-          <h2 className="font-mono text-lg font-bold text-ft-light mb-4">
+          <h2 className="font-body text-lg font-bold text-ft-light mb-4">
             Paused Programs
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -171,15 +171,15 @@ export default async function ProgramsPage() {
                     <StatusIcon type="program" status="paused" />
                     <Tag className="bg-ft-warn/20 text-ft-warn">Paused</Tag>
                   </div>
-                  <h3 className="font-mono text-base font-bold mb-1">
+                  <h3 className="font-body text-base font-bold mb-1">
                     {program.name}
                   </h3>
                   {program.description && (
-                    <p className="text-ft-dim text-sm font-mono mb-3">
+                    <p className="text-ft-dim text-sm font-body mb-3">
                       {program.description}
                     </p>
                   )}
-                  <div className="flex items-center gap-4 text-xs font-mono text-ft-muted">
+                  <div className="flex items-center gap-4 text-xs font-body text-ft-muted">
                     {program.durationWeeks && (
                       <span>{program.durationWeeks} weeks</span>
                     )}
@@ -196,7 +196,7 @@ export default async function ProgramsPage() {
       {/* Past Programs */}
       {completedPrograms.length > 0 && (
         <div>
-          <h2 className="font-mono text-lg font-bold text-ft-light mb-4">
+          <h2 className="font-body text-lg font-bold text-ft-light mb-4">
             Past Programs
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -207,15 +207,15 @@ export default async function ProgramsPage() {
                     <StatusIcon type="program" status="completed" />
                     <Tag>Completed</Tag>
                   </div>
-                  <h3 className="font-mono text-base font-bold mb-1">
+                  <h3 className="font-body text-base font-bold mb-1">
                     {program.name}
                   </h3>
                   {program.description && (
-                    <p className="text-ft-dim text-sm font-mono mb-3">
+                    <p className="text-ft-dim text-sm font-body mb-3">
                       {program.description}
                     </p>
                   )}
-                  <div className="flex items-center gap-4 text-xs font-mono text-ft-muted">
+                  <div className="flex items-center gap-4 text-xs font-body text-ft-muted">
                     {program.durationWeeks && (
                       <span>{program.durationWeeks} weeks</span>
                     )}

@@ -14,11 +14,11 @@ export default function SectionHeader({
   return (
     <div className={`flex items-center justify-between mb-3 ${className}`}>
       <div className="flex items-center gap-3">
-        <h3 className="text-ft-light text-sm font-mono uppercase tracking-wider font-bold">
+        <h3 className="text-ft-light text-sm font-body uppercase tracking-wider font-bold">
           {title}
         </h3>
         {subtitle && (
-          <span className="text-ft-dim text-xs font-mono">{subtitle}</span>
+          <span className="text-ft-dim text-xs font-body">{subtitle}</span>
         )}
       </div>
       {action && <div>{action}</div>}

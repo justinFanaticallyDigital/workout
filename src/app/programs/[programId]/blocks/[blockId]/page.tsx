@@ -98,7 +98,7 @@ export default function BlockDetailPage({
   if (loading) {
     return (
       <div className="min-h-screen bg-ft-bg text-ft-white flex items-center justify-center">
-        <p className="text-ft-dim font-mono text-sm">Loading...</p>
+        <p className="text-ft-dim font-body text-sm">Loading...</p>
       </div>
     );
   }
@@ -106,7 +106,7 @@ export default function BlockDetailPage({
   if (!block) {
     return (
       <div className="min-h-screen bg-ft-bg text-ft-white p-6">
-        <p className="text-ft-light font-mono">Block not found.</p>
+        <p className="text-ft-light font-body">Block not found.</p>
       </div>
     );
   }
@@ -116,7 +116,7 @@ export default function BlockDetailPage({
       {/* Breadcrumb */}
       <Link
         href={`/programs/${programId}`}
-        className="inline-flex items-center gap-1.5 text-ft-dim text-sm font-mono hover:text-ft-light transition-colors mb-6"
+        className="inline-flex items-center gap-1.5 text-ft-dim text-sm font-body hover:text-ft-light transition-colors mb-6"
       >
         <span>&larr;</span>
         <span>Programs / {block.program.name}</span>
@@ -124,11 +124,11 @@ export default function BlockDetailPage({
 
       {/* Header */}
       <div className="mb-6">
-        <h1 className="font-mono text-2xl font-bold tracking-tight mb-1">
+        <h1 className="font-body text-2xl font-bold tracking-tight mb-1">
           {block.name}
           {block.description ? ` · ${block.description}` : ""}
         </h1>
-        <p className="text-ft-dim text-sm font-mono">
+        <p className="text-ft-dim text-sm font-body">
           {block.durationWeeks ? `${block.durationWeeks} weeks · ` : ""}
           {block.days.length} day split
           {block.focus ? ` · ${block.focus} focus` : ""}
@@ -165,7 +165,7 @@ export default function BlockDetailPage({
         action={
           <button
             onClick={() => setShowDayForm(!showDayForm)}
-            className="text-ft-dim text-xs font-mono hover:text-ft-light transition-colors border border-ft-border rounded px-3 py-1"
+            className="text-ft-dim text-xs font-body hover:text-ft-light transition-colors border border-ft-border rounded px-3 py-1"
           >
             + Add Day
           </button>
@@ -178,7 +178,7 @@ export default function BlockDetailPage({
           <form onSubmit={handleAddDay} className="space-y-3">
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="block text-ft-dim text-xs font-mono uppercase tracking-wider mb-1">
+                <label className="block text-ft-dim text-xs font-body uppercase tracking-wider mb-1">
                   Day Name *
                 </label>
                 <input
@@ -187,17 +187,17 @@ export default function BlockDetailPage({
                   onChange={(e) => setDayName(e.target.value)}
                   placeholder="e.g. Upper Push"
                   required
-                  className="w-full bg-ft-bg border border-ft-card rounded px-3 py-2 text-sm font-mono text-ft-white placeholder:text-ft-muted focus:outline-none focus:border-ft-dim transition-colors"
+                  className="w-full bg-ft-bg border border-ft-card rounded px-3 py-2 text-sm font-body text-ft-white placeholder:text-ft-muted focus:outline-none focus:border-ft-dim transition-colors"
                 />
               </div>
               <div>
-                <label className="block text-ft-dim text-xs font-mono uppercase tracking-wider mb-1">
+                <label className="block text-ft-dim text-xs font-body uppercase tracking-wider mb-1">
                   Day Type
                 </label>
                 <select
                   value={dayType}
                   onChange={(e) => setDayType(e.target.value)}
-                  className="w-full bg-ft-bg border border-ft-card rounded px-3 py-2 text-sm font-mono text-ft-white focus:outline-none focus:border-ft-dim transition-colors"
+                  className="w-full bg-ft-bg border border-ft-card rounded px-3 py-2 text-sm font-body text-ft-white focus:outline-none focus:border-ft-dim transition-colors"
                 >
                   {DAY_TYPES.map((t) => (
                     <option key={t} value={t}>
@@ -211,14 +211,14 @@ export default function BlockDetailPage({
               <button
                 type="button"
                 onClick={() => setShowDayForm(false)}
-                className="px-3 py-1.5 text-ft-dim text-xs font-mono hover:text-ft-light"
+                className="px-3 py-1.5 text-ft-dim text-xs font-body hover:text-ft-light"
               >
                 Cancel
               </button>
               <button
                 type="submit"
                 disabled={savingDay || !dayName.trim()}
-                className="bg-ft-white text-ft-bg font-mono text-xs font-bold px-4 py-1.5 rounded hover:bg-ft-light transition-colors disabled:opacity-50"
+                className="bg-ft-white text-ft-bg font-body text-xs font-bold px-4 py-1.5 rounded hover:bg-ft-light transition-colors disabled:opacity-50"
               >
                 {savingDay ? "Saving..." : "Add Day"}
               </button>
@@ -229,7 +229,7 @@ export default function BlockDetailPage({
 
       {block.days.length === 0 && !showDayForm ? (
         <Card className="border-dashed">
-          <p className="text-ft-muted font-mono text-sm text-center py-4">
+          <p className="text-ft-muted font-body text-sm text-center py-4">
             No training days created yet
           </p>
         </Card>
@@ -244,13 +244,13 @@ export default function BlockDetailPage({
                 <div className="flex items-center justify-between mb-3">
                   <div className="flex items-center gap-2">
                     <StatusIcon type="day" dayType={day.dayType as "lifting" | "cardio" | "conditioning" | "mobility" | "rest"} />
-                    <h3 className="font-mono text-sm font-bold">
+                    <h3 className="font-body text-sm font-bold">
                       Day {day.dayNumber} &middot; {day.name}
                     </h3>
                   </div>
                   <div className="flex items-center gap-2">
                     <Tag>{day.dayType}</Tag>
-                    <span className="text-ft-dim text-[10px] font-mono">
+                    <span className="text-ft-dim text-[10px] font-body">
                       {day.exercises.length}
                     </span>
                   </div>
@@ -260,7 +260,7 @@ export default function BlockDetailPage({
                     {day.exercises.map((bde) => (
                       <li
                         key={bde.id}
-                        className="text-ft-dim text-xs font-mono flex items-center gap-2"
+                        className="text-ft-dim text-xs font-body flex items-center gap-2"
                       >
                         <span className="text-ft-muted">&middot;</span>
                         {bde.exercise.name}
@@ -273,12 +273,12 @@ export default function BlockDetailPage({
                     ))}
                   </ul>
                 ) : (
-                  <p className="text-ft-muted text-xs font-mono">
+                  <p className="text-ft-muted text-xs font-body">
                     No exercises assigned
                   </p>
                 )}
                 <div className="mt-3 pt-3 border-t border-ft-border">
-                  <span className="text-ft-dim text-[10px] font-mono uppercase tracking-wider">
+                  <span className="text-ft-dim text-[10px] font-body uppercase tracking-wider">
                     {day.exercises.length} exercises
                   </span>
                 </div>

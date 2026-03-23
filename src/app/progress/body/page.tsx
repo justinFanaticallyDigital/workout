@@ -85,7 +85,7 @@ export default function BodyMetricsPage() {
   if (loading) {
     return (
       <div className="min-h-screen bg-ft-bg flex items-center justify-center">
-        <p className="text-ft-dim font-mono text-sm">Loading...</p>
+        <p className="text-ft-dim font-body text-sm">Loading...</p>
       </div>
     );
   }
@@ -119,10 +119,10 @@ export default function BodyMetricsPage() {
         <span>Progress</span>
       </Link>
       <div>
-        <h1 className="text-2xl font-mono font-bold text-ft-white tracking-wide">
+        <h1 className="text-2xl font-body font-bold text-ft-white tracking-wide">
           Body Metrics
         </h1>
-        <p className="text-ft-dim text-sm font-mono mt-1">
+        <p className="text-ft-dim text-sm font-body mt-1">
           Track weight, measurements, and body composition
           {hasFitbitData && (
             <span className="inline-flex items-center gap-1 ml-2 text-[#00B0B9]">
@@ -144,7 +144,7 @@ export default function BodyMetricsPage() {
                     <button
                       key={mode}
                       onClick={() => setChartMode(mode)}
-                      className={`px-2 py-1 text-[10px] font-mono transition-colors ${
+                      className={`px-2 py-1 text-[10px] font-body transition-colors ${
                         chartMode === mode
                           ? "bg-ft-card text-ft-white"
                           : "text-ft-muted hover:text-ft-dim"
@@ -157,7 +157,7 @@ export default function BodyMetricsPage() {
               )}
               <button
                 onClick={() => setShowForm(!showForm)}
-                className="text-ft-dim text-xs font-mono hover:text-ft-light transition-colors border border-ft-border rounded px-3 py-1"
+                className="text-ft-dim text-xs font-body hover:text-ft-light transition-colors border border-ft-border rounded px-3 py-1"
               >
                 + Log
               </button>
@@ -170,18 +170,18 @@ export default function BodyMetricsPage() {
           <form onSubmit={handleSubmit} className="mb-4 p-3 bg-ft-bg rounded border border-ft-card">
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-3">
               <div>
-                <label className="block text-ft-dim text-xs font-mono uppercase tracking-wider mb-1">
+                <label className="block text-ft-dim text-xs font-body uppercase tracking-wider mb-1">
                   Date
                 </label>
                 <input
                   type="date"
                   value={date}
                   onChange={(e) => setDate(e.target.value)}
-                  className="w-full bg-ft-surface border border-ft-card rounded px-2 py-1.5 text-sm font-mono text-ft-white focus:outline-none focus:border-ft-dim transition-colors"
+                  className="w-full bg-ft-surface border border-ft-card rounded px-2 py-1.5 text-sm font-body text-ft-white focus:outline-none focus:border-ft-dim transition-colors"
                 />
               </div>
               <div>
-                <label className="block text-ft-dim text-xs font-mono uppercase tracking-wider mb-1">
+                <label className="block text-ft-dim text-xs font-body uppercase tracking-wider mb-1">
                   Weight (lbs) *
                 </label>
                 <input
@@ -191,11 +191,11 @@ export default function BodyMetricsPage() {
                   onChange={(e) => setWeight(e.target.value)}
                   placeholder="185.0"
                   required
-                  className="w-full bg-ft-surface border border-ft-card rounded px-2 py-1.5 text-sm font-mono text-ft-white placeholder:text-ft-muted focus:outline-none focus:border-ft-dim transition-colors"
+                  className="w-full bg-ft-surface border border-ft-card rounded px-2 py-1.5 text-sm font-body text-ft-white placeholder:text-ft-muted focus:outline-none focus:border-ft-dim transition-colors"
                 />
               </div>
               <div>
-                <label className="block text-ft-dim text-xs font-mono uppercase tracking-wider mb-1">
+                <label className="block text-ft-dim text-xs font-body uppercase tracking-wider mb-1">
                   Body Fat %
                 </label>
                 <input
@@ -204,11 +204,11 @@ export default function BodyMetricsPage() {
                   value={bodyFat}
                   onChange={(e) => setBodyFat(e.target.value)}
                   placeholder="15.0"
-                  className="w-full bg-ft-surface border border-ft-card rounded px-2 py-1.5 text-sm font-mono text-ft-white placeholder:text-ft-muted focus:outline-none focus:border-ft-dim transition-colors"
+                  className="w-full bg-ft-surface border border-ft-card rounded px-2 py-1.5 text-sm font-body text-ft-white placeholder:text-ft-muted focus:outline-none focus:border-ft-dim transition-colors"
                 />
               </div>
               <div>
-                <label className="block text-ft-dim text-xs font-mono uppercase tracking-wider mb-1">
+                <label className="block text-ft-dim text-xs font-body uppercase tracking-wider mb-1">
                   Notes
                 </label>
                 <input
@@ -216,7 +216,7 @@ export default function BodyMetricsPage() {
                   value={notes}
                   onChange={(e) => setNotes(e.target.value)}
                   placeholder="Optional"
-                  className="w-full bg-ft-surface border border-ft-card rounded px-2 py-1.5 text-sm font-mono text-ft-white placeholder:text-ft-muted focus:outline-none focus:border-ft-dim transition-colors"
+                  className="w-full bg-ft-surface border border-ft-card rounded px-2 py-1.5 text-sm font-body text-ft-white placeholder:text-ft-muted focus:outline-none focus:border-ft-dim transition-colors"
                 />
               </div>
             </div>
@@ -224,14 +224,14 @@ export default function BodyMetricsPage() {
               <button
                 type="button"
                 onClick={() => setShowForm(false)}
-                className="px-3 py-1.5 text-ft-dim text-xs font-mono hover:text-ft-light"
+                className="px-3 py-1.5 text-ft-dim text-xs font-body hover:text-ft-light"
               >
                 Cancel
               </button>
               <button
                 type="submit"
                 disabled={saving || !weight}
-                className="bg-ft-white text-ft-bg font-mono text-xs font-bold px-4 py-1.5 rounded hover:bg-ft-light transition-colors disabled:opacity-50"
+                className="bg-ft-white text-ft-bg font-body text-xs font-bold px-4 py-1.5 rounded hover:bg-ft-light transition-colors disabled:opacity-50"
               >
                 {saving ? "Saving..." : "Log"}
               </button>
@@ -307,15 +307,15 @@ export default function BodyMetricsPage() {
           <div className="flex flex-col items-center justify-center py-12">
             {entries.length === 0 ? (
               <>
-                <p className="text-ft-muted text-sm font-mono">
+                <p className="text-ft-muted text-sm font-body">
                   No weight entries yet
                 </p>
-                <p className="text-ft-dim text-xs font-mono mt-1">
+                <p className="text-ft-dim text-xs font-body mt-1">
                   Start logging your body weight to see trends
                 </p>
               </>
             ) : (
-              <p className="text-ft-muted text-sm font-mono">
+              <p className="text-ft-muted text-sm font-body">
                 Log more entries to see the trend chart
               </p>
             )}
@@ -326,14 +326,14 @@ export default function BodyMetricsPage() {
         {(weightChange || bfChange) && (
           <div className="mt-3 pt-3 border-t border-ft-border flex gap-6">
             {weightChange && (
-              <span className="text-ft-dim text-xs font-mono">
+              <span className="text-ft-dim text-xs font-body">
                 Weight: <span className={`font-bold ${Number(weightChange) > 0 ? "text-ft-warn" : "text-ft-success"}`}>
                   {Number(weightChange) > 0 ? "+" : ""}{weightChange} lbs
                 </span>
               </span>
             )}
             {bfChange && (
-              <span className="text-ft-dim text-xs font-mono">
+              <span className="text-ft-dim text-xs font-body">
                 Body Fat: <span className={`font-bold ${Number(bfChange) > 0 ? "text-ft-warn" : "text-ft-success"}`}>
                   {Number(bfChange) > 0 ? "+" : ""}{bfChange}%
                 </span>
@@ -344,11 +344,12 @@ export default function BodyMetricsPage() {
       </Card>
 
       {/* Weight Log Table */}
-      {entries.length > 0 && (
+      {entries.length > 0 && (<>
+        <div className="section-divider" />
         <Card>
           <SectionHeader title="Weight Log" subtitle={`${entries.length} entries`} />
           <div className="space-y-2 max-h-72 overflow-y-auto">
-            <div className="grid grid-cols-5 gap-2 text-ft-muted text-[10px] font-mono uppercase tracking-wider">
+            <div className="grid grid-cols-5 gap-2 text-ft-muted text-[10px] font-body uppercase tracking-wider">
               <span>Date</span>
               <span>Weight</span>
               <span>Body Fat</span>
@@ -356,7 +357,7 @@ export default function BodyMetricsPage() {
               <span>Notes</span>
             </div>
             {[...entries].reverse().map((entry) => (
-              <div key={entry.id} className="grid grid-cols-5 gap-2 text-xs font-mono border-t border-ft-border pt-1.5">
+              <div key={entry.id} className="grid grid-cols-5 gap-2 text-xs font-body border-t border-ft-border pt-1.5">
                 <span className="text-ft-dim">{entry.date}</span>
                 <span className="text-ft-light">{entry.weight ?? "—"} lbs</span>
                 <span className="text-ft-dim">{entry.bodyFatPct ? `${entry.bodyFatPct}%` : "—"}</span>
@@ -375,7 +376,7 @@ export default function BodyMetricsPage() {
             ))}
           </div>
         </Card>
-      )}
+      </>)}
     </div>
   );
 }

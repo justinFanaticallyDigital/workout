@@ -229,14 +229,14 @@ export default function EditableExerciseTable({
           onChange={(e) => setEditValue(e.target.value)}
           onBlur={commitEdit}
           onKeyDown={handleKeyDown}
-          className={`${width} bg-ft-bg border border-ft-dim rounded px-1.5 py-0.5 text-xs font-mono text-ft-white focus:outline-none`}
+          className={`${width} bg-ft-bg border border-ft-dim rounded px-1.5 py-0.5 text-xs font-body text-ft-white focus:outline-none`}
         />
       );
     }
     return (
       <button
         onClick={() => startEdit(ex.id, field, value)}
-        className={`${width} text-left text-xs font-mono text-ft-light hover:text-ft-white hover:bg-ft-card/50 px-1.5 py-0.5 rounded transition-colors`}
+        className={`${width} text-left text-xs font-body text-ft-light hover:text-ft-white hover:bg-ft-card/50 px-1.5 py-0.5 rounded transition-colors`}
       >
         {value ?? "—"}
       </button>
@@ -246,7 +246,7 @@ export default function EditableExerciseTable({
   return (
     <div>
       {/* Header */}
-      <div className="grid grid-cols-[20px_24px_1fr_52px_64px_44px_72px_44px_24px] gap-1 text-[10px] font-mono uppercase tracking-wider text-ft-muted mb-1 px-1">
+      <div className="grid grid-cols-[20px_24px_1fr_52px_64px_44px_72px_44px_24px] gap-1 text-[10px] font-body uppercase tracking-wider text-ft-muted mb-1 px-1">
         <span></span>
         <span>#</span>
         <span>Exercise</span>
@@ -273,13 +273,13 @@ export default function EditableExerciseTable({
         >
           {/* Drag handle */}
           <span className="text-ft-muted text-[10px] cursor-grab select-none">⋮⋮</span>
-          <span className="text-ft-muted text-xs font-mono">{idx + 1}</span>
+          <span className="text-ft-muted text-xs font-body">{idx + 1}</span>
           <div className="truncate">
-            <span className="text-ft-light text-xs font-mono font-bold" title={ex.exercise.name}>
+            <span className="text-ft-light text-xs font-body font-bold" title={ex.exercise.name}>
               {ex.exercise.name}
             </span>
             {ex.altExercise && (
-              <span className="text-ft-muted text-[10px] font-mono ml-1" title={`Alt: ${ex.altExercise.name}`}>
+              <span className="text-ft-muted text-[10px] font-body ml-1" title={`Alt: ${ex.altExercise.name}`}>
                 / {ex.altExercise.name}
               </span>
             )}
@@ -291,7 +291,7 @@ export default function EditableExerciseTable({
           <select
             value={ex.progressionType}
             onChange={(e) => onUpdate(ex.id, "progressionType", e.target.value)}
-            className="w-full bg-transparent text-[10px] font-mono text-ft-dim focus:outline-none cursor-pointer"
+            className="w-full bg-transparent text-[10px] font-body text-ft-dim focus:outline-none cursor-pointer"
             title={PROGRESSION_DESCRIPTIONS[ex.progressionType] ?? ex.progressionType}
           >
             {PROGRESSION_TYPES.map((t) => (
@@ -302,7 +302,7 @@ export default function EditableExerciseTable({
           {ex.progressionType !== "none" ? (
             renderCell(ex, "progressionIncrement", ex.progressionIncrement, "w-full")
           ) : (
-            <span className="text-ft-muted text-[10px] font-mono px-1.5">—</span>
+            <span className="text-ft-muted text-[10px] font-body px-1.5">—</span>
           )}
           {/* Menu */}
           <div className="relative">
@@ -324,7 +324,7 @@ export default function EditableExerciseTable({
                     setMenuOpen(null);
                   }}
                   disabled={idx === 0}
-                  className="w-full text-left px-3 py-1.5 text-xs font-mono text-ft-light hover:bg-ft-card disabled:opacity-30"
+                  className="w-full text-left px-3 py-1.5 text-xs font-body text-ft-light hover:bg-ft-card disabled:opacity-30"
                 >
                   Move Up
                 </button>
@@ -338,7 +338,7 @@ export default function EditableExerciseTable({
                     setMenuOpen(null);
                   }}
                   disabled={idx === exercises.length - 1}
-                  className="w-full text-left px-3 py-1.5 text-xs font-mono text-ft-light hover:bg-ft-card disabled:opacity-30"
+                  className="w-full text-left px-3 py-1.5 text-xs font-body text-ft-light hover:bg-ft-card disabled:opacity-30"
                 >
                   Move Down
                 </button>
@@ -350,7 +350,7 @@ export default function EditableExerciseTable({
                       setAltSearch("");
                       setAltResults([]);
                     }}
-                    className="w-full text-left px-3 py-1.5 text-xs font-mono text-ft-light hover:bg-ft-card"
+                    className="w-full text-left px-3 py-1.5 text-xs font-body text-ft-light hover:bg-ft-card"
                   >
                     {ex.altExercise ? "Change Alt" : "Set Alternative"}
                   </button>
@@ -361,7 +361,7 @@ export default function EditableExerciseTable({
                       onSetAlternative(ex.id, null);
                       setMenuOpen(null);
                     }}
-                    className="w-full text-left px-3 py-1.5 text-xs font-mono text-ft-warn hover:bg-ft-card"
+                    className="w-full text-left px-3 py-1.5 text-xs font-body text-ft-warn hover:bg-ft-card"
                   >
                     Remove Alt
                   </button>
@@ -374,14 +374,14 @@ export default function EditableExerciseTable({
                       setMenuOpen(null);
                       setConfirmDeleteId(null);
                     }}
-                    className="w-full text-left px-3 py-1.5 text-xs font-mono text-ft-danger font-bold bg-ft-danger/10 hover:bg-ft-danger/20"
+                    className="w-full text-left px-3 py-1.5 text-xs font-body text-ft-danger font-bold bg-ft-danger/10 hover:bg-ft-danger/20"
                   >
                     Confirm Delete?
                   </button>
                 ) : (
                   <button
                     onClick={() => setConfirmDeleteId(ex.id)}
-                    className="w-full text-left px-3 py-1.5 text-xs font-mono text-ft-danger hover:bg-ft-card"
+                    className="w-full text-left px-3 py-1.5 text-xs font-body text-ft-danger hover:bg-ft-card"
                   >
                     Delete
                   </button>
@@ -396,7 +396,7 @@ export default function EditableExerciseTable({
       {altPickerOpen && (
         <div className="my-2 p-3 bg-ft-surface border border-ft-card rounded">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-ft-dim text-[10px] font-mono uppercase tracking-wider">
+            <span className="text-ft-dim text-[10px] font-body uppercase tracking-wider">
               Set Alternative Exercise
             </span>
             <button
@@ -413,7 +413,7 @@ export default function EditableExerciseTable({
               value={altSearch}
               onChange={(e) => setAltSearch(e.target.value)}
               placeholder="Search for alternative..."
-              className="w-full bg-ft-bg border border-ft-card rounded px-2 py-1.5 text-xs font-mono text-ft-white placeholder:text-ft-muted focus:outline-none focus:border-ft-dim"
+              className="w-full bg-ft-bg border border-ft-card rounded px-2 py-1.5 text-xs font-body text-ft-white placeholder:text-ft-muted focus:outline-none focus:border-ft-dim"
             />
             {altResults.length > 0 && (
               <div className="absolute top-full left-0 right-0 mt-1 bg-ft-surface border border-ft-card rounded max-h-36 overflow-y-auto z-20">
@@ -425,7 +425,7 @@ export default function EditableExerciseTable({
                       setAltPickerOpen(null);
                       setAltSearch("");
                     }}
-                    className="w-full text-left px-2 py-1.5 text-xs font-mono text-ft-light hover:bg-ft-card"
+                    className="w-full text-left px-2 py-1.5 text-xs font-body text-ft-light hover:bg-ft-card"
                   >
                     {r.name}
                     {r.primaryMuscle && <span className="text-ft-muted ml-2">{r.primaryMuscle}</span>}
@@ -442,7 +442,7 @@ export default function EditableExerciseTable({
         <div className="mt-2 pt-2 border-t border-ft-border/50 space-y-2">
           {selectedNew ? (
             <div className="flex items-center gap-2">
-              <span className="text-ft-white text-xs font-mono flex-1">{selectedNew.name}</span>
+              <span className="text-ft-white text-xs font-body flex-1">{selectedNew.name}</span>
               <button
                 onClick={() => { setSelectedNew(null); setNewSearch(""); }}
                 className="text-ft-dim text-[10px] hover:text-ft-light"
@@ -457,7 +457,7 @@ export default function EditableExerciseTable({
                 value={newSearch}
                 onChange={(e) => setNewSearch(e.target.value)}
                 placeholder="Type to search exercises..."
-                className="w-full bg-ft-bg border border-ft-card rounded px-2 py-1.5 text-xs font-mono text-ft-white placeholder:text-ft-muted focus:outline-none focus:border-ft-dim"
+                className="w-full bg-ft-bg border border-ft-card rounded px-2 py-1.5 text-xs font-body text-ft-white placeholder:text-ft-muted focus:outline-none focus:border-ft-dim"
                 autoFocus
               />
               {searchResults.length > 0 && (
@@ -466,7 +466,7 @@ export default function EditableExerciseTable({
                     <button
                       key={r.id}
                       onClick={() => { setSelectedNew(r); setSearchResults([]); }}
-                      className="w-full text-left px-2 py-1.5 text-xs font-mono text-ft-light hover:bg-ft-card"
+                      className="w-full text-left px-2 py-1.5 text-xs font-body text-ft-light hover:bg-ft-card"
                     >
                       {r.name}
                       {r.primaryMuscle && <span className="text-ft-muted ml-2">{r.primaryMuscle}</span>}
@@ -484,21 +484,21 @@ export default function EditableExerciseTable({
                   value={newSets}
                   onChange={(e) => setNewSets(e.target.value)}
                   placeholder="Sets"
-                  className="bg-ft-bg border border-ft-card rounded px-2 py-1 text-xs font-mono text-ft-white placeholder:text-ft-muted focus:outline-none focus:border-ft-dim"
+                  className="bg-ft-bg border border-ft-card rounded px-2 py-1 text-xs font-body text-ft-white placeholder:text-ft-muted focus:outline-none focus:border-ft-dim"
                 />
                 <input
                   type="text"
                   value={newReps}
                   onChange={(e) => setNewReps(e.target.value)}
                   placeholder="Reps"
-                  className="bg-ft-bg border border-ft-card rounded px-2 py-1 text-xs font-mono text-ft-white placeholder:text-ft-muted focus:outline-none focus:border-ft-dim"
+                  className="bg-ft-bg border border-ft-card rounded px-2 py-1 text-xs font-body text-ft-white placeholder:text-ft-muted focus:outline-none focus:border-ft-dim"
                 />
                 <input
                   type="text"
                   value={newRpe}
                   onChange={(e) => setNewRpe(e.target.value)}
                   placeholder="RPE"
-                  className="bg-ft-bg border border-ft-card rounded px-2 py-1 text-xs font-mono text-ft-white placeholder:text-ft-muted focus:outline-none focus:border-ft-dim"
+                  className="bg-ft-bg border border-ft-card rounded px-2 py-1 text-xs font-body text-ft-white placeholder:text-ft-muted focus:outline-none focus:border-ft-dim"
                 />
               </div>
               <div className="grid grid-cols-2 gap-2">
@@ -506,14 +506,14 @@ export default function EditableExerciseTable({
                   <select
                     value={newProg}
                     onChange={(e) => setNewProg(e.target.value)}
-                    className="w-full bg-ft-bg border border-ft-card rounded px-2 py-1 text-xs font-mono text-ft-white focus:outline-none focus:border-ft-dim"
+                    className="w-full bg-ft-bg border border-ft-card rounded px-2 py-1 text-xs font-body text-ft-white focus:outline-none focus:border-ft-dim"
                   >
                     {PROGRESSION_TYPES.map((t) => (
                       <option key={t} value={t}>{PROGRESSION_LABELS[t] ?? t}</option>
                     ))}
                   </select>
                   {newProg !== "none" && (
-                    <p className="text-ft-muted text-[10px] font-mono mt-0.5">
+                    <p className="text-ft-muted text-[10px] font-body mt-0.5">
                       {PROGRESSION_DESCRIPTIONS[newProg]}
                     </p>
                   )}
@@ -525,18 +525,18 @@ export default function EditableExerciseTable({
                     value={newIncrement}
                     onChange={(e) => setNewIncrement(e.target.value)}
                     placeholder={newProg === "percentage_based" ? "% (e.g. 75)" : "Increment (lbs)"}
-                    className="bg-ft-bg border border-ft-card rounded px-2 py-1 text-xs font-mono text-ft-white placeholder:text-ft-muted focus:outline-none focus:border-ft-dim"
+                    className="bg-ft-bg border border-ft-card rounded px-2 py-1 text-xs font-body text-ft-white placeholder:text-ft-muted focus:outline-none focus:border-ft-dim"
                   />
                 )}
               </div>
             </div>
           )}
           <div className="flex gap-2">
-            <button onClick={() => { setAddingNew(false); setSelectedNew(null); setNewSearch(""); }} className="text-ft-dim text-xs font-mono hover:text-ft-light">
+            <button onClick={() => { setAddingNew(false); setSelectedNew(null); setNewSearch(""); }} className="text-ft-dim text-xs font-body hover:text-ft-light">
               Cancel
             </button>
             {selectedNew && (
-              <button onClick={handleAddNew} className="bg-ft-white text-ft-bg font-mono text-xs font-bold px-3 py-1 rounded hover:bg-ft-light">
+              <button onClick={handleAddNew} className="bg-ft-white text-ft-bg font-body text-xs font-bold px-3 py-1 rounded hover:bg-ft-light">
                 Add
               </button>
             )}
@@ -545,7 +545,7 @@ export default function EditableExerciseTable({
       ) : (
         <button
           onClick={() => setAddingNew(true)}
-          className="mt-1 text-ft-dim text-xs font-mono hover:text-ft-light transition-colors py-1"
+          className="mt-1 text-ft-dim text-xs font-body hover:text-ft-light transition-colors py-1"
         >
           + Add Exercise
         </button>

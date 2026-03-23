@@ -3,7 +3,8 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import ProgressBar from "@/components/ui/ProgressBar";
-import { authCheck } from "@/lib/fetch-helpers";
+import { useToast } from "@/components/ui/Toast";
+import { authCheck, toastError } from "@/lib/fetch-helpers";
 
 interface MetricTarget {
   id: string;
@@ -38,6 +39,7 @@ interface MetricDisplay {
 }
 
 export default function ProgramTab() {
+  const toast = useToast();
   const [program, setProgram] = useState<ProgramData | null>(null);
   const [targets, setTargets] = useState<MetricTarget[]>([]);
   const [metrics, setMetrics] = useState<MetricDisplay[]>([]);
@@ -72,7 +74,7 @@ export default function ProgramTab() {
 
         setMetrics(metricList);
       })
-      .catch(() => {})
+      .catch(toastError(toast, "Failed to load program data"))
       .finally(() => setLoading(false));
   }, []);
 

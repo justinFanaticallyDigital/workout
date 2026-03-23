@@ -158,3 +158,30 @@ export async function POST(request: NextRequest) {
 
   return NextResponse.json(food, { status: 201 });
 }
+
+/**
+ * DELETE /api/nutrition/foods?id=...
+ * Delete a custom food item owned by the user.
+ */
+export async function DELETE(request: NextRequest) {
+  const [userId, authError] = await requireAuth();
+  if (authError) return authError;
+  const { searchParams } = new URL(request.url);
+  const id = searchParams.get("id");
+
+  if (!id) {
+    return NextResponse.json({ error: "id is required" }, { status: 400 });
+  }
+
+  const food = await prisma.foodItem.findFirst({
+    where: { id, userId },
+    select: { id: true },
+  });
+  if (!food) {
+    return NextResponse.json({ error: "Food not found or not owned by user" }, { status: 404 });
+  }
+
+  await prisma.foodItem.delete({ where: { id } });
+
+  return NextResponse.json({ deleted: true });
+}

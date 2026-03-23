@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { DataTable } from "@/components/ui";
+import EmptyState from "@/components/ui/EmptyState";
 import { authCheck } from "@/lib/fetch-helpers";
 
 interface Exercise {
@@ -63,16 +64,16 @@ export default function ExerciseLibraryPage() {
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-ft-white font-mono font-bold text-2xl uppercase tracking-wider">
+          <h1 className="text-ft-white font-body font-bold text-2xl uppercase tracking-wider">
             Exercise Library
           </h1>
-          <p className="text-ft-dim font-mono text-xs mt-1">
+          <p className="text-ft-dim font-body text-xs mt-1">
             {exercises.length} exercises · {filters.length - 1} movement patterns
           </p>
         </div>
         <Link
           href="/exercises/new"
-          className="bg-ft-white text-ft-bg font-mono text-sm font-bold px-4 py-2 rounded-lg hover:bg-ft-light transition-colors"
+          className="bg-ft-white text-ft-bg font-body text-sm font-bold px-4 py-2 rounded-lg hover:bg-ft-light transition-colors"
         >
           + Add Exercise
         </Link>
@@ -84,7 +85,7 @@ export default function ExerciseLibraryPage() {
           <button
             key={filter}
             onClick={() => setActiveFilter(filter)}
-            className={`px-3 py-1.5 text-[11px] uppercase tracking-wider font-mono rounded-md transition-colors ${
+            className={`px-3 py-1.5 text-[11px] uppercase tracking-wider font-body rounded-md transition-colors ${
               activeFilter === filter
                 ? "bg-ft-white text-ft-bg"
                 : "bg-ft-card text-ft-light hover:bg-ft-muted"
@@ -97,9 +98,15 @@ export default function ExerciseLibraryPage() {
 
       {/* Exercise Table */}
       {loading ? (
-        <div className="text-ft-dim font-mono text-sm">Loading exercises...</div>
+        <div className="text-ft-dim font-body text-sm">Loading exercises...</div>
       ) : filtered.length === 0 ? (
-        <div className="text-ft-muted font-mono text-sm">No exercises found</div>
+        <EmptyState
+          icon="🔍"
+          title="No exercises found"
+          description={activeFilter !== "All" ? `No exercises match the "${activeFilter}" filter. Try a different filter.` : "No exercises available yet."}
+          actionLabel={activeFilter !== "All" ? "Clear Filter" : undefined}
+          onAction={activeFilter !== "All" ? () => setActiveFilter("All") : undefined}
+        />
       ) : (
         <DataTable
           columns={COLUMNS}

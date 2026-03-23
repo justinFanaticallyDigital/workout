@@ -53,7 +53,7 @@ export default function Nav() {
   return (
     <nav className="bg-ft-bg border-b border-ft-border px-4 sm:px-6 flex items-center justify-between h-14">
       <div className="flex items-center gap-4 sm:gap-8">
-        <Link href="/" className="font-mono text-lg tracking-wider">
+        <Link href="/" className="font-body text-lg tracking-wider">
           <span className="text-ft-white font-bold">FIT</span>
           <span className="text-ft-dim font-bold">TRACK</span>
         </Link>
@@ -67,7 +67,7 @@ export default function Nav() {
                 key={item.href}
                 href={item.href}
                 className={`
-                  flex items-center gap-2 px-3 py-2 text-sm font-mono transition-colors
+                  flex items-center gap-2 px-3 py-2 text-sm font-body transition-colors
                   border-b-2
                   ${
                     active
@@ -98,7 +98,7 @@ export default function Nav() {
                 aria-expanded={menuOpen}
                 aria-haspopup="true"
                 aria-label="User menu"
-                className="w-8 h-8 rounded-full bg-ft-card border border-ft-border flex items-center justify-center text-ft-dim text-xs font-mono overflow-hidden hover:border-ft-light transition-colors"
+                className="w-8 h-8 rounded-full bg-ft-card border border-ft-border flex items-center justify-center text-ft-dim text-xs font-body overflow-hidden hover:border-ft-light transition-colors"
               >
                 {session.user.image ? (
                   // eslint-disable-next-line @next/next/no-img-element
@@ -115,7 +115,7 @@ export default function Nav() {
               {menuOpen && (
                 <div role="menu" className="absolute right-0 top-10 bg-ft-card border border-ft-border rounded-md shadow-lg py-1 min-w-[160px] z-50">
                   <div className="px-3 py-2 border-b border-ft-border">
-                    <p className="text-ft-white text-sm font-mono truncate">
+                    <p className="text-ft-white text-sm font-body truncate">
                       {session.user.name}
                     </p>
                     <p className="text-ft-dim text-xs truncate">
@@ -126,14 +126,14 @@ export default function Nav() {
                     <Link
                       key={item.href}
                       href={item.href}
-                      className="block px-3 py-2 text-sm font-mono text-ft-dim hover:text-ft-white hover:bg-ft-bg transition-colors"
+                      className="block px-3 py-2 text-sm font-body text-ft-dim hover:text-ft-white hover:bg-ft-bg transition-colors"
                     >
                       {item.label}
                     </Link>
                   ))}
                   <button
                     onClick={() => signOut()}
-                    className="w-full text-left px-3 py-2 text-sm font-mono text-ft-dim hover:text-ft-white hover:bg-ft-bg transition-colors border-t border-ft-border"
+                    className="w-full text-left px-3 py-2 text-sm font-body text-ft-dim hover:text-ft-white hover:bg-ft-bg transition-colors border-t border-ft-border"
                   >
                     Sign out
                   </button>
@@ -143,7 +143,7 @@ export default function Nav() {
           ) : (
             <button
               onClick={() => signIn("google")}
-              className="text-sm font-mono text-ft-dim hover:text-ft-white transition-colors"
+              className="text-sm font-body text-ft-dim hover:text-ft-white transition-colors"
             >
               Sign in
             </button>
@@ -173,7 +173,7 @@ export default function Nav() {
                 <Link
                   key={item.href}
                   href={item.href}
-                  className={`flex items-center gap-3 px-3 py-2.5 rounded text-sm font-mono transition-colors ${
+                  className={`flex items-center gap-3 px-3 py-2.5 rounded text-sm font-body transition-colors ${
                     active
                       ? "text-ft-white bg-ft-card"
                       : "text-ft-dim hover:text-ft-light"
@@ -189,7 +189,7 @@ export default function Nav() {
                 <Link
                   key={item.href}
                   href={item.href}
-                  className={`flex items-center gap-3 px-3 py-2.5 rounded text-sm font-mono transition-colors ${
+                  className={`flex items-center gap-3 px-3 py-2.5 rounded text-sm font-body transition-colors ${
                     isActive(item.href)
                       ? "text-ft-white bg-ft-card"
                       : "text-ft-dim hover:text-ft-light"

@@ -36,7 +36,7 @@ const VARIANT_STYLES: Record<ToastVariant, string> = {
 function ToastItem({ toast, onRemove }: { toast: Toast; onRemove: (id: number) => void }) {
   return (
     <div
-      className={`flex items-center gap-2 px-4 py-3 rounded border font-mono text-sm shadow-lg backdrop-blur-sm transition-all duration-300 ${
+      className={`flex items-center gap-2 px-4 py-3 rounded border font-body text-sm shadow-lg backdrop-blur-sm transition-all duration-300 ${
         VARIANT_STYLES[toast.variant]
       } ${toast.exiting ? "opacity-0 translate-x-4" : "opacity-100 translate-x-0"}`}
     >

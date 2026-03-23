@@ -86,8 +86,8 @@ function WorkoutTimer({ startTime }: { startTime: number }) {
 
   return (
     <div className="flex items-center gap-1.5 bg-ft-surface border border-ft-card rounded px-2.5 py-1.5">
-      <span className="text-ft-dim text-xs font-mono">&#9201;</span>
-      <span className="text-ft-light text-sm font-mono tabular-nums">
+      <span className="text-ft-dim text-xs font-body">&#9201;</span>
+      <span className="text-ft-light text-sm font-body tabular-nums">
         {elapsed}
       </span>
     </div>
@@ -248,12 +248,12 @@ function ExercisePicker({
 
         {/* Header */}
         <div className="px-4 pt-2 sm:pt-4 pb-3 flex items-center justify-between border-b border-ft-border">
-          <h2 className="font-mono text-base font-bold text-ft-white">
+          <h2 className="font-body text-base font-bold text-ft-white">
             Add Exercise
           </h2>
           <button
             onClick={onClose}
-            className="text-ft-dim hover:text-ft-light text-lg font-mono transition-colors px-1"
+            className="text-ft-dim hover:text-ft-light text-lg font-body transition-colors px-1"
           >
             &times;
           </button>
@@ -267,7 +267,7 @@ function ExercisePicker({
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Search exercises..."
-            className="w-full bg-ft-bg border border-ft-card rounded-lg px-3 py-3 text-base font-mono text-ft-white placeholder:text-ft-muted focus:outline-none focus:border-ft-dim touch-target"
+            className="w-full bg-ft-bg border border-ft-card rounded-lg px-3 py-3 text-base font-body text-ft-white placeholder:text-ft-muted focus:outline-none focus:border-ft-dim touch-target"
           />
         </div>
 
@@ -276,7 +276,7 @@ function ExercisePicker({
           {/* Recent exercises (shown when no search query) */}
           {query.length < 2 && recents.length > 0 && (
             <div className="mb-4">
-              <p className="text-ft-dim text-[10px] font-mono uppercase tracking-wider mb-2">
+              <p className="text-ft-dim text-[10px] font-body uppercase tracking-wider mb-2">
                 Recent Exercises
               </p>
               {recents.map((ex) => (
@@ -287,12 +287,12 @@ function ExercisePicker({
                 >
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-ft-white text-sm font-mono">{ex.name}</p>
-                      <p className="text-ft-dim text-xs font-mono mt-0.5">
+                      <p className="text-ft-white text-sm font-body">{ex.name}</p>
+                      <p className="text-ft-dim text-xs font-body mt-0.5">
                         {[ex.primaryMuscle, ex.movementPattern].filter(Boolean).join(" · ")}
                       </p>
                     </div>
-                    <span className="text-ft-muted text-[10px] font-mono">
+                    <span className="text-ft-muted text-[10px] font-body">
                       {ex.sessionCount}x
                     </span>
                   </div>
@@ -301,12 +301,12 @@ function ExercisePicker({
             </div>
           )}
           {searching && (
-            <p className="text-ft-dim text-xs font-mono text-center py-4">
+            <p className="text-ft-dim text-xs font-body text-center py-4">
               Searching...
             </p>
           )}
           {!searching && query.length >= 2 && results.length === 0 && (
-            <p className="text-ft-muted text-xs font-mono text-center py-4">
+            <p className="text-ft-muted text-xs font-body text-center py-4">
               No exercises found
             </p>
           )}
@@ -316,8 +316,8 @@ function ExercisePicker({
               onClick={() => onSelect(ex)}
               className="w-full text-left px-3 py-3 border-b border-ft-card hover:bg-ft-card/50 transition-colors touch-target rounded"
             >
-              <p className="text-ft-white text-sm font-mono">{ex.name}</p>
-              <p className="text-ft-dim text-xs font-mono mt-0.5">
+              <p className="text-ft-white text-sm font-body">{ex.name}</p>
+              <p className="text-ft-dim text-xs font-body mt-0.5">
                 {[ex.primaryMuscle, ex.movementPattern, ex.equipment]
                   .filter(Boolean)
                   .join(" · ")}
@@ -705,7 +705,7 @@ export default function ActiveWorkoutPage({
   if (loading) {
     return (
       <div className="min-h-screen bg-ft-bg text-ft-white flex items-center justify-center">
-        <p className="text-ft-dim font-mono text-sm">Loading workout...</p>
+        <p className="text-ft-dim font-body text-sm">Loading workout...</p>
       </div>
     );
   }
@@ -727,22 +727,22 @@ export default function ActiveWorkoutPage({
         <div className="flex items-center gap-2 mb-2">
           <Link
             href="/log"
-            className="text-ft-dim hover:text-ft-light text-sm font-mono transition-colors"
+            className="text-ft-dim hover:text-ft-light text-sm font-body transition-colors"
           >
             &larr; {dayInfo?.blockName ?? "Back"}
           </Link>
-          <span className="text-ft-muted text-sm font-mono">/</span>
-          <span className="text-ft-dim text-sm font-mono">
+          <span className="text-ft-muted text-sm font-body">/</span>
+          <span className="text-ft-dim text-sm font-body">
             {dayInfo?.name ?? "Workout"}
           </span>
         </div>
 
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="font-mono text-lg font-bold text-ft-white">
+            <h1 className="font-body text-lg font-bold text-ft-white">
               {dayInfo?.name ?? "Workout"}
             </h1>
-            <p className="text-ft-dim text-xs font-mono mt-0.5">
+            <p className="text-ft-dim text-xs font-body mt-0.5">
               {new Date().toLocaleDateString("en-US", {
                 weekday: "short",
                 month: "short",
@@ -756,7 +756,7 @@ export default function ActiveWorkoutPage({
               <button
                 onClick={handleFinish}
                 disabled={finishing}
-                className="bg-ft-success/20 text-ft-success font-mono text-sm font-bold px-4 py-1.5 rounded hover:bg-ft-success/30 transition-colors disabled:opacity-50"
+                className="bg-ft-success/20 text-ft-success font-body text-sm font-bold px-4 py-1.5 rounded hover:bg-ft-success/30 transition-colors disabled:opacity-50"
               >
                 {finishing ? "Saving..." : "Finish"}
               </button>
@@ -768,10 +768,10 @@ export default function ActiveWorkoutPage({
       {/* Restored draft banner */}
       {restored && (
         <div className="mx-4 mt-3 bg-ft-surface border border-ft-card rounded px-3 py-2 flex items-center justify-between">
-          <span className="text-ft-dim text-xs font-mono">Draft restored from previous session</span>
+          <span className="text-ft-dim text-xs font-body">Draft restored from previous session</span>
           <button
             onClick={() => setRestored(false)}
-            className="text-ft-muted text-xs font-mono hover:text-ft-light"
+            className="text-ft-muted text-xs font-body hover:text-ft-light"
           >
             Dismiss
           </button>
@@ -783,12 +783,12 @@ export default function ActiveWorkoutPage({
         <div className="px-4 mt-8">
           <Card>
             <div className="flex flex-col items-center py-6 gap-3">
-              <p className="text-ft-muted font-mono text-sm text-center">
+              <p className="text-ft-muted font-body text-sm text-center">
                 No exercises yet. Search and add exercises to start your workout.
               </p>
               <button
                 onClick={() => setShowPicker(true)}
-                className="bg-ft-surface border border-ft-card rounded px-4 py-2 text-ft-light font-mono text-sm hover:border-ft-dim transition-colors"
+                className="bg-ft-surface border border-ft-card rounded px-4 py-2 text-ft-light font-body text-sm hover:border-ft-dim transition-colors"
               >
                 + Add Exercise
               </button>
@@ -809,7 +809,7 @@ export default function ActiveWorkoutPage({
                   <button
                     key={ex.id}
                     onClick={() => setActiveEx(i)}
-                    className={`shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded font-mono text-xs transition-colors ${
+                    className={`shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded font-body text-xs transition-colors ${
                       isActive
                         ? "bg-ft-white text-ft-bg font-bold"
                         : "bg-ft-surface text-ft-dim hover:text-ft-light border border-ft-card"
@@ -822,7 +822,7 @@ export default function ActiveWorkoutPage({
               })}
               <button
                 onClick={() => setShowPicker(true)}
-                className="shrink-0 flex items-center gap-1 px-3 py-1.5 rounded font-mono text-xs bg-ft-surface text-ft-dim hover:text-ft-light border border-dashed border-ft-card transition-colors"
+                className="shrink-0 flex items-center gap-1 px-3 py-1.5 rounded font-body text-xs bg-ft-surface text-ft-dim hover:text-ft-light border border-dashed border-ft-card transition-colors"
               >
                 <span>+</span>
               </button>
@@ -833,7 +833,7 @@ export default function ActiveWorkoutPage({
             {/* Active Exercise Detail */}
             <Card>
               <div className="mb-4">
-                <h2 className="font-mono text-base font-bold text-ft-white">
+                <h2 className="font-body text-base font-bold text-ft-white">
                   {current.name}
                 </h2>
                 <div className="flex items-center gap-2 mt-1.5 flex-wrap">
@@ -847,10 +847,10 @@ export default function ActiveWorkoutPage({
                   <div className="flex items-center gap-2">
                     <span className="text-ft-warn text-sm">&#9888;</span>
                     <div>
-                      <p className="text-ft-warn text-xs font-mono font-bold">
+                      <p className="text-ft-warn text-xs font-body font-bold">
                         Progression stalled
                       </p>
-                      <p className="text-ft-warn/70 text-[10px] font-mono mt-0.5">
+                      <p className="text-ft-warn/70 text-[10px] font-body mt-0.5">
                         Same weight for {current.progressionInfo.stalledSessions}+ sessions. Consider a deload week or adjusting your approach.
                       </p>
                     </div>
@@ -861,24 +861,24 @@ export default function ActiveWorkoutPage({
               {/* Target + Last Performance + e1RM */}
               <div className="flex gap-3 mb-4 flex-wrap">
                 <div className="flex-1 min-w-[80px] bg-ft-bg rounded p-2.5">
-                  <p className="text-ft-dim text-[11px] font-mono uppercase tracking-wider mb-0.5">
+                  <p className="text-ft-dim text-[11px] font-body uppercase tracking-wider mb-0.5">
                     Target
                   </p>
-                  <p className="text-ft-light text-sm font-mono font-bold">
+                  <p className="text-ft-light text-sm font-body font-bold">
                     {current.suggestedWeight?.sets ?? current.targetSets}&times;{current.suggestedWeight?.reps ?? current.targetRepRange}
                   </p>
                   {current.progressionType !== "none" && (
-                    <p className="text-ft-muted text-[10px] font-mono mt-0.5">
+                    <p className="text-ft-muted text-[10px] font-body mt-0.5">
                       {current.progressionType.replace("_", " ")}
                     </p>
                   )}
                 </div>
                 {current.lastSets.length > 0 && (
                   <div className="flex-1 min-w-[80px] bg-ft-bg rounded p-2.5">
-                    <p className="text-ft-dim text-[11px] font-mono uppercase tracking-wider mb-0.5">
+                    <p className="text-ft-dim text-[11px] font-body uppercase tracking-wider mb-0.5">
                       Last
                     </p>
-                    <p className="text-ft-light text-sm font-mono font-bold">
+                    <p className="text-ft-light text-sm font-body font-bold">
                       {current.lastSets
                         .slice(0, 3)
                         .map((s) => `${s.weight ?? 0}\u00d7${s.reps ?? 0}`)
@@ -889,23 +889,23 @@ export default function ActiveWorkoutPage({
                 )}
                 {current.progressionInfo.estimated1RM && (
                   <div className="flex-1 min-w-[80px] bg-ft-bg rounded p-2.5">
-                    <p className="text-ft-dim text-[11px] font-mono uppercase tracking-wider mb-0.5">
+                    <p className="text-ft-dim text-[11px] font-body uppercase tracking-wider mb-0.5">
                       Est. 1RM
                     </p>
-                    <p className="text-ft-light text-sm font-mono font-bold">
+                    <p className="text-ft-light text-sm font-body font-bold">
                       {current.progressionInfo.estimated1RM} lbs
                     </p>
                   </div>
                 )}
                 {current.suggestedWeight && (
                   <div className="flex-1 min-w-[80px] bg-ft-success/10 border border-ft-success/20 rounded p-2.5">
-                    <p className="text-ft-success text-[11px] font-mono uppercase tracking-wider mb-0.5">
+                    <p className="text-ft-success text-[11px] font-body uppercase tracking-wider mb-0.5">
                       Suggested
                     </p>
-                    <p className="text-ft-success text-sm font-mono font-bold">
+                    <p className="text-ft-success text-sm font-body font-bold">
                       {current.suggestedWeight.weight} lbs
                     </p>
-                    <p className="text-ft-success/70 text-[10px] font-mono mt-0.5">
+                    <p className="text-ft-success/70 text-[10px] font-body mt-0.5">
                       {current.suggestedWeight.hint}
                     </p>
                   </div>
@@ -916,19 +916,19 @@ export default function ActiveWorkoutPage({
               <div className="mb-3">
                 {/* Header row — RIR hidden on mobile unless toggled */}
                 <div className={`grid gap-1.5 mb-1.5 ${showRir ? "grid-cols-[36px_1fr_1fr_1fr_40px]" : "grid-cols-[36px_1fr_1fr_40px] sm:grid-cols-[36px_1fr_1fr_1fr_40px]"}`}>
-                  <span className="text-ft-dim text-[11px] font-mono uppercase text-center">
+                  <span className="text-ft-dim text-[11px] font-body uppercase text-center">
                     Set
                   </span>
-                  <span className="text-ft-dim text-[11px] font-mono uppercase text-center">
+                  <span className="text-ft-dim text-[11px] font-body uppercase text-center">
                     Weight
                   </span>
-                  <span className="text-ft-dim text-[11px] font-mono uppercase text-center">
+                  <span className="text-ft-dim text-[11px] font-body uppercase text-center">
                     Reps
                   </span>
-                  <span className={`text-ft-dim text-[11px] font-mono uppercase text-center ${showRir ? "" : "hidden sm:block"}`}>
+                  <span className={`text-ft-dim text-[11px] font-body uppercase text-center ${showRir ? "" : "hidden sm:block"}`}>
                     RIR
                   </span>
-                  <span className="text-ft-dim text-[11px] font-mono uppercase text-center">
+                  <span className="text-ft-dim text-[11px] font-body uppercase text-center">
                     &#10003;
                   </span>
                 </div>
@@ -939,7 +939,7 @@ export default function ActiveWorkoutPage({
                     className={`grid gap-1.5 mb-1.5 ${showRir ? "grid-cols-[36px_1fr_1fr_1fr_40px]" : "grid-cols-[36px_1fr_1fr_40px] sm:grid-cols-[36px_1fr_1fr_1fr_40px]"}`}
                   >
                     <div className="flex items-center justify-center">
-                      <span className="text-ft-dim text-sm font-mono">
+                      <span className="text-ft-dim text-sm font-body">
                         {s.set}
                       </span>
                     </div>
@@ -954,7 +954,7 @@ export default function ActiveWorkoutPage({
                       placeholder="-"
                       className={`${
                         s.done ? "bg-ft-card" : "bg-ft-bg"
-                      } border border-ft-card rounded px-2 py-2.5 text-center text-base font-mono text-ft-white placeholder:text-ft-muted focus:outline-none focus:border-ft-dim transition-colors touch-target`}
+                      } border border-ft-card rounded px-2 py-2.5 text-center text-base font-body text-ft-white placeholder:text-ft-muted focus:outline-none focus:border-ft-dim transition-colors touch-target`}
                     />
                     <input
                       type="number"
@@ -967,7 +967,7 @@ export default function ActiveWorkoutPage({
                       placeholder="-"
                       className={`${
                         s.done ? "bg-ft-card" : "bg-ft-bg"
-                      } border border-ft-card rounded px-2 py-2.5 text-center text-base font-mono text-ft-white placeholder:text-ft-muted focus:outline-none focus:border-ft-dim transition-colors touch-target`}
+                      } border border-ft-card rounded px-2 py-2.5 text-center text-base font-body text-ft-white placeholder:text-ft-muted focus:outline-none focus:border-ft-dim transition-colors touch-target`}
                     />
                     <input
                       type="number"
@@ -980,7 +980,7 @@ export default function ActiveWorkoutPage({
                       placeholder="-"
                       className={`${
                         s.done ? "bg-ft-card" : "bg-ft-bg"
-                      } border border-ft-card rounded px-2 py-2.5 text-center text-base font-mono text-ft-white placeholder:text-ft-muted focus:outline-none focus:border-ft-dim transition-colors touch-target ${showRir ? "" : "hidden sm:block"}`}
+                      } border border-ft-card rounded px-2 py-2.5 text-center text-base font-body text-ft-white placeholder:text-ft-muted focus:outline-none focus:border-ft-dim transition-colors touch-target ${showRir ? "" : "hidden sm:block"}`}
                     />
                     <div
                       onClick={() => updateSet(activeEx, si, "done", !s.done)}
@@ -1002,13 +1002,13 @@ export default function ActiveWorkoutPage({
                 <div className="flex items-center gap-2 mt-1">
                   <button
                     onClick={() => addSet(activeEx)}
-                    className="flex-1 border border-dashed border-ft-card rounded py-2.5 text-ft-dim text-xs font-mono hover:border-ft-dim hover:text-ft-light transition-colors touch-target"
+                    className="flex-1 border border-dashed border-ft-card rounded py-2.5 text-ft-dim text-xs font-body hover:border-ft-dim hover:text-ft-light transition-colors touch-target"
                   >
                     + Add Set
                   </button>
                   <button
                     onClick={() => setShowRir(!showRir)}
-                    className={`sm:hidden border rounded py-2.5 px-3 text-xs font-mono transition-colors touch-target ${
+                    className={`sm:hidden border rounded py-2.5 px-3 text-xs font-body transition-colors touch-target ${
                       showRir
                         ? "border-ft-dim text-ft-light bg-ft-surface"
                         : "border-ft-card text-ft-muted hover:text-ft-dim"
@@ -1028,7 +1028,7 @@ export default function ActiveWorkoutPage({
                 value={current.notes}
                 onChange={(e) => updateExerciseNotes(activeEx, e.target.value)}
                 placeholder="Add notes for this exercise..."
-                className="w-full bg-ft-bg border border-ft-card rounded px-3 py-2 text-sm font-mono text-ft-light placeholder:text-ft-muted focus:outline-none focus:border-ft-dim resize-none transition-colors"
+                className="w-full bg-ft-bg border border-ft-card rounded px-3 py-2 text-sm font-body text-ft-light placeholder:text-ft-muted focus:outline-none focus:border-ft-dim resize-none transition-colors"
               />
             </Card>
 
@@ -1040,7 +1040,7 @@ export default function ActiveWorkoutPage({
                 value={workoutNotes}
                 onChange={(e) => setWorkoutNotes(e.target.value)}
                 placeholder="Overall session notes..."
-                className="w-full bg-ft-bg border border-ft-card rounded px-3 py-2 text-sm font-mono text-ft-light placeholder:text-ft-muted focus:outline-none focus:border-ft-dim resize-none transition-colors"
+                className="w-full bg-ft-bg border border-ft-card rounded px-3 py-2 text-sm font-body text-ft-light placeholder:text-ft-muted focus:outline-none focus:border-ft-dim resize-none transition-colors"
               />
             </Card>
           </div>

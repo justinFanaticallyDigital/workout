@@ -56,7 +56,7 @@ export default function SyncIndicator() {
     <div className="relative">
       <button
         onClick={() => setShowTooltip(!showTooltip)}
-        className="flex items-center gap-1.5 px-2 py-1 rounded text-xs font-mono transition-colors hover:bg-ft-surface"
+        className="flex items-center gap-1.5 px-2 py-1 rounded text-xs font-body transition-colors hover:bg-ft-surface"
         title={labels[status]}
       >
         <span className={`w-2 h-2 rounded-full ${colors[status]} ${status === "pending" ? "animate-pulse" : ""}`} />
@@ -64,14 +64,14 @@ export default function SyncIndicator() {
       </button>
       {showTooltip && (
         <div className="absolute right-0 top-full mt-1 bg-ft-card border border-ft-border rounded px-3 py-2 min-w-[160px] z-50 shadow-lg">
-          <p className="text-ft-light text-xs font-mono mb-1">{labels[status]}</p>
+          <p className="text-ft-light text-xs font-body mb-1">{labels[status]}</p>
           {status === "pending" && (
-            <p className="text-ft-dim text-[10px] font-mono">
+            <p className="text-ft-dim text-[10px] font-body">
               {pendingCount} workout{pendingCount > 1 ? "s" : ""} waiting to sync
             </p>
           )}
           {status === "offline" && (
-            <p className="text-ft-dim text-[10px] font-mono">
+            <p className="text-ft-dim text-[10px] font-body">
               Your data is saved locally and will sync when you reconnect
             </p>
           )}

@@ -29,7 +29,7 @@ function BarChart({
         const isLatest = i === lastIndex;
         return (
           <div key={label} className="flex flex-col items-center flex-1 gap-1">
-            <span className="text-xs font-mono text-ft-dim">
+            <span className="text-xs font-body text-ft-dim">
               {formatLabel ? formatLabel(value) : value}
             </span>
             <div
@@ -38,7 +38,7 @@ function BarChart({
               }`}
               style={{ height: `${heightPct}%` }}
             />
-            <span className="text-xs font-mono text-ft-dim">{label}</span>
+            <span className="text-xs font-body text-ft-dim">{label}</span>
           </div>
         );
       })}
@@ -192,10 +192,10 @@ export default async function ProgressPage() {
     <div className="min-h-screen bg-ft-bg p-6 max-w-4xl mx-auto space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-2xl font-mono font-bold text-ft-white tracking-wide">
+        <h1 className="text-2xl font-body font-bold text-ft-white tracking-wide">
           Progress
         </h1>
-        <p className="text-ft-dim text-sm font-mono mt-1">
+        <p className="text-ft-dim text-sm font-body mt-1">
           Track body metrics, training volume, and strength
         </p>
       </div>
@@ -209,11 +209,11 @@ export default async function ProgressPage() {
               <div key={g.id} className="flex flex-col gap-1.5">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <span className="text-ft-white text-sm font-mono font-bold">{g.title}</span>
+                    <span className="text-ft-white text-sm font-body font-bold">{g.title}</span>
                     <Tag>{g.type}</Tag>
                     {g.priority === "primary" && <Tag variant="success">Primary</Tag>}
                   </div>
-                  <span className="text-ft-dim text-xs font-mono">
+                  <span className="text-ft-dim text-xs font-body">
                     {g.currentVal.toFixed(g.currentVal % 1 !== 0 ? 1 : 0)} / {g.targetVal} {g.targetUnit ?? ""}
                   </span>
                 </div>
@@ -222,16 +222,16 @@ export default async function ProgressPage() {
                   max={100}
                 />
                 <div className="flex items-center justify-between">
-                  <span className="text-ft-muted text-[10px] font-mono">
+                  <span className="text-ft-muted text-[10px] font-body">
                     Start: {g.startVal} {g.targetUnit ?? ""}
                   </span>
-                  <span className="text-ft-dim text-[10px] font-mono">
+                  <span className="text-ft-dim text-[10px] font-body">
                     {Math.round(g.pct)}% complete
                   </span>
                   {g.program && (
                     <Link
                       href={`/programs/${g.program.id}`}
-                      className="text-ft-muted text-[10px] font-mono hover:text-ft-light"
+                      className="text-ft-muted text-[10px] font-body hover:text-ft-light"
                     >
                       {g.program.name} &rarr;
                     </Link>
@@ -255,13 +255,13 @@ export default async function ProgressPage() {
               maxValue={weightMax}
             />
             {weightTrend && (
-              <p className="text-ft-success text-sm font-mono mt-3">
+              <p className="text-ft-success text-sm font-body mt-3">
                 {weightTrend}
               </p>
             )}
           </>
         ) : (
-          <p className="text-ft-muted font-mono text-sm py-8 text-center">
+          <p className="text-ft-muted font-body text-sm py-8 text-center">
             Log body weight to see trends
           </p>
         )}
@@ -279,7 +279,7 @@ export default async function ProgressPage() {
             formatLabel={(v) => `${(v / 1000).toFixed(0)}k`}
           />
         ) : (
-          <p className="text-ft-muted font-mono text-sm py-8 text-center">
+          <p className="text-ft-muted font-body text-sm py-8 text-center">
             Log workouts to see volume trends
           </p>
         )}
@@ -290,7 +290,7 @@ export default async function ProgressPage() {
         <SectionHeader title="Strength Milestones" subtitle={prs.length > 0 ? "Recent PRs" : "No PRs yet"} />
         {prs.length > 0 ? (
           <div className="overflow-x-auto">
-            <table className="w-full text-sm font-mono">
+            <table className="w-full text-sm font-body">
               <thead>
                 <tr className="text-ft-dim text-left text-xs uppercase tracking-wider">
                   <th className="pb-2 pr-4">Date</th>
@@ -320,7 +320,7 @@ export default async function ProgressPage() {
             </table>
           </div>
         ) : (
-          <p className="text-ft-muted font-mono text-sm py-8 text-center">
+          <p className="text-ft-muted font-body text-sm py-8 text-center">
             Set PRs to see milestones
           </p>
         )}
@@ -333,14 +333,14 @@ export default async function ProgressPage() {
           action={
             <Link
               href="/progress/photos"
-              className="text-ft-dim text-xs font-mono hover:text-ft-light transition-colors border border-ft-border rounded px-3 py-1"
+              className="text-ft-dim text-xs font-body hover:text-ft-light transition-colors border border-ft-border rounded px-3 py-1"
             >
               View All &rarr;
             </Link>
           }
         />
         <Link href="/progress/photos">
-          <p className="text-ft-muted font-mono text-sm py-8 text-center hover:text-ft-light transition-colors">
+          <p className="text-ft-muted font-body text-sm py-8 text-center hover:text-ft-light transition-colors">
             View and upload progress photos
           </p>
         </Link>

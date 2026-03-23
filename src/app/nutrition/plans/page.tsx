@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import Card from "@/components/ui/Card";
+import EmptyState from "@/components/ui/EmptyState";
 
 interface FoodItem {
   id: string;
@@ -190,23 +191,23 @@ export default function MealPlansPage() {
     <div className="max-w-4xl mx-auto p-4 sm:p-6 space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-xl font-mono text-ft-white font-bold">
+          <h1 className="text-xl font-body text-ft-white font-bold">
             Meal Plans
           </h1>
-          <p className="text-ft-dim text-sm font-mono mt-1">
+          <p className="text-ft-dim text-sm font-body mt-1">
             Generate and manage meal plans based on your macro targets
           </p>
         </div>
         <div className="flex gap-2">
           <Link
             href="/nutrition"
-            className="px-3 py-1.5 text-sm font-mono text-ft-dim hover:text-ft-light border border-ft-border rounded transition-colors"
+            className="px-3 py-1.5 text-sm font-body text-ft-dim hover:text-ft-light border border-ft-border rounded transition-colors"
           >
             Daily Log
           </Link>
           <button
             onClick={() => setShowGenerator(!showGenerator)}
-            className="px-3 py-1.5 text-sm font-mono bg-ft-white text-ft-bg rounded hover:bg-ft-light transition-colors"
+            className="px-3 py-1.5 text-sm font-body bg-ft-white text-ft-bg rounded hover:bg-ft-light transition-colors"
           >
             + Generate Plan
           </button>
@@ -216,30 +217,30 @@ export default function MealPlansPage() {
       {/* Generator Form */}
       {showGenerator && (
         <Card>
-          <h2 className="text-ft-white font-mono font-bold mb-4">
+          <h2 className="text-ft-white font-body font-bold mb-4">
             Generate Meal Plan
           </h2>
           <div className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-ft-dim text-xs font-mono mb-1">
+                <label className="block text-ft-dim text-xs font-body mb-1">
                   Plan Name
                 </label>
                 <input
                   value={genName}
                   onChange={(e) => setGenName(e.target.value)}
                   placeholder="e.g. Bulk Plan"
-                  className="w-full bg-ft-bg border border-ft-border rounded px-3 py-2 text-sm font-mono text-ft-white"
+                  className="w-full bg-ft-bg border border-ft-border rounded px-3 py-2 text-sm font-body text-ft-white"
                 />
               </div>
               <div>
-                <label className="block text-ft-dim text-xs font-mono mb-1">
+                <label className="block text-ft-dim text-xs font-body mb-1">
                   Days
                 </label>
                 <select
                   value={genDays}
                   onChange={(e) => setGenDays(Number(e.target.value))}
-                  className="w-full bg-ft-bg border border-ft-border rounded px-3 py-2 text-sm font-mono text-ft-white"
+                  className="w-full bg-ft-bg border border-ft-border rounded px-3 py-2 text-sm font-body text-ft-white"
                 >
                   {[1, 3, 5, 7, 14].map((d) => (
                     <option key={d} value={d}>
@@ -252,7 +253,7 @@ export default function MealPlansPage() {
 
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-ft-dim text-xs font-mono mb-1">
+                <label className="block text-ft-dim text-xs font-body mb-1">
                   Daily Calories
                 </label>
                 <input
@@ -261,17 +262,17 @@ export default function MealPlansPage() {
                   onChange={(e) => setGenCalories(Number(e.target.value))}
                   min={800}
                   max={6000}
-                  className="w-full bg-ft-bg border border-ft-border rounded px-3 py-2 text-sm font-mono text-ft-white"
+                  className="w-full bg-ft-bg border border-ft-border rounded px-3 py-2 text-sm font-body text-ft-white"
                 />
               </div>
               <div>
-                <label className="block text-ft-dim text-xs font-mono mb-1">
+                <label className="block text-ft-dim text-xs font-body mb-1">
                   Meals Per Day
                 </label>
                 <select
                   value={genMeals}
                   onChange={(e) => setGenMeals(Number(e.target.value))}
-                  className="w-full bg-ft-bg border border-ft-border rounded px-3 py-2 text-sm font-mono text-ft-white"
+                  className="w-full bg-ft-bg border border-ft-border rounded px-3 py-2 text-sm font-body text-ft-white"
                 >
                   {[2, 3, 4, 5].map((m) => (
                     <option key={m} value={m}>
@@ -283,7 +284,7 @@ export default function MealPlansPage() {
             </div>
 
             <div>
-              <label className="block text-ft-dim text-xs font-mono mb-1">
+              <label className="block text-ft-dim text-xs font-body mb-1">
                 Macro Split (%)
                 {!macroValid && (
                   <span className="text-ft-danger ml-2">
@@ -293,7 +294,7 @@ export default function MealPlansPage() {
               </label>
               <div className="grid grid-cols-3 gap-2">
                 <div>
-                  <span className="text-ft-dim text-xs font-mono">
+                  <span className="text-ft-dim text-xs font-body">
                     Protein
                   </span>
                   <input
@@ -302,29 +303,29 @@ export default function MealPlansPage() {
                     onChange={(e) => setGenProtein(Number(e.target.value))}
                     min={10}
                     max={60}
-                    className="w-full bg-ft-bg border border-ft-border rounded px-3 py-2 text-sm font-mono text-ft-white"
+                    className="w-full bg-ft-bg border border-ft-border rounded px-3 py-2 text-sm font-body text-ft-white"
                   />
                 </div>
                 <div>
-                  <span className="text-ft-dim text-xs font-mono">Carbs</span>
+                  <span className="text-ft-dim text-xs font-body">Carbs</span>
                   <input
                     type="number"
                     value={genCarbs}
                     onChange={(e) => setGenCarbs(Number(e.target.value))}
                     min={10}
                     max={60}
-                    className="w-full bg-ft-bg border border-ft-border rounded px-3 py-2 text-sm font-mono text-ft-white"
+                    className="w-full bg-ft-bg border border-ft-border rounded px-3 py-2 text-sm font-body text-ft-white"
                   />
                 </div>
                 <div>
-                  <span className="text-ft-dim text-xs font-mono">Fat</span>
+                  <span className="text-ft-dim text-xs font-body">Fat</span>
                   <input
                     type="number"
                     value={genFat}
                     onChange={(e) => setGenFat(Number(e.target.value))}
                     min={10}
                     max={60}
-                    className="w-full bg-ft-bg border border-ft-border rounded px-3 py-2 text-sm font-mono text-ft-white"
+                    className="w-full bg-ft-bg border border-ft-border rounded px-3 py-2 text-sm font-body text-ft-white"
                   />
                 </div>
               </div>
@@ -343,7 +344,7 @@ export default function MealPlansPage() {
                   style={{ width: `${genFat}%` }}
                 />
               </div>
-              <div className="flex justify-between text-xs font-mono text-ft-dim mt-1">
+              <div className="flex justify-between text-xs font-body text-ft-dim mt-1">
                 <span className="text-ft-data-1">P: {genProtein}%</span>
                 <span className="text-ft-data-2">C: {genCarbs}%</span>
                 <span className="text-ft-data-3">F: {genFat}%</span>
@@ -351,28 +352,28 @@ export default function MealPlansPage() {
             </div>
 
             <div>
-              <label className="block text-ft-dim text-xs font-mono mb-1">
+              <label className="block text-ft-dim text-xs font-body mb-1">
                 Dietary Preferences (optional)
               </label>
               <input
                 value={genPrefs}
                 onChange={(e) => setGenPrefs(e.target.value)}
                 placeholder="e.g. vegetarian, low carb, no dairy"
-                className="w-full bg-ft-bg border border-ft-border rounded px-3 py-2 text-sm font-mono text-ft-white"
+                className="w-full bg-ft-bg border border-ft-border rounded px-3 py-2 text-sm font-body text-ft-white"
               />
             </div>
 
             <div className="flex gap-2 justify-end">
               <button
                 onClick={() => setShowGenerator(false)}
-                className="px-4 py-2 text-sm font-mono text-ft-dim hover:text-ft-light border border-ft-border rounded transition-colors"
+                className="px-4 py-2 text-sm font-body text-ft-dim hover:text-ft-light border border-ft-border rounded transition-colors"
               >
                 Cancel
               </button>
               <button
                 onClick={handleGenerate}
                 disabled={generating || genCalories < 800 || !macroValid}
-                className="px-4 py-2 text-sm font-mono bg-ft-white text-ft-bg rounded hover:bg-ft-light transition-colors disabled:opacity-50"
+                className="px-4 py-2 text-sm font-body bg-ft-white text-ft-bg rounded hover:bg-ft-light transition-colors disabled:opacity-50"
               >
                 {generating ? "Generating..." : "Generate"}
               </button>
@@ -383,19 +384,13 @@ export default function MealPlansPage() {
 
       {/* Plan List */}
       {plans.length === 0 && !showGenerator ? (
-        <Card>
-          <div className="text-center py-8">
-            <p className="text-ft-dim font-mono text-sm">
-              No meal plans yet. Generate your first plan to get started.
-            </p>
-            <button
-              onClick={() => setShowGenerator(true)}
-              className="mt-4 px-4 py-2 text-sm font-mono bg-ft-white text-ft-bg rounded hover:bg-ft-light transition-colors"
-            >
-              Generate Plan
-            </button>
-          </div>
-        </Card>
+        <EmptyState
+          icon="🍽"
+          title="No meal plans yet"
+          description="Generate your first plan to get started with structured daily nutrition."
+          actionLabel="Generate Plan"
+          onAction={() => setShowGenerator(true)}
+        />
       ) : (
         plans.map((plan) => {
           const isExpanded = expandedPlan === plan.id;
@@ -408,10 +403,10 @@ export default function MealPlansPage() {
                 }
               >
                 <div>
-                  <h3 className="text-ft-white font-mono font-bold">
+                  <h3 className="text-ft-white font-body font-bold">
                     {plan.name}
                   </h3>
-                  <div className="flex gap-4 text-ft-dim text-xs font-mono mt-1">
+                  <div className="flex gap-4 text-ft-dim text-xs font-body mt-1">
                     <span>{plan.days} days</span>
                     <span>{plan.mealsPerDay} meals/day</span>
                     {plan.calorieTarget && (
@@ -426,7 +421,7 @@ export default function MealPlansPage() {
                       e.stopPropagation();
                       handleDelete(plan.id);
                     }}
-                    className="text-ft-dim hover:text-ft-danger text-xs font-mono transition-colors"
+                    className="text-ft-dim hover:text-ft-danger text-xs font-body transition-colors"
                   >
                     Delete
                   </button>
@@ -438,7 +433,7 @@ export default function MealPlansPage() {
                 <div className="mt-4 space-y-3 border-t border-ft-border pt-4">
                   {/* Macro split summary */}
                   {plan.proteinPct && (
-                    <div className="flex gap-4 text-xs font-mono">
+                    <div className="flex gap-4 text-xs font-body">
                       <span className="text-ft-data-1">
                         Protein: {Number(plan.proteinPct)}%
                       </span>
@@ -465,11 +460,11 @@ export default function MealPlansPage() {
                             setExpandedDay(isDayExpanded ? null : day.id)
                           }
                         >
-                          <span className="text-ft-white font-mono text-sm">
+                          <span className="text-ft-white font-body text-sm">
                             Day {day.dayNumber}
                           </span>
                           <div className="flex items-center gap-3">
-                            <span className="text-ft-dim text-xs font-mono">
+                            <span className="text-ft-dim text-xs font-body">
                               {totals.calories} cal &middot; P:{totals.protein}g
                               C:{totals.carbs}g F:{totals.fat}g
                             </span>
@@ -478,7 +473,7 @@ export default function MealPlansPage() {
                                 e.stopPropagation();
                                 handleApplyDay(day);
                               }}
-                              className="px-2 py-1 text-xs font-mono text-ft-success border border-ft-success rounded hover:bg-ft-success hover:text-ft-bg transition-colors"
+                              className="px-2 py-1 text-xs font-body text-ft-success border border-ft-success rounded hover:bg-ft-success hover:text-ft-bg transition-colors"
                             >
                               Apply Today
                             </button>
@@ -492,12 +487,12 @@ export default function MealPlansPage() {
                           <div className="border-t border-ft-border px-3 py-2 space-y-2">
                             {day.meals.map((meal) => (
                               <div key={meal.id}>
-                                <h4 className="text-ft-light font-mono text-xs font-bold uppercase tracking-wider">
+                                <h4 className="text-ft-light font-body text-xs font-bold uppercase tracking-wider">
                                   {MEAL_TYPE_LABELS[meal.mealType] ||
                                     meal.mealType}
                                 </h4>
                                 {meal.items.length === 0 ? (
-                                  <p className="text-ft-dim text-xs font-mono">
+                                  <p className="text-ft-dim text-xs font-body">
                                     No items
                                   </p>
                                 ) : (
@@ -507,7 +502,7 @@ export default function MealPlansPage() {
                                       return (
                                         <div
                                           key={item.id}
-                                          className="flex justify-between text-xs font-mono"
+                                          className="flex justify-between text-xs font-body"
                                         >
                                           <span className="text-ft-light">
                                             {qty !== 1 && `${qty}× `}

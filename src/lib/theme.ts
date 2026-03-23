@@ -45,13 +45,13 @@ export function getCssColor(token: string): string {
 /** Chart theme constants — call these from client components to get theme-aware colors */
 export function chartTheme() {
   return {
-    tick: { fontSize: 10, fill: getCssColor("dim"), fontFamily: "var(--ft-font-mono)" },
+    tick: { fontSize: 10, fill: getCssColor("dim"), fontFamily: "var(--ft-font-body)" },
     axisLine: { stroke: getCssColor("border") },
     tooltipStyle: {
       backgroundColor: getCssColor("surface"),
       border: `1px solid ${getCssColor("border")}`,
       borderRadius: 4,
-      fontFamily: "var(--ft-font-mono)",
+      fontFamily: "var(--ft-font-body)",
       fontSize: 12,
     },
     labelStyle: { color: getCssColor("light") },

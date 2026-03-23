@@ -50,7 +50,7 @@ export default function DataTable({
               <th
                 key={col.key}
                 onClick={() => handleSort(col.key)}
-                className={`text-left text-ft-dim text-[10px] uppercase tracking-widest font-mono font-normal px-4 py-2 cursor-pointer hover:text-ft-light select-none ${
+                className={`text-left text-ft-dim text-[10px] uppercase tracking-widest font-body font-normal px-4 py-2 cursor-pointer hover:text-ft-light select-none ${
                   col.className ?? ""
                 }`}
               >
@@ -78,7 +78,7 @@ export default function DataTable({
               {columns.map((col) => (
                 <td
                   key={col.key}
-                  className={`px-4 py-2 text-ft-light font-mono ${
+                  className={`px-4 py-2 text-ft-light font-body ${
                     col.className ?? ""
                   }`}
                 >
