@@ -5,45 +5,58 @@ export const notebook: ThemeConfig = {
   name: "Coach's Notebook",
 
   colors: {
-    bg: '#f5f0e8',
-    bgCard: '#fffdf7',
-    bgElevated: '#ffffff',
+    // Light theme — cream/warm paper
+    bg: '#E8E0D4',             // desk/table surface behind notebook
+    bgCard: '#FAF6ED',         // notebook page (warm cream)
+    bgElevated: '#FFFFFF',
 
-    textPrimary: 'rgba(30, 25, 20, 0.90)',
-    textSecondary: 'rgba(30, 25, 20, 0.60)',
-    textTertiary: 'rgba(30, 25, 20, 0.38)',
+    // Text: warm browns — 3-tier hierarchy
+    textPrimary: '#2C241E',    // near-black warm brown (exercise names, set data)
+    textSecondary: '#6B5A4A',  // medium brown (labels, metadata, column headers)
+    textTertiary: '#8C7B68',   // receded brown (set numbers, unit labels, inactive)
 
-    accent: '#c0392b',
-    accentSecondary: '#2471a3',
+    accent: '#B5312A',         // coaching red (underlines, active indicators)
+    accentSecondary: '#1A6B3C', // dark green (checkmarks, completion)
 
     push: '#3B82F6',
     pull: '#22C55E',
     legs: '#EF4444',
     core: '#EAB308',
 
-    success: '#27ae60',
-    error: '#c0392b',
-    warning: '#d4a017',
+    success: '#1A9E45',
+    error: '#B5312A',
+    warning: '#D4880F',
 
-    border: '#d5cfc3',
-    borderSubtle: '#e8e2d6',
+    border: '#D5D0C8',
+    borderSubtle: '#E5E0D8',
   },
 
   fonts: {
-    display: "'Libre Baskerville', serif",
-    data: "'Caveat', cursive",
-    body: "'Inter', sans-serif",
+    display: "'Caveat', cursive",                        // handwritten — exercise names, titles
+    data: "'Caveat', cursive",                           // handwritten — weights, reps, RIR
+    body: "'Libre Baskerville', Georgia, serif",         // printed — labels, headers, nav
   },
 
   borders: {
-    card: '1px solid #d5cfc3',
-    divider: '1px solid rgba(30, 25, 20, 0.10)',
+    card: 'none',              // notebook pages don't have card borders
+    divider: '1px solid #D5D0C8',
     radius: '0',
   },
 
   texture: {
     type: 'css',
-    value: 'repeating-linear-gradient(transparent, transparent 27px, rgba(0, 100, 200, 0.08) 27px, rgba(0, 100, 200, 0.08) 28px)',
+    // Ruled notebook lines — horizontal lines every 28px
+    value: `
+      background-image:
+        repeating-linear-gradient(
+          to bottom,
+          transparent,
+          transparent 27px,
+          rgba(100,140,180,0.15) 27px,
+          rgba(100,140,180,0.15) 28px
+        );
+      background-position: 0 80px;
+    `,
   },
 
   components: {
@@ -52,16 +65,17 @@ export const notebook: ThemeConfig = {
       movementIndicatorWidth: '3px',
     },
     nav: {
-      activeIndicator: 'underline',
+      activeIndicator: 'border-bottom',
       activeStyle: {
-        borderBottom: '2px solid #c0392b',
+        borderColor: '#B5312A',
+        borderWidth: '2px',
       },
     },
     button: {
-      style: 'outline',
+      style: 'underline',
     },
     restTimer: {
-      style: 'text-countdown',
+      style: 'bar',
       glowEffect: false,
     },
   },

@@ -409,3 +409,145 @@ body > * {
   font-size: 9px;
   letter-spacing: 2px;
 }
+
+/* === Notebook theme utilities === */
+
+/* Spiral binding holes along left edge */
+.notebook-binding {
+  position: fixed;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 24px;
+  z-index: 2;
+  pointer-events: none;
+  background-image:
+    repeating-linear-gradient(
+      to bottom,
+      transparent,
+      transparent 30px,
+      #D5D0C8 30px,
+      #D5D0C8 32px,
+      transparent 32px,
+      transparent 38px
+    );
+}
+.notebook-binding::after {
+  content: '';
+  position: absolute;
+  left: 8px;
+  top: 0;
+  bottom: 0;
+  width: 8px;
+  background-image:
+    repeating-radial-gradient(
+      circle at center,
+      transparent 0,
+      transparent 3px,
+      #C8C0B4 3px,
+      #C8C0B4 4px,
+      transparent 4px,
+      transparent 40px
+    );
+  background-size: 8px 40px;
+}
+
+/* Red margin line */
+.notebook-margin-line {
+  position: fixed;
+  left: 24px;
+  top: 0;
+  bottom: 0;
+  width: 1px;
+  background: rgba(180,60,60,0.2);
+  z-index: 2;
+  pointer-events: none;
+}
+
+/* Coffee stain watermark */
+.notebook-coffee-stain {
+  position: fixed;
+  top: 30%;
+  right: 10%;
+  width: 120px;
+  height: 100px;
+  border-radius: 50%;
+  background: radial-gradient(
+    ellipse at 40% 45%,
+    rgba(140,100,60,0.06) 0%,
+    rgba(140,100,60,0.03) 40%,
+    transparent 70%
+  );
+  z-index: 1;
+  pointer-events: none;
+}
+
+/* Handwritten checkmark for completed sets */
+.notebook-check {
+  color: #1A9E45;
+  font-family: 'Caveat', cursive;
+  font-size: 20px;
+  font-weight: 700;
+}
+
+/* Ghost/incomplete set row — "not yet written" */
+.notebook-ghost {
+  color: #B8A898;
+}
+
+/* Previous session faded pencil note */
+.notebook-faded {
+  color: #B8A898;
+  opacity: 0.7;
+}
+
+/* Notes field — italic Caveat with deeper contrast */
+.notebook-notes {
+  font-family: 'Caveat', cursive;
+  font-size: 16px;
+  font-style: italic;
+  font-weight: 500;
+  color: #4A3D32;
+}
+
+/* Notebook typography scale */
+.notebook-title {
+  font-family: 'Caveat', cursive;
+  font-size: 32px;
+  font-weight: 700;
+  color: #2C241E;
+}
+.notebook-exercise-name {
+  font-family: 'Caveat', cursive;
+  font-size: 24px;
+  font-weight: 600;
+  color: #2C241E;
+}
+.notebook-set-data {
+  font-family: 'Caveat', cursive;
+  font-size: 22px;
+  font-weight: 600;
+  color: #2C241E;
+}
+.notebook-column-header {
+  font-family: 'Libre Baskerville', Georgia, serif;
+  font-size: 9.5px;
+  font-variant: small-caps;
+  color: #6B5A4A;
+}
+.notebook-meta {
+  font-family: 'Libre Baskerville', Georgia, serif;
+  font-size: 10px;
+  color: #6B5A4A;
+}
+.notebook-nav {
+  font-family: 'Libre Baskerville', Georgia, serif;
+  font-size: 11px;
+  font-variant: small-caps;
+}
+.notebook-rest-timer {
+  font-family: 'Caveat', cursive;
+  font-size: 36px;
+  font-weight: 700;
+  color: #2C241E;
+}
