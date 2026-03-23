@@ -166,7 +166,7 @@ export default function ExerciseBrowserPanel({
       <div role="dialog" aria-modal="true" aria-label={title} className="fixed top-0 right-0 bottom-0 w-full max-w-md bg-ft-surface border-l border-ft-border z-50 flex flex-col">
         {/* Header */}
         <div className="p-4 border-b border-ft-border flex items-center justify-between shrink-0">
-          <h2 className="font-mono text-sm font-bold text-ft-white">{title}</h2>
+          <h2 className="font-body text-sm font-bold text-ft-white">{title}</h2>
           <button
             onClick={onClose}
             className="text-ft-dim text-lg hover:text-ft-light transition-colors"
@@ -183,7 +183,7 @@ export default function ExerciseBrowserPanel({
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search exercises..."
-            className="w-full bg-ft-bg border border-ft-card rounded px-3 py-2 text-sm font-mono text-ft-white placeholder:text-ft-muted focus:outline-none focus:border-ft-dim transition-colors"
+            className="w-full bg-ft-bg border border-ft-card rounded px-3 py-2 text-sm font-body text-ft-white placeholder:text-ft-muted focus:outline-none focus:border-ft-dim transition-colors"
           />
 
           {/* Filter category headers */}
@@ -209,7 +209,7 @@ export default function ExerciseBrowserPanel({
             {totalFilters > 0 && (
               <button
                 onClick={clearAllFilters}
-                className="text-ft-danger text-[10px] font-mono hover:text-ft-danger/70 px-1.5 py-0.5"
+                className="text-ft-danger text-[10px] font-body hover:text-ft-danger/70 px-1.5 py-0.5"
               >
                 Clear {totalFilters}
               </button>
@@ -244,11 +244,11 @@ export default function ExerciseBrowserPanel({
         <div className="flex-1 overflow-y-auto p-2">
           {loading && exercises.length === 0 ? (
             <div className="flex items-center justify-center py-12">
-              <p className="text-ft-dim text-xs font-mono">Loading...</p>
+              <p className="text-ft-dim text-xs font-body">Loading...</p>
             </div>
           ) : exercises.length === 0 ? (
             <div className="flex items-center justify-center py-12">
-              <p className="text-ft-muted text-xs font-mono">
+              <p className="text-ft-muted text-xs font-body">
                 {search || totalFilters > 0 ? "No exercises found" : "Type to search or select filters"}
               </p>
             </div>
@@ -262,22 +262,22 @@ export default function ExerciseBrowserPanel({
                 >
                   <div className="flex items-start justify-between">
                     <div className="min-w-0">
-                      <p className="text-ft-light text-xs font-mono font-bold truncate group-hover:text-ft-white">
+                      <p className="text-ft-light text-xs font-body font-bold truncate group-hover:text-ft-white">
                         {ex.name}
                       </p>
                       <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
                         {ex.primaryMuscle && (
-                          <span className="text-[10px] font-mono px-1.5 py-0 rounded bg-ft-bg text-ft-dim">
+                          <span className="text-[10px] font-body px-1.5 py-0 rounded bg-ft-bg text-ft-dim">
                             {ex.primaryMuscle}
                           </span>
                         )}
                         {ex.equipment && (
-                          <span className="text-[10px] font-mono px-1.5 py-0 rounded bg-ft-bg text-ft-muted">
+                          <span className="text-[10px] font-body px-1.5 py-0 rounded bg-ft-bg text-ft-muted">
                             {ex.equipment}
                           </span>
                         )}
                         {ex.movementPattern && (
-                          <span className="text-[10px] font-mono px-1.5 py-0 rounded bg-ft-bg text-ft-muted">
+                          <span className="text-[10px] font-body px-1.5 py-0 rounded bg-ft-bg text-ft-muted">
                             {ex.movementPattern}
                           </span>
                         )}
@@ -295,7 +295,7 @@ export default function ExerciseBrowserPanel({
 
         {/* Footer */}
         <div className="p-3 border-t border-ft-border shrink-0">
-          <p className="text-ft-muted text-[10px] font-mono text-center">
+          <p className="text-ft-muted text-[10px] font-body text-center">
             {exercises.length} exercise{exercises.length !== 1 ? "s" : ""}
           </p>
         </div>
@@ -319,7 +319,7 @@ function FilterCategoryPill({
   return (
     <button
       onClick={onClick}
-      className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-mono font-bold transition-colors border ${
+      className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-body font-bold transition-colors border ${
         expanded
           ? "bg-ft-white text-ft-bg border-ft-white"
           : count > 0
@@ -356,7 +356,7 @@ function PillRow({
           <button
             key={opt}
             onClick={() => onToggle(opt)}
-            className={`px-2 py-0.5 rounded-full text-[10px] font-mono transition-colors border ${
+            className={`px-2 py-0.5 rounded-full text-[10px] font-body transition-colors border ${
               isActive
                 ? "bg-ft-white text-ft-bg border-ft-white font-bold"
                 : "bg-ft-bg text-ft-dim border-ft-border hover:border-ft-dim hover:text-ft-light"

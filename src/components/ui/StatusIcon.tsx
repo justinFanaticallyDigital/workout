@@ -51,7 +51,7 @@ export default function StatusIcon({ type, status, dayType, size = "sm" }: Statu
 
   return (
     <span
-      className={`inline-flex items-center justify-center font-mono ${sizeClass} ${color}`}
+      className={`inline-flex items-center justify-center font-body ${sizeClass} ${color}`}
       role="img"
       aria-label={label || `${type} ${status ?? dayType ?? ""}`}
     >

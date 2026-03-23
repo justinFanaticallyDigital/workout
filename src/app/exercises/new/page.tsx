@@ -49,10 +49,10 @@ const EQUIPMENT_OPTIONS = [
 ];
 
 const inputClasses =
-  "w-full bg-ft-bg border border-ft-card text-ft-white font-mono text-sm px-4 py-2.5 rounded-lg focus:outline-none focus:border-ft-dim transition-colors placeholder:text-ft-muted";
+  "w-full bg-ft-bg border border-ft-card text-ft-white font-body text-sm px-4 py-2.5 rounded-lg focus:outline-none focus:border-ft-dim transition-colors placeholder:text-ft-muted";
 
 const labelClasses =
-  "block text-ft-dim text-[10px] uppercase tracking-widest font-mono mb-1.5";
+  "block text-ft-dim text-[10px] uppercase tracking-widest font-body mb-1.5";
 
 export default function NewExercisePage() {
   const router = useRouter();
@@ -101,12 +101,12 @@ export default function NewExercisePage() {
       {/* Breadcrumb */}
       <Link
         href="/exercises"
-        className="text-ft-dim font-mono text-xs uppercase tracking-wider hover:text-ft-light transition-colors"
+        className="text-ft-dim font-body text-xs uppercase tracking-wider hover:text-ft-light transition-colors"
       >
         ← Exercises
       </Link>
 
-      <h1 className="text-ft-white font-mono font-bold text-2xl uppercase tracking-wider mt-4 mb-6">
+      <h1 className="text-ft-white font-body font-bold text-2xl uppercase tracking-wider mt-4 mb-6">
         New Exercise
       </h1>
 
@@ -114,13 +114,13 @@ export default function NewExercisePage() {
         {/* Name Preview */}
         {generatedName && (
           <Card>
-            <p className="text-ft-dim font-mono text-[10px] uppercase tracking-widest mb-1">
+            <p className="text-ft-dim font-body text-[10px] uppercase tracking-widest mb-1">
               Preview
             </p>
-            <p className="text-ft-white font-mono font-bold text-lg">
+            <p className="text-ft-white font-body font-bold text-lg">
               {generatedName}
             </p>
-            <p className="text-ft-muted font-mono text-[10px] mt-1">
+            <p className="text-ft-muted font-body text-[10px] mt-1">
               Convention: Movement - Modification Equipment
             </p>
           </Card>
@@ -228,13 +228,13 @@ export default function NewExercisePage() {
           <button
             type="submit"
             disabled={saving || !name.trim()}
-            className="bg-ft-white text-ft-bg font-mono text-sm font-bold px-6 py-2.5 rounded-lg hover:bg-ft-light transition-colors disabled:opacity-50"
+            className="bg-ft-white text-ft-bg font-body text-sm font-bold px-6 py-2.5 rounded-lg hover:bg-ft-light transition-colors disabled:opacity-50"
           >
             {saving ? "Creating..." : "Create Exercise"}
           </button>
           <Link
             href="/exercises"
-            className="text-ft-dim font-mono text-sm hover:text-ft-light transition-colors"
+            className="text-ft-dim font-body text-sm hover:text-ft-light transition-colors"
           >
             Cancel
           </Link>

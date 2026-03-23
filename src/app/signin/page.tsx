@@ -20,7 +20,7 @@ function SignInContent() {
   return (
     <div className="min-h-[80vh] flex items-center justify-center">
       <div className="bg-ft-card border border-ft-border rounded-lg p-8 max-w-sm w-full text-center">
-        <h1 className="font-mono text-2xl tracking-wider mb-2">
+        <h1 className="font-body text-2xl tracking-wider mb-2">
           <span className="text-ft-white font-bold">FIT</span>
           <span className="text-ft-dim font-bold">TRACK</span>
         </h1>
@@ -30,7 +30,7 @@ function SignInContent() {
 
         {error && (
           <div className="bg-ft-surface border border-ft-danger/40 rounded-md px-4 py-3 mb-6">
-            <p className="text-ft-danger text-sm font-mono">
+            <p className="text-ft-danger text-sm font-body">
               {ERROR_MESSAGES[error] || ERROR_MESSAGES.Default}
             </p>
           </div>
@@ -38,7 +38,7 @@ function SignInContent() {
 
         <button
           onClick={() => signIn("google", { callbackUrl: "/" })}
-          className="w-full flex items-center justify-center gap-3 bg-ft-bg border border-ft-border rounded-md px-4 py-3 text-sm font-mono text-ft-white hover:border-ft-light transition-colors"
+          className="w-full flex items-center justify-center gap-3 bg-ft-bg border border-ft-border rounded-md px-4 py-3 text-sm font-body text-ft-white hover:border-ft-light transition-colors"
         >
           <svg className="w-5 h-5" viewBox="0 0 24 24">
             <path
@@ -71,7 +71,7 @@ export default function SignInPage() {
       fallback={
         <div className="min-h-[80vh] flex items-center justify-center">
           <div className="bg-ft-card border border-ft-border rounded-lg p-8 max-w-sm w-full text-center">
-            <p className="text-ft-dim text-sm font-mono">Loading...</p>
+            <p className="text-ft-dim text-sm font-body">Loading...</p>
           </div>
         </div>
       }

@@ -83,7 +83,7 @@ export default function Timeline({ segments, currentPosition, milestones, classN
           const pct = ((seg.width || 1) / totalWidth) * 100;
           return (
             <div key={i} style={{ width: `${pct}%` }} className="min-w-0">
-              <span className={`text-[10px] font-mono truncate block ${STATUS_TEXT[seg.status] ?? "text-ft-muted"}`}>
+              <span className={`text-[10px] font-body truncate block ${STATUS_TEXT[seg.status] ?? "text-ft-muted"}`}>
                 {seg.label}
               </span>
             </div>
@@ -96,7 +96,7 @@ export default function Timeline({ segments, currentPosition, milestones, classN
           {milestones.map((ms, i) => (
             <span
               key={`ms-label-${i}`}
-              className={`absolute text-[9px] font-mono whitespace-nowrap ${
+              className={`absolute text-[9px] font-body whitespace-nowrap ${
                 ms.achieved ? "text-ft-success" : "text-ft-muted"
               }`}
               style={{ left: `${Math.min(ms.position, 100)}%`, transform: "translateX(-50%)" }}

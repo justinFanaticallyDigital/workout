@@ -14,7 +14,7 @@ export default function Tag({ children, variant = "default", className = "" }: T
 
   return (
     <span
-      className={`inline-flex items-center px-2 py-0.5 text-[11px] font-mono rounded ${variants[variant]} ${className}`}
+      className={`inline-flex items-center px-2 py-0.5 text-[11px] font-body rounded ${variants[variant]} ${className}`}
     >
       {children}
     </span>

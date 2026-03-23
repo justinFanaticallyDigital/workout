@@ -83,7 +83,7 @@ export default function RecoveryCard() {
       <SectionHeader
         title="Recovery"
         action={
-          <span className="inline-flex items-center gap-1 text-[#00B0B9] text-[10px] font-mono">
+          <span className="inline-flex items-center gap-1 text-[#00B0B9] text-[10px] font-body">
             <FitbitIcon size={10} color="#00B0B9" /> Fitbit
           </span>
         }
@@ -92,15 +92,15 @@ export default function RecoveryCard() {
         {/* Sleep */}
         {sleepEntry?.sleepMinutes && (
           <div className="flex flex-col">
-            <span className="text-ft-muted text-[10px] font-mono uppercase tracking-wider">Sleep</span>
-            <span className="text-ft-white font-mono font-bold text-lg">
+            <span className="text-ft-muted text-[10px] font-body uppercase tracking-wider">Sleep</span>
+            <span className="text-ft-white font-body font-bold text-lg">
               {formatSleep(sleepEntry.sleepMinutes)}
             </span>
-            <span className={`text-[10px] font-mono ${getSleepQuality(sleepEntry.sleepMinutes).color}`}>
+            <span className={`text-[10px] font-body ${getSleepQuality(sleepEntry.sleepMinutes).color}`}>
               {getSleepQuality(sleepEntry.sleepMinutes).label}
             </span>
             {sleepEntry.sleepDeep != null && (
-              <span className="text-ft-muted text-[10px] font-mono mt-0.5">
+              <span className="text-ft-muted text-[10px] font-body mt-0.5">
                 Deep: {sleepEntry.sleepDeep}m · REM: {sleepEntry.sleepRem ?? 0}m
               </span>
             )}
@@ -110,12 +110,12 @@ export default function RecoveryCard() {
         {/* Resting HR */}
         {latest.restingHr && (
           <div className="flex flex-col">
-            <span className="text-ft-muted text-[10px] font-mono uppercase tracking-wider">Resting HR</span>
-            <span className="text-ft-white font-mono font-bold text-lg">
+            <span className="text-ft-muted text-[10px] font-body uppercase tracking-wider">Resting HR</span>
+            <span className="text-ft-white font-body font-bold text-lg">
               {latest.restingHr} <span className="text-ft-dim text-xs">bpm</span>
             </span>
             {hrTrend && (
-              <span className={`text-[10px] font-mono ${hrTrend.color}`}>
+              <span className={`text-[10px] font-body ${hrTrend.color}`}>
                 {hrTrend.label} ({hrTrend.delta > 0 ? "+" : ""}{hrTrend.delta})
               </span>
             )}
@@ -125,12 +125,12 @@ export default function RecoveryCard() {
         {/* Steps */}
         {latest.steps != null && latest.steps > 0 && (
           <div className="flex flex-col">
-            <span className="text-ft-muted text-[10px] font-mono uppercase tracking-wider">Steps</span>
-            <span className="text-ft-white font-mono font-bold text-lg">
+            <span className="text-ft-muted text-[10px] font-body uppercase tracking-wider">Steps</span>
+            <span className="text-ft-white font-body font-bold text-lg">
               {latest.steps.toLocaleString()}
             </span>
             {latest.activeMinutes != null && (
-              <span className="text-ft-dim text-[10px] font-mono">
+              <span className="text-ft-dim text-[10px] font-body">
                 {latest.activeMinutes} active min
               </span>
             )}
@@ -140,11 +140,11 @@ export default function RecoveryCard() {
         {/* Calories */}
         {latest.caloriesBurned != null && latest.caloriesBurned > 0 && (
           <div className="flex flex-col">
-            <span className="text-ft-muted text-[10px] font-mono uppercase tracking-wider">Burned</span>
-            <span className="text-ft-white font-mono font-bold text-lg">
+            <span className="text-ft-muted text-[10px] font-body uppercase tracking-wider">Burned</span>
+            <span className="text-ft-white font-body font-bold text-lg">
               {latest.caloriesBurned.toLocaleString()}
             </span>
-            <span className="text-ft-dim text-[10px] font-mono">kcal</span>
+            <span className="text-ft-dim text-[10px] font-body">kcal</span>
           </div>
         )}
       </div>
@@ -152,14 +152,14 @@ export default function RecoveryCard() {
       {/* Sleep quality context for workout */}
       {sleepEntry?.sleepMinutes && sleepEntry.sleepMinutes < 360 && (
         <div className="mt-3 pt-3 border-t border-ft-border">
-          <p className="text-ft-warn text-xs font-mono">
+          <p className="text-ft-warn text-xs font-body">
             Low sleep last night — consider a lighter session or active recovery.
           </p>
         </div>
       )}
       {hrTrend && hrTrend.delta > 5 && (
         <div className="mt-3 pt-3 border-t border-ft-border">
-          <p className="text-ft-danger text-xs font-mono">
+          <p className="text-ft-danger text-xs font-body">
             Resting HR elevated +{hrTrend.delta} bpm above baseline — signs of accumulated fatigue.
           </p>
         </div>

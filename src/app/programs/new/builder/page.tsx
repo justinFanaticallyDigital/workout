@@ -553,18 +553,18 @@ export default function ProgramBuilderPage() {
         <div className="flex items-center gap-4">
           <Link
             href="/programs/new"
-            className="text-ft-dim text-sm font-mono hover:text-ft-light transition-colors"
+            className="text-ft-dim text-sm font-body hover:text-ft-light transition-colors"
           >
             &larr; Back
           </Link>
-          <h1 className="font-mono text-lg font-bold tracking-tight">
+          <h1 className="font-body text-lg font-bold tracking-tight">
             Program Builder
           </h1>
         </div>
         <button
           onClick={handleCreate}
           disabled={saving || !programName.trim() || blocks.length === 0}
-          className="bg-ft-white text-ft-bg font-mono text-sm font-bold px-5 py-2 rounded hover:bg-ft-light transition-colors disabled:opacity-50"
+          className="bg-ft-white text-ft-bg font-body text-sm font-bold px-5 py-2 rounded hover:bg-ft-light transition-colors disabled:opacity-50"
         >
           {saving ? "Creating..." : "Create Program"}
         </button>
@@ -575,7 +575,7 @@ export default function ProgramBuilderPage() {
         <div className="lg:w-80 lg:min-w-[320px] border-r border-ft-border p-5 space-y-6 lg:max-h-[calc(100vh-57px)] lg:overflow-y-auto">
           {/* Program Config */}
           <div className="space-y-3">
-            <label className="block text-ft-dim text-[10px] font-mono uppercase tracking-wider">
+            <label className="block text-ft-dim text-[10px] font-body uppercase tracking-wider">
               Program Name *
             </label>
             <input
@@ -584,35 +584,35 @@ export default function ProgramBuilderPage() {
               onChange={(e) => setProgramName(e.target.value)}
               placeholder="e.g. 16-Week Prep"
               autoFocus
-              className="w-full bg-ft-bg border border-ft-card rounded px-3 py-2 text-sm font-mono text-ft-white placeholder:text-ft-muted focus:outline-none focus:border-ft-dim transition-colors"
+              className="w-full bg-ft-bg border border-ft-card rounded px-3 py-2 text-sm font-body text-ft-white placeholder:text-ft-muted focus:outline-none focus:border-ft-dim transition-colors"
             />
             <input
               type="text"
               value={programDesc}
               onChange={(e) => setProgramDesc(e.target.value)}
               placeholder="Description (optional)"
-              className="w-full bg-ft-bg border border-ft-card rounded px-3 py-2 text-sm font-mono text-ft-white placeholder:text-ft-muted focus:outline-none focus:border-ft-dim transition-colors"
+              className="w-full bg-ft-bg border border-ft-card rounded px-3 py-2 text-sm font-body text-ft-white placeholder:text-ft-muted focus:outline-none focus:border-ft-dim transition-colors"
             />
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="block text-ft-dim text-[10px] font-mono uppercase tracking-wider mb-1">
+                <label className="block text-ft-dim text-[10px] font-body uppercase tracking-wider mb-1">
                   Start Date
                 </label>
                 <input
                   type="date"
                   value={startDate}
                   onChange={(e) => setStartDate(e.target.value)}
-                  className="w-full bg-ft-bg border border-ft-card rounded px-2 py-1.5 text-xs font-mono text-ft-white focus:outline-none focus:border-ft-dim transition-colors"
+                  className="w-full bg-ft-bg border border-ft-card rounded px-2 py-1.5 text-xs font-body text-ft-white focus:outline-none focus:border-ft-dim transition-colors"
                 />
               </div>
               <div>
-                <label className="block text-ft-dim text-[10px] font-mono uppercase tracking-wider mb-1">
+                <label className="block text-ft-dim text-[10px] font-body uppercase tracking-wider mb-1">
                   Days/Week
                 </label>
                 <select
                   value={daysPerWeek}
                   onChange={(e) => setDaysPerWeek(parseInt(e.target.value))}
-                  className="w-full bg-ft-bg border border-ft-card rounded px-2 py-1.5 text-xs font-mono text-ft-white focus:outline-none focus:border-ft-dim transition-colors"
+                  className="w-full bg-ft-bg border border-ft-card rounded px-2 py-1.5 text-xs font-body text-ft-white focus:outline-none focus:border-ft-dim transition-colors"
                 >
                   {[2, 3, 4, 5, 6, 7].map((n) => (
                     <option key={n} value={n}>
@@ -627,12 +627,12 @@ export default function ProgramBuilderPage() {
           {/* Goals */}
           <div>
             <div className="flex items-center justify-between mb-2">
-              <span className="text-ft-dim text-[10px] font-mono uppercase tracking-wider">
+              <span className="text-ft-dim text-[10px] font-body uppercase tracking-wider">
                 Goals
               </span>
               <button
                 onClick={() => setShowGoalForm(!showGoalForm)}
-                className="text-ft-dim text-xs font-mono hover:text-ft-light transition-colors"
+                className="text-ft-dim text-xs font-body hover:text-ft-light transition-colors"
               >
                 + Add
               </button>
@@ -645,7 +645,7 @@ export default function ProgramBuilderPage() {
               >
                 <div className="min-w-0">
                   <div className="flex items-center gap-1.5">
-                    <span className="text-ft-light text-xs font-mono font-bold truncate">
+                    <span className="text-ft-light text-xs font-body font-bold truncate">
                       {goal.title}
                     </span>
                     <Tag className={goal.priority === "primary" ? "bg-ft-white text-ft-bg" : ""}>
@@ -653,7 +653,7 @@ export default function ProgramBuilderPage() {
                     </Tag>
                   </div>
                   {goal.startValue && goal.targetValue && (
-                    <p className="text-ft-muted text-[10px] font-mono mt-0.5">
+                    <p className="text-ft-muted text-[10px] font-body mt-0.5">
                       {goal.startValue} → {goal.targetValue} {goal.targetUnit}
                     </p>
                   )}
@@ -680,7 +680,7 @@ export default function ProgramBuilderPage() {
                         prev.targetUnit,
                     }))
                   }
-                  className="w-full bg-ft-surface border border-ft-card rounded px-2 py-1.5 text-xs font-mono text-ft-white focus:outline-none"
+                  className="w-full bg-ft-surface border border-ft-card rounded px-2 py-1.5 text-xs font-body text-ft-white focus:outline-none"
                 >
                   {GOAL_TYPES.map((gt) => (
                     <option key={gt.value} value={gt.value}>
@@ -695,7 +695,7 @@ export default function ProgramBuilderPage() {
                     setEditingGoal((prev) => ({ ...prev, title: e.target.value }))
                   }
                   placeholder="Goal title"
-                  className="w-full bg-ft-surface border border-ft-card rounded px-2 py-1.5 text-xs font-mono text-ft-white placeholder:text-ft-muted focus:outline-none"
+                  className="w-full bg-ft-surface border border-ft-card rounded px-2 py-1.5 text-xs font-body text-ft-white placeholder:text-ft-muted focus:outline-none"
                 />
                 <div className="grid grid-cols-3 gap-2">
                   <input
@@ -708,7 +708,7 @@ export default function ProgramBuilderPage() {
                       }))
                     }
                     placeholder="Start"
-                    className="w-full bg-ft-surface border border-ft-card rounded px-2 py-1.5 text-xs font-mono text-ft-white placeholder:text-ft-muted focus:outline-none"
+                    className="w-full bg-ft-surface border border-ft-card rounded px-2 py-1.5 text-xs font-body text-ft-white placeholder:text-ft-muted focus:outline-none"
                   />
                   <input
                     type="number"
@@ -720,7 +720,7 @@ export default function ProgramBuilderPage() {
                       }))
                     }
                     placeholder="Target"
-                    className="w-full bg-ft-surface border border-ft-card rounded px-2 py-1.5 text-xs font-mono text-ft-white placeholder:text-ft-muted focus:outline-none"
+                    className="w-full bg-ft-surface border border-ft-card rounded px-2 py-1.5 text-xs font-body text-ft-white placeholder:text-ft-muted focus:outline-none"
                   />
                   <input
                     type="text"
@@ -732,7 +732,7 @@ export default function ProgramBuilderPage() {
                       }))
                     }
                     placeholder="Unit"
-                    className="w-full bg-ft-surface border border-ft-card rounded px-2 py-1.5 text-xs font-mono text-ft-white placeholder:text-ft-muted focus:outline-none"
+                    className="w-full bg-ft-surface border border-ft-card rounded px-2 py-1.5 text-xs font-body text-ft-white placeholder:text-ft-muted focus:outline-none"
                   />
                 </div>
                 <div className="grid grid-cols-2 gap-2">
@@ -744,7 +744,7 @@ export default function ProgramBuilderPage() {
                         priority: e.target.value as "primary" | "secondary",
                       }))
                     }
-                    className="w-full bg-ft-surface border border-ft-card rounded px-2 py-1.5 text-xs font-mono text-ft-white focus:outline-none"
+                    className="w-full bg-ft-surface border border-ft-card rounded px-2 py-1.5 text-xs font-body text-ft-white focus:outline-none"
                   >
                     <option value="primary">Primary</option>
                     <option value="secondary">Secondary</option>
@@ -758,20 +758,20 @@ export default function ProgramBuilderPage() {
                         targetDate: e.target.value,
                       }))
                     }
-                    className="w-full bg-ft-surface border border-ft-card rounded px-2 py-1.5 text-xs font-mono text-ft-white focus:outline-none"
+                    className="w-full bg-ft-surface border border-ft-card rounded px-2 py-1.5 text-xs font-body text-ft-white focus:outline-none"
                   />
                 </div>
                 <div className="flex justify-end gap-2 pt-1">
                   <button
                     onClick={() => setShowGoalForm(false)}
-                    className="text-ft-dim text-xs font-mono hover:text-ft-light"
+                    className="text-ft-dim text-xs font-body hover:text-ft-light"
                   >
                     Cancel
                   </button>
                   <button
                     onClick={addGoal}
                     disabled={!editingGoal.title.trim()}
-                    className="bg-ft-white text-ft-bg font-mono text-xs font-bold px-3 py-1 rounded disabled:opacity-50"
+                    className="bg-ft-white text-ft-bg font-body text-xs font-bold px-3 py-1 rounded disabled:opacity-50"
                   >
                     Add Goal
                   </button>
@@ -782,7 +782,7 @@ export default function ProgramBuilderPage() {
             {/* Rate indicator */}
             {rateInfo && (
               <div
-                className={`mt-2 p-2 rounded border text-xs font-mono ${
+                className={`mt-2 p-2 rounded border text-xs font-body ${
                   rateInfo.aggressive
                     ? "border-ft-warn/30 bg-ft-warn/10 text-ft-warn"
                     : "border-ft-border bg-ft-bg text-ft-dim"
@@ -797,7 +797,7 @@ export default function ProgramBuilderPage() {
           {/* Block List */}
           <div>
             <div className="flex items-center justify-between mb-2">
-              <span className="text-ft-dim text-[10px] font-mono uppercase tracking-wider">
+              <span className="text-ft-dim text-[10px] font-body uppercase tracking-wider">
                 Blocks ({blocks.length})
                 {totalWeeks > 0 && (
                   <span className="text-ft-muted ml-1">· {totalWeeks}wk</span>
@@ -805,7 +805,7 @@ export default function ProgramBuilderPage() {
               </span>
               <button
                 onClick={addBlock}
-                className="text-ft-dim text-xs font-mono hover:text-ft-light transition-colors"
+                className="text-ft-dim text-xs font-body hover:text-ft-light transition-colors"
               >
                 + Add
               </button>
@@ -823,24 +823,24 @@ export default function ProgramBuilderPage() {
                   } ${block.phase ? `border-l-2 ${PHASE_COLORS[block.phase] ?? ""}` : ""}`}
                 >
                   <div className="flex items-center justify-between">
-                    <span className="text-xs font-mono font-bold text-ft-light truncate">
+                    <span className="text-xs font-body font-bold text-ft-light truncate">
                       {block.name}
                     </span>
-                    <span className="text-[10px] font-mono text-ft-muted shrink-0 ml-2">
+                    <span className="text-[10px] font-body text-ft-muted shrink-0 ml-2">
                       {block.durationWeeks}wk
                     </span>
                   </div>
                   <div className="flex items-center gap-1.5 mt-0.5">
                     {block.phase && (
                       <span
-                        className={`text-[10px] font-mono ${
+                        className={`text-[10px] font-body ${
                           BLOCK_PHASES.find((p) => p.value === block.phase)?.color ?? "text-ft-dim"
                         }`}
                       >
                         {BLOCK_PHASES.find((p) => p.value === block.phase)?.label}
                       </span>
                     )}
-                    <span className="text-[10px] font-mono text-ft-muted">
+                    <span className="text-[10px] font-body text-ft-muted">
                       {block.days.length}d/wk
                     </span>
                   </div>
@@ -853,7 +853,7 @@ export default function ProgramBuilderPage() {
                 onClick={addBlock}
                 className="w-full p-4 border border-dashed border-ft-border rounded text-center hover:border-ft-dim transition-colors"
               >
-                <span className="text-ft-dim text-xs font-mono">
+                <span className="text-ft-dim text-xs font-body">
                   + Add first block
                 </span>
               </button>
@@ -874,10 +874,10 @@ export default function ProgramBuilderPage() {
           {primaryGoal && primaryGoal.startValue && primaryGoal.targetValue && blocks.length > 0 && (
             <Card className="mb-6">
               <div className="flex items-center justify-between mb-3">
-                <span className="text-ft-dim text-[10px] font-mono uppercase tracking-wider">
+                <span className="text-ft-dim text-[10px] font-body uppercase tracking-wider">
                   Goal Trajectory
                 </span>
-                <span className="text-ft-muted text-[10px] font-mono">
+                <span className="text-ft-muted text-[10px] font-body">
                   {primaryGoal.title}
                 </span>
               </div>
@@ -950,10 +950,10 @@ export default function ProgramBuilderPage() {
                   );
                 })()}
                 {/* Labels */}
-                <div className="absolute top-0 left-1 text-[10px] font-mono text-ft-dim">
+                <div className="absolute top-0 left-1 text-[10px] font-body text-ft-dim">
                   {primaryGoal.startValue} {primaryGoal.targetUnit}
                 </div>
-                <div className="absolute bottom-0 right-1 text-[10px] font-mono text-ft-light">
+                <div className="absolute bottom-0 right-1 text-[10px] font-body text-ft-light">
                   {primaryGoal.targetValue} {primaryGoal.targetUnit}
                 </div>
               </div>
@@ -968,7 +968,7 @@ export default function ProgramBuilderPage() {
                     }}
                   >
                     <span
-                      className={`text-[9px] font-mono ${
+                      className={`text-[9px] font-body ${
                         BLOCK_PHASES.find((p) => p.value === block.phase)?.color ?? "text-ft-muted"
                       }`}
                     >
@@ -987,7 +987,7 @@ export default function ProgramBuilderPage() {
             <div>
               <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center gap-3">
-                  <h2 className="font-mono text-lg font-bold">
+                  <h2 className="font-body text-lg font-bold">
                     {activeBlock.name}
                   </h2>
                   {activeBlock.phase && (
@@ -1000,7 +1000,7 @@ export default function ProgramBuilderPage() {
                   <button
                     onClick={() => moveBlock(activeBlock.id, -1)}
                     disabled={activeBlock.blockNumber === 1}
-                    className="text-ft-dim text-xs font-mono hover:text-ft-light disabled:opacity-30 px-1.5 py-0.5"
+                    className="text-ft-dim text-xs font-body hover:text-ft-light disabled:opacity-30 px-1.5 py-0.5"
                     title="Move earlier"
                   >
                     ◀
@@ -1008,14 +1008,14 @@ export default function ProgramBuilderPage() {
                   <button
                     onClick={() => moveBlock(activeBlock.id, 1)}
                     disabled={activeBlock.blockNumber === blocks.length}
-                    className="text-ft-dim text-xs font-mono hover:text-ft-light disabled:opacity-30 px-1.5 py-0.5"
+                    className="text-ft-dim text-xs font-body hover:text-ft-light disabled:opacity-30 px-1.5 py-0.5"
                     title="Move later"
                   >
                     ▶
                   </button>
                   <button
                     onClick={() => removeBlock(activeBlock.id)}
-                    className="text-ft-danger text-xs font-mono hover:text-ft-danger/70 ml-2 px-1.5 py-0.5"
+                    className="text-ft-danger text-xs font-body hover:text-ft-danger/70 ml-2 px-1.5 py-0.5"
                   >
                     Delete
                   </button>
@@ -1026,7 +1026,7 @@ export default function ProgramBuilderPage() {
               <Card className="mb-4">
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                   <div>
-                    <label className="block text-ft-dim text-[10px] font-mono uppercase tracking-wider mb-1">
+                    <label className="block text-ft-dim text-[10px] font-body uppercase tracking-wider mb-1">
                       Name
                     </label>
                     <input
@@ -1035,11 +1035,11 @@ export default function ProgramBuilderPage() {
                       onChange={(e) =>
                         updateBlock(activeBlock.id, { name: e.target.value })
                       }
-                      className="w-full bg-ft-bg border border-ft-card rounded px-2 py-1.5 text-xs font-mono text-ft-white focus:outline-none focus:border-ft-dim transition-colors"
+                      className="w-full bg-ft-bg border border-ft-card rounded px-2 py-1.5 text-xs font-body text-ft-white focus:outline-none focus:border-ft-dim transition-colors"
                     />
                   </div>
                   <div>
-                    <label className="flex items-center gap-1 text-ft-dim text-[10px] font-mono uppercase tracking-wider mb-1">
+                    <label className="flex items-center gap-1 text-ft-dim text-[10px] font-body uppercase tracking-wider mb-1">
                       Phase
                       <Tooltip content="Volume: high reps, moderate weight. Strength: heavy weight, low reps. Peak: max intensity. Deload: reduced load for recovery. Cut/Bulk/Maintain: body composition focus. Taper: pre-competition reduction.">
                         <span className="text-ft-muted cursor-help">(?)</span>
@@ -1052,7 +1052,7 @@ export default function ProgramBuilderPage() {
                           phase: e.target.value || null,
                         })
                       }
-                      className="w-full bg-ft-bg border border-ft-card rounded px-2 py-1.5 text-xs font-mono text-ft-white focus:outline-none focus:border-ft-dim transition-colors"
+                      className="w-full bg-ft-bg border border-ft-card rounded px-2 py-1.5 text-xs font-body text-ft-white focus:outline-none focus:border-ft-dim transition-colors"
                     >
                       <option value="">None</option>
                       {BLOCK_PHASES.map((p) => (
@@ -1063,7 +1063,7 @@ export default function ProgramBuilderPage() {
                     </select>
                   </div>
                   <div>
-                    <label className="block text-ft-dim text-[10px] font-mono uppercase tracking-wider mb-1">
+                    <label className="block text-ft-dim text-[10px] font-body uppercase tracking-wider mb-1">
                       Weeks
                     </label>
                     <input
@@ -1079,11 +1079,11 @@ export default function ProgramBuilderPage() {
                           ),
                         })
                       }
-                      className="w-full bg-ft-bg border border-ft-card rounded px-2 py-1.5 text-xs font-mono text-ft-white focus:outline-none focus:border-ft-dim transition-colors"
+                      className="w-full bg-ft-bg border border-ft-card rounded px-2 py-1.5 text-xs font-body text-ft-white focus:outline-none focus:border-ft-dim transition-colors"
                     />
                   </div>
                   <div>
-                    <label className="block text-ft-dim text-[10px] font-mono uppercase tracking-wider mb-1">
+                    <label className="block text-ft-dim text-[10px] font-body uppercase tracking-wider mb-1">
                       Days/Week
                     </label>
                     <select
@@ -1093,7 +1093,7 @@ export default function ProgramBuilderPage() {
                           scheduleDaysPerWeek: parseInt(e.target.value),
                         })
                       }
-                      className="w-full bg-ft-bg border border-ft-card rounded px-2 py-1.5 text-xs font-mono text-ft-white focus:outline-none focus:border-ft-dim transition-colors"
+                      className="w-full bg-ft-bg border border-ft-card rounded px-2 py-1.5 text-xs font-body text-ft-white focus:outline-none focus:border-ft-dim transition-colors"
                     >
                       {[2, 3, 4, 5, 6, 7].map((n) => (
                         <option key={n} value={n}>
@@ -1104,7 +1104,7 @@ export default function ProgramBuilderPage() {
                   </div>
                 </div>
                 <div className="mt-3">
-                  <label className="block text-ft-dim text-[10px] font-mono uppercase tracking-wider mb-1">
+                  <label className="block text-ft-dim text-[10px] font-body uppercase tracking-wider mb-1">
                     Focus / Notes
                   </label>
                   <input
@@ -1114,14 +1114,14 @@ export default function ProgramBuilderPage() {
                       updateBlock(activeBlock.id, { focus: e.target.value })
                     }
                     placeholder="e.g. Hypertrophy, higher volume"
-                    className="w-full bg-ft-bg border border-ft-card rounded px-2 py-1.5 text-xs font-mono text-ft-white placeholder:text-ft-muted focus:outline-none focus:border-ft-dim transition-colors"
+                    className="w-full bg-ft-bg border border-ft-card rounded px-2 py-1.5 text-xs font-body text-ft-white placeholder:text-ft-muted focus:outline-none focus:border-ft-dim transition-colors"
                   />
                 </div>
 
                 {/* Block Schedule (computed dates) */}
                 {startDate && (
                   <div className="mt-3 pt-3 border-t border-ft-border">
-                    <label className="text-ft-dim text-[10px] font-mono uppercase tracking-wider mb-1.5 block">
+                    <label className="text-ft-dim text-[10px] font-body uppercase tracking-wider mb-1.5 block">
                       Schedule
                     </label>
                     {(() => {
@@ -1139,13 +1139,13 @@ export default function ProgramBuilderPage() {
                       const totalSessions = (activeBlock.scheduleDaysPerWeek || 0) * (activeBlock.durationWeeks || 0);
                       return (
                         <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
-                          <span className="text-ft-light text-xs font-mono">
+                          <span className="text-ft-light text-xs font-body">
                             {fmt(blockStart)} — {fmt(blockEnd)}
                           </span>
-                          <span className="text-ft-muted text-[10px] font-mono">
+                          <span className="text-ft-muted text-[10px] font-body">
                             ~{totalSessions} sessions
                           </span>
-                          <span className="text-ft-muted text-[10px] font-mono">
+                          <span className="text-ft-muted text-[10px] font-body">
                             Wk {weeksBefore + 1}–{weeksBefore + (activeBlock.durationWeeks || 0)}
                           </span>
                         </div>
@@ -1158,7 +1158,7 @@ export default function ProgramBuilderPage() {
                 {primaryGoal && (
                   <div className="mt-3 pt-3 border-t border-ft-border">
                     <div className="flex items-center justify-between mb-1">
-                      <label className="text-ft-dim text-[10px] font-mono uppercase tracking-wider">
+                      <label className="text-ft-dim text-[10px] font-body uppercase tracking-wider">
                         Block Target
                       </label>
                       {!activeBlock.benchmark && (
@@ -1172,7 +1172,7 @@ export default function ProgramBuilderPage() {
                               },
                             })
                           }
-                          className="text-ft-dim text-[10px] font-mono hover:text-ft-light"
+                          className="text-ft-dim text-[10px] font-body hover:text-ft-light"
                         >
                           + Set
                         </button>
@@ -1192,9 +1192,9 @@ export default function ProgramBuilderPage() {
                             })
                           }
                           placeholder="Target"
-                          className="w-20 bg-ft-bg border border-ft-card rounded px-2 py-1 text-xs font-mono text-ft-white placeholder:text-ft-muted focus:outline-none focus:border-ft-dim"
+                          className="w-20 bg-ft-bg border border-ft-card rounded px-2 py-1 text-xs font-body text-ft-white placeholder:text-ft-muted focus:outline-none focus:border-ft-dim"
                         />
-                        <span className="text-ft-muted text-[10px] font-mono">
+                        <span className="text-ft-muted text-[10px] font-body">
                           {activeBlock.benchmark.targetUnit}
                         </span>
                         <button
@@ -1207,7 +1207,7 @@ export default function ProgramBuilderPage() {
                         </button>
                       </div>
                     ) : (
-                      <p className="text-ft-muted text-[10px] font-mono">
+                      <p className="text-ft-muted text-[10px] font-body">
                         Waypoint on the goal trajectory
                       </p>
                     )}
@@ -1217,7 +1217,7 @@ export default function ProgramBuilderPage() {
 
               {/* Day Grid */}
               <div className="mb-4">
-                <span className="text-ft-dim text-[10px] font-mono uppercase tracking-wider mb-2 block">
+                <span className="text-ft-dim text-[10px] font-body uppercase tracking-wider mb-2 block">
                   Training Days
                 </span>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -1246,7 +1246,7 @@ export default function ProgramBuilderPage() {
                                 name: e.target.value,
                               })
                             }
-                            className="flex-1 bg-transparent border-none text-xs font-mono font-bold text-ft-light focus:outline-none p-0"
+                            className="flex-1 bg-transparent border-none text-xs font-body font-bold text-ft-light focus:outline-none p-0"
                           />
                           <select
                             value={day.dayType}
@@ -1255,7 +1255,7 @@ export default function ProgramBuilderPage() {
                                 dayType: e.target.value,
                               })
                             }
-                            className="bg-ft-bg border border-ft-card rounded px-1.5 py-0.5 text-[10px] font-mono text-ft-dim focus:outline-none shrink-0"
+                            className="bg-ft-bg border border-ft-card rounded px-1.5 py-0.5 text-[10px] font-body text-ft-dim focus:outline-none shrink-0"
                           >
                             {DAY_TYPES.map((dt) => (
                               <option key={dt.value} value={dt.value}>
@@ -1273,7 +1273,7 @@ export default function ProgramBuilderPage() {
                                 key={ex.id}
                                 className="flex items-center justify-between py-0.5 group"
                               >
-                                <span className="text-ft-dim text-[10px] font-mono truncate">
+                                <span className="text-ft-dim text-[10px] font-body truncate">
                                   <span className="text-ft-muted mr-1.5">
                                     {ei + 1}.
                                   </span>
@@ -1302,7 +1302,7 @@ export default function ProgramBuilderPage() {
                             onClick={() =>
                               openExerciseBrowser(activeBlock.id, day.id)
                             }
-                            className="w-full text-center text-ft-muted text-[10px] font-mono py-1 border border-dashed border-ft-border rounded hover:border-ft-dim hover:text-ft-dim transition-colors"
+                            className="w-full text-center text-ft-muted text-[10px] font-body py-1 border border-dashed border-ft-border rounded hover:border-ft-dim hover:text-ft-dim transition-colors"
                           >
                             + exercise
                           </button>
@@ -1331,7 +1331,7 @@ export default function ProgramBuilderPage() {
                     setBlocks((prev) => [...prev, clone]);
                     setActiveBlockId(clone.id);
                   }}
-                  className="text-ft-dim text-xs font-mono hover:text-ft-light transition-colors border border-ft-border rounded px-3 py-1.5"
+                  className="text-ft-dim text-xs font-body hover:text-ft-light transition-colors border border-ft-border rounded px-3 py-1.5"
                 >
                   Duplicate Block
                 </button>
@@ -1356,7 +1356,7 @@ export default function ProgramBuilderPage() {
                     setBlocks((prev) => [...prev, deload]);
                     setActiveBlockId(deload.id);
                   }}
-                  className="text-ft-dim text-xs font-mono hover:text-ft-light transition-colors border border-ft-border rounded px-3 py-1.5"
+                  className="text-ft-dim text-xs font-body hover:text-ft-light transition-colors border border-ft-border rounded px-3 py-1.5"
                 >
                   + Deload After
                 </button>
@@ -1367,16 +1367,16 @@ export default function ProgramBuilderPage() {
               {blocks.length === 0 ? (
                 <>
                   <div className="text-4xl text-ft-muted mb-4">+</div>
-                  <p className="text-ft-light font-mono text-sm font-bold mb-1">
+                  <p className="text-ft-light font-body text-sm font-bold mb-1">
                     Start building your program
                   </p>
-                  <p className="text-ft-muted font-mono text-xs mb-6">
+                  <p className="text-ft-muted font-body text-xs mb-6">
                     Add blocks manually or use a quick-start structure
                   </p>
                   <div className="flex flex-wrap gap-3 justify-center mb-6">
                     <button
                       onClick={addBlock}
-                      className="bg-ft-white text-ft-bg font-mono text-xs font-bold px-4 py-2 rounded hover:bg-ft-light transition-colors"
+                      className="bg-ft-white text-ft-bg font-body text-xs font-bold px-4 py-2 rounded hover:bg-ft-light transition-colors"
                     >
                       + Blank Block
                     </button>
@@ -1404,7 +1404,7 @@ export default function ProgramBuilderPage() {
                         setBlocks(newBlocks);
                         setActiveBlockId(newBlocks[0].id);
                       }}
-                      className="border border-ft-border text-ft-dim font-mono text-xs px-4 py-2 rounded hover:border-ft-dim hover:text-ft-light transition-colors"
+                      className="border border-ft-border text-ft-dim font-body text-xs px-4 py-2 rounded hover:border-ft-dim hover:text-ft-light transition-colors"
                     >
                       Hypertrophy → Strength → Peak
                     </button>
@@ -1433,14 +1433,14 @@ export default function ProgramBuilderPage() {
                         setBlocks(newBlocks);
                         setActiveBlockId(newBlocks[0].id);
                       }}
-                      className="border border-ft-border text-ft-dim font-mono text-xs px-4 py-2 rounded hover:border-ft-dim hover:text-ft-light transition-colors"
+                      className="border border-ft-border text-ft-dim font-body text-xs px-4 py-2 rounded hover:border-ft-dim hover:text-ft-light transition-colors"
                     >
                       Cut → Maintain → Cut → Maintain
                     </button>
                   </div>
                 </>
               ) : (
-                <p className="text-ft-muted font-mono text-xs">
+                <p className="text-ft-muted font-body text-xs">
                   Select a block from the sidebar to edit
                 </p>
               )}

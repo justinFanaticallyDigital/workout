@@ -77,7 +77,7 @@ export default function ProgressPhotosPage() {
   if (loading) {
     return (
       <div className="min-h-screen bg-ft-bg flex items-center justify-center">
-        <p className="text-ft-dim font-mono text-sm">Loading...</p>
+        <p className="text-ft-dim font-body text-sm">Loading...</p>
       </div>
     );
   }
@@ -92,10 +92,10 @@ export default function ProgressPhotosPage() {
         <span>Progress</span>
       </Link>
       <div>
-        <h1 className="text-2xl font-mono font-bold text-ft-white tracking-wide">
+        <h1 className="text-2xl font-body font-bold text-ft-white tracking-wide">
           Progress Photos
         </h1>
-        <p className="text-ft-dim text-sm font-mono mt-1">
+        <p className="text-ft-dim text-sm font-body mt-1">
           Visual progress over time
         </p>
       </div>
@@ -104,10 +104,10 @@ export default function ProgressPhotosPage() {
       {compareMode && (compareLeft || compareRight) && (
         <Card className="mb-2">
           <div className="flex items-center justify-between mb-3">
-            <h3 className="font-mono text-sm font-bold text-ft-white">Side-by-Side Comparison</h3>
+            <h3 className="font-body text-sm font-bold text-ft-white">Side-by-Side Comparison</h3>
             <button
               onClick={() => { setCompareMode(false); setCompareLeft(null); setCompareRight(null); }}
-              className="text-ft-dim text-xs font-mono hover:text-ft-light"
+              className="text-ft-dim text-xs font-body hover:text-ft-light"
             >
               Close
             </button>
@@ -122,13 +122,13 @@ export default function ProgressPhotosPage() {
                       <img src={photo.url} alt={`${photo.poseType} - ${photo.date}`} className="w-full h-full object-cover" />
                     </div>
                     <div className="p-2 flex items-center justify-between">
-                      <span className="text-ft-dim text-[10px] font-mono">{photo.date}</span>
+                      <span className="text-ft-dim text-[10px] font-body">{photo.date}</span>
                       <Tag>{photo.poseType}</Tag>
                     </div>
                   </>
                 ) : (
                   <div className="aspect-[3/4] bg-ft-surface flex items-center justify-center">
-                    <span className="text-ft-muted text-xs font-mono">
+                    <span className="text-ft-muted text-xs font-body">
                       Select {i === 0 ? "first" : "second"} photo
                     </span>
                   </div>
@@ -137,7 +137,7 @@ export default function ProgressPhotosPage() {
             ))}
           </div>
           {compareLeft && compareRight && (
-            <p className="text-ft-dim text-[10px] font-mono text-center mt-2">
+            <p className="text-ft-dim text-[10px] font-body text-center mt-2">
               {Math.round((new Date(compareRight.date).getTime() - new Date(compareLeft.date).getTime()) / (1000 * 60 * 60 * 24))} days apart
             </p>
           )}
@@ -156,7 +156,7 @@ export default function ProgressPhotosPage() {
                     setCompareMode(!compareMode);
                     if (compareMode) { setCompareLeft(null); setCompareRight(null); }
                   }}
-                  className={`text-xs font-mono transition-colors border rounded px-3 py-1 ${
+                  className={`text-xs font-body transition-colors border rounded px-3 py-1 ${
                     compareMode
                       ? "text-ft-white border-ft-accent bg-ft-accent/20"
                       : "text-ft-dim border-ft-border hover:text-ft-light"
@@ -167,7 +167,7 @@ export default function ProgressPhotosPage() {
               )}
               <button
                 onClick={() => setShowForm(!showForm)}
-                className="text-ft-dim text-xs font-mono hover:text-ft-light transition-colors border border-ft-border rounded px-3 py-1"
+                className="text-ft-dim text-xs font-body hover:text-ft-light transition-colors border border-ft-border rounded px-3 py-1"
               >
                 + Add Photo
               </button>
@@ -180,7 +180,7 @@ export default function ProgressPhotosPage() {
           <form onSubmit={handleSubmit} className="mb-4 p-3 bg-ft-bg rounded border border-ft-card">
             <div className="grid grid-cols-2 gap-3 mb-3">
               <div>
-                <label className="block text-ft-dim text-xs font-mono uppercase tracking-wider mb-1">
+                <label className="block text-ft-dim text-xs font-body uppercase tracking-wider mb-1">
                   Image URL *
                 </label>
                 <input
@@ -189,28 +189,28 @@ export default function ProgressPhotosPage() {
                   onChange={(e) => setImageUrl(e.target.value)}
                   placeholder="https://..."
                   required
-                  className="w-full bg-ft-surface border border-ft-card rounded px-2 py-1.5 text-sm font-mono text-ft-white placeholder:text-ft-muted focus:outline-none focus:border-ft-dim transition-colors"
+                  className="w-full bg-ft-surface border border-ft-card rounded px-2 py-1.5 text-sm font-body text-ft-white placeholder:text-ft-muted focus:outline-none focus:border-ft-dim transition-colors"
                 />
               </div>
               <div>
-                <label className="block text-ft-dim text-xs font-mono uppercase tracking-wider mb-1">
+                <label className="block text-ft-dim text-xs font-body uppercase tracking-wider mb-1">
                   Date
                 </label>
                 <input
                   type="date"
                   value={date}
                   onChange={(e) => setDate(e.target.value)}
-                  className="w-full bg-ft-surface border border-ft-card rounded px-2 py-1.5 text-sm font-mono text-ft-white focus:outline-none focus:border-ft-dim transition-colors"
+                  className="w-full bg-ft-surface border border-ft-card rounded px-2 py-1.5 text-sm font-body text-ft-white focus:outline-none focus:border-ft-dim transition-colors"
                 />
               </div>
               <div>
-                <label className="block text-ft-dim text-xs font-mono uppercase tracking-wider mb-1">
+                <label className="block text-ft-dim text-xs font-body uppercase tracking-wider mb-1">
                   Pose Type
                 </label>
                 <select
                   value={poseType}
                   onChange={(e) => setPoseType(e.target.value)}
-                  className="w-full bg-ft-surface border border-ft-card rounded px-2 py-1.5 text-sm font-mono text-ft-white focus:outline-none focus:border-ft-dim transition-colors"
+                  className="w-full bg-ft-surface border border-ft-card rounded px-2 py-1.5 text-sm font-body text-ft-white focus:outline-none focus:border-ft-dim transition-colors"
                 >
                   {POSE_TYPES.map((p) => (
                     <option key={p} value={p}>{p.charAt(0).toUpperCase() + p.slice(1)}</option>
@@ -218,7 +218,7 @@ export default function ProgressPhotosPage() {
                 </select>
               </div>
               <div>
-                <label className="block text-ft-dim text-xs font-mono uppercase tracking-wider mb-1">
+                <label className="block text-ft-dim text-xs font-body uppercase tracking-wider mb-1">
                   Notes
                 </label>
                 <input
@@ -226,7 +226,7 @@ export default function ProgressPhotosPage() {
                   value={notes}
                   onChange={(e) => setNotes(e.target.value)}
                   placeholder="Optional"
-                  className="w-full bg-ft-surface border border-ft-card rounded px-2 py-1.5 text-sm font-mono text-ft-white placeholder:text-ft-muted focus:outline-none focus:border-ft-dim transition-colors"
+                  className="w-full bg-ft-surface border border-ft-card rounded px-2 py-1.5 text-sm font-body text-ft-white placeholder:text-ft-muted focus:outline-none focus:border-ft-dim transition-colors"
                 />
               </div>
             </div>
@@ -234,14 +234,14 @@ export default function ProgressPhotosPage() {
               <button
                 type="button"
                 onClick={() => setShowForm(false)}
-                className="px-3 py-1.5 text-ft-dim text-xs font-mono hover:text-ft-light"
+                className="px-3 py-1.5 text-ft-dim text-xs font-body hover:text-ft-light"
               >
                 Cancel
               </button>
               <button
                 type="submit"
                 disabled={saving || !imageUrl.trim()}
-                className="bg-ft-white text-ft-bg font-mono text-xs font-bold px-4 py-1.5 rounded hover:bg-ft-light transition-colors disabled:opacity-50"
+                className="bg-ft-white text-ft-bg font-body text-xs font-bold px-4 py-1.5 rounded hover:bg-ft-light transition-colors disabled:opacity-50"
               >
                 {saving ? "Saving..." : "Add Photo"}
               </button>
@@ -287,18 +287,18 @@ export default function ProgressPhotosPage() {
                       className="w-full h-full object-cover"
                     />
                     {isSelected && (
-                      <div className="absolute top-2 right-2 bg-ft-accent text-ft-bg w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-mono font-bold">
+                      <div className="absolute top-2 right-2 bg-ft-accent text-ft-bg w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-body font-bold">
                         {compareLeft?.id === photo.id ? "1" : "2"}
                       </div>
                     )}
                   </div>
                   <div className="p-2">
                     <div className="flex items-center justify-between">
-                      <span className="text-ft-dim text-[10px] font-mono">{photo.date}</span>
+                      <span className="text-ft-dim text-[10px] font-body">{photo.date}</span>
                       <Tag>{photo.poseType}</Tag>
                     </div>
                     {photo.notes && (
-                      <p className="text-ft-muted text-[10px] font-mono mt-1 truncate">
+                      <p className="text-ft-muted text-[10px] font-body mt-1 truncate">
                         {photo.notes}
                       </p>
                     )}

@@ -125,7 +125,7 @@ export default function ExerciseDetailPage({
   if (loading) {
     return (
       <div className="min-h-screen bg-ft-bg p-6 flex items-center justify-center">
-        <p className="text-ft-dim font-mono text-sm">Loading...</p>
+        <p className="text-ft-dim font-body text-sm">Loading...</p>
       </div>
     );
   }
@@ -135,11 +135,11 @@ export default function ExerciseDetailPage({
       <div className="min-h-screen bg-ft-bg p-6">
         <Link
           href="/exercises"
-          className="text-ft-dim font-mono text-xs uppercase tracking-wider hover:text-ft-light transition-colors"
+          className="text-ft-dim font-body text-xs uppercase tracking-wider hover:text-ft-light transition-colors"
         >
           &larr; Exercises
         </Link>
-        <p className="text-ft-light font-mono mt-8">Exercise not found.</p>
+        <p className="text-ft-light font-body mt-8">Exercise not found.</p>
       </div>
     );
   }
@@ -155,7 +155,7 @@ export default function ExerciseDetailPage({
       <div className="flex items-center justify-between">
         <Link
           href="/exercises"
-          className="text-ft-dim font-mono text-xs uppercase tracking-wider hover:text-ft-light transition-colors"
+          className="text-ft-dim font-body text-xs uppercase tracking-wider hover:text-ft-light transition-colors"
         >
           &larr; Exercises
         </Link>
@@ -163,45 +163,45 @@ export default function ExerciseDetailPage({
           {exercise.adjacent?.prev ? (
             <Link
               href={`/exercises/${exercise.adjacent.prev.id}`}
-              className="text-ft-dim font-mono text-xs hover:text-ft-light transition-colors"
+              className="text-ft-dim font-body text-xs hover:text-ft-light transition-colors"
               title={exercise.adjacent.prev.name}
             >
               &larr; Prev
             </Link>
           ) : (
-            <span className="text-ft-muted/40 font-mono text-xs">&larr; Prev</span>
+            <span className="text-ft-muted/40 font-body text-xs">&larr; Prev</span>
           )}
           <span className="text-ft-border text-xs">|</span>
           {exercise.adjacent?.next ? (
             <Link
               href={`/exercises/${exercise.adjacent.next.id}`}
-              className="text-ft-dim font-mono text-xs hover:text-ft-light transition-colors"
+              className="text-ft-dim font-body text-xs hover:text-ft-light transition-colors"
               title={exercise.adjacent.next.name}
             >
               Next &rarr;
             </Link>
           ) : (
-            <span className="text-ft-muted/40 font-mono text-xs">Next &rarr;</span>
+            <span className="text-ft-muted/40 font-body text-xs">Next &rarr;</span>
           )}
         </div>
       </div>
 
       {/* Exercise Header */}
       <div className="mt-4 mb-6">
-        <h1 className="text-ft-white font-mono font-bold text-2xl uppercase tracking-wider">
+        <h1 className="text-ft-white font-body font-bold text-2xl uppercase tracking-wider">
           {exercise.name}
         </h1>
         <div className="flex items-center gap-3 mt-2">
           {exercise.movementPattern && <Tag>{exercise.movementPattern}</Tag>}
           {exercise.primaryMuscle && (
-            <span className="text-ft-dim font-mono text-xs">
+            <span className="text-ft-dim font-body text-xs">
               {exercise.primaryMuscle}
             </span>
           )}
           {secondary && (
             <>
-              <span className="text-ft-muted font-mono text-xs">&middot;</span>
-              <span className="text-ft-muted font-mono text-xs">
+              <span className="text-ft-muted font-body text-xs">&middot;</span>
+              <span className="text-ft-muted font-body text-xs">
                 {secondary}
               </span>
             </>
@@ -245,7 +245,7 @@ export default function ExerciseDetailPage({
           </div>
           {progressionStatus === "stalled" && (
             <div className="mt-4 p-3 bg-ft-warn/10 border border-ft-warn/20 rounded">
-              <p className="text-ft-warn text-xs font-mono font-bold mb-2">
+              <p className="text-ft-warn text-xs font-body font-bold mb-2">
                 Stalled — weight unchanged for 3+ sessions
               </p>
               <div className="flex flex-wrap gap-2">
@@ -258,7 +258,7 @@ export default function ExerciseDetailPage({
                         : "Reduce weight by 10% for 1-2 weeks, focus on form, then rebuild."
                     );
                   }}
-                  className="px-2.5 py-1 text-[10px] font-mono font-bold bg-ft-warn/20 text-ft-warn rounded hover:bg-ft-warn/30 transition-colors"
+                  className="px-2.5 py-1 text-[10px] font-body font-bold bg-ft-warn/20 text-ft-warn rounded hover:bg-ft-warn/30 transition-colors"
                 >
                   Deload (-10%)
                 </button>
@@ -269,14 +269,14 @@ export default function ExerciseDetailPage({
                       "If doing 3×8-12, try 5×5 heavier. Varying rep ranges breaks plateaus."
                     );
                   }}
-                  className="px-2.5 py-1 text-[10px] font-mono font-bold bg-ft-warn/20 text-ft-warn rounded hover:bg-ft-warn/30 transition-colors"
+                  className="px-2.5 py-1 text-[10px] font-body font-bold bg-ft-warn/20 text-ft-warn rounded hover:bg-ft-warn/30 transition-colors"
                 >
                   Change Rep Scheme
                 </button>
                 {exercise.movementPattern && (
                   <Link
                     href={`/exercises?pattern=${encodeURIComponent(exercise.movementPattern)}`}
-                    className="px-2.5 py-1 text-[10px] font-mono font-bold bg-ft-warn/20 text-ft-warn rounded hover:bg-ft-warn/30 transition-colors"
+                    className="px-2.5 py-1 text-[10px] font-body font-bold bg-ft-warn/20 text-ft-warn rounded hover:bg-ft-warn/30 transition-colors"
                   >
                     Find Alternative
                   </Link>
@@ -288,7 +288,7 @@ export default function ExerciseDetailPage({
       </div>
 
       {/* Volume & Top Weight Chart */}
-      <div className="mb-8">
+      <div className="mb-8 section-divider pt-6">
         <SectionHeader title="Performance Over Time" />
         <Card>
           {volumeData.length > 0 ? (
@@ -344,7 +344,7 @@ export default function ExerciseDetailPage({
             </div>
           ) : (
             <div className="h-48 flex items-center justify-center">
-              <span className="text-ft-muted font-mono text-xs uppercase tracking-wider">
+              <span className="text-ft-muted font-body text-xs uppercase tracking-wider">
                 Log workouts to see performance trends
               </span>
             </div>
@@ -354,10 +354,10 @@ export default function ExerciseDetailPage({
 
       {/* Session-over-Session Comparison */}
       {volumeData.length >= 2 && (
-        <div className="mb-8">
+        <div className="mb-8 section-divider pt-6">
           <SectionHeader title="Session Comparison" />
           <Card>
-            <div className="grid grid-cols-[1fr_80px_80px_80px] gap-1.5 text-[10px] font-mono uppercase tracking-wider text-ft-muted mb-2">
+            <div className="grid grid-cols-[1fr_80px_80px_80px] gap-1.5 text-[10px] font-body uppercase tracking-wider text-ft-muted mb-2">
               <span>Date</span>
               <span className="text-right">Top Wt</span>
               <span className="text-right">Volume</span>
@@ -370,10 +370,10 @@ export default function ExerciseDetailPage({
                 const pct = prev && prev.volume > 0 ? Math.round((volChange / prev.volume) * 100) : 0;
                 return (
                   <div key={i} className="grid grid-cols-[1fr_80px_80px_80px] gap-1.5 items-center py-0.5">
-                    <span className="text-ft-dim text-xs font-mono">{d.date}</span>
-                    <span className="text-ft-light text-xs font-mono text-right">{d.topWeight}</span>
-                    <span className="text-ft-light text-xs font-mono text-right">{d.volume.toLocaleString()}</span>
-                    <span className={`text-xs font-mono text-right ${
+                    <span className="text-ft-dim text-xs font-body">{d.date}</span>
+                    <span className="text-ft-light text-xs font-body text-right">{d.topWeight}</span>
+                    <span className="text-ft-light text-xs font-body text-right">{d.volume.toLocaleString()}</span>
+                    <span className={`text-xs font-body text-right ${
                       volChange > 0 ? "text-ft-success" : volChange < 0 ? "text-ft-danger" : "text-ft-muted"
                     }`}>
                       {i === 0 ? "—" : `${volChange > 0 ? "+" : ""}${pct}%`}
@@ -387,7 +387,7 @@ export default function ExerciseDetailPage({
       )}
 
       {/* Session History */}
-      <div>
+      <div className="section-divider pt-6">
         <SectionHeader title="Session History" />
         <Card>
           {history.length > 0 ? (
@@ -396,23 +396,23 @@ export default function ExerciseDetailPage({
                 const workSets = session.sets.filter((s) => !s.isWarmup);
                 return (
                   <div key={idx} className="border-b border-ft-border pb-3 last:border-0 last:pb-0">
-                    <p className="text-ft-dim text-xs font-mono mb-2">
+                    <p className="text-ft-dim text-xs font-body mb-2">
                       {session.date}
                     </p>
                     <div className="grid grid-cols-[40px_1fr_1fr_1fr] gap-1.5">
-                      <span className="text-ft-muted text-[10px] font-mono uppercase">Set</span>
-                      <span className="text-ft-muted text-[10px] font-mono uppercase">Weight</span>
-                      <span className="text-ft-muted text-[10px] font-mono uppercase">Reps</span>
-                      <span className="text-ft-muted text-[10px] font-mono uppercase">RIR</span>
+                      <span className="text-ft-muted text-[10px] font-body uppercase">Set</span>
+                      <span className="text-ft-muted text-[10px] font-body uppercase">Weight</span>
+                      <span className="text-ft-muted text-[10px] font-body uppercase">Reps</span>
+                      <span className="text-ft-muted text-[10px] font-body uppercase">RIR</span>
                       {workSets.map((s, si) => (
                         <div key={si} className="contents">
-                          <span className="text-ft-dim text-xs font-mono">{si + 1}</span>
-                          <span className={`text-xs font-mono ${s.isPr ? "text-ft-success font-bold" : "text-ft-light"}`}>
+                          <span className="text-ft-dim text-xs font-body">{si + 1}</span>
+                          <span className={`text-xs font-body ${s.isPr ? "text-ft-success font-bold" : "text-ft-light"}`}>
                             {s.weight ?? "—"}
                             {s.isPr && " PR"}
                           </span>
-                          <span className="text-ft-light text-xs font-mono">{s.reps ?? "—"}</span>
-                          <span className="text-ft-dim text-xs font-mono">{s.rir ?? "—"}</span>
+                          <span className="text-ft-light text-xs font-body">{s.reps ?? "—"}</span>
+                          <span className="text-ft-dim text-xs font-body">{s.rir ?? "—"}</span>
                         </div>
                       ))}
                     </div>
@@ -422,7 +422,7 @@ export default function ExerciseDetailPage({
             </div>
           ) : (
             <div className="h-48 flex items-center justify-center">
-              <span className="text-ft-muted font-mono text-xs uppercase tracking-wider">
+              <span className="text-ft-muted font-body text-xs uppercase tracking-wider">
                 No sessions logged yet
               </span>
             </div>

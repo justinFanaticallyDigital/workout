@@ -34,7 +34,7 @@ export default function Tooltip({ content, children }: TooltipProps) {
       {children}
       {show && (
         <span
-          className={`absolute z-50 left-1/2 -translate-x-1/2 px-2.5 py-1.5 bg-ft-card border border-ft-border rounded text-ft-light text-[11px] font-mono leading-snug whitespace-normal w-56 text-center shadow-lg pointer-events-none ${
+          className={`absolute z-50 left-1/2 -translate-x-1/2 px-2.5 py-1.5 bg-ft-card border border-ft-border rounded text-ft-light text-[11px] font-body leading-snug whitespace-normal w-56 text-center shadow-lg pointer-events-none ${
             position === "above" ? "bottom-full mb-1.5" : "top-full mt-1.5"
           }`}
         >
