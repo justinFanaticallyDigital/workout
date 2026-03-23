@@ -39,9 +39,6 @@ export default function ThemedExerciseCard({ children, movementType, className =
       cardStyle.border = theme.borders.card;
       cardStyle.borderTop = `${movementIndicatorWidth} solid ${color}`;
       break;
-    case 'badge-bg':
-      cardStyle.border = theme.borders.card;
-      break;
     case 'border':
       cardStyle.border = `1px solid ${color}`;
       break;

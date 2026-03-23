@@ -11,7 +11,7 @@ export const cyberpunk: ThemeConfig = {
 
     textPrimary: 'rgba(255,255,255,0.88)',
     textSecondary: 'rgba(255,255,255,0.45)',
-    textTertiary: 'rgba(255,255,255,0.18)',
+    textTertiary: 'rgba(255,255,255,0.32)',
 
     accent: '#00F0FF',           // cyan — the signature color
     accentSecondary: '#FF3068',  // alert red/pink

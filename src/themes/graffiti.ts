@@ -13,7 +13,7 @@ export const graffiti: ThemeConfig = {
     // Text: light on dark — white/gray spectrum
     textPrimary: 'rgba(255,255,255,0.92)',
     textSecondary: 'rgba(255,255,255,0.55)',
-    textTertiary: 'rgba(255,255,255,0.3)',
+    textTertiary: 'rgba(255,255,255,0.42)',
 
     // Accent: movement colors serve as accents — defaults to Push blue
     accent: '#3B82F6',

@@ -2,16 +2,7 @@
 
 import { useTheme } from '@/providers/ThemeProvider';
 import { themeList } from '@/themes';
-
-const THEME_SWATCHES: Record<string, { bg: string; accent: string; text: string }> = {
-  graffiti:  { bg: '#2A2D2F', accent: '#3B82F6', text: '#fff' },
-  cyberpunk: { bg: '#08080F', accent: '#00F0FF', text: '#E0E0F0' },
-  notebook:  { bg: '#E8E0D4', accent: '#B5312A', text: '#2C241E' },
-  blueprint: { bg: '#1A2744', accent: '#4A9EFF', text: '#fff' },
-  arcade:    { bg: '#0A0A14', accent: '#FF50C8', text: '#E0E0F0' },
-  lab:       { bg: '#F5F5F7', accent: '#2563EB', text: '#1A1A1A' },
-  iron:      { bg: '#1C1B19', accent: '#C8A96E', text: '#FFFCF5' },
-};
+import { THEME_SWATCHES } from '@/themes/swatches';
 
 interface ThemePickerModalProps {
   onClose: () => void;

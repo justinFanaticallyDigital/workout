@@ -57,7 +57,7 @@ export interface ThemeConfig {
   // === COMPONENT OVERRIDES ===
   components: {
     exerciseCard: {
-      movementIndicator: 'left-bar' | 'top-bar' | 'badge-bg' | 'border';
+      movementIndicator: 'left-bar' | 'top-bar' | 'border';
       movementIndicatorWidth?: string;
     };
     nav: {

@@ -13,7 +13,7 @@ export const lab: ThemeConfig = {
     // Text: dark grays — clinical precision
     textPrimary: '#1A1A1A',
     textSecondary: '#6B7280',
-    textTertiary: '#9CA3AF',
+    textTertiary: '#717985',
 
     accent: '#2563EB',          // clinical blue — data highlights, active states
     accentSecondary: '#059669', // clinical green — success, completion

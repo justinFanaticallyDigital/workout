@@ -13,7 +13,7 @@ export const blueprint: ThemeConfig = {
     // Text: white/light blue on dark blue
     textPrimary: 'rgba(255,255,255,0.9)',
     textSecondary: 'rgba(180,200,230,0.6)',
-    textTertiary: 'rgba(180,200,230,0.35)',
+    textTertiary: 'rgba(180,200,230,0.50)',
 
     accent: '#4A9EFF',          // bright blueprint blue for annotations
     accentSecondary: '#FF6B4A', // red for dimension callouts / alerts
