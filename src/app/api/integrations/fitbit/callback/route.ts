@@ -1,13 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { requireAuthUserId } from "@/lib/auth-helpers";
+import { requireAuth } from "@/lib/auth-helpers";
 
 /**
  * GET /api/integrations/fitbit/callback
  * Handle Fitbit OAuth2 callback — exchange code for tokens and store them.
  */
 export async function GET(request: NextRequest) {
-  const userId = await requireAuthUserId();
+  const [userId, authError] = await requireAuth();
+  if (authError) return authError;
   const baseUrl = process.env.NEXTAUTH_URL ?? "";
   const { searchParams } = new URL(request.url);
   const code = searchParams.get("code");

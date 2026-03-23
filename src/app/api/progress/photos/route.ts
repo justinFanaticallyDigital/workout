@@ -1,11 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { requireAuthUserId } from "@/lib/auth-helpers";
+import { requireAuth } from "@/lib/auth-helpers";
 
 export const dynamic = "force-dynamic";
 
 export async function GET() {
-  const userId = await requireAuthUserId();
+  const [userId, authError] = await requireAuth();
+  if (authError) return authError;
 
   const photos = await prisma.progressPhoto.findMany({
     where: { userId },
@@ -25,7 +26,8 @@ export async function GET() {
 }
 
 export async function POST(request: NextRequest) {
-  const userId = await requireAuthUserId();
+  const [userId, authError] = await requireAuth();
+  if (authError) return authError;
   const body = await request.json();
 
   const photo = await prisma.progressPhoto.create({

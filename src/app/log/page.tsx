@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import { authCheck } from "@/lib/fetch-helpers";
 
 const ACTIVITY_TYPES = [
   {
@@ -79,6 +80,7 @@ export default function LogPage() {
 
   useEffect(() => {
     fetch("/api/home")
+      .then(authCheck)
       .then((r) => (r.ok ? r.json() : null))
       .then((data) => {
         if (data?.scheduledDay) {

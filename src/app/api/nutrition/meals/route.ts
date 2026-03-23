@@ -1,13 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { requireAuthUserId } from "@/lib/auth-helpers";
+import { requireAuth } from "@/lib/auth-helpers";
 
 /**
  * GET /api/nutrition/meals?date=2026-03-17
  * Returns all meals for a given date with items and food data.
  */
 export async function GET(request: NextRequest) {
-  const userId = await requireAuthUserId();
+  const [userId, authError] = await requireAuth();
+  if (authError) return authError;
   const { searchParams } = new URL(request.url);
   const dateStr = searchParams.get("date") ?? new Date().toISOString().split("T")[0];
 
@@ -60,7 +61,8 @@ export async function GET(request: NextRequest) {
  * Create a meal with items.
  */
 export async function POST(request: NextRequest) {
-  const userId = await requireAuthUserId();
+  const [userId, authError] = await requireAuth();
+  if (authError) return authError;
   const body = await request.json();
 
   if (!body.date || !body.mealType) {

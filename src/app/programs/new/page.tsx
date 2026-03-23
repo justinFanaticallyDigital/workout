@@ -88,7 +88,7 @@ export default function NewProgramPage() {
       </p>
       <div className="bg-ft-surface border border-ft-border rounded-md px-4 py-3 mb-6">
         <p className="text-ft-light text-xs font-mono">
-          <span className="text-ft-accent font-bold">New to training?</span>{" "}
+          <span className="text-ft-white font-bold">New to training?</span>{" "}
           Start with a <span className="text-ft-white font-bold">Template</span> — pick a proven program and customize it later.
         </p>
       </div>

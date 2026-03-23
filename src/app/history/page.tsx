@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { Card, Tag, EmptyState } from "@/components/ui";
+import { authCheck } from "@/lib/fetch-helpers";
 
 interface WorkoutSummary {
   id: string;
@@ -51,6 +52,7 @@ export default function HistoryPage() {
     if (from) params.set("from", from);
     if (to) params.set("to", to);
     fetch(`/api/workouts?${params}`)
+      .then(authCheck)
       .then((res) => res.json())
       .then((data) => {
         const fetched = data.workouts ?? [];

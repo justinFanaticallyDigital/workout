@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { requireAuthUserId } from "@/lib/auth-helpers";
+import { requireAuth } from "@/lib/auth-helpers";
 
 /**
  * GET /api/nutrition/targets
@@ -8,7 +8,8 @@ import { requireAuthUserId } from "@/lib/auth-helpers";
  * Supports ?blockId= or ?goalId= to get block/goal-specific targets.
  */
 export async function GET(request: NextRequest) {
-  const userId = await requireAuthUserId();
+  const [userId, authError] = await requireAuth();
+  if (authError) return authError;
   const { searchParams } = new URL(request.url);
   const blockId = searchParams.get("blockId");
   const goalId = searchParams.get("goalId");
@@ -47,7 +48,8 @@ export async function GET(request: NextRequest) {
  * Supports autoCalc: true to auto-calculate based on body weight + goal.
  */
 export async function POST(request: NextRequest) {
-  const userId = await requireAuthUserId();
+  const [userId, authError] = await requireAuth();
+  if (authError) return authError;
   const body = await request.json();
 
   let calories = body.calories ?? null;

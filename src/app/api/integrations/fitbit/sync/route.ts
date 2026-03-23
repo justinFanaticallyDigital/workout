@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { requireAuthUserId } from "@/lib/auth-helpers";
+import { requireAuth } from "@/lib/auth-helpers";
 
 /**
  * POST /api/integrations/fitbit/sync
@@ -8,7 +8,8 @@ import { requireAuthUserId } from "@/lib/auth-helpers";
  * Pulls last 30 days of data.
  */
 export async function POST() {
-  const userId = await requireAuthUserId();
+  const [userId, authError] = await requireAuth();
+  if (authError) return authError;
 
   // Get stored Fitbit tokens
   const fitbitAccount = await prisma.account.findFirst({
@@ -398,7 +399,8 @@ async function upsertDailyMetric(
  * Check Fitbit connection status.
  */
 export async function GET() {
-  const userId = await requireAuthUserId();
+  const [userId, authError] = await requireAuth();
+  if (authError) return authError;
 
   const fitbitAccount = await prisma.account.findFirst({
     where: { userId, provider: "fitbit" },

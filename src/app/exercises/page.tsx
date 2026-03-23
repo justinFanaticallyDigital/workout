@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { DataTable } from "@/components/ui";
+import { authCheck } from "@/lib/fetch-helpers";
 
 interface Exercise {
   id: string;
@@ -36,6 +37,7 @@ export default function ExerciseLibraryPage() {
 
   useEffect(() => {
     fetch("/api/exercises")
+      .then(authCheck)
       .then((res) => res.json())
       .then((data) => {
         const exs: Exercise[] = data.exercises ?? [];

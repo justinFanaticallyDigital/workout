@@ -3,6 +3,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { Card, SectionHeader } from "@/components/ui";
 import { useToast } from "@/components/ui/Toast";
+import { authCheck } from "@/lib/fetch-helpers";
 import { chartTheme } from "@/lib/theme";
 import FitbitIcon from "@/components/ui/FitbitIcon";
 import {
@@ -39,6 +40,7 @@ export default function BodyMetricsPage() {
 
   const fetchEntries = () => {
     fetch("/api/progress/weight")
+      .then(authCheck)
       .then((res) => res.json())
       .then((data) => {
         setEntries(data.entries ?? []);

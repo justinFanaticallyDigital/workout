@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
+import { authCheck } from "@/lib/fetch-helpers";
 
 const DAY_LABELS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 
@@ -39,7 +40,7 @@ export default function CalendarPage() {
     const to = `${year}-${String(month + 1).padStart(2, "0")}-${lastDay}`;
 
     Promise.all([
-      fetch(`/api/workouts?from=${from}&to=${to}`).then((r) => (r.ok ? r.json() : [])),
+      fetch(`/api/workouts?from=${from}&to=${to}`).then(authCheck).then((r) => (r.ok ? r.json() : [])),
     ])
       .then(([workouts]) => {
         const summaries: Record<string, DaySummary> = {};

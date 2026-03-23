@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import ProgressBar from "@/components/ui/ProgressBar";
+import { authCheck } from "@/lib/fetch-helpers";
 
 interface MetricTarget {
   id: string;
@@ -46,9 +47,9 @@ export default function ProgramTab() {
 
   useEffect(() => {
     Promise.all([
-      fetch("/api/programs?status=active").then((r) => r.ok ? r.json() : { programs: [] }),
-      fetch("/api/metric-targets").then((r) => r.ok ? r.json() : []),
-      fetch("/api/home").then((r) => r.ok ? r.json() : null),
+      fetch("/api/programs?status=active").then(authCheck).then((r) => r.ok ? r.json() : { programs: [] }),
+      fetch("/api/metric-targets").then(authCheck).then((r) => r.ok ? r.json() : []),
+      fetch("/api/home").then(authCheck).then((r) => r.ok ? r.json() : null),
     ])
       .then(([programsRes, tgts, homeData]) => {
         // API returns { programs: [...] } wrapper

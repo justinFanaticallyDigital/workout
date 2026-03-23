@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef } from "react";
 import { Card } from "@/components/ui";
+import { authCheck } from "@/lib/fetch-helpers";
 
 // ─── Types ─────────────────────────────────────────────
 interface FoodItem {
@@ -253,6 +254,7 @@ export default function NutritionPage() {
   const fetchDay = useCallback((d: string) => {
     setLoading(true);
     fetch(`/api/nutrition/meals?date=${d}`)
+      .then(authCheck)
       .then((r) => r.ok ? r.json() : { meals: [], totals: { calories: 0, protein: 0, carbs: 0, fat: 0 } })
       .then((data) => { setMeals(data.meals ?? []); setTotals(data.totals ?? { calories: 0, protein: 0, carbs: 0, fat: 0 }); setLoading(false); })
       .catch(() => setLoading(false));
@@ -261,6 +263,7 @@ export default function NutritionPage() {
   useEffect(() => {
     fetchDay(date);
     fetch("/api/nutrition/targets")
+      .then(authCheck)
       .then((r) => r.ok ? r.json() : null)
       .then((data) => {
         if (data?.target) { setTarget(data.target); setTCal(data.target.calories?.toString() ?? ""); setTProtein(data.target.protein?.toString() ?? ""); setTCarbs(data.target.carbs?.toString() ?? ""); setTFat(data.target.fat?.toString() ?? ""); }

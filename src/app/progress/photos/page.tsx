@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { Card, SectionHeader, Tag, EmptyState } from "@/components/ui";
 import { useToast } from "@/components/ui/Toast";
+import { authCheck } from "@/lib/fetch-helpers";
 
 interface ProgressPhoto {
   id: string;
@@ -32,6 +33,7 @@ export default function ProgressPhotosPage() {
 
   const fetchPhotos = () => {
     fetch("/api/progress/photos")
+      .then(authCheck)
       .then((res) => res.json())
       .then((data) => {
         setPhotos(data.photos ?? []);
@@ -148,7 +150,7 @@ export default function ProgressPhotosPage() {
                   }}
                   className={`text-xs font-mono transition-colors border rounded px-3 py-1 ${
                     compareMode
-                      ? "text-ft-accent border-ft-accent"
+                      ? "text-ft-white border-ft-accent bg-ft-accent/20"
                       : "text-ft-dim border-ft-border hover:text-ft-light"
                   }`}
                 >
