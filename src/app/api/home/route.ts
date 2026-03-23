@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireAuth } from "@/lib/auth-helpers";
 
+export const dynamic = "force-dynamic";
+
 export async function GET() {
   const [userId, errorRes] = await requireAuth();
   if (!userId) return errorRes!;
@@ -12,6 +14,7 @@ export async function GET() {
   const eightWeeksAgo = new Date();
   eightWeeksAgo.setDate(eightWeeksAgo.getDate() - 56);
 
+  // Core queries — these tables have always existed
   const [
     activeProgram,
     todaysWorkout,
@@ -20,10 +23,7 @@ export async function GET() {
     latestBodyWeight,
     bodyWeights8w,
     weeklyWorkouts8w,
-    metricTargets,
-    stretchRoutine,
   ] = await Promise.all([
-    // Active program with current block and today's scheduled day
     prisma.program.findFirst({
       where: { userId, status: "active" },
       orderBy: { createdAt: "desc" },
@@ -48,7 +48,6 @@ export async function GET() {
         },
       },
     }),
-    // Today's logged workout
     prisma.workout.findFirst({
       where: {
         userId,
@@ -67,7 +66,6 @@ export async function GET() {
         blockDay: { select: { name: true, dayType: true } },
       },
     }),
-    // Last 7 days of workouts for heatmap
     prisma.workout.findMany({
       where: { userId, date: { gte: weekAgo } },
       include: {
@@ -81,25 +79,21 @@ export async function GET() {
       },
       orderBy: { date: "desc" },
     }),
-    // Most recent PR
     prisma.exercisePr.findFirst({
       where: { userId },
       include: { exercise: { select: { name: true } } },
       orderBy: { achievedAt: "desc" },
     }),
-    // Latest body weight
     prisma.bodyMetric.findFirst({
       where: { userId },
       orderBy: { date: "desc" },
       select: { weight: true, date: true },
     }),
-    // 8 weeks of body weights
     prisma.bodyMetric.findMany({
       where: { userId, date: { gte: eightWeeksAgo } },
       orderBy: { date: "asc" },
       select: { weight: true, date: true },
     }),
-    // 8 weeks of workouts for volume chart
     prisma.workout.findMany({
       where: { userId, date: { gte: eightWeeksAgo } },
       include: {
@@ -109,18 +103,33 @@ export async function GET() {
       },
       orderBy: { date: "asc" },
     }),
-    // User metric targets
-    prisma.userMetricTarget.findMany({
-      where: { userId },
-    }),
-    // User's first stretch routine
-    prisma.stretchRoutine.findFirst({
-      where: { userId },
-      include: {
-        items: { orderBy: { sortOrder: "asc" } },
-      },
-    }),
   ]);
+
+  // New table queries — these may not exist in DB yet if user hasn't run db push
+  // Wrap in try/catch so the rest of the endpoint still works
+  type MetricTarget = { metricKey: string; targetValue: number; unit: string };
+  type StretchRoutineResult = {
+    id: string; name: string;
+    items: { name: string; durationSeconds: number; bilateral: boolean }[];
+  };
+
+  let metricTargets: MetricTarget[] = [];
+  let stretchRoutine: StretchRoutineResult | null = null;
+
+  try {
+    metricTargets = await prisma.userMetricTarget.findMany({ where: { userId } });
+  } catch {
+    // Table doesn't exist yet — that's fine
+  }
+
+  try {
+    stretchRoutine = await prisma.stretchRoutine.findFirst({
+      where: { userId },
+      include: { items: { orderBy: { sortOrder: "asc" } } },
+    });
+  } catch {
+    // Table doesn't exist yet — that's fine
+  }
 
   // Compute muscle heatmap from past 7 days
   const muscleSetCounts: Record<string, number> = {};

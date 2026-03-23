@@ -46,14 +46,16 @@ export default function ProgramTab() {
 
   useEffect(() => {
     Promise.all([
-      fetch("/api/programs?status=active").then((r) => r.ok ? r.json() : []),
+      fetch("/api/programs?status=active").then((r) => r.ok ? r.json() : { programs: [] }),
       fetch("/api/metric-targets").then((r) => r.ok ? r.json() : []),
       fetch("/api/home").then((r) => r.ok ? r.json() : null),
     ])
-      .then(([programs, tgts, homeData]) => {
-        const prog = programs[0] || null;
+      .then(([programsRes, tgts, homeData]) => {
+        // API returns { programs: [...] } wrapper
+        const programs = programsRes.programs ?? programsRes;
+        const prog = (Array.isArray(programs) ? programs[0] : null) || null;
         setProgram(prog);
-        setTargets(tgts);
+        setTargets(Array.isArray(tgts) ? tgts : []);
 
         // Build metric display list
         const metricList: MetricDisplay[] = tgts.map((t: MetricTarget) => ({

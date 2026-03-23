@@ -4,11 +4,17 @@ import { requireAuthUserId } from "@/lib/auth-helpers";
 
 export const dynamic = "force-dynamic";
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   const userId = await requireAuthUserId();
 
+  const { searchParams } = new URL(request.url);
+  const status = searchParams.get("status");
+
   const programs = await prisma.program.findMany({
-    where: { userId },
+    where: {
+      userId,
+      ...(status ? { status: status as "active" | "completed" | "paused" } : {}),
+    },
     include: {
       blocks: {
         select: { id: true, name: true, blockNumber: true, durationWeeks: true, status: true },
