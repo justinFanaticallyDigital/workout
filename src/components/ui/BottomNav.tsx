@@ -5,7 +5,6 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 const moreLinks = [
-  { label: "Programs", href: "/programs", icon: "📋" },
   { label: "Exercises", href: "/exercises", icon: "💪" },
   { label: "History", href: "/history", icon: "📖" },
   { label: "Progress", href: "/progress", icon: "📈" },
@@ -80,6 +79,8 @@ export default function BottomNav() {
 
   const isActive = (href: string) => {
     if (href === "/") return pathname === "/";
+    // Program tab should highlight for /program and /programs/* paths
+    if (href === "/program") return pathname.startsWith("/program");
     return pathname.startsWith(href);
   };
 

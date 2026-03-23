@@ -245,7 +245,18 @@ export default async function ProgressPage() {
 
       {/* Body Weight Chart */}
       <Card>
-        <SectionHeader title="Body Weight" subtitle={weightData.length > 0 ? `${weightData.length} entries` : "No data yet"} />
+        <SectionHeader
+          title="Body Weight"
+          subtitle={weightData.length > 0 ? `${weightData.length} entries` : "No data yet"}
+          action={
+            <Link
+              href="/progress/body"
+              className="text-ft-dim text-xs font-body hover:text-ft-light transition-colors border border-ft-border rounded px-3 py-1"
+            >
+              Log Weight &rarr;
+            </Link>
+          }
+        />
         {weightData.length > 0 ? (
           <>
             <BarChart
