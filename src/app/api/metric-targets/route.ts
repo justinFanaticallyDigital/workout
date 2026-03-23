@@ -53,7 +53,7 @@ export async function POST(req: NextRequest) {
     });
 
     return NextResponse.json(target);
-  } catch (err) {
+  } catch {
     return NextResponse.json({ error: "metric_targets table may not exist yet" }, { status: 500 });
   }
 }

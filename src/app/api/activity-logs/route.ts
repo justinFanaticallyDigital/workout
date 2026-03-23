@@ -47,7 +47,7 @@ export async function POST(req: NextRequest) {
     });
 
     return NextResponse.json(log, { status: 201 });
-  } catch (err) {
+  } catch {
     return NextResponse.json({ error: "activity_logs table may not exist yet" }, { status: 500 });
   }
 }

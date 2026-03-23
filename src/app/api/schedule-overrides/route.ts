@@ -49,7 +49,7 @@ export async function POST(req: NextRequest) {
     });
 
     return NextResponse.json(override, { status: 201 });
-  } catch (err) {
+  } catch {
     return NextResponse.json({ error: "schedule_overrides table may not exist yet" }, { status: 500 });
   }
 }

@@ -51,7 +51,7 @@ export async function POST(req: NextRequest) {
     });
 
     return NextResponse.json(routine, { status: 201 });
-  } catch (err) {
+  } catch {
     return NextResponse.json({ error: "stretch_routines table may not exist yet" }, { status: 500 });
   }
 }
