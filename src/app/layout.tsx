@@ -1,6 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
-import Nav from "@/components/ui/Nav";
+import BottomNav from "@/components/ui/BottomNav";
 import { ToastProvider } from "@/components/ui/Toast";
 import SessionProvider from "@/components/SessionProvider";
 import OfflineSyncProvider from "@/components/OfflineSyncProvider";
@@ -25,7 +25,7 @@ export const viewport: Viewport = {
   initialScale: 1,
   maximumScale: 1,
   viewportFit: "cover",
-  themeColor: "#1a1a1a",
+  themeColor: "#2a2d2f",
 };
 
 export default function RootLayout({
@@ -39,17 +39,17 @@ export default function RootLayout({
         <ThemeInit />
         <a
           href="#main-content"
-          className="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-[100] focus:bg-ft-accent focus:text-ft-bg focus:px-4 focus:py-2 focus:rounded focus:font-mono focus:text-sm focus:font-bold"
+          className="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-[100] focus:bg-ft-accent focus:text-ft-bg focus:px-4 focus:py-2 focus:rounded focus:font-body focus:text-sm focus:font-bold"
         >
           Skip to main content
         </a>
         <SessionProvider>
           <OfflineSyncProvider>
             <ToastProvider>
-              <Nav />
-              <main id="main-content" className="max-w-[1100px] mx-auto px-4 sm:px-6 py-4 sm:py-7 pb-safe">
+              <main id="main-content" className="max-w-[600px] mx-auto px-4 py-4 pb-24">
                 {children}
               </main>
+              <BottomNav />
             </ToastProvider>
           </OfflineSyncProvider>
         </SessionProvider>

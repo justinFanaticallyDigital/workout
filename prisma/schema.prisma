@@ -70,10 +70,15 @@ model User {
   dailyMetrics   DailyMetric[]
   progressPhotos ProgressPhoto[]
   injuries       Injury[]
-  foodItems        FoodItem[]
-  meals            Meal[]
-  nutritionTargets NutritionTarget[]
-  mealPlans        MealPlan[]
+  foodItems          FoodItem[]
+  meals              Meal[]
+  nutritionTargets   NutritionTarget[]
+  mealPlans          MealPlan[]
+  activityLogs       ActivityLog[]
+  integrationData    IntegrationData[]
+  userMetricTargets  UserMetricTarget[]
+  scheduleOverrides  ScheduleOverride[]
+  stretchRoutines    StretchRoutine[]
 
   @@map("users")
 }
@@ -141,12 +146,14 @@ model Program {
   status        ProgramStatus @default(active)
   createdAt     DateTime      @default(now()) @map("created_at")
 
-  user           User               @relation(fields: [userId], references: [id], onDelete: Cascade)
-  goal           Goal?              @relation("ProgramGoal", fields: [goalId], references: [id], onDelete: SetNull)
-  goals          Goal[]             @relation("GoalProgram")
-  blocks         Block[]
-  benchmarks     ProgramBenchmark[]
-  progressPhotos ProgressPhoto[]
+  user              User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  goal              Goal?              @relation("ProgramGoal", fields: [goalId], references: [id], onDelete: SetNull)
+  goals             Goal[]             @relation("GoalProgram")
+  blocks            Block[]
+  benchmarks        ProgramBenchmark[]
+  progressPhotos    ProgressPhoto[]
+  userMetricTargets UserMetricTarget[]
+  scheduleOverrides ScheduleOverride[]
 
   @@index([userId])
   @@index([userId, status])
@@ -194,11 +201,12 @@ model Block {
   status              BlockStatus @default(upcoming)
   createdAt           DateTime    @default(now()) @map("created_at")
 
-  program          Program            @relation(fields: [programId], references: [id], onDelete: Cascade)
-  days             BlockDay[]
-  workouts         Workout[]
-  benchmarks       ProgramBenchmark[]
-  nutritionTargets NutritionTarget[]
+  program           Program            @relation(fields: [programId], references: [id], onDelete: Cascade)
+  days              BlockDay[]
+  workouts          Workout[]
+  benchmarks        ProgramBenchmark[]
+  nutritionTargets  NutritionTarget[]
+  scheduleOverrides ScheduleOverride[]
 
   @@index([programId])
   @@map("blocks")
@@ -335,11 +343,12 @@ model Exercise {
   isCustom         Boolean @default(false) @map("is_custom")
   createdAt        DateTime @default(now()) @map("created_at")
 
-  user               User?              @relation(fields: [userId], references: [id], onDelete: Cascade)
-  exercisePrs        ExercisePr[]
-  workoutExercises   WorkoutExercise[]
-  blockDayExercises  BlockDayExercise[] @relation("primary")
+  user                 User?              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  exercisePrs          ExercisePr[]
+  workoutExercises     WorkoutExercise[]
+  blockDayExercises    BlockDayExercise[] @relation("primary")
   blockDayExercisesAlt BlockDayExercise[] @relation("alternate")
+  stretchRoutineItems  StretchRoutineItem[]
 
   @@unique([name])
   @@index([primaryMuscle])
@@ -613,4 +622,152 @@ model MealPlanItem {
 
   @@index([mealId])
   @@map("meal_plan_items")
+}
+
+// ─── Activity Log (non-lifting activities) ──────────────
+enum ActivityType {
+  STRETCH
+  HIIT
+  LISS
+  CLASS
+  CUSTOM
+}
+
+enum Intensity {
+  LIGHT
+  MODERATE
+  HARD
+}
+
+model ActivityLog {
+  id             String       @id @default(uuid()) @db.Uuid
+  userId         String       @map("user_id") @db.Uuid
+  date           DateTime     @db.Date
+  activityType   ActivityType @map("activity_type")
+  subType        String?      @map("sub_type")
+  durationMin    Int          @map("duration_min")
+  intensity      Intensity?
+  distanceKm     Float?       @map("distance_km")
+  avgHeartRate   Int?         @map("avg_heart_rate")
+  caloriesBurned Int?         @map("calories_burned")
+  instructor     String?
+  studio         String?
+  notes          String?
+  createdAt      DateTime     @default(now()) @map("created_at")
+  updatedAt      DateTime     @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, date])
+  @@map("activity_logs")
+}
+
+// ─── Integration Data (Fitbit, Apple Health, etc.) ──────
+enum IntegrationSource {
+  FITBIT
+  APPLE_HEALTH
+  GARMIN
+  MANUAL
+}
+
+model IntegrationData {
+  id         String            @id @default(uuid()) @db.Uuid
+  userId     String            @map("user_id") @db.Uuid
+  source     IntegrationSource
+  metricType String            @map("metric_type")
+  value      Float
+  date       DateTime          @db.Date
+  rawPayload Json?             @map("raw_payload")
+  createdAt  DateTime          @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, source, metricType, date])
+  @@index([userId, metricType, date])
+  @@map("integration_data")
+}
+
+// ─── User Metric Targets ────────────────────────────────
+model UserMetricTarget {
+  id          String   @id @default(uuid()) @db.Uuid
+  userId      String   @map("user_id") @db.Uuid
+  programId   String?  @map("program_id") @db.Uuid
+  metricKey   String   @map("metric_key")
+  targetValue Float    @map("target_value")
+  unit        String
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  user    User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  program Program? @relation(fields: [programId], references: [id], onDelete: SetNull)
+
+  @@unique([userId, metricKey, programId])
+  @@map("user_metric_targets")
+}
+
+// ─── Schedule Overrides ─────────────────────────────────
+enum OverrideScope {
+  TODAY_ONLY
+  THIS_WEEK
+  THIS_WEEK_FORWARD
+}
+
+enum OverrideAction {
+  SKIP
+  SWAP
+  REPLACE
+  REDUCE_DAYS
+}
+
+model ScheduleOverride {
+  id         String         @id @default(uuid()) @db.Uuid
+  userId     String         @map("user_id") @db.Uuid
+  programId  String         @map("program_id") @db.Uuid
+  blockId    String         @map("block_id") @db.Uuid
+  scope      OverrideScope
+  weekNumber Int            @map("week_number")
+  dayOfWeek  Int?           @map("day_of_week")
+  action     OverrideAction
+  payload    Json
+  createdAt  DateTime       @default(now()) @map("created_at")
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  program Program @relation(fields: [programId], references: [id], onDelete: Cascade)
+  block   Block   @relation(fields: [blockId], references: [id], onDelete: Cascade)
+
+  @@index([userId, programId, blockId, weekNumber])
+  @@map("schedule_overrides")
+}
+
+// ─── Stretch Routines ───────────────────────────────────
+model StretchRoutine {
+  id          String               @id @default(uuid()) @db.Uuid
+  userId      String               @map("user_id") @db.Uuid
+  name        String
+  description String?
+  createdAt   DateTime             @default(now()) @map("created_at")
+  updatedAt   DateTime             @updatedAt @map("updated_at")
+
+  user  User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  items StretchRoutineItem[]
+
+  @@index([userId])
+  @@map("stretch_routines")
+}
+
+model StretchRoutineItem {
+  id              String  @id @default(uuid()) @db.Uuid
+  routineId       String  @map("routine_id") @db.Uuid
+  exerciseId      String? @map("exercise_id") @db.Uuid
+  name            String
+  durationSeconds Int     @map("duration_seconds")
+  bilateral       Boolean @default(false)
+  sortOrder       Int     @map("sort_order")
+  notes           String?
+
+  routine  StretchRoutine @relation(fields: [routineId], references: [id], onDelete: Cascade)
+  exercise Exercise?      @relation(fields: [exerciseId], references: [id], onDelete: SetNull)
+
+  @@index([routineId])
+  @@map("stretch_routine_items")
 }

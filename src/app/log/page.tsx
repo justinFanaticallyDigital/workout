@@ -1,178 +1,404 @@
+"use client";
+
+import { useState, useEffect } from "react";
 import Link from "next/link";
-import { Card, SectionHeader, Tag } from "@/components/ui";
-import StatusIcon from "@/components/ui/StatusIcon";
-import { prisma } from "@/lib/prisma";
-import { getAuthUserId } from "@/lib/auth-helpers";
-import { redirect } from "next/navigation";
 
-export const dynamic = "force-dynamic";
+const ACTIVITY_TYPES = [
+  {
+    type: "lifting",
+    label: "Lifting",
+    icon: "🏋️",
+    color: "rgb(var(--ft-push))",
+    desc: "Weight training session",
+  },
+  {
+    type: "stretch",
+    label: "Stretch / Mobility",
+    icon: "🧘",
+    color: "rgb(var(--ft-core))",
+    desc: "Morning routine or recovery",
+  },
+  {
+    type: "hiit",
+    label: "HIIT",
+    icon: "⚡",
+    color: "rgb(var(--ft-legs))",
+    desc: "High intensity intervals",
+  },
+  {
+    type: "liss",
+    label: "LISS / Cardio",
+    icon: "🏃",
+    color: "rgb(var(--ft-pull))",
+    desc: "Walking, jogging, cycling",
+  },
+  {
+    type: "class",
+    label: "Class",
+    icon: "🎯",
+    color: "rgb(167 139 250)",
+    desc: "Spin, Pilates, yoga, Peloton",
+  },
+  {
+    type: "custom",
+    label: "Custom",
+    icon: "✏️",
+    color: "rgb(var(--ft-muted))",
+    desc: "Build your own session",
+  },
+];
 
-function daysSince(dateStr: string): string {
-  const diff = Math.floor((Date.now() - new Date(dateStr).getTime()) / (24 * 60 * 60 * 1000));
-  if (diff === 0) return "Today";
-  if (diff === 1) return "1d ago";
-  return `${diff}d ago`;
+const MOVEMENT_COLORS: Record<string, string> = {
+  push: "rgb(var(--ft-push))",
+  pull: "rgb(var(--ft-pull))",
+  legs: "rgb(var(--ft-legs))",
+  core: "rgb(var(--ft-core))",
+};
+
+interface ScheduledDay {
+  name: string;
+  exerciseCount: number;
+  movementPattern: string | null;
 }
 
-export default async function LogWorkoutPage() {
-  const userId = await getAuthUserId();
-  if (!userId) redirect("/signin");
-
-  // Find active program's active block
-  const activeProgram = await prisma.program.findFirst({
-    where: { userId, status: "active" },
-    orderBy: { createdAt: "desc" },
-    include: {
-      blocks: {
-        where: { status: "active" },
-        orderBy: { blockNumber: "asc" },
-        take: 1,
-        include: {
-          days: {
-            include: {
-              exercises: {
-                include: {
-                  exercise: { select: { name: true, primaryMuscle: true } },
-                },
-                orderBy: { sortOrder: "asc" },
-              },
-            },
-            orderBy: { sortOrder: "asc" },
-          },
-        },
-      },
-    },
+export default function LogPage() {
+  const [scheduled, setScheduled] = useState<ScheduledDay | null>(null);
+  const [showForm, setShowForm] = useState<string | null>(null);
+  const [formData, setFormData] = useState({
+    durationMin: "",
+    subType: "",
+    intensity: "",
+    distanceKm: "",
+    avgHeartRate: "",
+    instructor: "",
+    studio: "",
+    notes: "",
   });
+  const [submitting, setSubmitting] = useState(false);
+  const [submitted, setSubmitted] = useState(false);
 
-  const activeBlock = activeProgram?.blocks[0];
-  const dayTemplates = activeBlock?.days ?? [];
+  useEffect(() => {
+    fetch("/api/home")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => {
+        if (data?.scheduledDay) {
+          setScheduled({
+            name: data.scheduledDay.name,
+            exerciseCount: data.scheduledDay.exercises?.length || 0,
+            movementPattern:
+              data.scheduledDay.exercises?.[0]?.movementPattern || null,
+          });
+        }
+      })
+      .catch(() => {});
+  }, []);
 
-  // Get draft/in-progress workouts
-  const draftWorkout = await prisma.workout.findFirst({
-    where: { userId, endTime: null },
-    orderBy: { date: "desc" },
-    select: { id: true, date: true, blockDay: { select: { name: true } } },
-  });
+  const resetForm = () => {
+    setFormData({
+      durationMin: "",
+      subType: "",
+      intensity: "",
+      distanceKm: "",
+      avgHeartRate: "",
+      instructor: "",
+      studio: "",
+      notes: "",
+    });
+  };
 
-  // Get last workout dates per day template
-  const recentWorkouts = await prisma.workout.findMany({
-    where: { userId, blockDayId: { not: null } },
-    select: { blockDayId: true, date: true },
-    orderBy: { date: "desc" },
-  });
-  const lastByDay: Record<string, string> = {};
-  for (const w of recentWorkouts) {
-    if (w.blockDayId && !lastByDay[w.blockDayId]) {
-      lastByDay[w.blockDayId] = w.date.toISOString().split("T")[0];
+  const handleSubmitActivity = async (activityType: string) => {
+    if (!formData.durationMin) return;
+    setSubmitting(true);
+    try {
+      const res = await fetch("/api/activity-logs", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          date: new Date().toISOString(),
+          activityType: activityType.toUpperCase(),
+          subType: formData.subType || undefined,
+          durationMin: parseInt(formData.durationMin, 10),
+          intensity: formData.intensity || undefined,
+          distanceKm: formData.distanceKm
+            ? parseFloat(formData.distanceKm)
+            : undefined,
+          avgHeartRate: formData.avgHeartRate
+            ? parseInt(formData.avgHeartRate, 10)
+            : undefined,
+          instructor: formData.instructor || undefined,
+          studio: formData.studio || undefined,
+          notes: formData.notes || undefined,
+        }),
+      });
+      if (res.ok) {
+        setSubmitted(true);
+        setTimeout(() => {
+          setShowForm(null);
+          resetForm();
+          setSubmitted(false);
+        }, 1500);
+      }
+    } catch {
+      // Silently handle
+    } finally {
+      setSubmitting(false);
     }
-  }
+  };
 
   return (
-    <div className="min-h-screen bg-ft-bg text-ft-white p-4 pb-24 max-w-3xl mx-auto">
-      {/* Header */}
-      <h1 className="font-mono text-2xl font-bold text-ft-white mb-1">
-        Log Workout
-      </h1>
-      <p className="text-ft-dim text-sm font-mono mb-6">
-        {activeBlock
-          ? `${activeProgram?.name} · ${activeBlock.name}`
-          : "Choose a workout to start"}
-      </p>
+    <div className="space-y-5 tab-enter">
+      <h1 className="font-display text-2xl text-ft-white tracking-wide">Log</h1>
 
-      {/* Section 1: Continue / Quick Start */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-8">
-        {draftWorkout && (
-          <Link href={`/log/${draftWorkout.id}`}>
-            <Card className="border-ft-warn hover:border-ft-light transition-colors h-full">
-              <div className="flex items-center gap-3 py-2">
-                <span className="text-ft-warn text-xl">▶</span>
-                <div>
-                  <p className="text-ft-white font-mono text-sm font-bold">Continue Workout</p>
-                  <p className="text-ft-dim text-xs font-mono mt-0.5">
-                    {draftWorkout.blockDay?.name ?? "In progress"}
-                  </p>
-                </div>
-              </div>
-            </Card>
-          </Link>
-        )}
+      {/* Scheduled Workout Banner */}
+      {scheduled && !showForm && (
         <Link href="/log/new-blank">
-          <Card className="border-dashed hover:border-ft-light transition-colors h-full">
-            <div className="flex items-center justify-center gap-2 py-3">
-              <span className="text-ft-dim text-lg">+</span>
-              <span className="text-ft-light font-mono text-sm">Blank Workout</span>
+          <div
+            className="bg-ft-surface rounded-lg p-4 border border-ft-border flex items-center justify-between"
+            style={{
+              borderLeftWidth: 4,
+              borderLeftColor:
+                MOVEMENT_COLORS[
+                  scheduled.movementPattern?.toLowerCase() || "push"
+                ] || MOVEMENT_COLORS.push,
+            }}
+          >
+            <div>
+              <p className="font-display text-base text-ft-white">
+                {scheduled.name}
+              </p>
+              <p className="text-secondary font-body text-sm mt-0.5">
+                {scheduled.exerciseCount} exercises
+              </p>
             </div>
-          </Card>
-        </Link>
-      </div>
-
-      {/* Section 2: From Your Program */}
-      {dayTemplates.length > 0 && (
-        <>
-          <SectionHeader
-            title="From Your Program"
-            subtitle={`${activeBlock?.name} · ${dayTemplates.length} days`}
-          />
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-8">
-            {dayTemplates.map((tmpl) => {
-              const muscles = new Set<string>();
-              for (const bde of tmpl.exercises) {
-                if (bde.exercise.primaryMuscle) muscles.add(bde.exercise.primaryMuscle);
-              }
-              const lastDate = lastByDay[tmpl.id];
-
-              return (
-                <Link key={tmpl.id} href={`/log/${tmpl.id}`}>
-                  <Card className="hover:border-ft-light transition-colors h-full">
-                    <div className="flex items-center gap-2 mb-2">
-                      <StatusIcon
-                        type="day"
-                        dayType={tmpl.dayType as "lifting" | "cardio" | "conditioning" | "mobility" | "rest"}
-                        size="md"
-                      />
-                      <Tag>{tmpl.dayType}</Tag>
-                    </div>
-                    <h3 className="font-mono text-sm font-bold text-ft-white mb-1 uppercase">
-                      {tmpl.name}
-                    </h3>
-                    <div className="space-y-1">
-                      <p className="text-ft-dim text-xs font-mono">
-                        {tmpl.exercises.length} exercises
-                      </p>
-                      {lastDate && (
-                        <p className="text-ft-muted text-[10px] font-mono">
-                          Last: {daysSince(lastDate)}
-                        </p>
-                      )}
-                    </div>
-                  </Card>
-                </Link>
-              );
-            })}
+            <span
+              className="font-display text-lg px-4 py-2 rounded-lg text-white"
+              style={{ backgroundColor: "rgb(var(--ft-accent))" }}
+            >
+              GO
+            </span>
           </div>
-        </>
+        </Link>
       )}
 
-      {/* Section 3: By Movement Pattern */}
-      <SectionHeader title="By Movement Pattern" subtitle="Start with a focus" />
-      <div className="grid grid-cols-3 sm:grid-cols-4 gap-3">
-        {[
-          { label: "Push", icon: "⬆", color: "text-ft-light" },
-          { label: "Pull", icon: "⬇", color: "text-ft-light" },
-          { label: "Legs", icon: "🦵", color: "text-ft-light" },
-          { label: "Upper", icon: "💪", color: "text-ft-light" },
-          { label: "Lower", icon: "🏋️", color: "text-ft-light" },
-          { label: "Full Body", icon: "⚡", color: "text-ft-warn" },
-          { label: "Cardio", icon: "♥", color: "text-ft-warn" },
-        ].map((cat) => (
-          <Link key={cat.label} href={`/log/new-blank?focus=${encodeURIComponent(cat.label.toLowerCase())}`}>
-            <Card className="hover:border-ft-dim transition-colors text-center py-3">
-              <span className={`text-lg ${cat.color}`}>{cat.icon}</span>
-              <p className="text-ft-light text-xs font-mono font-bold mt-1">{cat.label}</p>
-            </Card>
-          </Link>
-        ))}
-      </div>
+      {/* Activity logging form */}
+      {showForm && (
+        <div className="bg-ft-surface rounded-lg p-4 border border-ft-border space-y-3">
+          <div className="flex items-center justify-between">
+            <h2 className="font-display text-base text-ft-white capitalize">
+              {showForm.replace("_", " ")}
+            </h2>
+            <button
+              onClick={() => {
+                setShowForm(null);
+                resetForm();
+              }}
+              className="text-tertiary font-body text-sm hover:text-ft-light"
+            >
+              Cancel
+            </button>
+          </div>
+
+          {submitted ? (
+            <div className="text-center py-4">
+              <p className="text-ft-success font-display text-lg">Logged!</p>
+            </div>
+          ) : (
+            <>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-tertiary font-body text-[10px] uppercase tracking-wider">
+                    Duration (min)*
+                  </label>
+                  <input
+                    type="number"
+                    value={formData.durationMin}
+                    onChange={(e) =>
+                      setFormData((f) => ({ ...f, durationMin: e.target.value }))
+                    }
+                    className="w-full bg-ft-card border border-ft-border rounded px-3 py-2 text-ft-white font-body text-sm mt-1"
+                    placeholder="30"
+                  />
+                </div>
+
+                {(showForm === "liss" || showForm === "class") && (
+                  <div>
+                    <label className="text-tertiary font-body text-[10px] uppercase tracking-wider">
+                      {showForm === "liss" ? "Type" : "Class Type"}
+                    </label>
+                    <input
+                      type="text"
+                      value={formData.subType}
+                      onChange={(e) =>
+                        setFormData((f) => ({ ...f, subType: e.target.value }))
+                      }
+                      className="w-full bg-ft-card border border-ft-border rounded px-3 py-2 text-ft-white font-body text-sm mt-1"
+                      placeholder={
+                        showForm === "liss" ? "walking, running..." : "spin, yoga..."
+                      }
+                    />
+                  </div>
+                )}
+
+                <div>
+                  <label className="text-tertiary font-body text-[10px] uppercase tracking-wider">
+                    Intensity
+                  </label>
+                  <select
+                    value={formData.intensity}
+                    onChange={(e) =>
+                      setFormData((f) => ({ ...f, intensity: e.target.value }))
+                    }
+                    className="w-full bg-ft-card border border-ft-border rounded px-3 py-2 text-ft-white font-body text-sm mt-1"
+                  >
+                    <option value="">—</option>
+                    <option value="LIGHT">Light</option>
+                    <option value="MODERATE">Moderate</option>
+                    <option value="HARD">Hard</option>
+                  </select>
+                </div>
+
+                {showForm === "liss" && (
+                  <div>
+                    <label className="text-tertiary font-body text-[10px] uppercase tracking-wider">
+                      Distance (km)
+                    </label>
+                    <input
+                      type="number"
+                      step="0.1"
+                      value={formData.distanceKm}
+                      onChange={(e) =>
+                        setFormData((f) => ({ ...f, distanceKm: e.target.value }))
+                      }
+                      className="w-full bg-ft-card border border-ft-border rounded px-3 py-2 text-ft-white font-body text-sm mt-1"
+                    />
+                  </div>
+                )}
+
+                {showForm === "class" && (
+                  <>
+                    <div>
+                      <label className="text-tertiary font-body text-[10px] uppercase tracking-wider">
+                        Instructor
+                      </label>
+                      <input
+                        type="text"
+                        value={formData.instructor}
+                        onChange={(e) =>
+                          setFormData((f) => ({
+                            ...f,
+                            instructor: e.target.value,
+                          }))
+                        }
+                        className="w-full bg-ft-card border border-ft-border rounded px-3 py-2 text-ft-white font-body text-sm mt-1"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-tertiary font-body text-[10px] uppercase tracking-wider">
+                        Studio
+                      </label>
+                      <input
+                        type="text"
+                        value={formData.studio}
+                        onChange={(e) =>
+                          setFormData((f) => ({ ...f, studio: e.target.value }))
+                        }
+                        className="w-full bg-ft-card border border-ft-border rounded px-3 py-2 text-ft-white font-body text-sm mt-1"
+                      />
+                    </div>
+                  </>
+                )}
+              </div>
+
+              <div>
+                <label className="text-tertiary font-body text-[10px] uppercase tracking-wider">
+                  Notes
+                </label>
+                <textarea
+                  value={formData.notes}
+                  onChange={(e) =>
+                    setFormData((f) => ({ ...f, notes: e.target.value }))
+                  }
+                  className="w-full bg-ft-card border border-ft-border rounded px-3 py-2 text-ft-white font-body text-sm mt-1 h-16 resize-none"
+                />
+              </div>
+
+              <button
+                onClick={() =>
+                  handleSubmitActivity(
+                    showForm === "liss"
+                      ? "LISS"
+                      : showForm === "class"
+                        ? "CLASS"
+                        : showForm === "hiit"
+                          ? "HIIT"
+                          : "CUSTOM"
+                  )
+                }
+                disabled={submitting || !formData.durationMin}
+                className="cta-underline text-ft-white font-display text-sm disabled:opacity-50"
+              >
+                {submitting ? "Logging..." : "Log Activity"}
+              </button>
+            </>
+          )}
+        </div>
+      )}
+
+      {/* Activity Type Grid */}
+      {!showForm && (
+        <div className="grid grid-cols-2 gap-3">
+          {ACTIVITY_TYPES.map((activity) => {
+            const handleClick = () => {
+              if (activity.type === "lifting") {
+                window.location.href = "/log/new-blank";
+                return;
+              }
+              if (activity.type === "stretch") {
+                window.location.href = "/stretch-timer";
+                return;
+              }
+              setShowForm(activity.type);
+            };
+
+            return (
+              <button
+                key={activity.type}
+                onClick={handleClick}
+                className="bg-ft-surface rounded-lg p-4 border border-ft-border text-left hover:border-ft-dim transition-colors"
+                style={{
+                  borderLeftWidth: 3,
+                  borderLeftColor: activity.color,
+                }}
+              >
+                <span className="text-2xl">{activity.icon}</span>
+                <p className="font-display text-sm text-ft-white mt-2">
+                  {activity.label}
+                </p>
+                <p className="text-tertiary font-body text-xs mt-0.5">
+                  {activity.desc}
+                </p>
+              </button>
+            );
+          })}
+        </div>
+      )}
+
+      {/* Quick Log */}
+      {!showForm && (
+        <div className="section-divider pt-4">
+          <button
+            onClick={() => setShowForm("custom")}
+            className="w-full text-center py-3"
+          >
+            <span className="text-tertiary font-body text-sm">
+              Did something not listed?{" "}
+              <span className="cta-underline text-ft-white font-display text-sm">
+                Quick log
+              </span>
+            </span>
+          </button>
+        </div>
+      )}
     </div>
   );
 }
