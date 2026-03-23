@@ -50,8 +50,8 @@ export interface ThemeConfig {
 
   // === THEME-SPECIFIC TEXTURE ===
   texture: {
-    type: 'css' | 'svg' | 'none';
-    value: string;  // CSS background property OR SVG filter reference
+    type: 'css' | 'svg' | 'svg-inline' | 'none';
+    value: string;  // CSS background property, SVG background URL, raw SVG markup, or empty
   };
 
   // === COMPONENT OVERRIDES ===

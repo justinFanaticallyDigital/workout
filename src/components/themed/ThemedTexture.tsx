@@ -7,6 +7,18 @@ export default function ThemedTexture() {
 
   if (theme.texture.type === 'none') return null;
 
+  // Inline SVG — render raw markup directly into the DOM
+  if (theme.texture.type === 'svg-inline') {
+    return (
+      <div
+        aria-hidden="true"
+        dangerouslySetInnerHTML={{ __html: theme.texture.value }}
+        style={{ position: 'fixed', inset: 0, pointerEvents: 'none', zIndex: 0 }}
+      />
+    );
+  }
+
+  // CSS background or URL-encoded SVG background
   return (
     <div
       aria-hidden="true"

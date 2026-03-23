@@ -76,15 +76,19 @@ function applyThemeCssVars(theme: ThemeConfig) {
   root.style.setProperty('--ft-alpha-secondary', String(extractAlpha(c.textSecondary)));
   root.style.setProperty('--ft-alpha-tertiary', String(extractAlpha(c.textTertiary)));
 
-  // Border subtle — map to a midpoint token
+  // Border subtle — map to muted token
   root.style.setProperty('--ft-muted', colorToRgbTriplet(c.borderSubtle));
 
-  // Derive additional grayscale tokens from the theme for backward compat
-  // These map to existing ft-dim, ft-light, ft-pale, ft-white used by Tailwind
+  // Backward-compat grayscale tokens used by Tailwind (ft-dim, ft-light, ft-pale, ft-white)
+  // For dark themes these are white with varying alpha; for light themes, dark text shades
   root.style.setProperty('--ft-dim', colorToRgbTriplet(c.textTertiary));
   root.style.setProperty('--ft-light', colorToRgbTriplet(c.textSecondary));
   root.style.setProperty('--ft-pale', colorToRgbTriplet(c.textPrimary));
   root.style.setProperty('--ft-white', colorToRgbTriplet(c.textPrimary));
+
+  // Border & divider CSS shorthands for direct use in components
+  root.style.setProperty('--ft-border-card', theme.borders.card);
+  root.style.setProperty('--ft-border-divider', theme.borders.divider);
 
   // Typography
   root.style.setProperty('--ft-font-display', theme.fonts.display);
