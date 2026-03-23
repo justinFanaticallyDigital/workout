@@ -24,7 +24,7 @@ The app is structured around a mobile-first bottom nav bar with five tabs:
 | Position | Tab | Icon | Description |
 |----------|-----|------|-------------|
 | 1 | Home | House | Daily "Today" view — what to do right now |
-| 2 | Program | Bar chart | Metrics, goals, targets — editable |
+| 2 | Program | Bar chart | Unified program hub — active dashboard + all programs list |
 | 3 (center) | Log | Plus (raised FAB) | Start logging any activity type |
 | 4 | Nutrition | Mug/cup | Daily food tracking, macro targets |
 | 5 | Calendar | Calendar | Monthly overview of workouts + meals |
@@ -40,7 +40,7 @@ src/
 │   ├── globals.css               # Global styles + Tailwind + Google Fonts + graffiti theme
 │   ├── signin/page.tsx           # Google OAuth sign-in
 │   ├── settings/page.tsx         # Settings (unit prefs, CSV export)
-│   ├── program/page.tsx          # Program tab — metrics dashboard (client)
+│   ├── program/page.tsx          # Program tab — unified dashboard + all programs list (client)
 │   ├── calendar/page.tsx         # Calendar tab — monthly overview (client)
 │   ├── stretch-timer/page.tsx    # Stretch timer flow — full-screen countdown (client)
 │   ├── exercises/
@@ -48,7 +48,7 @@ src/
 │   │   ├── new/page.tsx          # Create exercise form (client)
 │   │   └── [exerciseId]/page.tsx # Exercise detail + charts + progression (server)
 │   ├── programs/
-│   │   ├── page.tsx              # Programs list (server)
+│   │   ├── page.tsx              # Programs list (server, legacy — kept for direct URL access)
 │   │   ├── new/
 │   │   │   ├── page.tsx          # Program creation hub (3 paths)
 │   │   │   ├── goal/page.tsx     # Goal-first wizard (client)
@@ -254,8 +254,8 @@ NEXTAUTH_SECRET=...                    # Session encryption
 - `db:seed` / `db:migrate` / `db:push` / `db:studio` — Prisma helpers
 
 ## Key Implementation Patterns
-- **Navigation** — 5-tab bottom nav (`BottomNav.tsx`) fixed at bottom, replaces old top nav. Hidden on full-screen flows (workout logger, stretch timer).
-- **Home page** (`/`) — Client component fetching from `/api/home`. Distinguishes 401 (show sign-in) from other errors (show welcome/empty state). Priority Zone (Next Action card + Goal Pulse), three sub-tabs (Week Plan, Heatmap, Progress).
+- **Navigation** — 5-tab bottom nav (`BottomNav.tsx`) fixed at bottom, replaces old top nav. Hidden on full-screen flows (workout logger, stretch timer). "More" menu contains: Exercises, History, Progress, Injuries, Settings. Program tab highlights for both `/program` and `/programs/*` paths. All internal navigation uses Next.js `Link` or `router.push()` (no raw `<a>` or `window.location.href`).
+- **Home page** (`/`) — Client component fetching from `/api/home`. Distinguishes 401 (show sign-in) from other errors (show welcome/empty state). Priority Zone (Next Action card + Goal Pulse), three sub-tabs (Week Plan, Heatmap, Progress). Quick-links row at bottom (History, Progress, Exercises).
 - **Server components** use direct Prisma queries with `getAuthUserId()` + `redirect("/signin")`
 - **Client components** use `fetch("/api/...")` to API routes
 - **Dynamic routes** use `params: Promise<{ id: string }>` pattern (Next.js 14+) in server components; plain `{ params: { id: string } }` in client components
@@ -275,6 +275,7 @@ NEXTAUTH_SECRET=...                    # Session encryption
 - **Theme system** (`/lib/theme.ts`) — CSS variable-based theming with `ThemeInit` client component, chart color helpers. 4 named themes: default, midnight, iron, forest.
 - **Program creation** — 3 paths: goal-first wizard (`/programs/new/goal`), template picker (`/programs/new/templates`), visual builder (`/programs/new/builder`)
 - **Program cloning** — POST `/api/programs/clone` creates a full program from a template (blocks, days, matched exercises)
+- **Program tab** (`/program`) — Unified client view: active program dashboard (timeline, progress bar, editable metric targets) + paused/completed programs list below. Fetches all programs via `/api/programs` (no status filter). Replaces the need to visit `/programs` separately.
 - **Metric targets** — Editable per-user targets on Program tab, stored in `user_metric_targets`, displayed with progress bars and trend indicators
 - **Schedule overrides** — Week plan editing via `/api/schedule-overrides` (Today Only / This Week / This Week Forward scopes)
 - **Muscle heatmap** — Aggregates sets by exercise → muscle groups over past 7 days, displayed as body map with 4 heat tiers
@@ -326,7 +327,7 @@ NEXTAUTH_SECRET=...                    # Session encryption
 2. **Bottom nav shell** — 5-tab bottom navigation replacing top nav, raised center Log FAB
 3. **Home tab** — Today view with Next Action card (contextual by time of day), Goal Pulse row, Week Plan / Heatmap / Progress sub-tabs
 4. **Log tab** — Activity type picker grid (Lifting, Stretch, HIIT, LISS, Class, Custom) with scheduled workout banner and inline logging forms
-5. **Program tab** — Metrics dashboard with editable targets and progress bars
+5. **Program tab** — Unified hub: active program dashboard (timeline + metrics) + paused/completed programs list, replaces separate `/programs` page for primary navigation
 6. **Calendar tab** — Monthly grid with workout/meal dots, legend, day detail cards
 7. **Nutrition tab** — Restyled with macro target row, daily food tracking, action buttons
 8. **Stretch timer** — Full-screen circular countdown timer with bilateral support, auto-advance, activity logging
@@ -352,10 +353,10 @@ NEXTAUTH_SECRET=...                    # Session encryption
 - Stretch timer flow with bilateral support and auto-logging
 - Program creation via 3 paths: goal wizard, templates, visual builder
 - Inline program/block/day editing with exercise browser
-- Editable metric targets on Program dashboard
+- Editable metric targets on unified Program dashboard (with all programs visible)
 - Workout history and session replay
 - Progression tracking with 1RM estimation and stall detection
-- Body metrics, progress photos, injury tracker all functional
+- Body metrics (with "Log Weight" link from progress overview), progress photos, injury tracker all functional
 - Muscle volume heatmap (7-day window)
 - Monthly calendar with workout/meal overlays
 - Nutrition: food diary, macro targets, meal plans
