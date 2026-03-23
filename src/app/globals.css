@@ -6,31 +6,32 @@
 
 @layer base {
   :root {
-    /* 90s Street / Graffiti on Concrete theme — RGB triplets */
+    /* 90s Street / Graffiti on Concrete — default theme RGB triplets */
     --ft-bg: 42 45 47;
-    --ft-surface: 51 54 57;
-    --ft-card: 60 63 66;
-    --ft-border: 85 85 85;
-    --ft-muted: 102 102 102;
-    --ft-dim: 136 136 136;
-    --ft-light: 204 204 204;
-    --ft-pale: 239 239 239;
+    --ft-surface: 50 54 56;
+    --ft-card: 58 62 64;
+    --ft-border: 255 255 255;
+    --ft-muted: 255 255 255;
+    --ft-dim: 255 255 255;
+    --ft-light: 255 255 255;
+    --ft-pale: 255 255 255;
     --ft-white: 255 255 255;
-    --ft-accent: 232 87 42;
-    --ft-success: 111 191 115;
-    --ft-warn: 230 162 60;
-    --ft-danger: 239 83 80;
+    --ft-accent: 59 130 246;
+    --ft-accent-secondary: 253 202 64;
+    --ft-success: 34 197 94;
+    --ft-warn: 234 179 8;
+    --ft-danger: 239 68 68;
 
-    /* Movement pattern colors (constant) */
-    --ft-push: 74 144 217;
-    --ft-pull: 92 184 92;
-    --ft-legs: 217 83 79;
-    --ft-core: 240 173 78;
+    /* Movement pattern colors (constant across all themes) */
+    --ft-push: 59 130 246;
+    --ft-pull: 34 197 94;
+    --ft-legs: 239 68 68;
+    --ft-core: 234 179 8;
 
     /* Data visualization palette */
-    --ft-data-1: 74 144 217;
-    --ft-data-2: 240 173 78;
-    --ft-data-3: 217 83 79;
+    --ft-data-1: 59 130 246;
+    --ft-data-2: 234 179 8;
+    --ft-data-3: 239 68 68;
     --ft-data-4: 167 139 250;
     --ft-data-5: 251 146 60;
     --ft-data-6: 34 211 238;
@@ -40,8 +41,8 @@
     --ft-text-secondary: 255 255 255;
     --ft-text-tertiary: 255 255 255;
     --ft-alpha-primary: 0.92;
-    --ft-alpha-secondary: 0.62;
-    --ft-alpha-tertiary: 0.40;
+    --ft-alpha-secondary: 0.55;
+    --ft-alpha-tertiary: 0.30;
 
     /* Font stacks */
     --ft-font-display: 'Permanent Marker', cursive;
@@ -49,6 +50,9 @@
     --ft-font-body: 'Barlow Condensed', sans-serif;
     --ft-font-mono: 'Courier New', Courier, monospace;
     --ft-font-sans: 'Barlow Condensed', sans-serif;
+
+    /* Border radius (theme-driven) */
+    --ft-border-radius: 0;
   }
 
   /* Midnight — deep blue-black */
@@ -155,7 +159,7 @@ body {
   color: rgba(var(--ft-text-tertiary) / var(--ft-alpha-tertiary));
 }
 
-/* Graffiti-style CTA underline */
+/* Spray-paint style CTA underline — rough, slightly displaced */
 .cta-underline {
   position: relative;
   display: inline-block;
@@ -167,21 +171,21 @@ body {
   content: '';
   position: absolute;
   bottom: -2px;
-  left: 0;
-  right: 0;
+  left: -2px;
+  right: -2px;
   height: 3px;
   background: rgb(var(--ft-accent));
-  border-radius: 2px;
-  transform: skewX(-8deg);
+  opacity: 0.6;
+  filter: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='r'%3E%3CfeTurbulence baseFrequency='0.5' numOctaves='2' seed='3'/%3E%3CfeDisplacementMap in='SourceGraphic' scale='3'/%3E%3C/filter%3E%3C/svg%3E#r");
 }
 .cta-underline:hover::after {
+  opacity: 0.85;
   height: 4px;
-  bottom: -3px;
 }
 
-/* Dashed section dividers */
+/* Dashed section dividers — chalk lines on concrete */
 .section-divider {
-  border-top: 1px dashed rgba(255, 255, 255, 0.12);
+  border-top: 1px dashed rgba(255, 255, 255, 0.10);
 }
 
 /* Scrollbar styling */
@@ -261,20 +265,289 @@ input::placeholder, textarea::placeholder {
   }
 }
 
-/* Concrete noise texture overlay */
-body::before {
-  content: '';
-  position: fixed;
-  inset: 0;
-  pointer-events: none;
-  z-index: 0;
-  opacity: 0.03;
-  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
-  background-repeat: repeat;
-  background-size: 256px 256px;
-}
-
+/* Texture overlay is rendered by ThemedTexture component (theme-driven) */
 body > * {
   position: relative;
   z-index: 1;
+}
+
+/* === Graffiti theme typography scale (reference sizes from mockup) === */
+.graffiti-title {
+  font-family: var(--ft-font-display);
+  font-size: 28px;
+  line-height: 1.2;
+}
+.graffiti-exercise-name {
+  font-family: var(--ft-font-display);
+  font-size: 20px;
+  line-height: 1.3;
+}
+.graffiti-set-data {
+  font-family: var(--ft-font-handwritten);
+  font-size: 22px;
+  line-height: 1.1;
+}
+.graffiti-column-header {
+  font-family: var(--ft-font-body);
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+}
+.graffiti-meta {
+  font-family: var(--ft-font-body);
+  font-size: 11px;
+}
+.graffiti-nav {
+  font-family: var(--ft-font-body);
+  font-size: 10px;
+  text-transform: uppercase;
+}
+.graffiti-rest-timer {
+  font-family: var(--ft-font-handwritten);
+  font-size: 32px;
+}
+
+/* Movement color badge fills — low-opacity backgrounds with white text */
+.badge-push { background: rgba(59,130,246,0.12); }
+.badge-pull { background: rgba(34,197,94,0.12); }
+.badge-legs { background: rgba(239,68,68,0.12); }
+.badge-core { background: rgba(234,179,8,0.12); }
+
+/* === Cyberpunk theme utilities === */
+
+/* Top-edge cyan power-on glow line */
+.cyber-glow-line {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: rgba(0,240,255,0.3);
+  box-shadow: 0 0 8px rgba(0,240,255,0.2), 0 0 20px rgba(0,240,255,0.1);
+  z-index: 50;
+  pointer-events: none;
+}
+
+/* Background gradient for cyberpunk body */
+.cyber-bg-gradient {
+  background: linear-gradient(180deg, #0E0E1A 0%, #08080F 30%, #0A0A14 70%, #060610 100%);
+}
+
+/* Cyan text-shadow bloom on active/highlighted elements */
+.cyber-glow-text {
+  text-shadow: 0 0 8px rgba(0,240,255,0.3);
+}
+
+/* Blinking terminal cursor */
+.cyber-cursor::after {
+  content: '_';
+  animation: cursorBlink 1.06s step-end infinite;
+  opacity: 0.6;
+}
+@keyframes cursorBlink {
+  0%, 100% { opacity: 0.6; }
+  50% { opacity: 0; }
+}
+
+/* Pulsing glow for rest timer bar */
+.cyber-pulse-glow {
+  animation: pulseGlow 2s ease-in-out infinite;
+}
+@keyframes pulseGlow {
+  0%, 100% { box-shadow: 0 0 8px rgba(0,240,255,0.3); }
+  50% { box-shadow: 0 0 16px rgba(0,240,255,0.5), 0 0 32px rgba(0,240,255,0.2); }
+}
+
+/* Movement badges — outlined (1px border) not filled */
+.cyber-badge-push { border: 1px solid #3B82F6; background: transparent; }
+.cyber-badge-pull { border: 1px solid #22C55E; background: transparent; }
+.cyber-badge-legs { border: 1px solid #EF4444; background: transparent; }
+.cyber-badge-core { border: 1px solid #EAB308; background: transparent; }
+
+/* System ID watermark */
+.cyber-sys-id {
+  font-family: 'Space Mono', monospace;
+  font-size: 8px;
+  opacity: 0.18;
+  color: #00F0FF;
+  letter-spacing: 1px;
+}
+
+/* Cyberpunk typography scale */
+.cyber-title {
+  font-family: 'Space Mono', monospace;
+  font-size: 22px;
+  font-weight: 700;
+  text-shadow: 0 0 8px rgba(0,240,255,0.3);
+}
+.cyber-block-context {
+  font-family: 'Space Mono', monospace;
+  font-size: 9px;
+  letter-spacing: 2px;
+  color: rgba(0,240,255,0.28);
+}
+.cyber-exercise-name {
+  font-family: 'Space Mono', monospace;
+  font-size: 16px;
+}
+.cyber-set-data {
+  font-family: 'Space Mono', monospace;
+  font-size: 12px;
+}
+.cyber-status-tag {
+  font-family: 'Space Mono', monospace;
+  font-size: 8px;
+}
+.cyber-timer {
+  font-family: 'Space Mono', monospace;
+  font-size: 28px;
+  font-weight: 700;
+  text-shadow: 0 0 12px rgba(0,240,255,0.4);
+}
+.cyber-nav {
+  font-family: 'Space Mono', monospace;
+  font-size: 9px;
+  letter-spacing: 2px;
+}
+
+/* === Notebook theme utilities === */
+
+/* Spiral binding holes along left edge */
+.notebook-binding {
+  position: fixed;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 24px;
+  z-index: 2;
+  pointer-events: none;
+  background-image:
+    repeating-linear-gradient(
+      to bottom,
+      transparent,
+      transparent 30px,
+      #D5D0C8 30px,
+      #D5D0C8 32px,
+      transparent 32px,
+      transparent 38px
+    );
+}
+.notebook-binding::after {
+  content: '';
+  position: absolute;
+  left: 8px;
+  top: 0;
+  bottom: 0;
+  width: 8px;
+  background-image:
+    repeating-radial-gradient(
+      circle at center,
+      transparent 0,
+      transparent 3px,
+      #C8C0B4 3px,
+      #C8C0B4 4px,
+      transparent 4px,
+      transparent 40px
+    );
+  background-size: 8px 40px;
+}
+
+/* Red margin line */
+.notebook-margin-line {
+  position: fixed;
+  left: 24px;
+  top: 0;
+  bottom: 0;
+  width: 1px;
+  background: rgba(180,60,60,0.2);
+  z-index: 2;
+  pointer-events: none;
+}
+
+/* Coffee stain watermark */
+.notebook-coffee-stain {
+  position: fixed;
+  top: 30%;
+  right: 10%;
+  width: 120px;
+  height: 100px;
+  border-radius: 50%;
+  background: radial-gradient(
+    ellipse at 40% 45%,
+    rgba(140,100,60,0.06) 0%,
+    rgba(140,100,60,0.03) 40%,
+    transparent 70%
+  );
+  z-index: 1;
+  pointer-events: none;
+}
+
+/* Handwritten checkmark for completed sets */
+.notebook-check {
+  color: #1A9E45;
+  font-family: 'Caveat', cursive;
+  font-size: 20px;
+  font-weight: 700;
+}
+
+/* Ghost/incomplete set row — "not yet written" */
+.notebook-ghost {
+  color: #B8A898;
+}
+
+/* Previous session faded pencil note */
+.notebook-faded {
+  color: #B8A898;
+  opacity: 0.7;
+}
+
+/* Notes field — italic Caveat with deeper contrast */
+.notebook-notes {
+  font-family: 'Caveat', cursive;
+  font-size: 16px;
+  font-style: italic;
+  font-weight: 500;
+  color: #4A3D32;
+}
+
+/* Notebook typography scale */
+.notebook-title {
+  font-family: 'Caveat', cursive;
+  font-size: 32px;
+  font-weight: 700;
+  color: #2C241E;
+}
+.notebook-exercise-name {
+  font-family: 'Caveat', cursive;
+  font-size: 24px;
+  font-weight: 600;
+  color: #2C241E;
+}
+.notebook-set-data {
+  font-family: 'Caveat', cursive;
+  font-size: 22px;
+  font-weight: 600;
+  color: #2C241E;
+}
+.notebook-column-header {
+  font-family: 'Libre Baskerville', Georgia, serif;
+  font-size: 9.5px;
+  font-variant: small-caps;
+  color: #6B5A4A;
+}
+.notebook-meta {
+  font-family: 'Libre Baskerville', Georgia, serif;
+  font-size: 10px;
+  color: #6B5A4A;
+}
+.notebook-nav {
+  font-family: 'Libre Baskerville', Georgia, serif;
+  font-size: 11px;
+  font-variant: small-caps;
+}
+.notebook-rest-timer {
+  font-family: 'Caveat', cursive;
+  font-size: 36px;
+  font-weight: 700;
+  color: #2C241E;
 }
