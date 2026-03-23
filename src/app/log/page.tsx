@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { authCheck } from "@/lib/fetch-helpers";
 
 const ACTIVITY_TYPES = [
@@ -63,6 +64,7 @@ interface ScheduledDay {
 }
 
 export default function LogPage() {
+  const router = useRouter();
   const [scheduled, setScheduled] = useState<ScheduledDay | null>(null);
   const [showForm, setShowForm] = useState<string | null>(null);
   const [formData, setFormData] = useState({
@@ -352,11 +354,11 @@ export default function LogPage() {
           {ACTIVITY_TYPES.map((activity) => {
             const handleClick = () => {
               if (activity.type === "lifting") {
-                window.location.href = "/log/new-blank";
+                router.push("/log/new-blank");
                 return;
               }
               if (activity.type === "stretch") {
-                window.location.href = "/stretch-timer";
+                router.push("/stretch-timer");
                 return;
               }
               setShowForm(activity.type);

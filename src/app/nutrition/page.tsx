@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
+import Link from "next/link";
 import { Card } from "@/components/ui";
 import { useToast } from "@/components/ui/Toast";
 import { authCheck, toastError } from "@/lib/fetch-helpers";
@@ -314,7 +315,7 @@ export default function NutritionPage() {
 
       <div className="flex items-center justify-between">
         <h1 className="font-display text-2xl text-ft-white tracking-wide">Nutrition</h1>
-        <a href="/nutrition/plans" className="text-tertiary font-body text-xs hover:text-ft-light">Meal Plans &rarr;</a>
+        <Link href="/nutrition/plans" className="text-tertiary font-body text-xs hover:text-ft-light">Meal Plans &rarr;</Link>
       </div>
 
       {/* Macro Targets Row */}
@@ -426,14 +427,14 @@ export default function NutritionPage() {
 
       {/* Action Buttons */}
       <div className="section-divider pt-4 grid grid-cols-2 gap-3">
-        <a href="/nutrition/plans" className="bg-ft-surface rounded-lg p-3 border border-ft-border text-center hover:border-ft-dim transition-colors">
+        <Link href="/nutrition/plans" className="bg-ft-surface rounded-lg p-3 border border-ft-border text-center hover:border-ft-dim transition-colors">
           <p className="font-display text-xs text-ft-white">Generate Plan</p>
           <p className="text-tertiary font-body text-[10px] mt-0.5">AI-powered from your macros</p>
-        </a>
-        <a href="/nutrition/plans" className="bg-ft-surface rounded-lg p-3 border border-ft-border text-center hover:border-ft-dim transition-colors">
+        </Link>
+        <Link href="/nutrition/plans" className="bg-ft-surface rounded-lg p-3 border border-ft-border text-center hover:border-ft-dim transition-colors">
           <p className="font-display text-xs text-ft-white">Grocery List</p>
           <p className="text-tertiary font-body text-[10px] mt-0.5">From this week&apos;s plan</p>
-        </a>
+        </Link>
       </div>
     </div>
   );

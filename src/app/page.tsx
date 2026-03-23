@@ -533,6 +533,26 @@ function ProgressView({
           </div>
         </div>
       )}
+
+      {/* Quick Links */}
+      <div className="section-divider pt-4">
+        <div className="grid grid-cols-3 gap-2">
+          {[
+            { label: "History", href: "/history", icon: "📖" },
+            { label: "Progress", href: "/progress", icon: "📈" },
+            { label: "Exercises", href: "/exercises", icon: "💪" },
+          ].map((link) => (
+            <Link
+              key={link.href}
+              href={link.href}
+              className="bg-ft-surface rounded-lg p-3 border border-ft-border text-center hover:border-ft-dim transition-colors"
+            >
+              <span className="text-lg block">{link.icon}</span>
+              <span className="text-ft-light font-body text-xs mt-1 block">{link.label}</span>
+            </Link>
+          ))}
+        </div>
+      </div>
     </div>
   );
 }
