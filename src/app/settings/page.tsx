@@ -3,15 +3,19 @@
 import { useState, useEffect } from "react";
 import { Card, SectionHeader } from "@/components/ui";
 import { useToast } from "@/components/ui/Toast";
-import { getTheme, setTheme as applyTheme } from "@/lib/theme";
+import { useTheme } from "@/providers/ThemeProvider";
+import { themeList } from "@/themes";
 import FitbitIcon from "@/components/ui/FitbitIcon";
 
-const THEMES = [
-  { id: "default", label: "Default", desc: "Neutral dark gray" },
-  { id: "midnight", label: "Midnight", desc: "Deep blue-black" },
-  { id: "iron", label: "Iron", desc: "Warm gray with amber" },
-  { id: "forest", label: "Forest", desc: "Deep green tones" },
-] as const;
+const THEME_SWATCHES: Record<string, { bg: string; accent: string }> = {
+  graffiti:  { bg: '#2A2D2F', accent: '#3B82F6' },
+  cyberpunk: { bg: '#08080F', accent: '#00F0FF' },
+  notebook:  { bg: '#E8E0D4', accent: '#B5312A' },
+  blueprint: { bg: '#1A2744', accent: '#4A9EFF' },
+  arcade:    { bg: '#0A0A14', accent: '#FF50C8' },
+  lab:       { bg: '#F5F5F7', accent: '#2563EB' },
+  iron:      { bg: '#1C1B19', accent: '#C8A96E' },
+};
 
 function getStoredUnit(key: string, fallback: string): string {
   if (typeof window === "undefined") return fallback;
@@ -21,7 +25,7 @@ function getStoredUnit(key: string, fallback: string): string {
 export default function SettingsPage() {
   const [weightUnit, setWeightUnit] = useState(() => getStoredUnit("ft-weight-unit", "lbs"));
   const [distanceUnit, setDistanceUnit] = useState(() => getStoredUnit("ft-distance-unit", "miles"));
-  const [theme, setThemeState] = useState(() => getTheme());
+  const { themeId: theme, setTheme: applyTheme } = useTheme();
 
   useEffect(() => {
     localStorage.setItem("ft-weight-unit", weightUnit);
@@ -225,24 +229,32 @@ export default function SettingsPage() {
       <div className="section-divider" />
       <Card>
         <SectionHeader title="Theme" />
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-          {THEMES.map((t) => (
-            <button
-              key={t.id}
-              onClick={() => {
-                setThemeState(t.id);
-                applyTheme(t.id);
-              }}
-              className={`flex flex-col items-center gap-1.5 rounded-md border px-3 py-3 transition-colors ${
-                theme === t.id
-                  ? "border-ft-accent bg-ft-surface"
-                  : "border-ft-border bg-ft-card hover:border-ft-dim"
-              }`}
-            >
-              <span className="text-ft-white text-sm font-body font-bold">{t.label}</span>
-              <span className="text-ft-dim text-[10px] font-body">{t.desc}</span>
-            </button>
-          ))}
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+          {themeList.map((t) => {
+            const swatch = THEME_SWATCHES[t.id] || { bg: '#333', accent: '#fff' };
+            return (
+              <button
+                key={t.id}
+                onClick={() => applyTheme(t.id)}
+                className={`flex items-center gap-3 border px-3 py-3 transition-colors text-left ${
+                  theme === t.id
+                    ? "border-ft-accent bg-ft-surface"
+                    : "border-ft-border bg-ft-card hover:border-ft-dim"
+                }`}
+              >
+                <span
+                  className="w-8 h-8 shrink-0 border border-ft-border"
+                  style={{
+                    background: swatch.bg,
+                    boxShadow: theme === t.id ? `inset 0 0 0 3px ${swatch.accent}` : 'none',
+                  }}
+                />
+                <div>
+                  <span className="text-ft-white text-sm font-body font-bold block">{t.name}</span>
+                </div>
+              </button>
+            );
+          })}
         </div>
       </Card>
 

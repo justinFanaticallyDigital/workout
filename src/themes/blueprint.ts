@@ -5,62 +5,74 @@ export const blueprint: ThemeConfig = {
   name: 'Blueprint',
 
   colors: {
-    bg: '#0d2137',
-    bgCard: '#122b47',
-    bgElevated: '#1a3557',
+    // Blueprint blue background
+    bg: '#1A2744',
+    bgCard: 'rgba(255,255,255,0.04)',
+    bgElevated: 'rgba(255,255,255,0.06)',
 
-    textPrimary: 'rgba(200, 220, 255, 0.90)',
-    textSecondary: 'rgba(200, 220, 255, 0.58)',
-    textTertiary: 'rgba(200, 220, 255, 0.35)',
+    // Text: white/light blue on dark blue
+    textPrimary: 'rgba(255,255,255,0.9)',
+    textSecondary: 'rgba(180,200,230,0.6)',
+    textTertiary: 'rgba(180,200,230,0.35)',
 
-    accent: '#4a9eff',
-    accentSecondary: '#ff6b35',
+    accent: '#4A9EFF',          // bright blueprint blue for annotations
+    accentSecondary: '#FF6B4A', // red for dimension callouts / alerts
 
     push: '#3B82F6',
     pull: '#22C55E',
     legs: '#EF4444',
     core: '#EAB308',
 
-    success: '#4ade80',
-    error: '#f87171',
-    warning: '#fbbf24',
+    success: '#22C55E',
+    error: '#FF6B4A',
+    warning: '#EAB308',
 
-    border: '#1e4a7a',
-    borderSubtle: '#162f50',
+    border: 'rgba(255,255,255,0.12)',
+    borderSubtle: 'rgba(255,255,255,0.06)',
   },
 
   fonts: {
     display: "'IBM Plex Mono', monospace",
     data: "'IBM Plex Mono', monospace",
-    body: "'IBM Plex Mono', monospace",
+    body: "'IBM Plex Mono', monospace",  // all mono — technical drawing feel
   },
 
   borders: {
-    card: '1px solid #1e4a7a',
-    divider: '1px solid rgba(74, 158, 255, 0.20)',
+    card: '1px solid rgba(255,255,255,0.12)',
+    divider: '1px solid rgba(255,255,255,0.08)',
     radius: '0',
   },
 
   texture: {
     type: 'css',
-    value: 'linear-gradient(rgba(74, 158, 255, 0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(74, 158, 255, 0.03) 1px, transparent 1px)',
+    // Blueprint grid — fine lines every 20px, bold lines every 100px
+    value: `
+      background-image:
+        linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px),
+        linear-gradient(rgba(255,255,255,0.06) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,0.06) 1px, transparent 1px);
+      background-size: 20px 20px, 20px 20px, 100px 100px, 100px 100px;
+    `,
   },
 
   components: {
     exerciseCard: {
-      movementIndicator: 'border',
+      movementIndicator: 'left-bar',
+      movementIndicatorWidth: '2px',
     },
     nav: {
-      activeIndicator: 'border-bottom',
+      activeIndicator: 'underline',
       activeStyle: {
-        borderColor: '#4a9eff',
+        borderColor: '#4A9EFF',
+        borderWidth: '1px',
       },
     },
     button: {
       style: 'outline',
     },
     restTimer: {
-      style: 'text-countdown',
+      style: 'bar',
       glowEffect: false,
     },
   },

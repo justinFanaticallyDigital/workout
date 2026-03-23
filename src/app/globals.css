@@ -551,3 +551,440 @@ body > * {
   font-weight: 700;
   color: #2C241E;
 }
+
+/* === Blueprint theme utilities === */
+
+/* Title block — boxed section header with revision number feel */
+.blueprint-title-block {
+  border: 1px solid rgba(255,255,255,0.12);
+  padding: 6px 12px;
+  display: inline-block;
+}
+
+/* Registration crosshair marks at section corners */
+.blueprint-crosshair {
+  position: relative;
+}
+.blueprint-crosshair::before {
+  content: '+';
+  position: absolute;
+  top: -8px;
+  left: -8px;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 10px;
+  color: rgba(255,255,255,0.15);
+  line-height: 1;
+}
+
+/* Fold lines — faint diagonal creases */
+.blueprint-fold-lines {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 1;
+  background-image:
+    linear-gradient(135deg, transparent 49.5%, rgba(255,255,255,0.015) 49.5%, rgba(255,255,255,0.015) 50.5%, transparent 50.5%),
+    linear-gradient(45deg, transparent 49.5%, rgba(255,255,255,0.01) 49.5%, rgba(255,255,255,0.01) 50.5%, transparent 50.5%);
+  background-size: 100% 100%;
+}
+
+/* Dimension callout — small lines with arrows pointing to values */
+.blueprint-dimension {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 9px;
+  color: rgba(180,200,230,0.6);
+  position: relative;
+  padding: 0 8px;
+}
+.blueprint-dimension::before {
+  content: '\2190';
+  position: absolute;
+  left: 0;
+  top: 0;
+}
+.blueprint-dimension::after {
+  content: '\2192';
+  position: absolute;
+  right: 0;
+  top: 0;
+}
+
+/* Annotation style — small technical notes */
+.blueprint-annotation {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 9px;
+  color: rgba(180,200,230,0.35);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+/* SPEC: prefix label style */
+.blueprint-spec-label {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  color: rgba(180,200,230,0.6);
+}
+
+/* Blueprint typography scale — all IBM Plex Mono */
+.blueprint-section-title {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 16px;
+  text-transform: uppercase;
+  letter-spacing: 3px;
+  color: rgba(255,255,255,0.9);
+}
+.blueprint-exercise-name {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 14px;
+  text-transform: uppercase;
+}
+.blueprint-set-data {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 13px;
+}
+.blueprint-label {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  color: rgba(180,200,230,0.6);
+}
+.blueprint-nav {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+}
+
+/* === Arcade theme utilities === */
+
+/* ALL CAPS enforced — arcade games never use lowercase */
+.arcade-caps {
+  text-transform: uppercase;
+}
+
+/* CRT vignette — dark corners simulating CRT edge falloff */
+.arcade-vignette {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 2;
+  background: radial-gradient(
+    ellipse at center,
+    transparent 60%,
+    rgba(0,0,0,0.25) 100%
+  );
+}
+
+/* Score counter display */
+.arcade-score {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 10px;
+  color: #FFD700;
+  text-transform: uppercase;
+}
+
+/* Streak/combo bonus text */
+.arcade-streak {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 9px;
+  color: #FFD700;
+  text-transform: uppercase;
+}
+
+/* PLAYER 1 header identifier */
+.arcade-player-id {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 9px;
+  color: #FF50C8;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+/* Pixel border button treatment — double-line pixel style */
+.arcade-pixel-btn {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 9px;
+  text-transform: uppercase;
+  background: transparent;
+  border: 2px solid rgba(255,255,255,0.08);
+  color: #E0E0F0;
+  padding: 8px 16px;
+  cursor: pointer;
+  position: relative;
+}
+.arcade-pixel-btn::after {
+  content: '';
+  position: absolute;
+  inset: 2px;
+  border: 1px solid rgba(255,255,255,0.06);
+  pointer-events: none;
+}
+.arcade-pixel-btn:hover {
+  border-color: #FF50C8;
+  color: #FF50C8;
+}
+
+/* Health bar rest timer — green to yellow to red */
+.arcade-health-bar {
+  height: 8px;
+  background: rgba(255,255,255,0.05);
+}
+.arcade-health-bar-fill {
+  height: 100%;
+  transition: width 1s linear, background-color 0.5s ease;
+}
+.arcade-health-green { background-color: #22C55E; }
+.arcade-health-yellow { background-color: #FFD700; }
+.arcade-health-red { background-color: #EF4444; }
+
+/* Idle prompt — "INSERT COIN" / "PRESS START" */
+.arcade-idle-prompt {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 10px;
+  text-transform: uppercase;
+  color: #E0E0F0;
+  animation: arcadeBlink 1s step-end infinite;
+}
+@keyframes arcadeBlink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
+}
+
+/* ROUND label (replaces "Set") */
+.arcade-round-label {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 9px;
+  text-transform: uppercase;
+  color: rgba(224,224,240,0.5);
+}
+
+/*
+ * Arcade typography scale — CRITICAL: Press Start 2P renders small!
+ * All sizes are upsized vs other themes to compensate.
+ * Minimum 8px absolute floor for this font.
+ */
+.arcade-title {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 16px;
+  text-transform: uppercase;
+  color: #E0E0F0;
+  line-height: 1.6;
+}
+.arcade-title-lg {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 18px;
+  text-transform: uppercase;
+  color: #E0E0F0;
+  line-height: 1.6;
+}
+.arcade-exercise-name {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 13px;
+  text-transform: uppercase;
+  line-height: 1.5;
+}
+.arcade-set-data {
+  font-family: 'Courier New', monospace;
+  font-size: 14px;
+  font-weight: 700;
+}
+.arcade-label {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 9px;
+  text-transform: uppercase;
+  color: rgba(224,224,240,0.5);
+  line-height: 1.6;
+}
+.arcade-label-sm {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 8px;
+  text-transform: uppercase;
+  color: rgba(224,224,240,0.25);
+  line-height: 1.6;
+}
+.arcade-nav {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 9px;
+  text-transform: uppercase;
+  line-height: 1.6;
+}
+
+/* === Lab Report theme utilities === */
+
+/* Card shadow — very subtle, clinical depth */
+.lab-card-shadow {
+  box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+}
+
+/* Alternating row shading for data tables */
+.lab-row-alt:nth-child(even) {
+  background: rgba(0,0,0,0.02);
+}
+
+/* Status pills — small, filled badges */
+.lab-status-pill {
+  font-family: 'Inter', sans-serif;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  padding: 2px 8px;
+  border-radius: 10px;
+  display: inline-block;
+}
+.lab-status-complete {
+  background: rgba(5,150,105,0.08);
+  color: #059669;
+}
+.lab-status-pending {
+  background: rgba(107,114,128,0.08);
+  color: #6B7280;
+}
+
+/* Specimen ID / sample number convention */
+.lab-specimen-id {
+  font-family: 'Inter', sans-serif;
+  font-size: 10px;
+  font-weight: 400;
+  letter-spacing: 0.08em;
+  color: #9CA3AF;
+}
+
+/* Delta comparison values */
+.lab-delta {
+  font-family: 'Inter', sans-serif;
+  font-size: 12px;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+}
+.lab-delta-positive { color: #059669; }
+.lab-delta-negative { color: #DC2626; }
+.lab-delta-neutral { color: #6B7280; }
+
+/* Protocol adherence badge */
+.lab-protocol {
+  font-family: 'Inter', sans-serif;
+  font-size: 11px;
+  font-weight: 500;
+  color: #6B7280;
+}
+
+/* Lab typography scale — all Inter, varying by weight */
+.lab-section-header {
+  font-family: 'Inter', sans-serif;
+  font-size: 16px;
+  font-weight: 600;
+  color: #1A1A1A;
+}
+.lab-exercise-name {
+  font-family: 'Inter', sans-serif;
+  font-size: 15px;
+  font-weight: 600;
+  color: #1A1A1A;
+}
+.lab-set-data {
+  font-family: 'Inter', sans-serif;
+  font-size: 14px;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+  color: #1A1A1A;
+}
+.lab-column-header {
+  font-family: 'Inter', sans-serif;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #6B7280;
+}
+.lab-meta {
+  font-family: 'Inter', sans-serif;
+  font-size: 12px;
+  font-weight: 400;
+  color: #6B7280;
+}
+.lab-nav {
+  font-family: 'Inter', sans-serif;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+/* === Iron & Chalk theme utilities === */
+
+/* Weight plate groove dividers — subtle raised/recessed horizontal lines */
+.iron-plate-groove {
+  border-top: 1px solid rgba(255,252,245,0.08);
+  border-bottom: 1px solid rgba(0,0,0,0.3);
+  height: 0;
+}
+
+/* Chalked-in completed set — slightly brighter, settled */
+.iron-chalked {
+  color: rgba(255,252,245,0.92);
+}
+
+/* Not-yet-loaded pending set — dimmer */
+.iron-pending {
+  color: rgba(255,252,245,0.25);
+}
+
+/* PR indicator — brass gold subtle border/underline */
+.iron-pr-mark {
+  border-bottom: 2px solid #C8A96E;
+  padding-bottom: 1px;
+}
+
+/* Brass accent rule — like knurling on a barbell */
+.iron-brass-rule {
+  border-top: 1px solid rgba(200,169,110,0.25);
+}
+
+/* Iron typography scale */
+.iron-title {
+  font-family: 'Anton', sans-serif;
+  font-size: 28px;
+  text-transform: uppercase;
+  color: rgba(255,252,245,0.92);
+  line-height: 1.1;
+}
+.iron-exercise-name {
+  font-family: 'Anton', sans-serif;
+  font-size: 20px;
+  text-transform: uppercase;
+  color: rgba(255,252,245,0.92);
+  line-height: 1.2;
+}
+.iron-set-data {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 18px;
+  font-weight: 500;
+  color: rgba(255,252,245,0.92);
+}
+.iron-column-header {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: rgba(255,252,245,0.55);
+}
+.iron-meta {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 12px;
+  font-weight: 400;
+  color: rgba(255,252,245,0.55);
+}
+.iron-nav {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+.iron-rest-timer {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 36px;
+  font-weight: 600;
+  color: rgba(255,252,245,0.92);
+}
