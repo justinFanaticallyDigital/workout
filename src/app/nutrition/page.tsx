@@ -2,7 +2,8 @@
 
 import { useState, useEffect, useCallback, useRef } from "react";
 import { Card } from "@/components/ui";
-import { authCheck } from "@/lib/fetch-helpers";
+import { useToast } from "@/components/ui/Toast";
+import { authCheck, toastError } from "@/lib/fetch-helpers";
 
 // ─── Types ─────────────────────────────────────────────
 interface FoodItem {
@@ -238,6 +239,7 @@ function FoodSearch({
 
 // ─── Main Nutrition Page ───────────────────────────────
 export default function NutritionPage() {
+  const toast = useToast();
   const [date, setDate] = useState(() => new Date().toISOString().split("T")[0]);
   const [meals, setMeals] = useState<Meal[]>([]);
   const [totals, setTotals] = useState<DayTotals>({ calories: 0, protein: 0, carbs: 0, fat: 0 });
@@ -257,8 +259,8 @@ export default function NutritionPage() {
       .then(authCheck)
       .then((r) => r.ok ? r.json() : { meals: [], totals: { calories: 0, protein: 0, carbs: 0, fat: 0 } })
       .then((data) => { setMeals(data.meals ?? []); setTotals(data.totals ?? { calories: 0, protein: 0, carbs: 0, fat: 0 }); setLoading(false); })
-      .catch(() => setLoading(false));
-  }, []);
+      .catch((err: unknown) => { toastError(toast, "Failed to load meals")(err); setLoading(false); });
+  }, [toast]);
 
   useEffect(() => {
     fetchDay(date);
@@ -267,7 +269,7 @@ export default function NutritionPage() {
       .then((r) => r.ok ? r.json() : null)
       .then((data) => {
         if (data?.target) { setTarget(data.target); setTCal(data.target.calories?.toString() ?? ""); setTProtein(data.target.protein?.toString() ?? ""); setTCarbs(data.target.carbs?.toString() ?? ""); setTFat(data.target.fat?.toString() ?? ""); }
-      }).catch(() => {});
+      }).catch(toastError(toast, "Failed to load nutrition targets"));
   }, [date, fetchDay]);
 
   const handleAddFood = async (food: FoodItem, quantity: number, mealType: string) => {

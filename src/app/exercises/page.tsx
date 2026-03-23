@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { DataTable } from "@/components/ui";
+import EmptyState from "@/components/ui/EmptyState";
 import { authCheck } from "@/lib/fetch-helpers";
 
 interface Exercise {
@@ -99,7 +100,13 @@ export default function ExerciseLibraryPage() {
       {loading ? (
         <div className="text-ft-dim font-mono text-sm">Loading exercises...</div>
       ) : filtered.length === 0 ? (
-        <div className="text-ft-muted font-mono text-sm">No exercises found</div>
+        <EmptyState
+          icon="🔍"
+          title="No exercises found"
+          description={activeFilter !== "All" ? `No exercises match the "${activeFilter}" filter. Try a different filter.` : "No exercises available yet."}
+          actionLabel={activeFilter !== "All" ? "Clear Filter" : undefined}
+          onAction={activeFilter !== "All" ? () => setActiveFilter("All") : undefined}
+        />
       ) : (
         <DataTable
           columns={COLUMNS}

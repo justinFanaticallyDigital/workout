@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
-import { authCheck } from "@/lib/fetch-helpers";
+import { useToast } from "@/components/ui/Toast";
+import { authCheck, toastError } from "@/lib/fetch-helpers";
 
 const DAY_LABELS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 
@@ -24,6 +25,7 @@ interface DaySummary {
 }
 
 export default function CalendarPage() {
+  const toast = useToast();
   const [currentMonth, setCurrentMonth] = useState(() => {
     const now = new Date();
     return { year: now.getFullYear(), month: now.getMonth() };
@@ -58,7 +60,7 @@ export default function CalendarPage() {
         }
         setDaySummaries(summaries);
       })
-      .catch(() => {})
+      .catch(toastError(toast, "Failed to load calendar data"))
       .finally(() => setLoading(false));
   }, [currentMonth]);
 

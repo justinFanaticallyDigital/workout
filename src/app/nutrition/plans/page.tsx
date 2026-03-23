@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import Card from "@/components/ui/Card";
+import EmptyState from "@/components/ui/EmptyState";
 
 interface FoodItem {
   id: string;
@@ -383,19 +384,13 @@ export default function MealPlansPage() {
 
       {/* Plan List */}
       {plans.length === 0 && !showGenerator ? (
-        <Card>
-          <div className="text-center py-8">
-            <p className="text-ft-dim font-mono text-sm">
-              No meal plans yet. Generate your first plan to get started.
-            </p>
-            <button
-              onClick={() => setShowGenerator(true)}
-              className="mt-4 px-4 py-2 text-sm font-mono bg-ft-white text-ft-bg rounded hover:bg-ft-light transition-colors"
-            >
-              Generate Plan
-            </button>
-          </div>
-        </Card>
+        <EmptyState
+          icon="🍽"
+          title="No meal plans yet"
+          description="Generate your first plan to get started with structured daily nutrition."
+          actionLabel="Generate Plan"
+          onAction={() => setShowGenerator(true)}
+        />
       ) : (
         plans.map((plan) => {
           const isExpanded = expandedPlan === plan.id;

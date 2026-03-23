@@ -3,7 +3,8 @@
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { Card, Tag, EmptyState } from "@/components/ui";
-import { authCheck } from "@/lib/fetch-helpers";
+import { useToast } from "@/components/ui/Toast";
+import { authCheck, toastError } from "@/lib/fetch-helpers";
 
 interface WorkoutSummary {
   id: string;
@@ -39,6 +40,7 @@ function calcVolume(exercises: WorkoutSummary["exercises"]): number {
 }
 
 export default function HistoryPage() {
+  const toast = useToast();
   const [workouts, setWorkouts] = useState<WorkoutSummary[]>([]);
   const [loading, setLoading] = useState(true);
   const [offset, setOffset] = useState(0);
@@ -64,8 +66,8 @@ export default function HistoryPage() {
         setHasMore(fetched.length === limit);
         setLoading(false);
       })
-      .catch(() => setLoading(false));
-  }, []);
+      .catch((err: unknown) => { toastError(toast, "Failed to load workout history")(err); setLoading(false); });
+  }, [toast]);
 
   useEffect(() => {
     fetchWorkouts(0, false);
