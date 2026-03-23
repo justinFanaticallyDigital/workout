@@ -1,12 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { requireAuthUserId } from "@/lib/auth-helpers";
+import { requireAuth } from "@/lib/auth-helpers";
 
 export async function GET(
   _request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const userId = await requireAuthUserId();
+  const [userId, authError] = await requireAuth();
+  if (authError) return authError;
   const { id } = await params;
 
   const workout = await prisma.workout.findUnique({
@@ -34,7 +35,8 @@ export async function PATCH(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const userId = await requireAuthUserId();
+  const [userId, authError] = await requireAuth();
+  if (authError) return authError;
   const { id } = await params;
   const body = await request.json();
 
@@ -55,7 +57,8 @@ export async function DELETE(
   _request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const userId = await requireAuthUserId();
+  const [userId, authError] = await requireAuth();
+  if (authError) return authError;
   const { id } = await params;
 
   // Verify ownership
@@ -64,10 +67,6 @@ export async function DELETE(
     return NextResponse.json({ error: "Workout not found" }, { status: 404 });
   }
 
-  await prisma.set.deleteMany({
-    where: { workoutExercise: { workoutId: id } },
-  });
-  await prisma.workoutExercise.deleteMany({ where: { workoutId: id } });
   await prisma.workout.delete({ where: { id } });
 
   return NextResponse.json({ deleted: true });

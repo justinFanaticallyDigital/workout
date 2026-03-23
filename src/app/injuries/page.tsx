@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { Card, SectionHeader, Tag, EmptyState } from "@/components/ui";
 import { useToast } from "@/components/ui/Toast";
+import { authCheck } from "@/lib/fetch-helpers";
 
 interface InjuryNote {
   id: string;
@@ -57,6 +58,7 @@ export default function InjuriesPage() {
 
   const fetchInjuries = () => {
     fetch("/api/injuries")
+      .then(authCheck)
       .then((res) => res.json())
       .then((data) => {
         setInjuries(data.injuries ?? []);

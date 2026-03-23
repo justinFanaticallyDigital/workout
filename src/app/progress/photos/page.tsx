@@ -1,8 +1,10 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import Link from "next/link";
 import { Card, SectionHeader, Tag, EmptyState } from "@/components/ui";
 import { useToast } from "@/components/ui/Toast";
+import { authCheck } from "@/lib/fetch-helpers";
 
 interface ProgressPhoto {
   id: string;
@@ -32,6 +34,7 @@ export default function ProgressPhotosPage() {
 
   const fetchPhotos = () => {
     fetch("/api/progress/photos")
+      .then(authCheck)
       .then((res) => res.json())
       .then((data) => {
         setPhotos(data.photos ?? []);
@@ -81,6 +84,13 @@ export default function ProgressPhotosPage() {
 
   return (
     <div className="min-h-screen bg-ft-bg p-6 max-w-4xl mx-auto space-y-6">
+      <Link
+        href="/progress"
+        className="inline-flex items-center gap-1.5 text-ft-dim text-sm font-body hover:text-ft-light transition-colors mb-2"
+      >
+        <span>&larr;</span>
+        <span>Progress</span>
+      </Link>
       <div>
         <h1 className="text-2xl font-mono font-bold text-ft-white tracking-wide">
           Progress Photos
@@ -148,7 +158,7 @@ export default function ProgressPhotosPage() {
                   }}
                   className={`text-xs font-mono transition-colors border rounded px-3 py-1 ${
                     compareMode
-                      ? "text-ft-accent border-ft-accent"
+                      ? "text-ft-white border-ft-accent bg-ft-accent/20"
                       : "text-ft-dim border-ft-border hover:text-ft-light"
                   }`}
                 >

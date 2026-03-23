@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { requireAuthUserId } from "@/lib/auth-helpers";
+import { requireAuth } from "@/lib/auth-helpers";
 import crypto from "crypto";
 
 /**
@@ -8,7 +8,8 @@ import crypto from "crypto";
  * Returns the authorization URL for the client to redirect to.
  */
 export async function GET() {
-  await requireAuthUserId();
+  const [, authError] = await requireAuth();
+  if (authError) return authError;
 
   const clientId = process.env.FITBIT_CLIENT_ID;
   const baseUrl = process.env.NEXTAUTH_URL;

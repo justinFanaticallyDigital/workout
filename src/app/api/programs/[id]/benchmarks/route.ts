@@ -1,12 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { requireAuthUserId } from "@/lib/auth-helpers";
+import { requireAuth } from "@/lib/auth-helpers";
 
 export async function GET(
   _request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const userId = await requireAuthUserId();
+  const [userId, authError] = await requireAuth();
+  if (authError) return authError;
   const { id: programId } = await params;
 
   const program = await prisma.program.findUnique({
@@ -30,7 +31,8 @@ export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const userId = await requireAuthUserId();
+  const [userId, authError] = await requireAuth();
+  if (authError) return authError;
   const { id: programId } = await params;
   const body = await request.json();
 
@@ -67,7 +69,8 @@ export async function PATCH(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const userId = await requireAuthUserId();
+  const [userId, authError] = await requireAuth();
+  if (authError) return authError;
   const { id: programId } = await params;
   const body = await request.json();
 

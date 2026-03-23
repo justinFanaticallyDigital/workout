@@ -1,10 +1,11 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { requireAuthUserId } from "@/lib/auth-helpers";
+import { requireAuth } from "@/lib/auth-helpers";
 
 // One-time migration to add new columns. DELETE THIS FILE after running.
 export async function POST() {
-  await requireAuthUserId(); // must be logged in
+  const [, authError] = await requireAuth();
+  if (authError) return authError;
 
   const results: string[] = [];
 

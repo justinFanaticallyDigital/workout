@@ -1,12 +1,14 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { requireAuthUserId } from "@/lib/auth-helpers";
+import { requireAuth } from "@/lib/auth-helpers";
+import type { DayType } from "@/generated/prisma/enums";
 
 export async function GET(
   _request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const userId = await requireAuthUserId();
+  const [userId, authError] = await requireAuth();
+  if (authError) return authError;
   const { id } = await params;
 
   const day = await prisma.blockDay.findUnique({
@@ -37,4 +39,54 @@ export async function GET(
   }
 
   return NextResponse.json(day);
+}
+
+export async function PATCH(
+  request: Request,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const [userId, authError] = await requireAuth();
+  if (authError) return authError;
+  const { id } = await params;
+  const body = await (request as Request & { json(): Promise<Record<string, unknown>> }).json();
+
+  const day = await prisma.blockDay.findUnique({
+    where: { id, block: { program: { userId } } },
+    select: { id: true },
+  });
+  if (!day) {
+    return NextResponse.json({ error: "Block day not found" }, { status: 404 });
+  }
+
+  const updated = await prisma.blockDay.update({
+    where: { id },
+    data: {
+      ...(body.name !== undefined && { name: body.name as string }),
+      ...(body.dayType !== undefined && { dayType: body.dayType as DayType }),
+      ...(body.sortOrder !== undefined && { sortOrder: body.sortOrder as number }),
+    },
+  });
+
+  return NextResponse.json(updated);
+}
+
+export async function DELETE(
+  _request: Request,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const [userId, authError] = await requireAuth();
+  if (authError) return authError;
+  const { id } = await params;
+
+  const day = await prisma.blockDay.findUnique({
+    where: { id, block: { program: { userId } } },
+    select: { id: true },
+  });
+  if (!day) {
+    return NextResponse.json({ error: "Block day not found" }, { status: 404 });
+  }
+
+  await prisma.blockDay.delete({ where: { id } });
+
+  return NextResponse.json({ deleted: true });
 }

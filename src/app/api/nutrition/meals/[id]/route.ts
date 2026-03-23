@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { requireAuthUserId } from "@/lib/auth-helpers";
+import { requireAuth } from "@/lib/auth-helpers";
 
 /**
  * DELETE /api/nutrition/meals/[id]
@@ -10,7 +10,8 @@ export async function DELETE(
   _request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const userId = await requireAuthUserId();
+  const [userId, authError] = await requireAuth();
+  if (authError) return authError;
   const { id } = await params;
 
   const meal = await prisma.meal.findUnique({
@@ -34,7 +35,8 @@ export async function PATCH(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const userId = await requireAuthUserId();
+  const [userId, authError] = await requireAuth();
+  if (authError) return authError;
   const { id } = await params;
   const body = await request.json();
 

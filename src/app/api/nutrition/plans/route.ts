@@ -1,13 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { requireAuthUserId } from "@/lib/auth-helpers";
+import { requireAuth } from "@/lib/auth-helpers";
 
 /**
  * GET /api/nutrition/plans
  * List all meal plans for the user.
  */
 export async function GET() {
-  const userId = await requireAuthUserId();
+  const [userId, authError] = await requireAuth();
+  if (authError) return authError;
 
   const plans = await prisma.mealPlan.findMany({
     where: { userId },
@@ -35,7 +36,8 @@ export async function GET() {
  * Create a new meal plan (empty shell).
  */
 export async function POST(request: NextRequest) {
-  const userId = await requireAuthUserId();
+  const [userId, authError] = await requireAuth();
+  if (authError) return authError;
   const body = await request.json();
 
   if (!body.name?.trim()) {

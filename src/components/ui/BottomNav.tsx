@@ -1,7 +1,17 @@
 "use client";
 
+import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+
+const moreLinks = [
+  { label: "Programs", href: "/programs", icon: "📋" },
+  { label: "Exercises", href: "/exercises", icon: "💪" },
+  { label: "History", href: "/history", icon: "📖" },
+  { label: "Progress", href: "/progress", icon: "📈" },
+  { label: "Injuries", href: "/injuries", icon: "🩹" },
+  { label: "Settings", href: "/settings", icon: "⚙️" },
+];
 
 const tabs = [
   {
@@ -65,23 +75,72 @@ const tabs = [
 
 export default function BottomNav() {
   const pathname = usePathname();
+  const [moreOpen, setMoreOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
 
   const isActive = (href: string) => {
     if (href === "/") return pathname === "/";
     return pathname.startsWith(href);
   };
 
+  // Close menu on route change
+  useEffect(() => {
+    setMoreOpen(false);
+  }, [pathname]);
+
+  // Close menu on outside click
+  useEffect(() => {
+    if (!moreOpen) return;
+    const handleClick = (e: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        setMoreOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, [moreOpen]);
+
   // Hide bottom nav on workout logger and stretch timer (full screen flows)
   if (pathname.match(/^\/log\/[^/]+$/) || pathname.startsWith("/stretch-timer")) {
     return null;
   }
 
+  const moreActive = moreLinks.some((l) => pathname.startsWith(l.href));
+
   return (
     <>
       {/* Spacer to prevent content from being hidden */}
       <div className="h-20" />
+
+      {/* More menu overlay */}
+      {moreOpen && (
+        <div className="fixed inset-0 bg-black/40 z-40" />
+      )}
+
       {/* Fade gradient above nav */}
-      <div className="fixed bottom-0 left-0 right-0 z-40">
+      <div className="fixed bottom-0 left-0 right-0 z-40" ref={menuRef}>
+        {/* More menu drawer */}
+        {moreOpen && (
+          <div className="bg-ft-surface border-t border-ft-border rounded-t-2xl px-4 pt-4 pb-2 mx-1 mb-[-1px] shadow-xl">
+            <div className="grid grid-cols-3 gap-2">
+              {moreLinks.map((link) => (
+                <Link
+                  key={link.href}
+                  href={link.href}
+                  className={`flex flex-col items-center gap-1.5 py-3 px-2 rounded-lg transition-colors ${
+                    pathname.startsWith(link.href)
+                      ? "bg-ft-card"
+                      : "hover:bg-ft-card/50"
+                  }`}
+                >
+                  <span className="text-lg">{link.icon}</span>
+                  <span className="text-xs font-body text-ft-white">{link.label}</span>
+                </Link>
+              ))}
+            </div>
+          </div>
+        )}
+
         <div className="bottom-nav-fade h-6 pointer-events-none" />
         <nav
           className="bg-ft-bg/95 backdrop-blur-sm border-t border-ft-border flex items-end justify-around px-2 pb-safe"
@@ -136,6 +195,29 @@ export default function BottomNav() {
               </Link>
             );
           })}
+
+          {/* More button */}
+          <button
+            onClick={() => setMoreOpen(!moreOpen)}
+            className="flex flex-col items-center pt-2 pb-1 px-3 min-w-[56px] transition-colors"
+          >
+            <span
+              style={{ color: moreActive || moreOpen ? "rgb(var(--ft-accent))" : "rgba(var(--ft-text-tertiary) / var(--ft-alpha-tertiary))" }}
+              className="transition-colors"
+            >
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={moreActive ? 2.2 : 1.8} strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="12" cy="12" r="1" />
+                <circle cx="19" cy="12" r="1" />
+                <circle cx="5" cy="12" r="1" />
+              </svg>
+            </span>
+            <span
+              className="text-[10px] font-body font-semibold mt-1 transition-colors"
+              style={{ color: moreActive || moreOpen ? "rgb(var(--ft-accent))" : "rgba(var(--ft-text-tertiary) / var(--ft-alpha-tertiary))" }}
+            >
+              More
+            </span>
+          </button>
         </nav>
       </div>
     </>

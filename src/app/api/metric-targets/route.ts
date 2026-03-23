@@ -6,46 +6,54 @@ export async function GET(req: NextRequest) {
   const [userId, errorRes] = await requireAuth();
   if (!userId) return errorRes!;
 
-  const { searchParams } = new URL(req.url);
-  const programId = searchParams.get("programId");
+  try {
+    const { searchParams } = new URL(req.url);
+    const programId = searchParams.get("programId");
 
-  const targets = await prisma.userMetricTarget.findMany({
-    where: {
-      userId,
-      ...(programId ? { programId } : {}),
-    },
-    orderBy: { createdAt: "asc" },
-  });
+    const targets = await prisma.userMetricTarget.findMany({
+      where: {
+        userId,
+        ...(programId ? { programId } : {}),
+      },
+      orderBy: { createdAt: "asc" },
+    });
 
-  return NextResponse.json(targets);
+    return NextResponse.json(targets);
+  } catch {
+    return NextResponse.json([], { status: 200 });
+  }
 }
 
 export async function POST(req: NextRequest) {
   const [userId, errorRes] = await requireAuth();
   if (!userId) return errorRes!;
 
-  const body = await req.json();
+  try {
+    const body = await req.json();
 
-  const target = await prisma.userMetricTarget.upsert({
-    where: {
-      userId_metricKey_programId: {
+    const target = await prisma.userMetricTarget.upsert({
+      where: {
+        userId_metricKey_programId: {
+          userId,
+          metricKey: body.metricKey,
+          programId: body.programId ?? null,
+        },
+      },
+      update: {
+        targetValue: body.targetValue,
+        unit: body.unit,
+      },
+      create: {
         userId,
         metricKey: body.metricKey,
-        programId: body.programId ?? null,
+        programId: body.programId,
+        targetValue: body.targetValue,
+        unit: body.unit,
       },
-    },
-    update: {
-      targetValue: body.targetValue,
-      unit: body.unit,
-    },
-    create: {
-      userId,
-      metricKey: body.metricKey,
-      programId: body.programId,
-      targetValue: body.targetValue,
-      unit: body.unit,
-    },
-  });
+    });
 
-  return NextResponse.json(target);
+    return NextResponse.json(target);
+  } catch {
+    return NextResponse.json({ error: "metric_targets table may not exist yet" }, { status: 500 });
+  }
 }

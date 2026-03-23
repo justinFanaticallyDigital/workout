@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { requireAuthUserId } from "@/lib/auth-helpers";
+import { requireAuth } from "@/lib/auth-helpers";
 
 export const dynamic = "force-dynamic";
 
@@ -9,7 +9,8 @@ export const dynamic = "force-dynamic";
  * Returns daily metrics (activity, sleep, HR) for the last N days.
  */
 export async function GET(request: NextRequest) {
-  const userId = await requireAuthUserId();
+  const [userId, authError] = await requireAuth();
+  if (authError) return authError;
   const { searchParams } = new URL(request.url);
   const days = parseInt(searchParams.get("days") ?? "7");
 

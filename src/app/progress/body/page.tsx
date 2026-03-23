@@ -1,8 +1,10 @@
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
+import Link from "next/link";
 import { Card, SectionHeader } from "@/components/ui";
 import { useToast } from "@/components/ui/Toast";
+import { authCheck } from "@/lib/fetch-helpers";
 import { chartTheme } from "@/lib/theme";
 import FitbitIcon from "@/components/ui/FitbitIcon";
 import {
@@ -39,6 +41,7 @@ export default function BodyMetricsPage() {
 
   const fetchEntries = () => {
     fetch("/api/progress/weight")
+      .then(authCheck)
       .then((res) => res.json())
       .then((data) => {
         setEntries(data.entries ?? []);
@@ -108,6 +111,13 @@ export default function BodyMetricsPage() {
 
   return (
     <div className="min-h-screen bg-ft-bg p-6 max-w-4xl mx-auto space-y-6">
+      <Link
+        href="/progress"
+        className="inline-flex items-center gap-1.5 text-ft-dim text-sm font-body hover:text-ft-light transition-colors mb-2"
+      >
+        <span>&larr;</span>
+        <span>Progress</span>
+      </Link>
       <div>
         <h1 className="text-2xl font-mono font-bold text-ft-white tracking-wide">
           Body Metrics
