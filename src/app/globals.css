@@ -657,3 +657,157 @@ body > * {
   text-transform: uppercase;
   letter-spacing: 1.5px;
 }
+
+/* === Arcade theme utilities === */
+
+/* ALL CAPS enforced — arcade games never use lowercase */
+.arcade-caps {
+  text-transform: uppercase;
+}
+
+/* CRT vignette — dark corners simulating CRT edge falloff */
+.arcade-vignette {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 2;
+  background: radial-gradient(
+    ellipse at center,
+    transparent 60%,
+    rgba(0,0,0,0.25) 100%
+  );
+}
+
+/* Score counter display */
+.arcade-score {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 10px;
+  color: #FFD700;
+  text-transform: uppercase;
+}
+
+/* Streak/combo bonus text */
+.arcade-streak {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 9px;
+  color: #FFD700;
+  text-transform: uppercase;
+}
+
+/* PLAYER 1 header identifier */
+.arcade-player-id {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 9px;
+  color: #FF50C8;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+/* Pixel border button treatment — double-line pixel style */
+.arcade-pixel-btn {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 9px;
+  text-transform: uppercase;
+  background: transparent;
+  border: 2px solid rgba(255,255,255,0.08);
+  color: #E0E0F0;
+  padding: 8px 16px;
+  cursor: pointer;
+  position: relative;
+}
+.arcade-pixel-btn::after {
+  content: '';
+  position: absolute;
+  inset: 2px;
+  border: 1px solid rgba(255,255,255,0.06);
+  pointer-events: none;
+}
+.arcade-pixel-btn:hover {
+  border-color: #FF50C8;
+  color: #FF50C8;
+}
+
+/* Health bar rest timer — green to yellow to red */
+.arcade-health-bar {
+  height: 8px;
+  background: rgba(255,255,255,0.05);
+}
+.arcade-health-bar-fill {
+  height: 100%;
+  transition: width 1s linear, background-color 0.5s ease;
+}
+.arcade-health-green { background-color: #22C55E; }
+.arcade-health-yellow { background-color: #FFD700; }
+.arcade-health-red { background-color: #EF4444; }
+
+/* Idle prompt — "INSERT COIN" / "PRESS START" */
+.arcade-idle-prompt {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 10px;
+  text-transform: uppercase;
+  color: #E0E0F0;
+  animation: arcadeBlink 1s step-end infinite;
+}
+@keyframes arcadeBlink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
+}
+
+/* ROUND label (replaces "Set") */
+.arcade-round-label {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 9px;
+  text-transform: uppercase;
+  color: rgba(224,224,240,0.5);
+}
+
+/*
+ * Arcade typography scale — CRITICAL: Press Start 2P renders small!
+ * All sizes are upsized vs other themes to compensate.
+ * Minimum 8px absolute floor for this font.
+ */
+.arcade-title {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 16px;
+  text-transform: uppercase;
+  color: #E0E0F0;
+  line-height: 1.6;
+}
+.arcade-title-lg {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 18px;
+  text-transform: uppercase;
+  color: #E0E0F0;
+  line-height: 1.6;
+}
+.arcade-exercise-name {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 13px;
+  text-transform: uppercase;
+  line-height: 1.5;
+}
+.arcade-set-data {
+  font-family: 'Courier New', monospace;
+  font-size: 14px;
+  font-weight: 700;
+}
+.arcade-label {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 9px;
+  text-transform: uppercase;
+  color: rgba(224,224,240,0.5);
+  line-height: 1.6;
+}
+.arcade-label-sm {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 8px;
+  text-transform: uppercase;
+  color: rgba(224,224,240,0.25);
+  line-height: 1.6;
+}
+.arcade-nav {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 9px;
+  text-transform: uppercase;
+  line-height: 1.6;
+}
