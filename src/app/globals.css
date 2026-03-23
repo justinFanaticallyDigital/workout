@@ -551,3 +551,109 @@ body > * {
   font-weight: 700;
   color: #2C241E;
 }
+
+/* === Blueprint theme utilities === */
+
+/* Title block — boxed section header with revision number feel */
+.blueprint-title-block {
+  border: 1px solid rgba(255,255,255,0.12);
+  padding: 6px 12px;
+  display: inline-block;
+}
+
+/* Registration crosshair marks at section corners */
+.blueprint-crosshair {
+  position: relative;
+}
+.blueprint-crosshair::before {
+  content: '+';
+  position: absolute;
+  top: -8px;
+  left: -8px;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 10px;
+  color: rgba(255,255,255,0.15);
+  line-height: 1;
+}
+
+/* Fold lines — faint diagonal creases */
+.blueprint-fold-lines {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 1;
+  background-image:
+    linear-gradient(135deg, transparent 49.5%, rgba(255,255,255,0.015) 49.5%, rgba(255,255,255,0.015) 50.5%, transparent 50.5%),
+    linear-gradient(45deg, transparent 49.5%, rgba(255,255,255,0.01) 49.5%, rgba(255,255,255,0.01) 50.5%, transparent 50.5%);
+  background-size: 100% 100%;
+}
+
+/* Dimension callout — small lines with arrows pointing to values */
+.blueprint-dimension {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 9px;
+  color: rgba(180,200,230,0.6);
+  position: relative;
+  padding: 0 8px;
+}
+.blueprint-dimension::before {
+  content: '\2190';
+  position: absolute;
+  left: 0;
+  top: 0;
+}
+.blueprint-dimension::after {
+  content: '\2192';
+  position: absolute;
+  right: 0;
+  top: 0;
+}
+
+/* Annotation style — small technical notes */
+.blueprint-annotation {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 9px;
+  color: rgba(180,200,230,0.35);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+/* SPEC: prefix label style */
+.blueprint-spec-label {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  color: rgba(180,200,230,0.6);
+}
+
+/* Blueprint typography scale — all IBM Plex Mono */
+.blueprint-section-title {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 16px;
+  text-transform: uppercase;
+  letter-spacing: 3px;
+  color: rgba(255,255,255,0.9);
+}
+.blueprint-exercise-name {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 14px;
+  text-transform: uppercase;
+}
+.blueprint-set-data {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 13px;
+}
+.blueprint-label {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  color: rgba(180,200,230,0.6);
+}
+.blueprint-nav {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+}
