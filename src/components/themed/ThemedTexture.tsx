@@ -1,9 +1,33 @@
 'use client';
 
 import { useTheme } from '@/providers/ThemeProvider';
+import { useEffect, useRef } from 'react';
 
 export default function ThemedTexture() {
   const { theme } = useTheme();
+  const styleRef = useRef<HTMLStyleElement | null>(null);
+
+  // Clean up injected <style> tags when texture changes or component unmounts
+  useEffect(() => {
+    if (theme.texture.type === 'css') {
+      const styleEl = document.createElement('style');
+      styleEl.setAttribute('data-theme-texture', theme.id);
+      styleEl.textContent = `[data-themed-texture] { ${theme.texture.value} }`;
+      document.head.appendChild(styleEl);
+      styleRef.current = styleEl;
+      return () => {
+        styleEl.remove();
+        styleRef.current = null;
+      };
+    }
+    // Cleanup any leftover style from previous CSS texture theme
+    return () => {
+      if (styleRef.current) {
+        styleRef.current.remove();
+        styleRef.current = null;
+      }
+    };
+  }, [theme]);
 
   if (theme.texture.type === 'none') return null;
 
@@ -18,29 +42,14 @@ export default function ThemedTexture() {
     );
   }
 
-  // CSS background (may include multiple layers and background-size)
+  // CSS background — the <style> tag is injected via useEffect above
   if (theme.texture.type === 'css') {
     return (
       <div
         aria-hidden="true"
-        style={{
-          position: 'fixed',
-          inset: 0,
-          pointerEvents: 'none',
-          zIndex: 0,
-        }}
-      >
-        <style dangerouslySetInnerHTML={{ __html: `
-          [data-themed-texture] {
-            position: fixed;
-            inset: 0;
-            pointer-events: none;
-            z-index: 0;
-            ${theme.texture.value}
-          }
-        `}} />
-        <div data-themed-texture="" />
-      </div>
+        data-themed-texture=""
+        style={{ position: 'fixed', inset: 0, pointerEvents: 'none', zIndex: 0 }}
+      />
     );
   }
 

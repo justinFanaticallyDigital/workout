@@ -54,9 +54,15 @@ function applyThemeCssVars(theme: ThemeConfig) {
   root.style.setProperty('--ft-bg', colorToRgbTriplet(c.bg));
   root.style.setProperty('--ft-surface', colorToRgbTriplet(c.bgCard));
   root.style.setProperty('--ft-card', colorToRgbTriplet(c.bgElevated));
-  root.style.setProperty('--ft-border', colorToRgbTriplet(c.border));
   root.style.setProperty('--ft-accent', colorToRgbTriplet(c.accent));
   root.style.setProperty('--ft-accent-secondary', colorToRgbTriplet(c.accentSecondary));
+
+  // Border colors — preserve full rgba values for direct use AND extract RGB for Tailwind
+  // The RGB triplet loses alpha, so we also store the raw value as --ft-border-color
+  root.style.setProperty('--ft-border', colorToRgbTriplet(c.border));
+  root.style.setProperty('--ft-border-alpha', String(extractAlpha(c.border)));
+  root.style.setProperty('--ft-border-color', c.border);
+  root.style.setProperty('--ft-border-subtle-color', c.borderSubtle);
 
   // State colors
   root.style.setProperty('--ft-success', colorToRgbTriplet(c.success));
@@ -77,11 +83,14 @@ function applyThemeCssVars(theme: ThemeConfig) {
   root.style.setProperty('--ft-alpha-secondary', String(extractAlpha(c.textSecondary)));
   root.style.setProperty('--ft-alpha-tertiary', String(extractAlpha(c.textTertiary)));
 
-  // Border subtle — map to muted token
+  // Muted token — use borderSubtle RGB (alpha is typically very low)
   root.style.setProperty('--ft-muted', colorToRgbTriplet(c.borderSubtle));
 
-  // Backward-compat grayscale tokens used by Tailwind (ft-dim, ft-light, ft-pale, ft-white)
-  // For dark themes these are white with varying alpha; for light themes, dark text shades
+  // Backward-compat grayscale tokens (ft-dim, ft-light, ft-pale, ft-white)
+  // These map text hierarchy for Tailwind classes.
+  // For BOTH dark and light themes, ft-white/pale/light/dim follow the text hierarchy.
+  // On dark themes: white spectrum. On light themes: dark spectrum.
+  // Components using text-ft-white get the theme's primary text color (correct for both).
   root.style.setProperty('--ft-dim', colorToRgbTriplet(c.textTertiary));
   root.style.setProperty('--ft-light', colorToRgbTriplet(c.textSecondary));
   root.style.setProperty('--ft-pale', colorToRgbTriplet(c.textPrimary));
