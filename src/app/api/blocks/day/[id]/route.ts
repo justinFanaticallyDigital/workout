@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireAuth } from "@/lib/auth-helpers";
+import type { DayType } from "@/generated/prisma/enums";
 
 export async function GET(
   _request: Request,
@@ -61,7 +62,7 @@ export async function PATCH(
     where: { id },
     data: {
       ...(body.name !== undefined && { name: body.name as string }),
-      ...(body.dayType !== undefined && { dayType: body.dayType as "lifting" | "cardio" | "conditioning" | "mobility" | "rest" }),
+      ...(body.dayType !== undefined && { dayType: body.dayType as DayType }),
       ...(body.sortOrder !== undefined && { sortOrder: body.sortOrder as number }),
     },
   });
@@ -85,7 +86,6 @@ export async function DELETE(
     return NextResponse.json({ error: "Block day not found" }, { status: 404 });
   }
 
-  await prisma.blockDayExercise.deleteMany({ where: { blockDayId: id } });
   await prisma.blockDay.delete({ where: { id } });
 
   return NextResponse.json({ deleted: true });
