@@ -1,32 +1,27 @@
 /**
  * Theme switching utility.
- * Themes are defined as CSS custom property overrides on [data-theme] selectors.
- * The default theme (no data-theme attribute) uses :root values from globals.css.
+ * Backward-compatible with the CSS custom property system.
+ * The new ThemeProvider (src/providers/ThemeProvider.tsx) handles
+ * applying theme configs as CSS variables. This file provides
+ * utility functions for reading those CSS values at runtime.
  */
 
 const THEME_KEY = "fittrack-theme";
 
 export function getTheme(): string {
-  if (typeof window === "undefined") return "default";
-  return localStorage.getItem(THEME_KEY) ?? "default";
+  if (typeof window === "undefined") return "graffiti";
+  return localStorage.getItem(THEME_KEY) ?? "graffiti";
 }
 
 export function setTheme(theme: string): void {
   if (typeof window === "undefined") return;
-  if (theme === "default") {
-    document.documentElement.removeAttribute("data-theme");
-    localStorage.removeItem(THEME_KEY);
-  } else {
-    document.documentElement.setAttribute("data-theme", theme);
-    localStorage.setItem(THEME_KEY, theme);
-  }
+  localStorage.setItem(THEME_KEY, theme);
 }
 
 export function initTheme(): void {
-  const theme = getTheme();
-  if (theme !== "default") {
-    document.documentElement.setAttribute("data-theme", theme);
-  }
+  // ThemeProvider now handles CSS variable application.
+  // This function is kept for backward compat with ThemeInit component.
+  // It reads the saved theme so ThemeProvider can pick it up on mount.
 }
 
 /**
@@ -39,6 +34,9 @@ export function getCssColor(token: string): string {
     .getPropertyValue(`--ft-${token}`)
     .trim();
   if (!value) return "#888888";
+  // If it's already an rgb/hex value, return as-is
+  if (value.startsWith('#') || value.startsWith('rgb')) return value;
+  // Otherwise treat as RGB triplet
   return `rgb(${value})`;
 }
 
