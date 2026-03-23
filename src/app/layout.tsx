@@ -5,6 +5,7 @@ import { ToastProvider } from "@/components/ui/Toast";
 import SessionProvider from "@/components/SessionProvider";
 import OfflineSyncProvider from "@/components/OfflineSyncProvider";
 import ThemeInit from "@/components/ThemeInit";
+import { ThemeProvider } from "@/providers/ThemeProvider";
 
 export const metadata: Metadata = {
   title: "FitTrack",
@@ -43,16 +44,18 @@ export default function RootLayout({
         >
           Skip to main content
         </a>
-        <SessionProvider>
-          <OfflineSyncProvider>
-            <ToastProvider>
-              <main id="main-content" className="max-w-[600px] mx-auto px-4 py-4 pb-24">
-                {children}
-              </main>
-              <BottomNav />
-            </ToastProvider>
-          </OfflineSyncProvider>
-        </SessionProvider>
+        <ThemeProvider>
+          <SessionProvider>
+            <OfflineSyncProvider>
+              <ToastProvider>
+                <main id="main-content" className="max-w-[600px] mx-auto px-4 py-4 pb-24">
+                  {children}
+                </main>
+                <BottomNav />
+              </ToastProvider>
+            </OfflineSyncProvider>
+          </SessionProvider>
+        </ThemeProvider>
       </body>
     </html>
   );
