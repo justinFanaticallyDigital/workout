@@ -61,7 +61,7 @@ export async function PATCH(
     where: { id },
     data: {
       ...(body.name !== undefined && { name: body.name as string }),
-      ...(body.dayType !== undefined && { dayType: body.dayType as string }),
+      ...(body.dayType !== undefined && { dayType: body.dayType as "lifting" | "cardio" | "conditioning" | "mobility" | "rest" }),
       ...(body.sortOrder !== undefined && { sortOrder: body.sortOrder as number }),
     },
   });
