@@ -60,15 +60,23 @@ export default function HomePage() {
   const [data, setData] = useState<HomeData | null>(null);
   const [activeSubTab, setActiveSubTab] = useState<"week" | "heatmap" | "progress">("week");
   const [loading, setLoading] = useState(true);
+  const [authError, setAuthError] = useState(false);
 
   useEffect(() => {
     fetch("/api/home")
       .then((r) => {
-        if (!r.ok) throw new Error("Failed to load");
+        if (r.status === 401) {
+          setAuthError(true);
+          return null;
+        }
+        if (!r.ok) {
+          // API error but user may be authenticated — show empty state, not sign-in
+          return null;
+        }
         return r.json();
       })
-      .then(setData)
-      .catch(() => setData(null))
+      .then((d) => { if (d) setData(d); })
+      .catch(() => {})
       .finally(() => setLoading(false));
   }, []);
 
@@ -82,7 +90,7 @@ export default function HomePage() {
     );
   }
 
-  if (!data) {
+  if (authError) {
     return (
       <div className="space-y-6">
         <h1 className="font-display text-2xl text-ft-white">Today</h1>
@@ -91,6 +99,29 @@ export default function HomePage() {
           <Link href="/signin" className="cta-underline text-ft-white font-display text-sm mt-3 inline-block">
             Sign In
           </Link>
+        </Card>
+      </div>
+    );
+  }
+
+  // Authenticated but API returned no data (e.g. server error or empty state)
+  if (!data) {
+    return (
+      <div className="space-y-6 tab-enter">
+        <h1 className="font-display text-2xl text-ft-white tracking-wide">Today</h1>
+        <Card>
+          <p className="font-display text-lg text-ft-white mb-2">Welcome to FitTrack</p>
+          <p className="text-secondary font-body text-sm mb-3">
+            Get started by creating a training program or logging a workout.
+          </p>
+          <div className="flex gap-4">
+            <Link href="/programs/new" className="cta-underline text-ft-white font-display text-sm">
+              Create Program
+            </Link>
+            <Link href="/log" className="cta-underline text-ft-white font-display text-sm">
+              Quick Log
+            </Link>
+          </div>
         </Card>
       </div>
     );
