@@ -21,7 +21,6 @@ export default function ThemedNavItem({ children, active, className = '' }: Them
         itemStyle.borderBottom = `3px solid ${theme.colors.accent}`;
         break;
       case 'glow-dot':
-        // Glow dot is rendered as a pseudo-element via the child span
         break;
       case 'bg-fill':
         itemStyle.background = activeStyle.background || `${theme.colors.accent}22`;
@@ -40,12 +39,12 @@ export default function ThemedNavItem({ children, active, className = '' }: Them
         <span
           style={{
             display: 'block',
-            width: '4px',
-            height: '4px',
+            width: activeStyle.dotSize || '4px',
+            height: activeStyle.dotSize || '4px',
             borderRadius: '50%',
-            background: theme.colors.accent,
+            background: activeStyle.color || theme.colors.accent,
             margin: '2px auto 0',
-            boxShadow: activeStyle.boxShadow || `0 0 6px ${theme.colors.accent}`,
+            boxShadow: `0 0 ${activeStyle.glowRadius || '6px'} ${activeStyle.color || theme.colors.accent}`,
           }}
         />
       )}

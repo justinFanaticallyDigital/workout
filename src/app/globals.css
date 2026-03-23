@@ -312,3 +312,100 @@ body > * {
 .badge-pull { background: rgba(34,197,94,0.12); }
 .badge-legs { background: rgba(239,68,68,0.12); }
 .badge-core { background: rgba(234,179,8,0.12); }
+
+/* === Cyberpunk theme utilities === */
+
+/* Top-edge cyan power-on glow line */
+.cyber-glow-line {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: rgba(0,240,255,0.3);
+  box-shadow: 0 0 8px rgba(0,240,255,0.2), 0 0 20px rgba(0,240,255,0.1);
+  z-index: 50;
+  pointer-events: none;
+}
+
+/* Background gradient for cyberpunk body */
+.cyber-bg-gradient {
+  background: linear-gradient(180deg, #0E0E1A 0%, #08080F 30%, #0A0A14 70%, #060610 100%);
+}
+
+/* Cyan text-shadow bloom on active/highlighted elements */
+.cyber-glow-text {
+  text-shadow: 0 0 8px rgba(0,240,255,0.3);
+}
+
+/* Blinking terminal cursor */
+.cyber-cursor::after {
+  content: '_';
+  animation: cursorBlink 1.06s step-end infinite;
+  opacity: 0.6;
+}
+@keyframes cursorBlink {
+  0%, 100% { opacity: 0.6; }
+  50% { opacity: 0; }
+}
+
+/* Pulsing glow for rest timer bar */
+.cyber-pulse-glow {
+  animation: pulseGlow 2s ease-in-out infinite;
+}
+@keyframes pulseGlow {
+  0%, 100% { box-shadow: 0 0 8px rgba(0,240,255,0.3); }
+  50% { box-shadow: 0 0 16px rgba(0,240,255,0.5), 0 0 32px rgba(0,240,255,0.2); }
+}
+
+/* Movement badges — outlined (1px border) not filled */
+.cyber-badge-push { border: 1px solid #3B82F6; background: transparent; }
+.cyber-badge-pull { border: 1px solid #22C55E; background: transparent; }
+.cyber-badge-legs { border: 1px solid #EF4444; background: transparent; }
+.cyber-badge-core { border: 1px solid #EAB308; background: transparent; }
+
+/* System ID watermark */
+.cyber-sys-id {
+  font-family: 'Space Mono', monospace;
+  font-size: 8px;
+  opacity: 0.18;
+  color: #00F0FF;
+  letter-spacing: 1px;
+}
+
+/* Cyberpunk typography scale */
+.cyber-title {
+  font-family: 'Space Mono', monospace;
+  font-size: 22px;
+  font-weight: 700;
+  text-shadow: 0 0 8px rgba(0,240,255,0.3);
+}
+.cyber-block-context {
+  font-family: 'Space Mono', monospace;
+  font-size: 9px;
+  letter-spacing: 2px;
+  color: rgba(0,240,255,0.28);
+}
+.cyber-exercise-name {
+  font-family: 'Space Mono', monospace;
+  font-size: 16px;
+}
+.cyber-set-data {
+  font-family: 'Space Mono', monospace;
+  font-size: 12px;
+}
+.cyber-status-tag {
+  font-family: 'Space Mono', monospace;
+  font-size: 8px;
+}
+.cyber-timer {
+  font-family: 'Space Mono', monospace;
+  font-size: 28px;
+  font-weight: 700;
+  text-shadow: 0 0 12px rgba(0,240,255,0.4);
+}
+.cyber-nav {
+  font-family: 'Space Mono', monospace;
+  font-size: 9px;
+  letter-spacing: 2px;
+}

@@ -18,7 +18,33 @@ export default function ThemedTexture() {
     );
   }
 
-  // CSS background or URL-encoded SVG background
+  // CSS background (may include multiple layers and background-size)
+  if (theme.texture.type === 'css') {
+    return (
+      <div
+        aria-hidden="true"
+        style={{
+          position: 'fixed',
+          inset: 0,
+          pointerEvents: 'none',
+          zIndex: 0,
+        }}
+      >
+        <style dangerouslySetInnerHTML={{ __html: `
+          [data-themed-texture] {
+            position: fixed;
+            inset: 0;
+            pointer-events: none;
+            z-index: 0;
+            ${theme.texture.value}
+          }
+        `}} />
+        <div data-themed-texture="" />
+      </div>
+    );
+  }
+
+  // URL-encoded SVG background
   return (
     <div
       aria-hidden="true"
@@ -28,10 +54,9 @@ export default function ThemedTexture() {
         pointerEvents: 'none',
         zIndex: 0,
         opacity: 0.03,
-        backgroundImage: theme.texture.type === 'svg' ? theme.texture.value : undefined,
-        background: theme.texture.type === 'css' ? theme.texture.value : undefined,
+        backgroundImage: theme.texture.value,
         backgroundRepeat: 'repeat',
-        backgroundSize: theme.texture.type === 'svg' ? '256px 256px' : undefined,
+        backgroundSize: '256px 256px',
       }}
     />
   );

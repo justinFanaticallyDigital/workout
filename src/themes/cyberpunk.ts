@@ -5,63 +5,66 @@ export const cyberpunk: ThemeConfig = {
   name: 'Dark Future',
 
   colors: {
-    bg: '#0a0a0f',
-    bgCard: '#12121a',
-    bgElevated: '#1a1a25',
+    bg: '#08080F',
+    bgCard: 'rgba(0,240,255,0.025)',
+    bgElevated: 'rgba(0,240,255,0.04)',
 
-    textPrimary: 'rgba(224, 240, 255, 0.95)',
-    textSecondary: 'rgba(224, 240, 255, 0.60)',
-    textTertiary: 'rgba(224, 240, 255, 0.35)',
+    textPrimary: 'rgba(255,255,255,0.88)',
+    textSecondary: 'rgba(255,255,255,0.45)',
+    textTertiary: 'rgba(255,255,255,0.18)',
 
-    accent: '#00f0ff',
-    accentSecondary: '#ff00aa',
+    accent: '#00F0FF',           // cyan — the signature color
+    accentSecondary: '#FF3068',  // alert red/pink
 
     push: '#3B82F6',
     pull: '#22C55E',
     legs: '#EF4444',
     core: '#EAB308',
 
-    success: '#00ff88',
-    error: '#ff3366',
-    warning: '#ffaa00',
+    success: '#00F0FF',
+    error: '#FF3068',
+    warning: '#EAB308',
 
-    border: '#2a2a3a',
-    borderSubtle: '#1a1a25',
+    border: 'rgba(0,240,255,0.12)',
+    borderSubtle: 'rgba(0,240,255,0.05)',
   },
 
   fonts: {
-    display: "'Space Mono', monospace",
-    data: "'Space Mono', monospace",
-    body: "'Inter', sans-serif",
+    display: "'Space Mono', 'Courier New', monospace",
+    data: "'Space Mono', 'Courier New', monospace",
+    body: "'Barlow Condensed', sans-serif",
   },
 
   borders: {
-    card: '1px solid #2a2a3a',
-    divider: '1px solid rgba(0, 240, 255, 0.15)',
-    radius: '2px',
+    card: '1px solid rgba(0,240,255,0.12)',
+    divider: '1px solid rgba(0,240,255,0.07)',
+    radius: '0',
   },
 
   texture: {
     type: 'css',
-    value: 'repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0, 240, 255, 0.03) 2px, rgba(0, 240, 255, 0.03) 4px)',
+    // CRT scanlines (3-4px repeat) + faint calibration grid dots
+    value: 'repeating-linear-gradient(0deg, transparent, transparent 3px, rgba(0,240,255,0.012) 3px, rgba(0,240,255,0.012) 4px), radial-gradient(circle, rgba(0,240,255,0.03) 1px, transparent 1px)',
   },
 
   components: {
     exerciseCard: {
       movementIndicator: 'left-bar',
-      movementIndicatorWidth: '2px',
+      movementIndicatorWidth: '3px',
     },
     nav: {
       activeIndicator: 'glow-dot',
       activeStyle: {
-        boxShadow: '0 0 8px #00f0ff',
+        dotSize: '3px',
+        glowRadius: '4px',
+        color: '#00F0FF',
       },
     },
     button: {
-      style: 'outline',
+      style: 'ghost',
     },
     restTimer: {
-      style: 'radial',
+      style: 'bar',
       glowEffect: true,
     },
   },
