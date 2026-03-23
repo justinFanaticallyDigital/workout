@@ -911,3 +911,80 @@ body > * {
   font-size: 12px;
   font-weight: 500;
 }
+
+/* === Iron & Chalk theme utilities === */
+
+/* Weight plate groove dividers — subtle raised/recessed horizontal lines */
+.iron-plate-groove {
+  border-top: 1px solid rgba(255,252,245,0.08);
+  border-bottom: 1px solid rgba(0,0,0,0.3);
+  height: 0;
+}
+
+/* Chalked-in completed set — slightly brighter, settled */
+.iron-chalked {
+  color: rgba(255,252,245,0.92);
+}
+
+/* Not-yet-loaded pending set — dimmer */
+.iron-pending {
+  color: rgba(255,252,245,0.25);
+}
+
+/* PR indicator — brass gold subtle border/underline */
+.iron-pr-mark {
+  border-bottom: 2px solid #C8A96E;
+  padding-bottom: 1px;
+}
+
+/* Brass accent rule — like knurling on a barbell */
+.iron-brass-rule {
+  border-top: 1px solid rgba(200,169,110,0.25);
+}
+
+/* Iron typography scale */
+.iron-title {
+  font-family: 'Anton', sans-serif;
+  font-size: 28px;
+  text-transform: uppercase;
+  color: rgba(255,252,245,0.92);
+  line-height: 1.1;
+}
+.iron-exercise-name {
+  font-family: 'Anton', sans-serif;
+  font-size: 20px;
+  text-transform: uppercase;
+  color: rgba(255,252,245,0.92);
+  line-height: 1.2;
+}
+.iron-set-data {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 18px;
+  font-weight: 500;
+  color: rgba(255,252,245,0.92);
+}
+.iron-column-header {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: rgba(255,252,245,0.55);
+}
+.iron-meta {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 12px;
+  font-weight: 400;
+  color: rgba(255,252,245,0.55);
+}
+.iron-nav {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+.iron-rest-timer {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 36px;
+  font-weight: 600;
+  color: rgba(255,252,245,0.92);
+}

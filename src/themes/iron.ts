@@ -5,45 +5,48 @@ export const iron: ThemeConfig = {
   name: 'Iron & Chalk',
 
   colors: {
-    bg: '#1c1917',
-    bgCard: '#292524',
-    bgElevated: '#44403c',
+    // Dark gym wall — warm dark gray, not cool/blue
+    bg: '#1C1B19',
+    bgCard: '#252422',
+    bgElevated: '#2E2C29',
 
-    textPrimary: 'rgba(250, 250, 249, 0.92)',
-    textSecondary: 'rgba(250, 250, 249, 0.60)',
-    textTertiary: 'rgba(250, 250, 249, 0.38)',
+    // Text: chalk white + warm grays
+    textPrimary: 'rgba(255,252,245,0.92)',   // warm chalk white
+    textSecondary: 'rgba(255,252,245,0.55)',
+    textTertiary: 'rgba(255,252,245,0.3)',
 
-    accent: '#f59e0b',
-    accentSecondary: '#d97706',
+    accent: '#C8A96E',          // brushed brass/gold — iron gym hardware
+    accentSecondary: '#8B4513', // rust brown
 
     push: '#3B82F6',
     pull: '#22C55E',
     legs: '#EF4444',
     core: '#EAB308',
 
-    success: '#84cc16',
-    error: '#ef4444',
-    warning: '#f59e0b',
+    success: '#22C55E',
+    error: '#EF4444',
+    warning: '#C8A96E',
 
-    border: '#57534e',
-    borderSubtle: '#44403c',
+    border: 'rgba(255,252,245,0.1)',
+    borderSubtle: 'rgba(255,252,245,0.05)',
   },
 
   fonts: {
-    display: "'Anton', sans-serif",
-    data: "'Barlow Condensed', sans-serif",
+    display: "'Anton', sans-serif",          // bold, condensed — iron plate stencil
+    data: "'Barlow Condensed', sans-serif",  // clean data — chalked up numbers
     body: "'Barlow Condensed', sans-serif",
   },
 
   borders: {
-    card: '1px solid #57534e',
-    divider: '1px solid rgba(250, 250, 249, 0.08)',
-    radius: '2px',
+    card: '1px solid rgba(255,252,245,0.08)',
+    divider: '1px solid rgba(255,252,245,0.06)',
+    radius: '0',
   },
 
   texture: {
-    type: 'css',
-    value: "url(\"data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E\")",
+    type: 'svg-inline',
+    // Chalk dust / matte rubber floor texture — fine grain noise
+    value: '<svg style="position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:0"><defs><filter id="chalk-dust"><feTurbulence type="fractalNoise" baseFrequency="0.8" numOctaves="3" stitchTiles="stitch" seed="4"/><feColorMatrix type="saturate" values="0"/><feComponentTransfer><feFuncA type="linear" slope="0.06"/></feComponentTransfer></filter></defs><rect width="100%" height="100%" filter="url(#chalk-dust)" fill="white"/></svg>',
   },
 
   components: {
@@ -54,12 +57,12 @@ export const iron: ThemeConfig = {
     nav: {
       activeIndicator: 'border-bottom',
       activeStyle: {
-        borderColor: '#f59e0b',
-        borderWidth: '3px',
+        borderColor: '#C8A96E',
+        borderWidth: '2px',
       },
     },
     button: {
-      style: 'ghost',
+      style: 'outline',
     },
     restTimer: {
       style: 'bar',
