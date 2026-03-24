@@ -109,6 +109,9 @@ function applyThemeCssVars(theme: ThemeConfig) {
   // Border radius
   root.style.setProperty('--ft-border-radius', theme.borders.radius);
 
+  // Component styles — exposed as data attributes for CSS utility classes
+  root.dataset.buttonStyle = theme.components.button.style;
+
   // Store theme-specific CSS vars for components
   root.style.setProperty('--bg', c.bg);
   root.style.setProperty('--bg-card', c.bgCard);

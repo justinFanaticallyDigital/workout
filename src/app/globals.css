@@ -92,14 +92,25 @@ body {
   color: rgba(var(--ft-text-tertiary) / var(--ft-alpha-tertiary));
 }
 
-/* Spray-paint style CTA underline — rough, slightly displaced */
+/*
+ * Theme-adaptive CTA class.
+ * Reads --ft-button-style (set by ThemeProvider) and switches presentation:
+ *   underline  — spray-paint underline (graffiti, notebook)
+ *   outline    — accent border pill (blueprint, iron)
+ *   ghost      — subtle border (cyberpunk)
+ *   pixel-border — chunky retro box-shadow (arcade)
+ *   fill       — solid accent background (lab)
+ */
 .cta-underline {
   position: relative;
   display: inline-block;
   text-decoration: none;
   cursor: pointer;
   font-family: var(--ft-font-display);
+  transition: opacity 0.15s;
 }
+
+/* Default: spray-paint underline (for 'underline' button style) */
 .cta-underline::after {
   content: '';
   position: absolute;
@@ -116,9 +127,41 @@ body {
   height: 4px;
 }
 
+/* outline — accent border pill */
+:root[data-button-style="outline"] .cta-underline {
+  border: 1px solid rgb(var(--ft-accent));
+  border-radius: var(--ft-border-radius, 0.5rem);
+  padding: 4px 12px;
+}
+:root[data-button-style="outline"] .cta-underline::after { display: none; }
+
+/* ghost — subtle border */
+:root[data-button-style="ghost"] .cta-underline {
+  border: 1px solid var(--ft-border-color, rgba(255,255,255,0.12));
+  padding: 4px 12px;
+}
+:root[data-button-style="ghost"] .cta-underline::after { display: none; }
+
+/* pixel-border — retro box-shadow */
+:root[data-button-style="pixel-border"] .cta-underline {
+  border: 2px solid rgb(var(--ft-accent));
+  box-shadow: 3px 3px 0 rgb(var(--ft-accent));
+  padding: 4px 12px;
+}
+:root[data-button-style="pixel-border"] .cta-underline::after { display: none; }
+
+/* fill — solid accent background */
+:root[data-button-style="fill"] .cta-underline {
+  background: rgb(var(--ft-accent));
+  color: #fff !important;
+  border-radius: var(--ft-border-radius, 0.5rem);
+  padding: 4px 12px;
+}
+:root[data-button-style="fill"] .cta-underline::after { display: none; }
+
 /* Dashed section dividers — theme-aware */
 .section-divider {
-  border-top: 1px dashed var(--ft-border-color, rgba(255, 255, 255, 0.10));
+  border-top: var(--ft-border-divider, 1px dashed var(--ft-border-color, rgba(255, 255, 255, 0.10)));
 }
 
 /* Scrollbar styling */
