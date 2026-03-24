@@ -18,12 +18,6 @@ export function setTheme(theme: string): void {
   localStorage.setItem(THEME_KEY, theme);
 }
 
-export function initTheme(): void {
-  // ThemeProvider now handles CSS variable application.
-  // This function is kept for backward compat with ThemeInit component.
-  // It reads the saved theme so ThemeProvider can pick it up on mount.
-}
-
 /**
  * Helper to get a CSS variable value as a CSS rgb() string.
  * Useful for libraries like Recharts that need inline color strings.

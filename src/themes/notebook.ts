@@ -13,7 +13,7 @@ export const notebook: ThemeConfig = {
     // Text: warm browns — 3-tier hierarchy
     textPrimary: '#2C241E',    // near-black warm brown (exercise names, set data)
     textSecondary: '#6B5A4A',  // medium brown (labels, metadata, column headers)
-    textTertiary: '#8C7B68',   // receded brown (set numbers, unit labels, inactive)
+    textTertiary: '#73614E',   // receded brown (set numbers, unit labels, inactive)
 
     accent: '#B5312A',         // coaching red (underlines, active indicators)
     accentSecondary: '#1A6B3C', // dark green (checkmarks, completion)

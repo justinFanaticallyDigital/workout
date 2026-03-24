@@ -5,17 +5,8 @@ import { Card, SectionHeader } from "@/components/ui";
 import { useToast } from "@/components/ui/Toast";
 import { useTheme } from "@/providers/ThemeProvider";
 import { themeList } from "@/themes";
+import { THEME_SWATCHES } from "@/themes/swatches";
 import FitbitIcon from "@/components/ui/FitbitIcon";
-
-const THEME_SWATCHES: Record<string, { bg: string; accent: string }> = {
-  graffiti:  { bg: '#2A2D2F', accent: '#3B82F6' },
-  cyberpunk: { bg: '#08080F', accent: '#00F0FF' },
-  notebook:  { bg: '#E8E0D4', accent: '#B5312A' },
-  blueprint: { bg: '#1A2744', accent: '#4A9EFF' },
-  arcade:    { bg: '#0A0A14', accent: '#FF50C8' },
-  lab:       { bg: '#F5F5F7', accent: '#2563EB' },
-  iron:      { bg: '#1C1B19', accent: '#C8A96E' },
-};
 
 function getStoredUnit(key: string, fallback: string): string {
   if (typeof window === "undefined") return fallback;

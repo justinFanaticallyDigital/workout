@@ -13,7 +13,7 @@ export const iron: ThemeConfig = {
     // Text: chalk white + warm grays
     textPrimary: 'rgba(255,252,245,0.92)',   // warm chalk white
     textSecondary: 'rgba(255,252,245,0.55)',
-    textTertiary: 'rgba(255,252,245,0.3)',
+    textTertiary: 'rgba(255,252,245,0.42)',
 
     accent: '#C8A96E',          // brushed brass/gold — iron gym hardware
     accentSecondary: '#8B4513', // rust brown

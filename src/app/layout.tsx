@@ -4,7 +4,6 @@ import BottomNav from "@/components/ui/BottomNav";
 import { ToastProvider } from "@/components/ui/Toast";
 import SessionProvider from "@/components/SessionProvider";
 import OfflineSyncProvider from "@/components/OfflineSyncProvider";
-import ThemeInit from "@/components/ThemeInit";
 import { ThemeProvider } from "@/providers/ThemeProvider";
 import ThemedTexture from "@/components/themed/ThemedTexture";
 
@@ -38,7 +37,6 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className="bg-ft-bg min-h-screen antialiased">
-        <ThemeInit />
         <a
           href="#main-content"
           className="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-[100] focus:bg-ft-accent focus:text-ft-bg focus:px-4 focus:py-2 focus:rounded focus:font-body focus:text-sm focus:font-bold"

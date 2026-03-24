@@ -17,9 +17,13 @@ export default function ThemedNavItem({ children, active, className = '' }: Them
 
   if (active) {
     switch (activeIndicator) {
-      case 'underline':
-        itemStyle.borderBottom = `3px solid ${theme.colors.accent}`;
+      case 'underline': {
+        const ulWidth = activeStyle.borderWidth || '3px';
+        const ulColor = activeStyle.borderColor || theme.colors.accent;
+        itemStyle.borderBottom = `${ulWidth} solid ${ulColor}`;
+        if (activeStyle.opacity) itemStyle.opacity = activeStyle.opacity;
         break;
+      }
       case 'glow-dot':
         break;
       case 'bg-fill':

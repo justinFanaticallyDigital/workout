@@ -5,7 +5,7 @@
 - When giving CLI instructions, always use PowerShell syntax (e.g. `$env:VAR="value"` instead of `VAR=value command`)
 
 ## Overview
-FitTrack is a personal workout tracking app built with Next.js 14, Prisma, PostgreSQL (Railway), and NextAuth (Google OAuth). Deployed on Vercel. The app uses a mobile-first 5-tab bottom navigation architecture with a 90s Street / Graffiti on Concrete design theme.
+FitTrack is a personal workout tracking app built with Next.js 14, Prisma, PostgreSQL (Railway), and NextAuth (Google OAuth). Deployed on Vercel. The app uses a mobile-first 5-tab bottom navigation architecture with a multi-theme design system (7 themes).
 
 ## Tech Stack
 - **Framework:** Next.js 14.2.35 (App Router)
@@ -36,8 +36,8 @@ The center Log button is a raised floating action button with a gradient backgro
 src/
 ├── app/                          # Next.js App Router
 │   ├── page.tsx                  # Home / Today view (client component)
-│   ├── layout.tsx                # Root layout (BottomNav + SessionProvider + ThemeInit)
-│   ├── globals.css               # Global styles + Tailwind + Google Fonts + graffiti theme
+│   ├── layout.tsx                # Root layout (ThemeProvider + BottomNav + SessionProvider)
+│   ├── globals.css               # Global styles + Tailwind + Google Fonts + theme-adaptive CTAs
 │   ├── signin/page.tsx           # Google OAuth sign-in
 │   ├── settings/page.tsx         # Settings (unit prefs, CSV export)
 │   ├── program/page.tsx          # Program tab — metrics dashboard (client)
@@ -124,11 +124,19 @@ src/
 ├── components/
 │   ├── SessionProvider.tsx        # NextAuth SessionProvider wrapper
 │   ├── OfflineSyncProvider.tsx    # Offline queue sync context
-│   ├── ThemeInit.tsx              # Client-side theme initialization
+│   ├── themed/                    # Theme-aware components (read theme config at runtime)
+│   │   ├── ThemedButton.tsx       # Button adapting to theme's button.style
+│   │   ├── ThemedCard.tsx         # Card using theme borders/radius/colors
+│   │   ├── ThemedDivider.tsx      # Divider using theme borders.divider
+│   │   ├── ThemedExerciseCard.tsx # Exercise card with movement indicator per theme
+│   │   ├── ThemedNav.tsx          # Nav item with theme-aware active indicator
+│   │   ├── ThemedRestTimer.tsx    # Timer (bar/radial/text) per theme config
+│   │   ├── ThemedTexture.tsx      # Background texture overlay (svg-inline/css/none)
+│   │   └── ThemePickerModal.tsx   # First-visit theme selection modal
 │   └── ui/
-│       ├── BottomNav.tsx          # 5-tab bottom navigation (client)
+│       ├── BottomNav.tsx          # 5-tab bottom navigation with themed active indicators
 │       ├── Nav.tsx                # Legacy top nav bar (client, no longer in layout)
-│       ├── Card.tsx               # Container with border/bg
+│       ├── Card.tsx               # Container with theme-aware border-radius
 │       ├── SectionHeader.tsx      # Section title + optional action
 │       ├── Tag.tsx                # Badge (default/success/warn/danger)
 │       ├── Stat.tsx               # Key-value metric display
@@ -155,6 +163,19 @@ src/
 │   ├── draft-store.ts           # Workout draft localStorage manager (24h TTL)
 │   ├── progression.ts           # Progression logic (1RM calc, stall detection, suggestions)
 │   └── theme.ts                 # Theme utilities (CSS variable helpers, chart theme)
+├── providers/
+│   └── ThemeProvider.tsx          # Theme context, CSS var application, first-visit picker
+├── themes/
+│   ├── index.ts                   # Theme registry (exports themes map + themeList)
+│   ├── types.ts                   # ThemeConfig interface
+│   ├── swatches.ts                # Derived theme swatches for pickers (auto-synced)
+│   ├── graffiti.ts                # 90s Street — dark, spray-paint underlines, concrete texture
+│   ├── cyberpunk.ts               # Dark Future — ultra-dark, cyan accent, glow-dot nav, scanlines
+│   ├── notebook.ts                # Coach's Notebook — light cream, red accent, ruled lines
+│   ├── blueprint.ts               # Blueprint — navy, blueprint grid, outline buttons
+│   ├── arcade.ts                  # Retro Arcade — deep black, hot pink, pixel-border buttons
+│   ├── lab.ts                     # Lab Report — clean white, clinical blue, fill buttons
+│   └── iron.ts                    # Iron & Chalk — warm dark, brass accent, chalk texture
 ├── types/
 │   └── next-auth.d.ts            # Session type extension (adds user.id)
 └── generated/prisma/             # Auto-generated Prisma client (gitignored)
@@ -202,41 +223,69 @@ prisma/
 - **StretchRoutine** → configurable stretch sequences with name, description
 - **StretchRoutineItem** → name, durationSeconds, bilateral flag, sortOrder, optional exerciseId link
 
-## Design System — 90s Street / Graffiti on Concrete
+## Design System — Multi-Theme Architecture
 
-### Colors
+### Theme System Overview
+The app supports 7 visual themes, each defined as a `ThemeConfig` in `src/themes/`. Themes are switched at runtime via `ThemeProvider`, which converts theme configs to CSS custom properties consumed by Tailwind `ft-*` utilities.
+
+| Theme | Style | Background | Accent | Button Style | Nav Indicator |
+|-------|-------|-----------|--------|-------------|---------------|
+| graffiti | 90s Street | Dark charcoal | Blue #3B82F6 | underline | underline |
+| cyberpunk | Dark Future | Ultra-dark | Cyan #00F0FF | ghost | glow-dot |
+| notebook | Coach's Notebook | Cream (light) | Red #B5312A | underline | border-bottom |
+| blueprint | Blueprint | Navy | Blue #4A9EFF | outline | underline |
+| arcade | Retro Arcade | Deep black | Pink #FF50C8 | pixel-border | underline |
+| lab | Lab Report | White (light) | Blue #2563EB | fill | bg-fill |
+| iron | Iron & Chalk | Warm dark | Brass #C8A96E | outline | border-bottom |
+
+### ThemeConfig Structure (`src/themes/types.ts`)
+Each theme defines:
+- **Colors** — bg, bgCard, bgElevated, textPrimary/Secondary/Tertiary, accent, movement colors (push/pull/legs/core — constant), state colors, borders
+- **Fonts** — display, data (handwritten), body (each theme picks from Google Fonts loaded in globals.css)
+- **Borders** — card (CSS shorthand), divider, radius (`0` for sharp themes, `0.5rem` for rounded)
+- **Texture** — type (`svg-inline` | `css` | `none`) + value (SVG markup, CSS background rules, or empty)
+- **Component overrides:**
+  - `exerciseCard.movementIndicator` — `left-bar` | `top-bar` | `border`
+  - `nav.activeIndicator` — `underline` | `glow-dot` | `bg-fill` | `border-bottom`
+  - `button.style` — `underline` | `outline` | `ghost` | `pixel-border` | `fill`
+  - `restTimer.style` — `bar` | `radial` | `text-countdown` (+ optional `glowEffect`)
+
+### How Theming Works
+1. **ThemeProvider** (`src/providers/ThemeProvider.tsx`) — React context that stores current theme, applies CSS vars to `document.documentElement`, and shows the theme picker modal on first visit.
+2. **CSS Variables** — All theme colors are converted to RGB triplets and set as `--ft-*` CSS vars. Tailwind's `ft-*` utilities (e.g. `bg-ft-surface`, `text-ft-white`) consume these via `rgb(var(--ft-*) / <alpha-value>)`.
+3. **Themed Components** (`src/components/themed/`) — Read `ThemeConfig` directly via `useTheme()` for component-level behavior (button style, nav indicators, timer style, textures).
+4. **CSS Utility Classes** — `.cta-underline` reads `data-button-style` attribute on `<html>` to adapt presentation per theme. `.section-divider` uses `--ft-border-divider` CSS var.
+
+### Color Token Mapping (Tailwind → Theme)
 ```
-Background: #2a2d2f (dark charcoal with subtle concrete noise texture)
-Surface:    #333639
-Card:       #3c3f42
-Border:     #555555
-Accent:     #E8572A (structural only — borders, underlines, progress bars. Never as text color.)
-
-Movement Pattern Colors (constant):
-  Push = #4A90D9    Pull = #5CB85C    Legs = #D9534F    Core = #F0AD4E
-
-Text Hierarchy:
-  Primary:   rgba(255,255,255, 0.92)
-  Secondary: rgba(255,255,255, 0.62)
-  Tertiary:  rgba(255,255,255, 0.40)
+ft-bg       → colors.bg            ft-surface  → colors.bgCard
+ft-card     → colors.bgElevated    ft-accent   → colors.accent
+ft-white    → colors.textPrimary   ft-pale     → colors.textPrimary
+ft-light    → colors.textSecondary ft-dim      → colors.textTertiary
+ft-border   → colors.border        ft-muted    → colors.borderSubtle
+ft-push/pull/legs/core → movement colors (constant across themes)
+ft-success/warn/danger → state colors
 ```
 
-### Fonts (Google Fonts)
-- **Display headers:** `Permanent Marker` (font-display class)
-- **User-input data / handwritten values:** `Caveat` (font-handwritten class)
-- **System labels / body text:** `Barlow Condensed` (font-body class)
+### Fonts (Google Fonts — all loaded in globals.css)
+- **Display headers:** Theme-configurable (`font-display` class) — Permanent Marker, Orbitron, Reenie Beanie, Courier Prime, Press Start 2P, Inter, Oswald
+- **User-input data:** Theme-configurable (`font-handwritten` class) — Caveat, Share Tech Mono, Indie Flower, Architects Daughter, VT323, SF Mono, Teko
+- **Body text:** Theme-configurable (`font-body` class) — Barlow Condensed, Share Tech Mono, Patrick Hand, Courier Prime, Press Start 2P, Inter, Oswald
 
 ### Design Patterns
-- No solid buttons — use graffiti-style underlines for CTAs (`.cta-underline` class)
-- Dashed border dividers between sections (`.section-divider` class)
-- Accent colors are structural only — borders, background fills, bars, underlines
-- Tab transitions with subtle fade-in animation (`.tab-enter` class)
-- Concrete noise texture overlay on body via SVG filter
+- **CTA buttons** — `.cta-underline` class adapts per theme: spray-paint underline (graffiti), outline pill (blueprint), ghost border (cyberpunk), pixel shadow (arcade), solid fill (lab)
+- **Dividers** — `.section-divider` uses theme's `borders.divider` CSS var
+- **Cards** — `Card.tsx` uses `--ft-border-radius` CSS var (sharp corners for graffiti/arcade, rounded for lab/notebook)
+- **Nav indicators** — BottomNav reads theme's `nav.activeIndicator` config (underline, glow-dot, bg-fill, border-bottom)
+- **Timer** — Stretch timer uses `ThemedRestTimer` which renders bar/radial/text-countdown per theme
+- **Textures** — `ThemedTexture` renders theme-specific overlays (concrete noise, scanlines, ruled lines, grid, chalk dust)
+- Movement pattern colors (push/pull/legs/core) are constant across all themes
 
 ### Tailwind Extensions
+- `ft-*` — All theme color utilities (bg, surface, card, accent, white, pale, light, dim, border, etc.)
 - `ft-push`, `ft-pull`, `ft-legs`, `ft-core` — movement pattern color utilities
-- `font-display`, `font-handwritten`, `font-body` — font family utilities
-- All original `ft-*` color utilities still available
+- `font-display`, `font-handwritten`, `font-body` — font family utilities mapped to theme fonts
+- `ft-data-1` through `ft-data-6` — chart data series colors
 
 ## Environment Variables
 ```
@@ -265,14 +314,14 @@ NEXTAUTH_SECRET=...                    # Session encryption
 - **PR detection** is automatic in POST /api/sets (compares weight to user's max)
 - **Volume calculation** = weight x reps (excluding warmup sets)
 - **Activity logging** — Non-lifting activities (stretch, HIIT, LISS, class, custom) logged via `/api/activity-logs` with ActivityType enum
-- **Stretch timer** (`/stretch-timer`) — Full-screen countdown timer with circular progress, bilateral support (left/right auto-advance), auto-logs ActivityLog entry on completion
+- **Stretch timer** (`/stretch-timer`) — Full-screen countdown with `ThemedRestTimer` (bar/radial/text per theme), bilateral support (left/right auto-advance), auto-logs ActivityLog entry on completion
 - **Workout logger** (`/log/[workoutId]`) supports both template-based (blockDayId) and blank (`new-blank`) workouts with exercise picker
 - **Workout replay** (`/history/[workoutId]`) shows session details; POST `/api/workouts/[id]/replay` creates a new workout from a previous one
 - **Exercise search** uses debounced fetch (300ms) with AbortController cleanup against GET `/api/exercises?search=`
 - **Offline queue** (`/lib/offline-queue.ts`) queues failed workout saves and syncs on `online` event
 - **Auto-save** uses debounced (2s) localStorage with `workout-draft-{id}` keys, 24h TTL, managed via `draft-store.ts`
 - **Progression tracking** (`/lib/progression.ts`) — Epley 1RM estimation, stall detection over N sessions, wave/linear/double progression suggestions
-- **Theme system** (`/lib/theme.ts`) — CSS variable-based theming with `ThemeInit` client component, chart color helpers. 4 named themes: default, midnight, iron, forest.
+- **Theme system** — 7 themes defined in `src/themes/`, applied via `ThemeProvider` (CSS vars + React context). Theme configs drive colors, fonts, borders, textures, and component-level overrides (button style, nav indicator, timer style). Chart colors via `getCssColor()` in `lib/theme.ts`. First-visit picker modal. Settings page theme switcher. `data-button-style` attribute on `<html>` drives CSS-based `.cta-underline` adaptation.
 - **Program creation** — 3 paths: goal-first wizard (`/programs/new/goal`), template picker (`/programs/new/templates`), visual builder (`/programs/new/builder`)
 - **Program cloning** — POST `/api/programs/clone` creates a full program from a template (blocks, days, matched exercises)
 - **Metric targets** — Editable per-user targets on Program tab, stored in `user_metric_targets`, displayed with progress bars and trend indicators
@@ -333,6 +382,16 @@ NEXTAUTH_SECRET=...                    # Session encryption
 9. **Design system** — Google Fonts (Permanent Marker, Caveat, Barlow Condensed), concrete noise texture, graffiti-style CTAs, movement pattern colors
 10. **Schedule overrides API** — Week plan editing (Today Only / This Week / This Week Forward)
 
+### Phase 5: Multi-Theme System (COMPLETE)
+1. **Theme architecture** — `ThemeConfig` interface, `ThemeProvider` context, CSS variable application pipeline
+2. **7 theme definitions** — graffiti, cyberpunk, notebook, blueprint, arcade, lab, iron (each with full color palette, fonts, borders, texture, component overrides)
+3. **Texture system** — `ThemedTexture` component rendering SVG-inline/CSS/none overlays per theme
+4. **Theme picker modal** — First-visit modal for theme selection, settings page switcher
+5. **Themed components** — ThemedButton, ThemedCard, ThemedNav, ThemedRestTimer, ThemedExerciseCard, ThemedDivider
+6. **Component wiring** — BottomNav uses theme nav indicators, stretch timer uses ThemedRestTimer, Card uses theme border-radius, `.cta-underline` adapts to 5 button styles via CSS, `.section-divider` uses theme divider
+7. **Shared swatches** — `src/themes/swatches.ts` auto-derives picker colors from theme configs
+8. **WCAG AA contrast** — All textTertiary values tuned to ≥3:1 on bgCard across all themes
+
 ### Future Work
 - Notification / reminder system
 - Mobile responsiveness pass
@@ -342,14 +401,14 @@ NEXTAUTH_SECRET=...                    # Session encryption
 - Calendar meal logging overlay
 
 ## Current State
-**Phase 1 through Phase 4 are complete.** The app is functional end-to-end with the new architecture:
+**Phase 1 through Phase 5 are complete.** The app is functional end-to-end with the multi-theme architecture:
 - 5-tab bottom navigation with mobile-first layout
 - 367 exercises seeded, 35+ API routes connected to real Prisma queries
 - All pages fetch from database (no hardcoded data)
 - Google OAuth working, deployed on Vercel + Railway PostgreSQL
 - Full workout logging flow: pick template or start blank → search/add exercises → log sets → finish
 - Non-lifting activity logging: stretch, HIIT, LISS, class, custom with duration/intensity
-- Stretch timer flow with bilateral support and auto-logging
+- Stretch timer flow with theme-adaptive timer display and auto-logging
 - Program creation via 3 paths: goal wizard, templates, visual builder
 - Inline program/block/day editing with exercise browser
 - Editable metric targets on Program dashboard
@@ -361,6 +420,12 @@ NEXTAUTH_SECRET=...                    # Session encryption
 - Nutrition: food diary, macro targets, meal plans
 - Offline queue + auto-save + PWA support for data resilience
 - CSV data export from settings page
-- 90s Street / Graffiti on Concrete design theme with Google Fonts
+- **7 visual themes** with full design system: colors, fonts, borders, textures, component-level overrides
+- Theme-adaptive BottomNav (underline/glow-dot/bg-fill/border-bottom indicators)
+- Theme-adaptive CTA buttons (underline/outline/ghost/pixel-border/fill)
+- Theme-adaptive stretch timer (bar/radial/text-countdown)
+- Theme-adaptive Card border-radius and section dividers
+- WCAG AA compliant textTertiary contrast across all themes
+- First-visit theme picker modal + settings page theme switcher
 
 **Important:** After schema changes, run `npx prisma db push` to create new tables in the database. The app is resilient to missing new tables (graceful degradation) but features like metric targets and stretch routines require the tables to exist.

@@ -36,7 +36,7 @@ export default function ThemedButton({ children, className = '', style, ...props
     case 'ghost':
       Object.assign(baseStyles, {
         background: 'transparent',
-        border: 'none',
+        border: `1px solid ${theme.colors.border}`,
       });
       break;
     case 'pixel-border':

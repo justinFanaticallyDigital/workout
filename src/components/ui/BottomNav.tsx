@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useTheme } from "@/providers/ThemeProvider";
 
 const moreLinks = [
   { label: "Exercises", href: "/exercises", icon: "💪" },
@@ -71,6 +72,45 @@ const tabs = [
     ),
   },
 ];
+
+/** Compute inline styles for active nav indicator based on theme config */
+function useNavIndicatorStyles(active: boolean) {
+  const { theme } = useTheme();
+  const { activeIndicator, activeStyle = {} } = theme.components.nav;
+  if (!active) return { wrapper: {}, dot: null };
+
+  const wrapper: Record<string, string> = {};
+  let dot: React.ReactNode = null;
+
+  switch (activeIndicator) {
+    case 'underline':
+    case 'border-bottom':
+      wrapper.borderBottom = `${activeStyle.borderWidth || '2px'} solid ${activeStyle.borderColor || theme.colors.accent}`;
+      if (activeStyle.opacity) wrapper.opacity = activeStyle.opacity;
+      break;
+    case 'bg-fill':
+      wrapper.background = activeStyle.bgColor || `${theme.colors.accent}22`;
+      wrapper.borderRadius = '8px';
+      break;
+    case 'glow-dot':
+      dot = (
+        <span
+          style={{
+            display: 'block',
+            width: activeStyle.dotSize || '4px',
+            height: activeStyle.dotSize || '4px',
+            borderRadius: '50%',
+            background: activeStyle.color || theme.colors.accent,
+            margin: '2px auto 0',
+            boxShadow: `0 0 ${activeStyle.glowRadius || '6px'} ${activeStyle.color || theme.colors.accent}`,
+          }}
+        />
+      );
+      break;
+  }
+
+  return { wrapper, dot };
+}
 
 export default function BottomNav() {
   const pathname = usePathname();
@@ -176,51 +216,70 @@ export default function BottomNav() {
             }
 
             return (
-              <Link
-                key={tab.href}
-                href={tab.href}
-                className="flex flex-col items-center pt-2 pb-1 px-3 min-w-[56px] transition-colors"
-              >
-                <span
-                  style={{ color: active ? "rgb(var(--ft-accent))" : "rgba(var(--ft-text-tertiary) / var(--ft-alpha-tertiary))" }}
-                  className="transition-colors"
-                >
-                  {tab.icon(active)}
-                </span>
-                <span
-                  className="text-[10px] font-body font-semibold mt-1 transition-colors"
-                  style={{ color: active ? "rgb(var(--ft-accent))" : "rgba(var(--ft-text-tertiary) / var(--ft-alpha-tertiary))" }}
-                >
-                  {tab.label}
-                </span>
-              </Link>
+              <NavTab key={tab.href} href={tab.href} active={active} icon={tab.icon} label={tab.label} />
             );
           })}
 
           {/* More button */}
-          <button
-            onClick={() => setMoreOpen(!moreOpen)}
-            className="flex flex-col items-center pt-2 pb-1 px-3 min-w-[56px] transition-colors"
-          >
-            <span
-              style={{ color: moreActive || moreOpen ? "rgb(var(--ft-accent))" : "rgba(var(--ft-text-tertiary) / var(--ft-alpha-tertiary))" }}
-              className="transition-colors"
-            >
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={moreActive ? 2.2 : 1.8} strokeLinecap="round" strokeLinejoin="round">
-                <circle cx="12" cy="12" r="1" />
-                <circle cx="19" cy="12" r="1" />
-                <circle cx="5" cy="12" r="1" />
-              </svg>
-            </span>
-            <span
-              className="text-[10px] font-body font-semibold mt-1 transition-colors"
-              style={{ color: moreActive || moreOpen ? "rgb(var(--ft-accent))" : "rgba(var(--ft-text-tertiary) / var(--ft-alpha-tertiary))" }}
-            >
-              More
-            </span>
-          </button>
+          <MoreTab active={moreActive || moreOpen} onClick={() => setMoreOpen(!moreOpen)} />
         </nav>
       </div>
     </>
+  );
+}
+
+/** Theme-aware nav tab with active indicator */
+function NavTab({ href, active, icon, label }: { href: string; active: boolean; icon: (a: boolean) => React.ReactNode; label: string }) {
+  const { wrapper, dot } = useNavIndicatorStyles(active);
+  const activeColor = "rgb(var(--ft-accent))";
+  const inactiveColor = "rgba(var(--ft-text-tertiary) / var(--ft-alpha-tertiary))";
+
+  return (
+    <Link
+      href={href}
+      className="flex flex-col items-center pt-2 pb-1 px-3 min-w-[56px] transition-colors"
+      style={wrapper}
+    >
+      <span style={{ color: active ? activeColor : inactiveColor }} className="transition-colors">
+        {icon(active)}
+      </span>
+      <span
+        className="text-[10px] font-body font-semibold mt-1 transition-colors"
+        style={{ color: active ? activeColor : inactiveColor }}
+      >
+        {label}
+      </span>
+      {dot}
+    </Link>
+  );
+}
+
+/** Theme-aware More button with active indicator */
+function MoreTab({ active, onClick }: { active: boolean; onClick: () => void }) {
+  const { wrapper, dot } = useNavIndicatorStyles(active);
+  const activeColor = "rgb(var(--ft-accent))";
+  const inactiveColor = "rgba(var(--ft-text-tertiary) / var(--ft-alpha-tertiary))";
+
+  return (
+    <button
+      onClick={onClick}
+      className="flex flex-col items-center pt-2 pb-1 px-3 min-w-[56px] transition-colors"
+      style={wrapper}
+    >
+      <span style={{ color: active ? activeColor : inactiveColor }} className="transition-colors">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={active ? 2.2 : 1.8} strokeLinecap="round" strokeLinejoin="round">
+          <circle cx="12" cy="12" r="1" />
+          <circle cx="19" cy="12" r="1" />
+          <circle cx="5" cy="12" r="1" />
+        </svg>
+      </span>
+      <span
+        className="text-[10px] font-body font-semibold mt-1 transition-colors"
+        style={{ color: active ? activeColor : inactiveColor }}
+      >
+        More
+      </span>
+      {dot}
+    </button>
   );
 }

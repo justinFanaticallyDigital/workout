@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
+import ThemedRestTimer from "@/components/themed/ThemedRestTimer";
 
 interface StretchItem {
   name: string;
@@ -183,32 +184,13 @@ export default function StretchTimerPage() {
           </p>
         )}
 
-        {/* Circular timer */}
-        <div className="relative w-48 h-48 mb-6">
-          <svg className="w-full h-full -rotate-90" viewBox="0 0 100 100">
-            <circle
-              cx="50" cy="50" r="45"
-              fill="none"
-              stroke="rgb(var(--ft-card))"
-              strokeWidth="4"
-            />
-            <circle
-              cx="50" cy="50" r="45"
-              fill="none"
-              stroke="rgb(var(--ft-accent))"
-              strokeWidth="4"
-              strokeLinecap="round"
-              strokeDasharray={`${2 * Math.PI * 45}`}
-              strokeDashoffset={`${2 * Math.PI * 45 * (1 - secondsRemaining / currentItem.durationSeconds)}`}
-              className="transition-all duration-1000"
-            />
-          </svg>
-          <div className="absolute inset-0 flex items-center justify-center">
-            <span className="font-handwritten text-5xl text-ft-white">
-              {secondsRemaining}
-            </span>
-          </div>
-        </div>
+        {/* Timer — style adapts per theme (bar / radial / text-countdown) */}
+        <ThemedRestTimer
+          progress={secondsRemaining / currentItem.durationSeconds}
+          remainingSeconds={secondsRemaining}
+          totalSeconds={currentItem.durationSeconds}
+          className="w-48 mb-6"
+        />
 
         {nextItem && (
           <p className="text-tertiary font-body text-xs">
