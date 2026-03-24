@@ -6,8 +6,8 @@ export const cyberpunk: ThemeConfig = {
 
   colors: {
     bg: '#08080F',
-    bgCard: 'rgba(0,240,255,0.025)',
-    bgElevated: 'rgba(0,240,255,0.04)',
+    bgCard: '#080E15',           // rgba(0,240,255,0.025) composited on bg
+    bgElevated: '#081119',       // rgba(0,240,255,0.04) composited on bg
 
     textPrimary: 'rgba(255,255,255,0.88)',
     textSecondary: 'rgba(255,255,255,0.45)',
@@ -25,8 +25,8 @@ export const cyberpunk: ThemeConfig = {
     error: '#FF3068',
     warning: '#EAB308',
 
-    border: 'rgba(0,240,255,0.12)',
-    borderSubtle: 'rgba(0,240,255,0.05)',
+    border: '#07242C',           // rgba(0,240,255,0.12) composited on bg
+    borderSubtle: '#08141B',     // rgba(0,240,255,0.05) composited on bg
   },
 
   fonts: {

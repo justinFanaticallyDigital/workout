@@ -6,13 +6,13 @@ export const arcade: ThemeConfig = {
 
   colors: {
     bg: '#0A0A14',
-    bgCard: 'rgba(255,255,255,0.03)',
-    bgElevated: 'rgba(255,255,255,0.05)',
+    bgCard: '#11111B',           // rgba(255,255,255,0.03) composited on bg
+    bgElevated: '#161620',       // rgba(255,255,255,0.05) composited on bg
 
     // CRT phosphor white — slightly cool/blue-shifted
     textPrimary: '#E0E0F0',
     textSecondary: 'rgba(224,224,240,0.5)',
-    textTertiary: 'rgba(224,224,240,0.25)',
+    textTertiary: 'rgba(224,224,240,0.38)',
 
     accent: '#FF50C8',          // hot pink / magenta — attract-mode neon
     accentSecondary: '#FFD700',  // gold — for scores, XP, achievements
@@ -26,14 +26,14 @@ export const arcade: ThemeConfig = {
     error: '#EF4444',
     warning: '#FFD700',
 
-    border: 'rgba(255,255,255,0.08)',
-    borderSubtle: 'rgba(255,255,255,0.04)',
+    border: '#1E1E27',           // rgba(255,255,255,0.08) composited on bg
+    borderSubtle: '#14141D',     // rgba(255,255,255,0.04) composited on bg
   },
 
   fonts: {
     display: "'Press Start 2P', monospace",
     data: "'Courier New', monospace",      // dense data tables use mono for readability
-    body: "'Press Start 2P', monospace",   // labels and nav in pixel font
+    body: "'Barlow Condensed', sans-serif", // readable body text (Press Start 2P too small for labels)
   },
 
   borders: {
