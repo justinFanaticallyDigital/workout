@@ -116,7 +116,6 @@ export default function BottomNav() {
   const pathname = usePathname();
   const [moreOpen, setMoreOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
-  const { theme } = useTheme();
 
   const isActive = (href: string) => {
     if (href === "/") return pathname === "/";
