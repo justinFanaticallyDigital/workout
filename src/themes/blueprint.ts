@@ -7,8 +7,8 @@ export const blueprint: ThemeConfig = {
   colors: {
     // Blueprint blue background
     bg: '#1A2744',
-    bgCard: 'rgba(255,255,255,0.04)',
-    bgElevated: 'rgba(255,255,255,0.06)',
+    bgCard: '#23304B',           // rgba(255,255,255,0.04) composited on bg
+    bgElevated: '#28344F',       // rgba(255,255,255,0.06) composited on bg
 
     // Text: white/light blue on dark blue
     textPrimary: 'rgba(255,255,255,0.9)',
@@ -27,8 +27,8 @@ export const blueprint: ThemeConfig = {
     error: '#FF6B4A',
     warning: '#EAB308',
 
-    border: 'rgba(255,255,255,0.12)',
-    borderSubtle: 'rgba(255,255,255,0.06)',
+    border: '#35415A',           // rgba(255,255,255,0.12) composited on bg
+    borderSubtle: '#28344F',     // rgba(255,255,255,0.06) composited on bg
   },
 
   fonts: {

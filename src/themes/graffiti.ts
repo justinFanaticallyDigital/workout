@@ -30,9 +30,9 @@ export const graffiti: ThemeConfig = {
     error: '#EF4444',
     warning: '#EAB308',
 
-    // Borders
-    border: 'rgba(255,255,255,0.12)',
-    borderSubtle: 'rgba(255,255,255,0.06)',
+    // Borders — composited on bg (#2A2D2F)
+    border: '#444648',
+    borderSubtle: '#373A3B',
   },
 
   fonts: {

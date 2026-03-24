@@ -27,8 +27,8 @@ export const iron: ThemeConfig = {
     error: '#EF4444',
     warning: '#C8A96E',
 
-    border: 'rgba(255,252,245,0.1)',
-    borderSubtle: 'rgba(255,252,245,0.05)',
+    border: '#33322F',           // rgba(255,252,245,0.1) composited on bg
+    borderSubtle: '#272624',     // rgba(255,252,245,0.05) composited on bg
   },
 
   fonts: {
