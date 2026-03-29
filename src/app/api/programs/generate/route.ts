@@ -6,6 +6,24 @@ import type { ProgramConfig, ExerciseRecord } from "@/lib/program-engine";
 
 export const dynamic = "force-dynamic";
 
+interface AltExercise {
+  exerciseId: string;
+  exerciseName: string;
+}
+
+function buildNotes(
+  category: string,
+  role: string,
+  exerciseNotes: string | undefined,
+  alternatives: AltExercise[],
+): string {
+  // Store structured metadata in notes for the UI to parse
+  // Format: [category|role|altsJSON] optional notes text
+  const alts = alternatives.map((a) => ({ id: a.exerciseId, name: a.exerciseName }));
+  const meta = `[${category}|${role}|${JSON.stringify(alts)}]`;
+  return exerciseNotes ? `${meta} ${exerciseNotes}` : meta;
+}
+
 export async function POST(request: NextRequest) {
   const [userId, errorRes] = await requireAuth();
   if (errorRes) return errorRes;
@@ -67,7 +85,9 @@ export async function POST(request: NextRequest) {
     data: {
       userId,
       name: blueprint.name,
-      description: blueprint.description,
+      description: blueprint.warnings?.length
+        ? `${blueprint.description}\n---WARNINGS---\n${JSON.stringify(blueprint.warnings)}`
+        : blueprint.description,
       durationWeeks: blueprint.durationWeeks,
       startDate: new Date(),
       status: "active",
@@ -122,9 +142,7 @@ export async function POST(request: NextRequest) {
             targetRpe: primary.targetRpe,
             progressionType: primary.progressionType,
             progressionIncrement: primary.progressionIncrement,
-            notes: primary.notes
-              ? `[${slot.category}] ${primary.notes}`
-              : `[${slot.category}]`,
+            notes: buildNotes(slot.category, slot.role, primary.notes, slot.alternatives),
           },
         });
       }

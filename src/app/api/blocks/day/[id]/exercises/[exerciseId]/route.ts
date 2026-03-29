@@ -23,6 +23,7 @@ export async function PATCH(
   const updated = await prisma.blockDayExercise.update({
     where: { id: exerciseId },
     data: {
+      exerciseId: body.exerciseId !== undefined ? body.exerciseId : undefined,
       targetSets: body.targetSets !== undefined ? body.targetSets : undefined,
       targetRepRange: body.targetRepRange !== undefined ? body.targetRepRange : undefined,
       targetRpe: body.targetRpe !== undefined ? body.targetRpe : undefined,

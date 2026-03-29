@@ -4,6 +4,7 @@ interface TimelineSegment {
   label: string;
   width: number; // proportional weight (e.g. durationWeeks)
   status: "active" | "completed" | "upcoming";
+  phase?: string | null;
   current?: boolean;
 }
 
@@ -26,6 +27,24 @@ const STATUS_COLORS: Record<string, string> = {
   upcoming: "bg-ft-card",
 };
 
+const PHASE_COLORS: Record<string, string> = {
+  accumulation: "bg-blue-500",
+  intensification: "bg-orange-500",
+  peaking: "bg-red-500",
+  deload: "bg-emerald-500",
+  prep: "bg-purple-500",
+  peak_week: "bg-pink-500",
+};
+
+const PHASE_TEXT: Record<string, string> = {
+  accumulation: "text-blue-400",
+  intensification: "text-orange-400",
+  peaking: "text-red-400",
+  deload: "text-emerald-400",
+  prep: "text-purple-400",
+  peak_week: "text-pink-400",
+};
+
 const STATUS_TEXT: Record<string, string> = {
   completed: "text-ft-success",
   active: "text-ft-white",
@@ -44,11 +63,15 @@ export default function Timeline({ segments, currentPosition, milestones, classN
           return (
             <div
               key={i}
-              className={`relative h-full transition-colors ${STATUS_COLORS[seg.status] ?? "bg-ft-card"} ${
+              className={`relative h-full transition-colors ${
+                seg.phase && PHASE_COLORS[seg.phase]
+                  ? (seg.status === "upcoming" ? `${PHASE_COLORS[seg.phase]} opacity-30` : PHASE_COLORS[seg.phase])
+                  : (STATUS_COLORS[seg.status] ?? "bg-ft-card")
+              } ${
                 i === 0 ? "rounded-l-full" : ""
               } ${i === segments.length - 1 ? "rounded-r-full" : ""}`}
               style={{ width: `${pct}%` }}
-              title={`${seg.label} (${seg.status})`}
+              title={`${seg.label}${seg.phase ? ` (${seg.phase})` : ""} — ${seg.status}`}
             />
           );
         })}
@@ -83,7 +106,11 @@ export default function Timeline({ segments, currentPosition, milestones, classN
           const pct = ((seg.width || 1) / totalWidth) * 100;
           return (
             <div key={i} style={{ width: `${pct}%` }} className="min-w-0">
-              <span className={`text-[10px] font-body truncate block ${STATUS_TEXT[seg.status] ?? "text-ft-muted"}`}>
+              <span className={`text-[10px] font-body truncate block ${
+                seg.phase && PHASE_TEXT[seg.phase]
+                  ? PHASE_TEXT[seg.phase]
+                  : (STATUS_TEXT[seg.status] ?? "text-ft-muted")
+              }`}>
                 {seg.label}
               </span>
             </div>

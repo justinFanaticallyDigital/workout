@@ -200,8 +200,24 @@ export default function GenerateProgramPage() {
   // Powerlifting
   const [weakestLift, setWeakestLift] = useState<string>("");
 
+  // Preview
+  interface PreviewBlock {
+    name: string; phase: string; durationWeeks: number;
+    days: { name: string; dayType: string; slots: {
+      category: string; role: string; primaryName: string;
+      targetSets: number; targetRepRange: string; targetRpe: string;
+      progressionType: string; alternatives: string[];
+    }[] }[];
+  }
+  interface PreviewData {
+    name: string; description: string; durationWeeks: number;
+    warnings: string[]; blocks: PreviewBlock[];
+  }
+  const [preview, setPreview] = useState<PreviewData | null>(null);
+
   // Submission
   const [saving, setSaving] = useState(false);
+  const [previewing, setPreviewing] = useState(false);
   const [warnings, setWarnings] = useState<string[]>([]);
 
   // ---------------------------------------------------------------------------
@@ -255,10 +271,37 @@ export default function GenerateProgramPage() {
     return config;
   }
 
-  async function handleGenerate() {
+  async function handlePreview() {
+    if (!primaryGoal) return;
+    setPreviewing(true);
+    setWarnings([]);
+
+    try {
+      const config = buildConfig();
+      const res = await fetch("/api/programs/preview", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ config, quick: path === "quick" }),
+      });
+
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.error || "Failed to preview program");
+      }
+
+      const data: PreviewData = await res.json();
+      setPreview(data);
+      setWarnings(data.warnings || []);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to preview");
+    } finally {
+      setPreviewing(false);
+    }
+  }
+
+  async function handleConfirm() {
     if (!primaryGoal) return;
     setSaving(true);
-    setWarnings([]);
 
     try {
       const config = buildConfig();
@@ -274,11 +317,6 @@ export default function GenerateProgramPage() {
       }
 
       const data = await res.json();
-
-      if (data.warnings?.length) {
-        setWarnings(data.warnings);
-      }
-
       toast.success("Program generated!");
       router.push(`/programs/${data.programId}`);
     } catch (err) {
@@ -488,24 +526,35 @@ export default function GenerateProgramPage() {
           </div>
         </div>
 
-        {/* Warnings */}
-        {warnings.length > 0 && (
-          <div className="bg-ft-warn/10 border border-ft-warn/30 rounded-lg p-3">
-            <div className="text-ft-warn text-xs font-body font-semibold mb-1">Heads up:</div>
-            {warnings.map((w, i) => (
-              <div key={i} className="text-ft-dim text-xs font-body">• {w}</div>
-            ))}
-          </div>
+        {/* Preview or Generate */}
+        {!preview ? (
+          <button
+            onClick={handlePreview}
+            disabled={!primaryGoal || previewing}
+            className="w-full py-3 rounded-lg font-display text-white bg-ft-accent disabled:opacity-40 transition-all"
+          >
+            {previewing ? "Building preview..." : "Preview Program"}
+          </button>
+        ) : (
+          <>
+            <PreviewDisplay preview={preview} warnings={warnings} />
+            <div className="flex gap-3">
+              <button
+                onClick={() => setPreview(null)}
+                className="flex-1 py-3 rounded-lg font-body text-ft-light border border-ft-border hover:border-ft-accent/50 transition-all"
+              >
+                Adjust
+              </button>
+              <button
+                onClick={handleConfirm}
+                disabled={saving}
+                className="flex-1 py-3 rounded-lg font-display text-white bg-ft-accent disabled:opacity-40 transition-all"
+              >
+                {saving ? "Creating..." : "Looks Good — Create"}
+              </button>
+            </div>
+          </>
         )}
-
-        {/* Generate */}
-        <button
-          onClick={handleGenerate}
-          disabled={!primaryGoal || saving}
-          className="w-full py-3 rounded-lg font-display text-white bg-ft-accent disabled:opacity-40 transition-all"
-        >
-          {saving ? "Generating..." : "Generate Program"}
-        </button>
       </div>
     );
   }
@@ -915,33 +964,28 @@ export default function GenerateProgramPage() {
       {/* Step 9: Review */}
       {step === 8 && (
         <div className="space-y-3">
-          <Card>
-            <div className="p-3 space-y-2 text-sm font-body">
-              <Row label="Goal" value={GOALS.find((g) => g.value === primaryGoal)?.label || ""} />
-              {secondaryGoal && (
-                <Row label="Secondary" value={GOALS.find((g) => g.value === secondaryGoal)?.label || ""} />
-              )}
-              <Row label="Days/Week" value={`${daysPerWeek}`} />
-              <Row label="Session" value={`${minutesPerSession} min`} />
-              <Row label="Duration" value={`${durationWeeks} weeks`} />
-              <Row label="Experience" value={experience} />
-              <Row label="Split" value={SPLITS.find((s) => s.value === splitPreference)?.label || ""} />
-              <Row label="Equipment" value={EQUIPMENT.find((e) => e.value === equipment)?.label || ""} />
-              {injuries.length > 0 && (
-                <Row label="Injuries" value={injuries.map((i) => INJURY_LABELS[i]).join(", ")} />
-              )}
-              {physiqueDivision && <Row label="Division" value={physiqueDivision} />}
-              {weakestLift && <Row label="Weakest Lift" value={weakestLift} />}
-            </div>
-          </Card>
-
-          {warnings.length > 0 && (
-            <div className="bg-ft-warn/10 border border-ft-warn/30 rounded-lg p-3">
-              <div className="text-ft-warn text-xs font-body font-semibold mb-1">Engine notes:</div>
-              {warnings.map((w, i) => (
-                <div key={i} className="text-ft-dim text-xs font-body">• {w}</div>
-              ))}
-            </div>
+          {!preview ? (
+            <Card>
+              <div className="p-3 space-y-2 text-sm font-body">
+                <Row label="Goal" value={GOALS.find((g) => g.value === primaryGoal)?.label || ""} />
+                {secondaryGoal && (
+                  <Row label="Secondary" value={GOALS.find((g) => g.value === secondaryGoal)?.label || ""} />
+                )}
+                <Row label="Days/Week" value={`${daysPerWeek}`} />
+                <Row label="Session" value={`${minutesPerSession} min`} />
+                <Row label="Duration" value={`${durationWeeks} weeks`} />
+                <Row label="Experience" value={experience} />
+                <Row label="Split" value={SPLITS.find((s) => s.value === splitPreference)?.label || ""} />
+                <Row label="Equipment" value={EQUIPMENT.find((e) => e.value === equipment)?.label || ""} />
+                {injuries.length > 0 && (
+                  <Row label="Injuries" value={injuries.map((i) => INJURY_LABELS[i]).join(", ")} />
+                )}
+                {physiqueDivision && <Row label="Division" value={physiqueDivision} />}
+                {weakestLift && <Row label="Weakest Lift" value={weakestLift} />}
+              </div>
+            </Card>
+          ) : (
+            <PreviewDisplay preview={preview} warnings={warnings} />
           )}
         </div>
       )}
@@ -957,13 +1001,31 @@ export default function GenerateProgramPage() {
           </button>
         )}
         {isLastStep ? (
-          <button
-            onClick={handleGenerate}
-            disabled={!primaryGoal || saving}
-            className="flex-1 py-3 rounded-lg font-display text-white bg-ft-accent disabled:opacity-40 transition-all"
-          >
-            {saving ? "Generating..." : "Generate Program"}
-          </button>
+          !preview ? (
+            <button
+              onClick={handlePreview}
+              disabled={!primaryGoal || previewing}
+              className="flex-1 py-3 rounded-lg font-display text-white bg-ft-accent disabled:opacity-40 transition-all"
+            >
+              {previewing ? "Building preview..." : "Preview Program"}
+            </button>
+          ) : (
+            <div className="flex gap-3 flex-1">
+              <button
+                onClick={() => { setPreview(null); setStep(step - 1); }}
+                className="flex-1 py-3 rounded-lg font-body text-ft-light border border-ft-border hover:border-ft-accent/50 transition-all"
+              >
+                Adjust
+              </button>
+              <button
+                onClick={handleConfirm}
+                disabled={saving}
+                className="flex-1 py-3 rounded-lg font-display text-white bg-ft-accent disabled:opacity-40 transition-all"
+              >
+                {saving ? "Creating..." : "Create Program"}
+              </button>
+            </div>
+          )
         ) : (
           <button
             onClick={() => setStep(step + 1)}
@@ -987,6 +1049,135 @@ function Row({ label, value }: { label: string; value: string }) {
     <div className="flex justify-between">
       <span className="text-ft-dim">{label}</span>
       <span className="text-ft-white capitalize">{value}</span>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Preview Display
+// ---------------------------------------------------------------------------
+
+const PHASE_COLORS: Record<string, string> = {
+  accumulation: "bg-blue-500/20 text-blue-400 border-blue-500/30",
+  intensification: "bg-orange-500/20 text-orange-400 border-orange-500/30",
+  peaking: "bg-red-500/20 text-red-400 border-red-500/30",
+  deload: "bg-emerald-500/20 text-emerald-400 border-emerald-500/30",
+  prep: "bg-purple-500/20 text-purple-400 border-purple-500/30",
+  peak_week: "bg-pink-500/20 text-pink-400 border-pink-500/30",
+};
+
+const ROLE_BADGE: Record<string, string> = {
+  primary_compound: "text-blue-400",
+  secondary_compound: "text-cyan-400",
+  isolation: "text-purple-400",
+  accessory: "text-emerald-400",
+};
+
+const CATEGORY_LABELS: Record<string, string> = {
+  horizontal_push: "H. Push", vertical_push: "V. Push",
+  horizontal_pull: "H. Pull", vertical_pull: "V. Pull",
+  hip_hinge: "Hip Hinge", squat: "Squat", lunge: "Lunge",
+  chest_isolation: "Chest Iso", back_isolation: "Back Iso",
+  shoulder_isolation: "Shoulder Iso", bicep: "Biceps", tricep: "Triceps",
+  quad_isolation: "Quad Iso", hamstring_isolation: "Ham Iso",
+  glute_isolation: "Glute Iso", calf: "Calves", core: "Core",
+  rotator_cuff: "Rotator Cuff", cardio: "Cardio", stretch: "Stretch",
+  carry: "Carry",
+};
+
+interface PreviewBlock {
+  name: string; phase: string; durationWeeks: number;
+  days: { name: string; dayType: string; slots: {
+    category: string; role: string; primaryName: string;
+    targetSets: number; targetRepRange: string; targetRpe: string;
+    progressionType: string; alternatives: string[];
+  }[] }[];
+}
+
+interface PreviewDisplayProps {
+  preview: {
+    name: string; description: string; durationWeeks: number;
+    warnings: string[]; blocks: PreviewBlock[];
+  };
+  warnings: string[];
+}
+
+function PreviewDisplay({ preview, warnings }: PreviewDisplayProps) {
+  const [expandedBlock, setExpandedBlock] = useState(0);
+
+  return (
+    <div className="space-y-3">
+      {/* Program header */}
+      <div className="bg-ft-surface/50 rounded-lg p-3 border border-ft-border">
+        <h3 className="font-display text-ft-white text-lg">{preview.name}</h3>
+        <p className="text-ft-dim text-xs font-body mt-1">{preview.description}</p>
+      </div>
+
+      {/* Warnings */}
+      {warnings.length > 0 && (
+        <div className="bg-ft-warn/10 border border-ft-warn/30 rounded-lg p-3">
+          <div className="text-ft-warn text-xs font-body font-semibold mb-1">Engine notes:</div>
+          {warnings.map((w, i) => (
+            <div key={i} className="text-ft-dim text-xs font-body">• {w}</div>
+          ))}
+        </div>
+      )}
+
+      {/* Block timeline */}
+      <div className="flex gap-1">
+        {preview.blocks.map((block, i) => {
+          const phaseColor = PHASE_COLORS[block.phase] || "bg-ft-card text-ft-dim border-ft-border";
+          return (
+            <button
+              key={i}
+              onClick={() => setExpandedBlock(i)}
+              className={`flex-1 text-center py-2 rounded text-xs font-body border transition-all ${
+                expandedBlock === i
+                  ? phaseColor + " ring-1 ring-ft-accent"
+                  : phaseColor + " opacity-60 hover:opacity-100"
+              }`}
+            >
+              <div className="font-semibold">{block.name}</div>
+              <div className="text-[10px] opacity-75">{block.durationWeeks}wk</div>
+            </button>
+          );
+        })}
+      </div>
+
+      {/* Expanded block details */}
+      {preview.blocks[expandedBlock] && (
+        <div className="space-y-2">
+          {preview.blocks[expandedBlock].days.map((day, di) => (
+            <div key={di} className="border border-ft-border/50 rounded-lg overflow-hidden">
+              <div className="bg-ft-surface/30 px-3 py-2 flex items-center gap-2">
+                <span className="text-ft-white text-sm font-body font-semibold">{day.name}</span>
+                <span className="text-ft-muted text-[10px] font-body">{day.dayType}</span>
+              </div>
+              <div className="px-3 py-1.5 space-y-1">
+                {day.slots.map((slot, si) => (
+                  <div key={si} className="flex items-center gap-2 py-0.5">
+                    <span className={`text-[10px] font-mono w-20 truncate ${ROLE_BADGE[slot.role] || "text-ft-dim"}`}>
+                      {CATEGORY_LABELS[slot.category] || slot.category}
+                    </span>
+                    <span className="text-ft-white text-xs font-body flex-1 truncate">{slot.primaryName}</span>
+                    <span className="text-ft-dim text-[10px] font-mono">
+                      {slot.targetSets}×{slot.targetRepRange}
+                    </span>
+                    <span className="text-ft-muted text-[10px] font-mono">
+                      RPE {slot.targetRpe}
+                    </span>
+                    {slot.alternatives.length > 0 && (
+                      <span className="text-ft-muted text-[10px]" title={slot.alternatives.join(", ")}>
+                        +{slot.alternatives.length}
+                      </span>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
