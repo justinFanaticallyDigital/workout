@@ -26,6 +26,7 @@ export default async function ProgramsPage() {
           blockNumber: true,
           durationWeeks: true,
           status: true,
+          phase: true,
         },
         orderBy: { blockNumber: "asc" },
       },
@@ -116,6 +117,7 @@ export default async function ProgramsPage() {
                   label: block.name,
                   width: block.durationWeeks ?? 1,
                   status: block.status as "active" | "completed" | "upcoming",
+                  phase: block.phase,
                 }))}
                 currentPosition={progressPct}
               />

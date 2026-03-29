@@ -61,8 +61,8 @@ export async function GET(
             include: {
               exercises: {
                 include: {
-                  exercise: { select: { name: true, equipment: true } },
-                  altExercise: { select: { name: true, equipment: true } },
+                  exercise: { select: { id: true, name: true, equipment: true, movementPattern: true } },
+                  altExercise: { select: { id: true, name: true, equipment: true } },
                 },
                 orderBy: { sortOrder: "asc" },
               },

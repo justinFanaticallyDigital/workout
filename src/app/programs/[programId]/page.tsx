@@ -1,20 +1,20 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import Card from "@/components/ui/Card";
 import Tag from "@/components/ui/Tag";
 import Stat from "@/components/ui/Stat";
-import ProgressBar from "@/components/ui/ProgressBar";
 import StatusIcon from "@/components/ui/StatusIcon";
 import Timeline from "@/components/ui/Timeline";
 import EditableExerciseTable from "@/components/ui/EditableExerciseTable";
+import CategoryLaneView from "@/components/ui/CategoryLaneView";
 import { useToast } from "@/components/ui/Toast";
 
 interface BlockDayExercise {
   id: string;
-  exercise: { name: string; equipment: string | null; movementPattern?: string | null };
-  altExercise: { name: string; equipment: string | null } | null;
+  exercise: { id?: string; name: string; equipment: string | null; movementPattern?: string | null };
+  altExercise: { id?: string; name: string; equipment: string | null } | null;
   targetSets: number | null;
   targetRepRange: string | null;
   targetRpe: string | null;
@@ -40,6 +40,7 @@ interface Block {
   blockNumber: number;
   durationWeeks: number | null;
   status: string;
+  phase: string | null;
   focus: string | null;
   scheduleDaysPerWeek: number | null;
   days: BlockDay[];
@@ -56,17 +57,6 @@ interface Program {
   goal: { id: string; title: string; type: string } | null;
   goals: { id: string; title: string; priority: string; type: string }[];
   blocks: Block[];
-}
-
-interface Benchmark {
-  id: string;
-  label: string;
-  targetValue: number;
-  targetUnit: string;
-  targetDate: string | null;
-  actualValue: number | null;
-  achievedAt: string | null;
-  block: { name: string; blockNumber: number } | null;
 }
 
 const DAY_TYPES = ["lifting", "cardio", "conditioning", "mobility", "rest"];
@@ -97,49 +87,6 @@ export default function ProgramWorkspacePage({
   const [dayType, setDayType] = useState("lifting");
   const [savingDay, setSavingDay] = useState(false);
 
-  // Benchmarks
-  const [benchmarks, setBenchmarks] = useState<Benchmark[]>([]);
-  const [showBenchmarkForm, setShowBenchmarkForm] = useState(false);
-  const [bmLabel, setBmLabel] = useState("");
-  const [bmTarget, setBmTarget] = useState("");
-  const [bmUnit, setBmUnit] = useState("lbs");
-  const [bmDate, setBmDate] = useState("");
-  const [bmBlockId, setBmBlockId] = useState("");
-  const [savingBm, setSavingBm] = useState(false);
-
-  // Nutrition targets per block
-  const [blockNutrition, setBlockNutrition] = useState<Record<string, {
-    calories: number | null; protein: number | null; carbs: number | null; fat: number | null; label: string;
-  } | null>>({});
-  const [showNutritionForm, setShowNutritionForm] = useState(false);
-  const [ntGoalType, setNtGoalType] = useState("maintenance");
-  const [ntCalories, setNtCalories] = useState("");
-  const [ntProtein, setNtProtein] = useState("");
-  const [ntCarbs, setNtCarbs] = useState("");
-  const [ntFat, setNtFat] = useState("");
-  const [savingNt, setSavingNt] = useState(false);
-
-  // Deletion undo state
-  const [pendingDelete, setPendingDelete] = useState<{
-    exerciseId: string;
-    dayId: string;
-    exercise: BlockDayExercise;
-    timer: ReturnType<typeof setTimeout>;
-  } | null>(null);
-
-  // Close all forms except the one being opened
-  const closeAllForms = () => {
-    setShowBlockForm(false);
-    setShowDayForm(false);
-    setShowBenchmarkForm(false);
-    setShowNutritionForm(false);
-  };
-
-  const openForm = (setter: (v: boolean) => void) => {
-    closeAllForms();
-    setter(true);
-  };
-
 
   useEffect(() => {
     fetch(`/api/programs/${programId}`)
@@ -154,89 +101,9 @@ export default function ProgramWorkspacePage({
         setLoading(false);
       })
       .catch(() => setLoading(false));
-
-    // Fetch benchmarks
-    fetch(`/api/programs/${programId}/benchmarks`)
-      .then((res) => (res.ok ? res.json() : null))
-      .then((data) => { if (data?.benchmarks) setBenchmarks(data.benchmarks); })
-      .catch(() => {});
   }, [programId]);
 
   const activeBlock = program?.blocks.find((b) => b.id === activeBlockId) ?? null;
-
-  // Track which blocks we've already fetched nutrition for
-  const fetchedNutritionRef = useRef<Set<string>>(new Set());
-
-  // Fetch nutrition target when active block changes
-  useEffect(() => {
-    if (!activeBlockId) return;
-    if (fetchedNutritionRef.current.has(activeBlockId)) return;
-    fetchedNutritionRef.current.add(activeBlockId);
-
-    fetch(`/api/nutrition/targets?blockId=${activeBlockId}`)
-      .then((res) => (res.ok ? res.json() : null))
-      .then((data) => {
-        if (data?.target) {
-          setBlockNutrition((prev) => ({
-            ...prev,
-            [activeBlockId]: {
-              calories: data.target.calories ? Number(data.target.calories) : null,
-              protein: data.target.protein ? Number(data.target.protein) : null,
-              carbs: data.target.carbs ? Number(data.target.carbs) : null,
-              fat: data.target.fat ? Number(data.target.fat) : null,
-              label: data.target.label,
-            },
-          }));
-        } else {
-          setBlockNutrition((prev) => ({ ...prev, [activeBlockId]: null }));
-        }
-      })
-      .catch(() => {
-        setBlockNutrition((prev) => ({ ...prev, [activeBlockId]: null }));
-      });
-  }, [activeBlockId]);
-
-  const handleSetBlockNutrition = async (autoCalc: boolean) => {
-    if (!activeBlockId) return;
-    setSavingNt(true);
-    try {
-      const payload: Record<string, unknown> = {
-        blockId: activeBlockId,
-        label: activeBlock?.name ? `${activeBlock.name} Target` : "Block Target",
-      };
-      if (autoCalc) {
-        payload.autoCalc = true;
-        payload.goalType = ntGoalType;
-      } else {
-        payload.calories = ntCalories ? Number(ntCalories) : null;
-        payload.protein = ntProtein ? Number(ntProtein) : null;
-        payload.carbs = ntCarbs ? Number(ntCarbs) : null;
-        payload.fat = ntFat ? Number(ntFat) : null;
-      }
-      const res = await fetch("/api/nutrition/targets", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
-      if (res.ok) {
-        const target = await res.json();
-        setBlockNutrition((prev) => ({
-          ...prev,
-          [activeBlockId]: {
-            calories: target.calories ? Number(target.calories) : null,
-            protein: target.protein ? Number(target.protein) : null,
-            carbs: target.carbs ? Number(target.carbs) : null,
-            fat: target.fat ? Number(target.fat) : null,
-            label: target.label,
-          },
-        }));
-        setShowNutritionForm(false);
-        toast.success("Nutrition target set");
-      }
-    } finally {
-      setSavingNt(false);
-    }
-  };
 
   const toggleDay = (dayId: string) => {
     setExpandedDays((prev) => {
@@ -285,28 +152,21 @@ export default function ProgramWorkspacePage({
     e.preventDefault();
     if (!dayName.trim() || !activeBlockId) return;
     setSavingDay(true);
-
-    // Support comma-separated bulk creation
-    const names = dayName.split(",").map((n) => n.trim()).filter(Boolean);
     try {
-      const created: BlockDay[] = [];
-      for (const name of names) {
-        const res = await fetch(`/api/blocks/${activeBlockId}/days`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ name, dayType }),
-        });
-        if (!res.ok) throw new Error("Failed");
-        const day = await res.json();
-        created.push({ ...day, exercises: [] });
-      }
+      const res = await fetch(`/api/blocks/${activeBlockId}/days`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: dayName.trim(), dayType }),
+      });
+      if (!res.ok) throw new Error("Failed");
+      const day = await res.json();
       setProgram((prev) => {
         if (!prev) return prev;
         return {
           ...prev,
           blocks: prev.blocks.map((b) =>
             b.id === activeBlockId
-              ? { ...b, days: [...b.days, ...created] }
+              ? { ...b, days: [...b.days, { ...day, exercises: [] }] }
               : b
           ),
         };
@@ -314,7 +174,6 @@ export default function ProgramWorkspacePage({
       setShowDayForm(false);
       setDayName("");
       setDayType("lifting");
-      if (names.length > 1) toast.success(`Created ${names.length} days`);
     } catch {
       toast.error("Failed to create day.");
     }
@@ -364,81 +223,34 @@ export default function ProgramWorkspacePage({
 
   const handleExerciseDelete = async (exerciseId: string) => {
     let dayId: string | null = null;
-    let deletedExercise: BlockDayExercise | null = null;
     for (const b of program?.blocks ?? []) {
       for (const d of b.days) {
-        const found = d.exercises.find((e) => e.id === exerciseId);
-        if (found) {
+        if (d.exercises.some((e) => e.id === exerciseId)) {
           dayId = d.id;
-          deletedExercise = found;
           break;
         }
       }
     }
-    if (!dayId || !deletedExercise) return;
+    if (!dayId) return;
 
-    // Cancel any existing pending delete
-    if (pendingDelete) {
-      clearTimeout(pendingDelete.timer);
-      // Execute the previous pending delete immediately
-      fetch(`/api/blocks/day/${pendingDelete.dayId}/exercises/${pendingDelete.exerciseId}`, { method: "DELETE" }).catch(() => {});
-    }
-
-    // Optimistically remove from UI
-    const capturedDayId = dayId;
-    setProgram((prev) => {
-      if (!prev) return prev;
-      return {
-        ...prev,
-        blocks: prev.blocks.map((b) => ({
-          ...b,
-          days: b.days.map((d) => ({
-            ...d,
-            exercises: d.exercises.filter((e) => e.id !== exerciseId),
+    try {
+      await fetch(`/api/blocks/day/${dayId}/exercises/${exerciseId}`, { method: "DELETE" });
+      setProgram((prev) => {
+        if (!prev) return prev;
+        return {
+          ...prev,
+          blocks: prev.blocks.map((b) => ({
+            ...b,
+            days: b.days.map((d) => ({
+              ...d,
+              exercises: d.exercises.filter((e) => e.id !== exerciseId),
+            })),
           })),
-        })),
-      };
-    });
-
-    // Set up undo window (10 seconds)
-    const timer = setTimeout(async () => {
-      try {
-        await fetch(`/api/blocks/day/${capturedDayId}/exercises/${exerciseId}`, { method: "DELETE" });
-      } catch {
-        toast.error("Failed to delete exercise.");
-      }
-      setPendingDelete(null);
-    }, 10000);
-
-    setPendingDelete({ exerciseId, dayId: capturedDayId, exercise: deletedExercise, timer });
-
-    toast.success(
-      `Removed ${deletedExercise.exercise.name}`,
-      10000,
-      {
-        label: "Undo",
-        onClick: () => {
-          clearTimeout(timer);
-          // Restore the exercise in UI
-          setProgram((prev) => {
-            if (!prev) return prev;
-            return {
-              ...prev,
-              blocks: prev.blocks.map((b) => ({
-                ...b,
-                days: b.days.map((d) =>
-                  d.id === capturedDayId
-                    ? { ...d, exercises: [...d.exercises, deletedExercise!] }
-                    : d
-                ),
-              })),
-            };
-          });
-          setPendingDelete(null);
-          toast.success("Exercise restored");
-        },
-      }
-    );
+        };
+      });
+    } catch {
+      toast.error("Failed to delete exercise.");
+    }
   };
 
   const handleExerciseReorder = async (dayId: string, exerciseIds: string[]) => {
@@ -493,7 +305,7 @@ export default function ProgramWorkspacePage({
             ...b,
             days: b.days.map((d) =>
               d.id === dayId
-                ? { ...d, exercises: [...d.exercises, { ...bde, altExercise: null, progressionIncrement: bde.progressionIncrement ?? null }] }
+                ? { ...d, exercises: [...d.exercises, { ...bde, altExercise: null, progressionIncrement: null }] }
                 : d
             ),
           })),
@@ -517,107 +329,82 @@ export default function ProgramWorkspacePage({
     if (!dayId) return;
 
     try {
-      const res = await fetch(`/api/blocks/day/${dayId}/exercises/${exerciseId}`, {
+      await fetch(`/api/blocks/day/${dayId}/exercises/${exerciseId}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ altExerciseId }),
       });
-      if (!res.ok) throw new Error("Failed");
-      const updated = await res.json();
-      setProgram((prev) => {
-        if (!prev) return prev;
-        return {
-          ...prev,
-          blocks: prev.blocks.map((b) => ({
-            ...b,
-            days: b.days.map((d) => ({
-              ...d,
-              exercises: d.exercises.map((e) =>
-                e.id === exerciseId
-                  ? { ...e, altExercise: updated.altExercise }
-                  : e
-              ),
-            })),
-          })),
-        };
-      });
-      toast.success(altExerciseId ? "Alternative set" : "Alternative removed");
+      // Refetch to get updated alt exercise data
+      const res = await fetch(`/api/programs/${programId}`);
+      if (res.ok) {
+        const data = await res.json();
+        setProgram(data);
+      }
     } catch {
       toast.error("Failed to set alternative.");
     }
   };
 
-  const handleCloneDay = async (dayId: string) => {
+  const handleSwapExercise = async (blockDayExerciseId: string, newExerciseId: string) => {
     try {
-      const res = await fetch(`/api/blocks/day/${dayId}/clone`, { method: "POST" });
-      if (!res.ok) throw new Error("Failed");
-      const cloned = await res.json();
-      setProgram((prev) => {
-        if (!prev) return prev;
-        return {
-          ...prev,
-          blocks: prev.blocks.map((b) => {
-            const dayInBlock = b.days.some((d) => d.id === dayId);
-            if (!dayInBlock) return b;
-            return { ...b, days: [...b.days, cloned] };
-          }),
-        };
-      });
-      toast.success(`Cloned as "${cloned.name}"`);
-    } catch {
-      toast.error("Failed to clone day.");
-    }
-  };
+      // Find which day this exercise belongs to
+      let dayId: string | null = null;
+      for (const b of program?.blocks ?? []) {
+        for (const d of b.days) {
+          if (d.exercises.some((e) => e.id === blockDayExerciseId)) {
+            dayId = d.id;
+            break;
+          }
+        }
+      }
+      if (!dayId) return;
 
-  // Benchmark handlers
-  const handleAddBenchmark = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!bmLabel.trim() || !bmTarget) return;
-    setSavingBm(true);
-    try {
-      const res = await fetch(`/api/programs/${programId}/benchmarks`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          label: bmLabel.trim(),
-          targetValue: parseFloat(bmTarget),
-          targetUnit: bmUnit,
-          targetDate: bmDate || null,
-          blockId: bmBlockId || null,
-        }),
-      });
-      if (!res.ok) throw new Error("Failed");
-      const bm = await res.json();
-      setBenchmarks((prev) => [...prev, bm]);
-      setShowBenchmarkForm(false);
-      setBmLabel("");
-      setBmTarget("");
-      setBmUnit("lbs");
-      setBmDate("");
-      setBmBlockId("");
-    } catch {
-      toast.error("Failed to create benchmark.");
-    }
-    setSavingBm(false);
-  };
-
-  const handleUpdateBenchmarkActual = async (bmId: string, actualValue: string) => {
-    const val = actualValue ? parseFloat(actualValue) : null;
-    try {
-      const res = await fetch(`/api/programs/${programId}/benchmarks`, {
+      await fetch(`/api/blocks/day/${dayId}/exercises/${blockDayExerciseId}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ benchmarkId: bmId, actualValue: val }),
+        body: JSON.stringify({ exerciseId: newExerciseId }),
       });
+
+      // Refetch to get the new exercise data
+      const res = await fetch(`/api/programs/${programId}`);
       if (res.ok) {
-        const updated = await res.json();
-        setBenchmarks((prev) =>
-          prev.map((b) => b.id === bmId ? updated : b)
-        );
+        const data = await res.json();
+        setProgram(data);
       }
     } catch {
-      toast.error("Failed to update benchmark.");
+      toast.error("Failed to swap exercise.");
     }
+  };
+
+  // Parse warnings from description
+  const parseDescription = (desc: string | null): { text: string; warnings: string[] } => {
+    if (!desc) return { text: "", warnings: [] };
+    const parts = desc.split("\n---WARNINGS---\n");
+    if (parts.length < 2) return { text: desc, warnings: [] };
+    try {
+      return { text: parts[0], warnings: JSON.parse(parts[1]) };
+    } catch {
+      return { text: parts[0], warnings: [] };
+    }
+  };
+
+  const { text: descriptionText, warnings: engineWarnings } = parseDescription(program?.description ?? null);
+
+  // Check if this is a generated program (has category metadata)
+  const isGenerated = program?.blocks.some((b) =>
+    b.days.some((d) =>
+      d.exercises.some((e) => e.notes?.match(/^\[.+\|.+\|/))
+    )
+  ) ?? false;
+
+  // Phase badge helpers
+  const PHASE_BADGES: Record<string, { label: string; color: string }> = {
+    accumulation: { label: "Volume", color: "bg-blue-500/20 text-blue-400" },
+    intensification: { label: "Strength", color: "bg-orange-500/20 text-orange-400" },
+    peaking: { label: "Peak", color: "bg-red-500/20 text-red-400" },
+    deload: { label: "Deload", color: "bg-emerald-500/20 text-emerald-400" },
+    prep: { label: "Prep", color: "bg-purple-500/20 text-purple-400" },
+    peak_week: { label: "Peak Week", color: "bg-pink-500/20 text-pink-400" },
   };
 
   // Progress calculation
@@ -671,31 +458,15 @@ export default function ProgramWorkspacePage({
             {program.status === "completed" && <Tag>Completed</Tag>}
             {program.status === "paused" && <Tag variant="warn">Paused</Tag>}
           </div>
-          {program.description && (
-            <p className="text-ft-dim text-sm font-body">{program.description}</p>
+          {descriptionText && (
+            <p className="text-ft-dim text-sm font-body">{descriptionText}</p>
+          )}
+          {isGenerated && (
+            <span className="inline-block mt-1 text-[10px] font-body px-1.5 py-0.5 rounded bg-ft-accent/15 text-ft-accent border border-ft-accent/30">
+              Generated
+            </span>
           )}
         </div>
-        {program.status === "paused" && (
-          <button
-            onClick={async () => {
-              try {
-                const res = await fetch(`/api/programs/${programId}`, {
-                  method: "PATCH",
-                  headers: { "Content-Type": "application/json" },
-                  body: JSON.stringify({ status: "active" }),
-                });
-                if (!res.ok) throw new Error("Failed");
-                setProgram({ ...program, status: "active" });
-                toast.success("Program reactivated");
-              } catch {
-                toast.error("Failed to reactivate program");
-              }
-            }}
-            className="bg-ft-white text-ft-bg font-body text-sm font-bold px-4 py-2 rounded hover:bg-ft-light transition-colors whitespace-nowrap"
-          >
-            Reactivate
-          </button>
-        )}
       </div>
 
       {/* Timeline */}
@@ -706,21 +477,9 @@ export default function ProgramWorkspacePage({
             label: b.name,
             width: b.durationWeeks ?? 1,
             status: b.status as "active" | "completed" | "upcoming",
+            phase: b.phase,
           }))}
           currentPosition={progressPct > 0 ? progressPct : undefined}
-          milestones={benchmarks
-            .filter((bm) => bm.targetDate && program.startDate && totalWeeks > 0)
-            .map((bm) => {
-              const start = new Date(program.startDate!).getTime();
-              const end = start + totalWeeks * 7 * 24 * 60 * 60 * 1000;
-              const target = new Date(bm.targetDate!).getTime();
-              const pos = Math.max(0, Math.min(100, ((target - start) / (end - start)) * 100));
-              return {
-                label: bm.label,
-                position: pos,
-                achieved: bm.actualValue != null && bm.actualValue >= bm.targetValue,
-              };
-            })}
         />
       )}
 
@@ -738,253 +497,16 @@ export default function ProgramWorkspacePage({
         <Card><Stat label="Goal" value={program.goals?.[0]?.title ?? program.goal?.title ?? "—"} small /></Card>
       </div>
 
-      {/* Benchmarks */}
-      {(benchmarks.length > 0 || showBenchmarkForm) && (
-        <Card className="mb-6">
-          <div className="flex items-center justify-between mb-3">
-            <h3 className="font-body text-sm font-bold text-ft-white">Benchmarks</h3>
-            {!showBenchmarkForm && (
-              <button
-                onClick={() => openForm(setShowBenchmarkForm)}
-                className="text-ft-dim text-xs font-body hover:text-ft-light"
-              >
-                + Add
-              </button>
-            )}
+      {/* Engine Warnings */}
+      {engineWarnings.length > 0 && (
+        <div className="mb-4 bg-ft-warn/10 border border-ft-warn/30 rounded-lg p-3">
+          <div className="flex items-center justify-between mb-1">
+            <span className="text-ft-warn text-xs font-body font-bold">Engine Notes</span>
           </div>
-          <div className="space-y-3">
-            {benchmarks.map((bm) => {
-              const pct = bm.actualValue != null
-                ? Math.min(100, Math.round((bm.actualValue / bm.targetValue) * 100))
-                : 0;
-              const achieved = bm.actualValue != null && bm.actualValue >= bm.targetValue;
-              return (
-                <div key={bm.id} className="flex flex-col gap-1">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <span className="text-ft-light text-xs font-body font-bold">{bm.label}</span>
-                      {bm.block && (
-                        <span className="text-ft-muted text-[10px] font-body">{bm.block.name}</span>
-                      )}
-                      {achieved && <Tag variant="success">Hit</Tag>}
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <input
-                        type="number"
-                        placeholder="Actual"
-                        defaultValue={bm.actualValue ?? ""}
-                        onBlur={(e) => handleUpdateBenchmarkActual(bm.id, e.target.value)}
-                        className="w-16 bg-ft-bg border border-ft-card rounded px-1.5 py-0.5 text-xs font-body text-ft-white text-center focus:outline-none focus:border-ft-dim"
-                      />
-                      <span className="text-ft-dim text-[10px] font-body">
-                        / {bm.targetValue} {bm.targetUnit}
-                      </span>
-                    </div>
-                  </div>
-                  <ProgressBar value={pct} max={100} />
-                  {bm.targetDate && (
-                    <span className="text-ft-muted text-[10px] font-body">
-                      Target: {new Date(bm.targetDate).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
-                      {bm.achievedAt && ` · Achieved: ${new Date(bm.achievedAt).toLocaleDateString("en-US", { month: "short", day: "numeric" })}`}
-                    </span>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-          {showBenchmarkForm && (
-            <form onSubmit={handleAddBenchmark} className="mt-3 pt-3 border-t border-ft-border space-y-2">
-              <div className="grid grid-cols-2 gap-2">
-                <input
-                  type="text"
-                  value={bmLabel}
-                  onChange={(e) => setBmLabel(e.target.value)}
-                  placeholder="Benchmark label"
-                  required
-                  className="bg-ft-bg border border-ft-card rounded px-2 py-1.5 text-xs font-body text-ft-white placeholder:text-ft-muted focus:outline-none focus:border-ft-dim"
-                />
-                <div className="flex gap-1">
-                  <input
-                    type="number"
-                    value={bmTarget}
-                    onChange={(e) => setBmTarget(e.target.value)}
-                    placeholder="Target"
-                    required
-                    className="flex-1 bg-ft-bg border border-ft-card rounded px-2 py-1.5 text-xs font-body text-ft-white placeholder:text-ft-muted focus:outline-none focus:border-ft-dim"
-                  />
-                  <select
-                    value={bmUnit}
-                    onChange={(e) => setBmUnit(e.target.value)}
-                    className="bg-ft-bg border border-ft-card rounded px-1 py-1.5 text-xs font-body text-ft-white focus:outline-none focus:border-ft-dim"
-                  >
-                    <option value="lbs">lbs</option>
-                    <option value="kg">kg</option>
-                    <option value="reps">reps</option>
-                    <option value="%">%</option>
-                  </select>
-                </div>
-              </div>
-              <div className="grid grid-cols-2 gap-2">
-                <input
-                  type="date"
-                  value={bmDate}
-                  onChange={(e) => setBmDate(e.target.value)}
-                  className="bg-ft-bg border border-ft-card rounded px-2 py-1.5 text-xs font-body text-ft-white focus:outline-none focus:border-ft-dim"
-                />
-                <select
-                  value={bmBlockId}
-                  onChange={(e) => setBmBlockId(e.target.value)}
-                  className="bg-ft-bg border border-ft-card rounded px-2 py-1.5 text-xs font-body text-ft-white focus:outline-none focus:border-ft-dim"
-                >
-                  <option value="">All blocks</option>
-                  {program.blocks.map((b) => (
-                    <option key={b.id} value={b.id}>{b.name}</option>
-                  ))}
-                </select>
-              </div>
-              <div className="flex gap-2">
-                <button
-                  type="button"
-                  onClick={() => setShowBenchmarkForm(false)}
-                  className="text-ft-dim text-xs font-body hover:text-ft-light"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={savingBm || !bmLabel.trim() || !bmTarget}
-                  className="bg-ft-white text-ft-bg font-body text-xs font-bold px-3 py-1 rounded hover:bg-ft-light disabled:opacity-50"
-                >
-                  {savingBm ? "..." : "Add Benchmark"}
-                </button>
-              </div>
-            </form>
-          )}
-        </Card>
-      )}
-      {benchmarks.length === 0 && !showBenchmarkForm && (
-        <div className="mb-6">
-          <button
-            onClick={() => openForm(setShowBenchmarkForm)}
-            className="text-ft-muted text-xs font-body hover:text-ft-light transition-colors"
-          >
-            + Add Benchmarks
-          </button>
+          {engineWarnings.map((w: string, i: number) => (
+            <p key={i} className="text-ft-dim text-xs font-body">• {w}</p>
+          ))}
         </div>
-      )}
-
-      {/* Block Nutrition Target */}
-      {activeBlockId && (
-        <Card className="mb-6">
-          <div className="flex items-center justify-between mb-2">
-            <h3 className="font-body text-sm font-bold text-ft-white">
-              Nutrition Target
-              {activeBlock && <span className="text-ft-dim font-normal ml-2">({activeBlock.name})</span>}
-            </h3>
-            {!showNutritionForm && (
-              <button
-                onClick={() => openForm(setShowNutritionForm)}
-                className="text-ft-dim text-xs font-body hover:text-ft-light"
-              >
-                {blockNutrition[activeBlockId] ? "Edit" : "+ Set Target"}
-              </button>
-            )}
-          </div>
-          {blockNutrition[activeBlockId] ? (
-            <div className="grid grid-cols-4 gap-3">
-              <div>
-                <span className="text-ft-dim text-xs font-body block">Calories</span>
-                <span className="text-ft-white text-sm font-body font-bold">
-                  {blockNutrition[activeBlockId]!.calories ?? "—"}
-                </span>
-              </div>
-              <div>
-                <span className="text-ft-dim text-xs font-body block">Protein</span>
-                <span className="text-ft-white text-sm font-body font-bold">
-                  {blockNutrition[activeBlockId]!.protein ? `${blockNutrition[activeBlockId]!.protein}g` : "—"}
-                </span>
-              </div>
-              <div>
-                <span className="text-ft-dim text-xs font-body block">Carbs</span>
-                <span className="text-ft-white text-sm font-body font-bold">
-                  {blockNutrition[activeBlockId]!.carbs ? `${blockNutrition[activeBlockId]!.carbs}g` : "—"}
-                </span>
-              </div>
-              <div>
-                <span className="text-ft-dim text-xs font-body block">Fat</span>
-                <span className="text-ft-white text-sm font-body font-bold">
-                  {blockNutrition[activeBlockId]!.fat ? `${blockNutrition[activeBlockId]!.fat}g` : "—"}
-                </span>
-              </div>
-            </div>
-          ) : !showNutritionForm ? (
-            <p className="text-ft-muted text-xs font-body">No nutrition target set for this block</p>
-          ) : null}
-
-          {showNutritionForm && (
-            <div className="mt-3 border-t border-ft-border pt-3 space-y-3">
-              <div>
-                <label className="text-ft-dim text-xs font-body block mb-1">Auto-calculate from body weight</label>
-                <div className="flex gap-2 items-center">
-                  <select
-                    value={ntGoalType}
-                    onChange={(e) => setNtGoalType(e.target.value)}
-                    className="bg-ft-bg border border-ft-border rounded px-2 py-1 text-xs font-body text-ft-white"
-                  >
-                    <option value="bulk">Bulk (+300 cal)</option>
-                    <option value="maintenance">Maintenance</option>
-                    <option value="cut">Cut (-400 cal)</option>
-                  </select>
-                  <button
-                    onClick={() => handleSetBlockNutrition(true)}
-                    disabled={savingNt}
-                    className="px-3 py-1 text-xs font-body bg-ft-success text-ft-bg rounded hover:opacity-90 disabled:opacity-50"
-                  >
-                    Auto Calculate
-                  </button>
-                </div>
-              </div>
-              <div className="text-ft-muted text-xs font-body text-center">— or set manually —</div>
-              <div className="grid grid-cols-4 gap-2">
-                <input
-                  type="number" placeholder="Calories" value={ntCalories}
-                  onChange={(e) => setNtCalories(e.target.value)}
-                  className="bg-ft-bg border border-ft-border rounded px-2 py-1 text-xs font-body text-ft-white"
-                />
-                <input
-                  type="number" placeholder="Protein (g)" value={ntProtein}
-                  onChange={(e) => setNtProtein(e.target.value)}
-                  className="bg-ft-bg border border-ft-border rounded px-2 py-1 text-xs font-body text-ft-white"
-                />
-                <input
-                  type="number" placeholder="Carbs (g)" value={ntCarbs}
-                  onChange={(e) => setNtCarbs(e.target.value)}
-                  className="bg-ft-bg border border-ft-border rounded px-2 py-1 text-xs font-body text-ft-white"
-                />
-                <input
-                  type="number" placeholder="Fat (g)" value={ntFat}
-                  onChange={(e) => setNtFat(e.target.value)}
-                  className="bg-ft-bg border border-ft-border rounded px-2 py-1 text-xs font-body text-ft-white"
-                />
-              </div>
-              <div className="flex gap-2 justify-end">
-                <button
-                  onClick={() => setShowNutritionForm(false)}
-                  className="text-ft-dim text-xs font-body hover:text-ft-light"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={() => handleSetBlockNutrition(false)}
-                  disabled={savingNt || !ntCalories}
-                  className="px-3 py-1 text-xs font-body bg-ft-white text-ft-bg rounded hover:bg-ft-light disabled:opacity-50"
-                >
-                  Save
-                </button>
-              </div>
-            </div>
-          )}
-        </Card>
       )}
 
       {/* Workspace: Blocks panel + Day details */}
@@ -1005,13 +527,18 @@ export default function ProgramWorkspacePage({
               >
                 <StatusIcon type="block" status={block.status as "active" | "completed" | "upcoming"} />
                 <span className="font-bold">{block.name}</span>
+                {block.phase && PHASE_BADGES[block.phase] && (
+                  <span className={`text-[9px] font-body px-1 py-0.5 rounded ${PHASE_BADGES[block.phase].color}`}>
+                    {PHASE_BADGES[block.phase].label}
+                  </span>
+                )}
                 {block.durationWeeks && (
                   <span className="text-[10px] text-ft-muted">{block.durationWeeks}wk</span>
                 )}
               </button>
             ))}
             <button
-              onClick={() => showBlockForm ? setShowBlockForm(false) : openForm(setShowBlockForm)}
+              onClick={() => setShowBlockForm(!showBlockForm)}
               className="flex items-center gap-1 px-3 py-2 rounded font-body text-xs text-ft-muted hover:text-ft-light border border-dashed border-ft-border hover:border-ft-dim transition-colors whitespace-nowrap"
             >
               + Block
@@ -1092,7 +619,7 @@ export default function ProgramWorkspacePage({
                   </p>
                 </div>
                 <button
-                  onClick={() => showDayForm ? setShowDayForm(false) : openForm(setShowDayForm)}
+                  onClick={() => setShowDayForm(!showDayForm)}
                   className="text-ft-dim text-xs font-body hover:text-ft-light border border-ft-border rounded px-3 py-1 transition-colors"
                 >
                   + Day
@@ -1109,7 +636,7 @@ export default function ProgramWorkspacePage({
                         type="text"
                         value={dayName}
                         onChange={(e) => setDayName(e.target.value)}
-                        placeholder="e.g. Upper Push, Upper Pull, Lower"
+                        placeholder="e.g. Upper Push"
                         required
                         className="w-full bg-ft-bg border border-ft-card rounded px-2 py-1.5 text-xs font-body text-ft-white placeholder:text-ft-muted focus:outline-none focus:border-ft-dim"
                       />
@@ -1176,16 +703,6 @@ export default function ProgramWorkspacePage({
                             <span className="text-ft-dim text-xs font-body">
                               {day.exercises.length} exercises
                             </span>
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleCloneDay(day.id);
-                              }}
-                              title="Clone day"
-                              className="text-ft-muted text-[10px] font-body hover:text-ft-light transition-colors px-1"
-                            >
-                              ⧉
-                            </button>
                             <span className="text-ft-muted text-xs">
                               {isExpanded ? "▾" : "▸"}
                             </span>
@@ -1195,15 +712,27 @@ export default function ProgramWorkspacePage({
                         {/* Expanded: exercises (editable table) */}
                         {isExpanded && (
                           <div className="border-t border-ft-border px-4 py-3">
-                            <EditableExerciseTable
-                              dayId={day.id}
-                              exercises={day.exercises}
-                              onUpdate={handleExerciseUpdate}
-                              onDelete={handleExerciseDelete}
-                              onReorder={(ids) => handleExerciseReorder(day.id, ids)}
-                              onAddExercise={handleAddExerciseToDay}
-                              onSetAlternative={handleSetAlternative}
-                            />
+                            {isGenerated ? (
+                              <CategoryLaneView
+                                dayId={day.id}
+                                exercises={day.exercises}
+                                onUpdate={handleExerciseUpdate}
+                                onDelete={handleExerciseDelete}
+                                onReorder={(ids) => handleExerciseReorder(day.id, ids)}
+                                onAddExercise={handleAddExerciseToDay}
+                                onSwapExercise={handleSwapExercise}
+                              />
+                            ) : (
+                              <EditableExerciseTable
+                                dayId={day.id}
+                                exercises={day.exercises}
+                                onUpdate={handleExerciseUpdate}
+                                onDelete={handleExerciseDelete}
+                                onReorder={(ids) => handleExerciseReorder(day.id, ids)}
+                                onAddExercise={handleAddExerciseToDay}
+                                onSetAlternative={handleSetAlternative}
+                              />
+                            )}
                           </div>
                         )}
                       </div>
