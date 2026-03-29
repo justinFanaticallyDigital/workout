@@ -3,7 +3,7 @@
 // Movement Pattern Taxonomy & Muscle Group Mappings
 // ============================================================================
 
-import type { MovementCategory, MuscleGroup, EquipmentType } from '../types';
+import type { MovementCategory, MuscleGroup } from './types';
 
 // ---------------------------------------------------------------------------
 // Category → Muscle Group Mapping

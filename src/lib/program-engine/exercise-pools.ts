@@ -6,7 +6,7 @@
 // equipment). This module maps those strings to the engine's typed enums.
 // ============================================================================
 
-import type { MovementCategory, MuscleGroup, EquipmentType, ExerciseRecord, MappedExercise } from '../types';
+import type { MovementCategory, MuscleGroup, EquipmentType, ExerciseRecord, MappedExercise } from './types';
 
 // ---------------------------------------------------------------------------
 // Movement Pattern String → MovementCategory Mapping
@@ -128,7 +128,7 @@ function inferMovementCategories(ex: ExerciseRecord): MovementCategory[] {
     if (fallback) categories.push(fallback);
   }
 
-  return [...new Set(categories)]; // deduplicate
+  return Array.from(new Set(categories)); // deduplicate
 }
 
 // ---------------------------------------------------------------------------

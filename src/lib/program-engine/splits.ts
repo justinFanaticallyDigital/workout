@@ -3,8 +3,7 @@
 // Split Definitions — Category Slots Per Day
 // ============================================================================
 
-import type { MovementCategory, ExerciseRole, MuscleGroup, Split, PrimaryGoal } from '../types';
-import { CATEGORY_MUSCLES } from './categories';
+import type { MovementCategory, ExerciseRole, Split, PrimaryGoal } from './types';
 
 // ---------------------------------------------------------------------------
 // Slot Template Definition (used in split configs)
@@ -268,7 +267,7 @@ interface SplitScore {
 export function suggestSplits(
   daysPerWeek: number,
   goal: PrimaryGoal,
-  experience: string,
+  _experience: string, // eslint-disable-line @typescript-eslint/no-unused-vars
 ): SplitScore[] {
   const scores: SplitScore[] = [];
 

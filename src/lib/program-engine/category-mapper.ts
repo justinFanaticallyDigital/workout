@@ -12,12 +12,12 @@ import type {
   ProgramConfig, ScheduleSkeleton, BlockSkeleton, DaySkeleton,
   SlotTemplate, MovementCategory, MuscleGroup,
 } from './types';
-import { getTimeBudget } from './rules/volume';
+import { getTimeBudget } from './volume';
 import {
   INJURY_CATEGORY_MAP,
   LIMITATION_ADJUSTMENTS,
   CATEGORY_MUSCLES,
-} from './rules/categories';
+} from './categories';
 
 // ---------------------------------------------------------------------------
 // Public API

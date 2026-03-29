@@ -6,13 +6,13 @@
 // ============================================================================
 
 import type {
-  ProgramConfig, ScheduleSkeleton, BlockSkeleton, DaySkeleton,
+  ProgramConfig, ScheduleSkeleton,
   DayBlueprint, CategorySlot, SlotTemplate, MappedExercise,
-  ExerciseAssignment, MovementCategory, ExerciseRole, EquipmentType,
+  ExerciseAssignment, MovementCategory, EquipmentType,
   BlockBlueprint,
 } from './types';
-import { isEquipmentCompatible } from './rules/exercise-pools';
-import { STICKING_POINT_VARIATIONS } from './rules/categories';
+import { isEquipmentCompatible } from './exercise-pools';
+import { STICKING_POINT_VARIATIONS } from './categories';
 
 // ---------------------------------------------------------------------------
 // Public API

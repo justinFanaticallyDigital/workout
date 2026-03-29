@@ -6,7 +6,7 @@
 import type {
   MuscleGroup, ExperienceLevel, PrimaryGoal, BlockPhase,
   SleepQuality, StressLevel, NutritionContext, RecoveryModifiers,
-} from '../types';
+} from './types';
 
 // ---------------------------------------------------------------------------
 // Weekly Sets Per Muscle Group (base targets)

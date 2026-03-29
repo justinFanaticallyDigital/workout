@@ -8,6 +8,14 @@ import { useToast } from "@/components/ui/Toast";
 
 const tiers = [
   {
+    id: "generate",
+    icon: "**",
+    title: "Smart Generator",
+    subtitle: "Answer questions, get a program",
+    desc: "A coach-style intake questionnaire builds a complete periodized program with exercises, sets, reps, and progression — ready to train.",
+    href: "/programs/new/generate",
+  },
+  {
     id: "builder",
     icon: "//",
     title: "Program Builder",

@@ -19,7 +19,7 @@ import { buildSchedule } from './schedule-builder';
 import { mapCategories } from './category-mapper';
 import { selectExercises } from './exercise-selector';
 import { assignProgression } from './progression';
-import { mapExerciseLibrary } from './rules/exercise-pools';
+import { mapExerciseLibrary } from './exercise-pools';
 
 // Re-export everything consumers need
 export type { ProgramConfig, ProgramBlueprint, ExerciseRecord } from './types';

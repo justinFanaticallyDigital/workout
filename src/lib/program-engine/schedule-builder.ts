@@ -6,11 +6,11 @@
 
 import type {
   ProgramConfig, ScheduleSkeleton, BlockSkeleton, DaySkeleton,
-  SlotTemplate, BlockPhase, Split, SplitSuggestion, PrimaryGoal,
+  BlockPhase, Split, SplitSuggestion, PrimaryGoal,
 } from './types';
-import { SPLIT_DEFINITIONS, suggestSplits, validateSplit } from './rules/splits';
-import { PHASE_MODIFIERS } from './rules/volume';
-import { CATEGORY_MUSCLES } from './rules/categories';
+import { SPLIT_DEFINITIONS, suggestSplits, validateSplit } from './splits';
+import { PHASE_MODIFIERS } from './volume';
+import { CATEGORY_MUSCLES } from './categories';
 
 // ---------------------------------------------------------------------------
 // Public API
@@ -88,7 +88,8 @@ interface BlockConfig {
   intensityModifier: number;
 }
 
-function buildBlocks(config: ProgramConfig, split: Exclude<Split, 'auto'>): BlockConfig[] {
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+function buildBlocks(config: ProgramConfig, _split: Exclude<Split, 'auto'>): BlockConfig[] {
   const { primaryGoal, durationWeeks } = config;
 
   // Physique competition: special periodization
@@ -314,7 +315,7 @@ function buildPhysiqueBlocks(config: ProgramConfig): BlockConfig[] {
 // ---------------------------------------------------------------------------
 
 function buildPowerliftingBlocks(config: ProgramConfig): BlockConfig[] {
-  const { durationWeeks, competitionDate } = config;
+  const { durationWeeks } = config;
   // Standard powerlifting periodization working backward from comp date
   // The engine builds the same phase structure but with SBD focus
   return buildStandardBlocks(durationWeeks, 'powerlifting');
@@ -327,7 +328,7 @@ function buildPowerliftingBlocks(config: ProgramConfig): BlockConfig[] {
 function generateDays(
   config: ProgramConfig,
   split: Exclude<Split, 'auto'>,
-  block: BlockConfig,
+  _block: BlockConfig, // eslint-disable-line @typescript-eslint/no-unused-vars
 ): DaySkeleton[] {
   const splitDef = SPLIT_DEFINITIONS[split];
   const days: DaySkeleton[] = [];

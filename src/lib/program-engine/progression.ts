@@ -6,13 +6,13 @@
 // ============================================================================
 
 import type {
-  ProgramConfig, BlockBlueprint, DayBlueprint, CategorySlot,
+  ProgramConfig, BlockBlueprint, CategorySlot,
   ExerciseAssignment, ExerciseRole, BlockPhase, ProgressionType,
-  PrimaryGoal, ExperienceLevel, RecoveryModifiers, MuscleGroup,
+  PrimaryGoal, ExperienceLevel, RecoveryModifiers,
   TrainingStyle,
 } from './types';
-import { CATEGORY_INFO } from './rules/categories';
-import { computeRecoveryModifiers } from './rules/volume';
+import { CATEGORY_INFO } from './categories';
+import { computeRecoveryModifiers } from './volume';
 
 // ---------------------------------------------------------------------------
 // Public API
@@ -281,7 +281,8 @@ function getProgressionType(
 // Progression Increment
 // ---------------------------------------------------------------------------
 
-function getIncrement(slot: CategorySlot, config: ProgramConfig): number | undefined {
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+function getIncrement(slot: CategorySlot, _config: ProgramConfig): number | undefined {
   // Only relevant for linear and wave progression
   const isCompound = slot.role === 'primary_compound' || slot.role === 'secondary_compound';
 
