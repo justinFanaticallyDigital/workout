@@ -62,7 +62,7 @@ export function CustomPrismaAdapter(p: PrismaClient): Adapter {
       }) as unknown as Promise<AdapterAccount>;
     },
 
-    unlinkAccount: ({ provider, providerAccountId }) =>
+    unlinkAccount: ({ provider, providerAccountId }: { provider: string; providerAccountId: string }) =>
       p.account.delete({
         where: { provider_providerAccountId: { provider, providerAccountId } },
       }) as unknown as Promise<AdapterAccount>,
