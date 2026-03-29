@@ -51,6 +51,7 @@ interface CategoryLaneViewProps {
     targetRepRange: string | null;
     targetRpe: string | null;
     progressionType: string;
+    progressionIncrement: number | null;
   }) => void;
   onSwapExercise?: (blockDayExerciseId: string, newExerciseId: string) => void;
 }
@@ -444,6 +445,7 @@ function AddExerciseRow({
     targetRepRange: string | null;
     targetRpe: string | null;
     progressionType: string;
+    progressionIncrement: number | null;
   }) => void;
 }) {
   const [adding, setAdding] = useState(false);
@@ -473,6 +475,7 @@ function AddExerciseRow({
       targetRepRange: reps.trim() || null,
       targetRpe: rpe.trim() || null,
       progressionType: prog,
+      progressionIncrement: null,
     });
     setAdding(false);
     setSelected(null);
@@ -582,6 +585,7 @@ function FlatExerciseList({
     targetRepRange: string | null;
     targetRpe: string | null;
     progressionType: string;
+    progressionIncrement: number | null;
   }) => void;
 }) {
   // Re-use the existing EditableExerciseTable inline
