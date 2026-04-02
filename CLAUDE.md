@@ -50,10 +50,11 @@ src/
 │   ├── programs/
 │   │   ├── page.tsx              # Programs list (server)
 │   │   ├── new/
-│   │   │   ├── page.tsx          # Program creation hub (3 paths)
+│   │   │   ├── page.tsx          # Program creation hub (5 paths)
 │   │   │   ├── goal/page.tsx     # Goal-first wizard (client)
 │   │   │   ├── templates/page.tsx # Template picker (client)
-│   │   │   └── builder/page.tsx  # Visual program builder (client)
+│   │   │   ├── builder/page.tsx  # Visual program builder (client)
+│   │   │   └── generate/page.tsx # Smart Generator questionnaire (client, 2 paths: Quick/Guided)
 │   │   └── [programId]/
 │   │       ├── page.tsx          # Program detail with inline editing (server)
 │   │       └── blocks/[blockId]/
@@ -91,6 +92,8 @@ src/
 │       ├── programs/[id]/blocks/ # POST (add block to program)
 │       ├── programs/[id]/benchmarks/ # GET, POST (program benchmarks)
 │       ├── programs/clone/       # POST (clone from template)
+│       ├── programs/generate/   # POST (run engine, create full program from ProgramConfig)
+│       ├── programs/preview/    # POST (run engine, return blueprint preview without saving)
 │       ├── blocks/[id]/          # GET (block with days+exercises)
 │       ├── blocks/[id]/days/     # POST (create block day)
 │       ├── blocks/day/[id]/      # GET (single block day template)
@@ -143,6 +146,7 @@ src/
 │       ├── ProgressBar.tsx        # Visual progress bar
 │       ├── DataTable.tsx          # Sortable table (client)
 │       ├── EditableExerciseTable.tsx # Inline-editable exercise table (client)
+│       ├── CategoryLaneView.tsx     # Movement-category grouped exercise view for generated programs (client)
 │       ├── ExerciseBrowserPanel.tsx  # Slide-out exercise search panel (client)
 │       ├── Skeleton.tsx           # Loading skeleton placeholder
 │       ├── StatusIcon.tsx         # Status icons for programs/blocks/days
@@ -162,7 +166,19 @@ src/
 │   ├── offline-queue.ts         # Offline workout queue (localStorage + sync)
 │   ├── draft-store.ts           # Workout draft localStorage manager (24h TTL)
 │   ├── progression.ts           # Progression logic (1RM calc, stall detection, suggestions)
-│   └── theme.ts                 # Theme utilities (CSS variable helpers, chart theme)
+│   ├── theme.ts                 # Theme utilities (CSS variable helpers, chart theme)
+│   └── program-engine/          # Deterministic program generation engine
+│       ├── index.ts             # Entry point: generate(), generateQuick()
+│       ├── types.ts             # ProgramConfig, ProgramBlueprint, CategorySlot, MovementCategory, etc.
+│       ├── schedule-builder.ts  # Split suggestion + block periodization
+│       ├── category-mapper.ts   # Slot trimming, injury/limitation adjustments
+│       ├── exercise-selector.ts # Fills slots with primary + alternatives from exercise library
+│       ├── progression.ts       # Rep ranges, RPE, sets, progression type assignment
+│       ├── templates.ts         # 12 preset ProgramConfig templates (beginner → advanced)
+│       ├── splits.ts            # 6 split definitions with category slots per day
+│       ├── categories.ts        # Movement taxonomy, muscle mappings, injury rules
+│       ├── volume.ts            # Weekly volume targets, phase modifiers, recovery computation
+│       └── exercise-pools.ts    # DB exercise → engine MappedExercise enrichment
 ├── providers/
 │   └── ThemeProvider.tsx          # Theme context, CSS var application, first-visit picker
 ├── themes/
@@ -322,14 +338,20 @@ NEXTAUTH_SECRET=...                    # Session encryption
 - **Auto-save** uses debounced (2s) localStorage with `workout-draft-{id}` keys, 24h TTL, managed via `draft-store.ts`
 - **Progression tracking** (`/lib/progression.ts`) — Epley 1RM estimation, stall detection over N sessions, wave/linear/double progression suggestions
 - **Theme system** — 7 themes defined in `src/themes/`, applied via `ThemeProvider` (CSS vars + React context). Theme configs drive colors, fonts, borders, textures, and component-level overrides (button style, nav indicator, timer style). Chart colors via `getCssColor()` in `lib/theme.ts`. First-visit picker modal. Settings page theme switcher. `data-button-style` attribute on `<html>` drives CSS-based `.cta-underline` adaptation.
-- **Program creation** — 3 paths: goal-first wizard (`/programs/new/goal`), template picker (`/programs/new/templates`), visual builder (`/programs/new/builder`)
+- **Program creation** — 5 paths: smart generator (`/programs/new/generate`), visual builder (`/programs/new/builder`), template picker (`/programs/new/templates`), quick blank (`/programs/new` inline), goal wizard (`/programs/new/goal`)
 - **Program cloning** — POST `/api/programs/clone` creates a full program from a template (blocks, days, matched exercises)
 - **Metric targets** — Editable per-user targets on Program tab, stored in `user_metric_targets`, displayed with progress bars and trend indicators
 - **Schedule overrides** — Week plan editing via `/api/schedule-overrides` (Today Only / This Week / This Week Forward scopes)
 - **Muscle heatmap** — Aggregates sets by exercise → muscle groups over past 7 days, displayed as body map with 4 heat tiers
 - **Toast notifications** — `Toast.tsx` provides `useToast()` context with auto-dismiss (4s)
 - **Exercise browser panel** — `ExerciseBrowserPanel.tsx` slide-out panel with search, used in day template editing
-- **Editable exercise table** — `EditableExerciseTable.tsx` inline editing of sets/reps/RPE in day templates
+- **Editable exercise table** — `EditableExerciseTable.tsx` inline editing of sets/reps/RPE/progression in day templates, with alt exercise picker and progression increment field
+- **Program Builder Engine** — Deterministic 4-stage pipeline: ScheduleBuilder → CategoryMapper → ExerciseSelector → ProgressionAssigner. Takes `ProgramConfig` + exercise library, outputs `ProgramBlueprint` with blocks, days, category-grouped exercise slots. No API calls — all logic local. 12 preset templates. Supports injuries, movement limitations, physique division priorities, powerlifting sticking points, and recovery modifiers.
+- **Smart Generator flow** — Questionnaire at `/programs/new/generate` with Quick Path (5 questions, ~30s) and Guided Path (9 steps, 3-5 min). Preview step calls `/api/programs/preview` to show full blueprint before committing. Confirm calls `/api/programs/generate` to persist all DB records.
+- **Category Lane View** — `CategoryLaneView.tsx` groups exercises by movement category (horizontal push, squat, etc.) for generated programs. Parses `[category|role|altsJSON]` metadata from notes field. Shows role-colored badges (compound/isolation/accessory), collapsible alternatives with one-tap swap. Falls back to flat `EditableExerciseTable` for non-generated programs.
+- **Block phase system** — Generated blocks have `phase` field (accumulation/intensification/peaking/deload/prep/peak_week). Timeline component color-codes segments by phase. Block buttons show phase badges. Phase determines volume/intensity modifiers.
+- **Engine warnings** — Stored in program description with `---WARNINGS---` delimiter. Parsed and displayed as dismissible banner on program detail page. Covers split mismatches, injury substitutions, recovery concerns.
+- **Exercise swap** — PATCH `/api/blocks/day/[id]/exercises/[exerciseId]` now supports changing `exerciseId` (primary exercise) in addition to `altExerciseId`. CategoryLaneView shows alternatives per lane with swap buttons.
 - **PWA support** — `next-pwa` configured in `next.config.mjs`, offline fallback page at `/public/offline.html`
 - **Nutrition tracking** — Full food diary with search (text + barcode), custom food entry, daily macro totals, nutrition targets, meal plans
 
@@ -392,6 +414,23 @@ NEXTAUTH_SECRET=...                    # Session encryption
 7. **Shared swatches** — `src/themes/swatches.ts` auto-derives picker colors from theme configs
 8. **WCAG AA contrast** — All textTertiary values tuned to ≥3:1 on bgCard across all themes
 
+### Phase 6: Program Builder Engine (COMPLETE)
+1. **Engine core** — 4-stage deterministic pipeline (ScheduleBuilder, CategoryMapper, ExerciseSelector, ProgressionAssigner) in `src/lib/program-engine/`
+2. **Type system** — `ProgramConfig` (questionnaire input), `ProgramBlueprint` (output), `CategorySlot` (movement pattern lanes), `MovementCategory` (20 categories), `ExerciseRole`, `ProgressionType`
+3. **Split resolution** — 6 splits (full_body, upper_lower, PPL, push_pull, bro_split, powerlifting) with frequency-based ranking and goal biases
+4. **Block periodization** — Phase-based blocks (accumulation, intensification, peaking, deload) with duration-dependent structure (4/8/12/16 weeks)
+5. **Category mapping** — Time budget trimming (30-90 min), injury exclusions, movement limitation substitutions, physique weak-point boosts
+6. **Exercise selection** — Equipment-filtered, ranked by preference/role/variety, cross-day deduplication, 1-3 alternatives per slot, fallback chain
+7. **Progression assignment** — Goal×role×phase rep scheme matrix, recovery-modulated set calculation, experience-based progression type selection
+8. **12 preset templates** — Beginner through advanced (Starting Strength, PPL, Upper/Lower, Minimalist, Cut, Meet Prep, Bodybuilding, Bikini Prep, Athletic, Home Dumbbell, Recomp)
+9. **Smart Generator UI** — `/programs/new/generate` with Quick Path (5 questions) and Guided Path (9 steps, conditional physique/powerlifting sections)
+10. **Preview flow** — `/api/programs/preview` returns full blueprint without saving; UI shows block timeline, day breakdowns, exercises with categories before committing
+11. **Generate endpoint** — `/api/programs/generate` persists Program → Blocks → BlockDays → BlockDayExercises with category metadata in notes, phase on blocks, warnings in description
+12. **Category Lane View** — `CategoryLaneView.tsx` groups exercises by movement category with role badges, inline editing, collapsible alternatives with swap
+13. **Block phase badges** — Timeline and block buttons color-coded by phase (blue=accumulation, orange=intensification, red=peaking, green=deload)
+14. **Engine warnings banner** — Dismissible warnings on program detail for split mismatches, injury subs, recovery concerns
+15. **Generated program identity** — "Generated" badge, category lane display, alt swap UI, phase awareness throughout
+
 ### Future Work
 - Notification / reminder system
 - Mobile responsiveness pass
@@ -401,15 +440,15 @@ NEXTAUTH_SECRET=...                    # Session encryption
 - Calendar meal logging overlay
 
 ## Current State
-**Phase 1 through Phase 5 are complete.** The app is functional end-to-end with the multi-theme architecture:
+**Phase 1 through Phase 6 are complete.** The app is functional end-to-end with the multi-theme architecture and program builder engine:
 - 5-tab bottom navigation with mobile-first layout
-- 367 exercises seeded, 35+ API routes connected to real Prisma queries
+- 367 exercises seeded, 37+ API routes connected to real Prisma queries
 - All pages fetch from database (no hardcoded data)
 - Google OAuth working, deployed on Vercel + Railway PostgreSQL
 - Full workout logging flow: pick template or start blank → search/add exercises → log sets → finish
 - Non-lifting activity logging: stretch, HIIT, LISS, class, custom with duration/intensity
 - Stretch timer flow with theme-adaptive timer display and auto-logging
-- Program creation via 3 paths: goal wizard, templates, visual builder
+- Program creation via 5 paths: smart generator, visual builder, templates, quick blank, goal wizard
 - Inline program/block/day editing with exercise browser
 - Editable metric targets on Program dashboard
 - Workout history and session replay
@@ -420,6 +459,13 @@ NEXTAUTH_SECRET=...                    # Session encryption
 - Nutrition: food diary, macro targets, meal plans
 - Offline queue + auto-save + PWA support for data resilience
 - CSV data export from settings page
+- **Program Builder Engine** — deterministic 4-stage pipeline generating full periodized programs from questionnaire input
+- Smart Generator with Quick Path (5 questions) and Guided Path (9 steps) with preview-before-commit flow
+- 12 preset program templates (beginner through advanced competition prep)
+- Category Lane View groups exercises by movement pattern with role badges and one-tap alternative swapping
+- Block phase system with color-coded timeline (accumulation/intensification/peaking/deload)
+- Engine warnings banner for split mismatches, injury substitutions, and recovery concerns
+- Supports injuries, movement limitations, physique division priorities, powerlifting sticking points, recovery modifiers
 - **7 visual themes** with full design system: colors, fonts, borders, textures, component-level overrides
 - Theme-adaptive BottomNav (underline/glow-dot/bg-fill/border-bottom indicators)
 - Theme-adaptive CTA buttons (underline/outline/ghost/pixel-border/fill)
