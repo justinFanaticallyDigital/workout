@@ -83,8 +83,9 @@ function applyThemeCssVars(theme: ThemeConfig) {
   root.style.setProperty('--ft-alpha-secondary', String(extractAlpha(c.textSecondary)));
   root.style.setProperty('--ft-alpha-tertiary', String(extractAlpha(c.textTertiary)));
 
-  // Muted token — use borderSubtle RGB (alpha is typically very low)
-  root.style.setProperty('--ft-muted', colorToRgbTriplet(c.borderSubtle));
+  // Muted token — maps to tertiary text so `text-ft-muted` and placeholders stay legible.
+  // The few places using it as a background color render as a subtle dim surface, which is acceptable.
+  root.style.setProperty('--ft-muted', colorToRgbTriplet(c.textTertiary));
 
   // Backward-compat grayscale tokens (ft-dim, ft-light, ft-pale, ft-white)
   // These map text hierarchy for Tailwind classes.

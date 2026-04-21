@@ -58,7 +58,16 @@ const MOVEMENT_COLORS: Record<string, string> = {
 };
 
 interface ScheduledDay {
+  id: string;
   name: string;
+  exerciseCount: number;
+  movementPattern: string | null;
+}
+
+interface AvailableDay {
+  id: string;
+  name: string;
+  dayType: string;
   exerciseCount: number;
   movementPattern: string | null;
 }
@@ -66,6 +75,9 @@ interface ScheduledDay {
 export default function LogPage() {
   const router = useRouter();
   const [scheduled, setScheduled] = useState<ScheduledDay | null>(null);
+  const [availableDays, setAvailableDays] = useState<AvailableDay[]>([]);
+  const [activeBlockName, setActiveBlockName] = useState<string | null>(null);
+  const [showDayPicker, setShowDayPicker] = useState(false);
   const [showForm, setShowForm] = useState<string | null>(null);
   const [formData, setFormData] = useState({
     durationMin: "",
@@ -87,11 +99,30 @@ export default function LogPage() {
       .then((data) => {
         if (data?.scheduledDay) {
           setScheduled({
+            id: data.scheduledDay.id,
             name: data.scheduledDay.name,
             exerciseCount: data.scheduledDay.exercises?.length || 0,
             movementPattern:
               data.scheduledDay.exercises?.[0]?.movementPattern || null,
           });
+        }
+        if (data?.activeBlock) {
+          setActiveBlockName(data.activeBlock.name || null);
+          const days: AvailableDay[] = (data.activeBlock.days || []).map(
+            (d: {
+              id: string;
+              name: string;
+              dayType: string;
+              exercises: { movementPattern: string | null }[];
+            }) => ({
+              id: d.id,
+              name: d.name,
+              dayType: d.dayType,
+              exerciseCount: d.exercises?.length || 0,
+              movementPattern: d.exercises?.[0]?.movementPattern || null,
+            })
+          );
+          setAvailableDays(days);
         }
       })
       .catch(() => {});
@@ -155,33 +186,135 @@ export default function LogPage() {
 
       {/* Scheduled Workout Banner */}
       {scheduled && !showForm && (
-        <Link href="/log/new-blank">
-          <div
-            className="bg-ft-surface rounded-lg p-4 border border-ft-border flex items-center justify-between"
-            style={{
-              borderLeftWidth: 4,
-              borderLeftColor:
-                MOVEMENT_COLORS[
-                  scheduled.movementPattern?.toLowerCase() || "push"
-                ] || MOVEMENT_COLORS.push,
-            }}
-          >
-            <div>
-              <p className="font-display text-base text-ft-white">
+        <div
+          className="bg-ft-surface rounded-lg p-4 border border-ft-border"
+          style={{
+            borderLeftWidth: 4,
+            borderLeftColor:
+              MOVEMENT_COLORS[
+                scheduled.movementPattern?.toLowerCase() || "push"
+              ] || MOVEMENT_COLORS.push,
+          }}
+        >
+          <div className="flex items-center justify-between gap-3">
+            <div className="min-w-0">
+              <p className="text-tertiary font-body text-[10px] uppercase tracking-wider">
+                Today&rsquo;s Workout
+              </p>
+              <p className="font-display text-base text-ft-white mt-0.5 truncate">
                 {scheduled.name}
               </p>
               <p className="text-secondary font-body text-sm mt-0.5">
                 {scheduled.exerciseCount} exercises
               </p>
             </div>
-            <span
-              className="font-display text-lg px-4 py-2 rounded-lg text-white"
+            <Link
+              href={`/log/${scheduled.id}`}
+              className="font-display text-lg px-4 py-2 rounded-lg text-white shrink-0"
               style={{ backgroundColor: "rgb(var(--ft-accent))" }}
             >
               GO
-            </span>
+            </Link>
           </div>
-        </Link>
+          {availableDays.length > 0 && (
+            <button
+              type="button"
+              onClick={() => setShowDayPicker(true)}
+              className="mt-3 text-tertiary font-body text-xs hover:text-ft-light transition-colors"
+            >
+              Change workout &rarr;
+            </button>
+          )}
+        </div>
+      )}
+
+      {/* Workout Picker Modal — choose a different day from the active block */}
+      {showDayPicker && (
+        <>
+          <div
+            className="fixed inset-0 z-40 bg-ft-bg/60"
+            onClick={() => setShowDayPicker(false)}
+            aria-hidden="true"
+          />
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-label="Choose workout"
+            className="fixed inset-x-0 bottom-0 z-50 sm:inset-auto sm:top-[10%] sm:left-1/2 sm:-translate-x-1/2 sm:w-full sm:max-w-lg bg-ft-surface border-t sm:border border-ft-border sm:rounded-lg flex flex-col max-h-[85vh] sm:max-h-[70vh]"
+          >
+            <div className="flex justify-center pt-2 pb-1 sm:hidden">
+              <div className="w-10 h-1 rounded-full bg-ft-border" />
+            </div>
+            <div className="px-4 pt-2 sm:pt-4 pb-3 flex items-center justify-between border-b border-ft-border">
+              <div className="min-w-0">
+                <h2 className="font-body text-base font-bold text-ft-white">
+                  Choose Workout
+                </h2>
+                {activeBlockName && (
+                  <p className="text-tertiary font-body text-xs mt-0.5 truncate">
+                    {activeBlockName}
+                  </p>
+                )}
+              </div>
+              <button
+                onClick={() => setShowDayPicker(false)}
+                className="text-ft-dim hover:text-ft-light text-lg font-body transition-colors px-1"
+                aria-label="Close"
+              >
+                &times;
+              </button>
+            </div>
+            <div className="flex-1 overflow-y-auto px-4 py-3 pb-safe">
+              {availableDays.map((day) => {
+                const isScheduled = scheduled?.id === day.id;
+                return (
+                  <Link
+                    key={day.id}
+                    href={`/log/${day.id}`}
+                    onClick={() => setShowDayPicker(false)}
+                    className="w-full flex items-center justify-between px-3 py-3 border-b border-ft-card hover:bg-ft-card/50 transition-colors touch-target rounded"
+                    style={{
+                      borderLeftWidth: 3,
+                      borderLeftColor:
+                        MOVEMENT_COLORS[
+                          day.movementPattern?.toLowerCase() || "push"
+                        ] || "rgb(var(--ft-border))",
+                    }}
+                  >
+                    <div className="min-w-0">
+                      <p className="text-ft-white text-sm font-body truncate">
+                        {day.name}
+                      </p>
+                      <p className="text-tertiary text-xs font-body mt-0.5 capitalize">
+                        {day.dayType} &middot; {day.exerciseCount} exercises
+                      </p>
+                    </div>
+                    {isScheduled && (
+                      <span className="text-[10px] font-body uppercase tracking-wider text-ft-accent shrink-0 ml-2">
+                        Today
+                      </span>
+                    )}
+                  </Link>
+                );
+              })}
+              <Link
+                href="/log/new-blank"
+                onClick={() => setShowDayPicker(false)}
+                className="w-full flex items-center justify-between px-3 py-3 border border-dashed border-ft-card hover:border-ft-dim transition-colors touch-target rounded mt-3"
+              >
+                <div>
+                  <p className="text-ft-white text-sm font-body">
+                    Start Blank / Improv
+                  </p>
+                  <p className="text-tertiary text-xs font-body mt-0.5">
+                    Build the session as you go
+                  </p>
+                </div>
+                <span className="text-ft-dim text-lg font-body">+</span>
+              </Link>
+            </div>
+          </div>
+        </>
       )}
 
       {/* Activity logging form */}
@@ -354,7 +487,11 @@ export default function LogPage() {
           {ACTIVITY_TYPES.map((activity) => {
             const handleClick = () => {
               if (activity.type === "lifting") {
-                router.push("/log/new-blank");
+                if (availableDays.length > 0) {
+                  setShowDayPicker(true);
+                } else {
+                  router.push("/log/new-blank");
+                }
                 return;
               }
               if (activity.type === "stretch") {

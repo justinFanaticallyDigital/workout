@@ -182,9 +182,11 @@ interface RecentExercise extends SearchExercise {
 function ExercisePicker({
   onSelect,
   onClose,
+  title = "Add Exercise",
 }: {
   onSelect: (ex: SearchExercise) => void;
   onClose: () => void;
+  title?: string;
 }) {
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<SearchExercise[]>([]);
@@ -249,7 +251,7 @@ function ExercisePicker({
         {/* Header */}
         <div className="px-4 pt-2 sm:pt-4 pb-3 flex items-center justify-between border-b border-ft-border">
           <h2 className="font-body text-base font-bold text-ft-white">
-            Add Exercise
+            {title}
           </h2>
           <button
             onClick={onClose}
@@ -349,6 +351,7 @@ export default function ActiveWorkoutPage({
   const [startTime] = useState(() => Date.now());
   const [restored, setRestored] = useState(false);
   const [showPicker, setShowPicker] = useState(false);
+  const [swapIndex, setSwapIndex] = useState<number | null>(null);
   const [showRir, setShowRir] = useState(false);
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -581,6 +584,69 @@ export default function ActiveWorkoutPage({
     });
   }, []);
 
+  const swapExercise = useCallback((index: number, ex: SearchExercise) => {
+    setExercises((prev) =>
+      prev.map((existing, i) =>
+        i !== index
+          ? existing
+          : {
+              ...existing,
+              exerciseId: ex.id,
+              name: ex.name,
+              shortName: makeShortName(ex.name),
+              category: ex.movementPattern || "—",
+              // Reset last performance data; will be re-fetched for the new exercise
+              lastSets: [],
+              suggestedWeight: null,
+              progressionInfo: {
+                estimated1RM: null,
+                progressionStatus: null,
+                stalledSessions: 0,
+              },
+            }
+      )
+    );
+    setShowPicker(false);
+    setSwapIndex(null);
+
+    // Fetch progression data for the swapped-in exercise
+    Promise.all([
+      fetch(`/api/exercises/${ex.id}/last-performance`).then((r) => r.ok ? r.json() : null).catch(() => null),
+      fetch(`/api/exercises/${ex.id}/estimated-1rm`).then((r) => r.ok ? r.json() : null).catch(() => null),
+      fetch(`/api/exercises/${ex.id}/progression-status`).then((r) => r.ok ? r.json() : null).catch(() => null),
+    ]).then(([perf, e1rmData, statusData]) => {
+      const lastSets = perf?.lastPerformance?.sets as LastSet[] ?? [];
+      const progressionInfo: ProgressionInfo = {
+        estimated1RM: e1rmData?.estimated1RM ?? null,
+        progressionStatus: statusData?.status ?? null,
+        stalledSessions: statusData?.sessions ?? 0,
+      };
+      setExercises((prev) =>
+        prev.map((exercise, i) =>
+          i === index ? { ...exercise, lastSets, progressionInfo } : exercise
+        )
+      );
+    });
+  }, []);
+
+  const removeExercise = useCallback((index: number) => {
+    const ex = exercises[index];
+    if (!ex) return;
+    const hasLoggedSets = ex.sets.some((s) => s.done || s.weight != null || s.reps != null);
+    if (hasLoggedSets) {
+      const confirmed = typeof window !== "undefined"
+        ? window.confirm(`Remove "${ex.name}"? Any logged sets for this exercise will be discarded.`)
+        : true;
+      if (!confirmed) return;
+    }
+    setExercises((prev) => prev.filter((_, i) => i !== index));
+    setActiveEx((prevIdx) => {
+      if (prevIdx > index) return prevIdx - 1;
+      if (prevIdx === index) return Math.max(0, index - 1);
+      return prevIdx;
+    });
+  }, [exercises]);
+
   // Finish workout handler
   const handleFinish = async () => {
     // Check that at least one set is completed
@@ -717,8 +783,18 @@ export default function ActiveWorkoutPage({
       {/* Exercise Picker Overlay */}
       {showPicker && (
         <ExercisePicker
-          onSelect={addExercise}
-          onClose={() => setShowPicker(false)}
+          title={swapIndex !== null ? "Swap Exercise" : "Add Exercise"}
+          onSelect={(ex) => {
+            if (swapIndex !== null) {
+              swapExercise(swapIndex, ex);
+            } else {
+              addExercise(ex);
+            }
+          }}
+          onClose={() => {
+            setShowPicker(false);
+            setSwapIndex(null);
+          }}
         />
       )}
 
@@ -832,12 +908,37 @@ export default function ActiveWorkoutPage({
           <div className="px-4 flex flex-col gap-4">
             {/* Active Exercise Detail */}
             <Card>
-              <div className="mb-4">
-                <h2 className="font-body text-base font-bold text-ft-white">
-                  {current.name}
-                </h2>
-                <div className="flex items-center gap-2 mt-1.5 flex-wrap">
-                  <Tag>{current.category}</Tag>
+              <div className="mb-4 flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <h2 className="font-body text-base font-bold text-ft-white">
+                    {current.name}
+                  </h2>
+                  <div className="flex items-center gap-2 mt-1.5 flex-wrap">
+                    <Tag>{current.category}</Tag>
+                  </div>
+                </div>
+                <div className="flex items-center gap-1 shrink-0">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSwapIndex(activeEx);
+                      setShowPicker(true);
+                    }}
+                    className="text-ft-dim hover:text-ft-light border border-ft-card rounded px-2 py-1 text-[11px] font-body transition-colors touch-target"
+                    aria-label="Swap exercise"
+                    title="Swap exercise"
+                  >
+                    Swap
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => removeExercise(activeEx)}
+                    className="text-ft-dim hover:text-ft-danger border border-ft-card rounded px-2 py-1 text-[11px] font-body transition-colors touch-target"
+                    aria-label="Remove exercise"
+                    title="Remove exercise"
+                  >
+                    Remove
+                  </button>
                 </div>
               </div>
 

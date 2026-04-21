@@ -10,10 +10,10 @@ export const blueprint: ThemeConfig = {
     bgCard: '#23304B',           // rgba(255,255,255,0.04) composited on bg
     bgElevated: '#28344F',       // rgba(255,255,255,0.06) composited on bg
 
-    // Text: white/light blue on dark blue
-    textPrimary: 'rgba(255,255,255,0.9)',
-    textSecondary: 'rgba(180,200,230,0.6)',
-    textTertiary: 'rgba(180,200,230,0.50)',
+    // Text: white/light blue on dark blue (AA-tuned)
+    textPrimary: 'rgba(255,255,255,0.92)',
+    textSecondary: 'rgba(210,225,250,0.78)',
+    textTertiary: 'rgba(200,220,250,0.68)',
 
     accent: '#4A9EFF',          // bright blueprint blue for annotations
     accentSecondary: '#FF6B4A', // red for dimension callouts / alerts
