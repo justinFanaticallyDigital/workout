@@ -10,10 +10,10 @@ export const lab: ThemeConfig = {
     bgCard: '#FFFFFF',
     bgElevated: '#FFFFFF',
 
-    // Text: dark grays — clinical precision
+    // Text: dark grays — clinical precision (AA-tuned)
     textPrimary: '#1A1A1A',
-    textSecondary: '#6B7280',
-    textTertiary: '#717985',
+    textSecondary: '#555C68',
+    textTertiary: '#595F6B',
 
     accent: '#2563EB',          // clinical blue — data highlights, active states
     accentSecondary: '#059669', // clinical green — success, completion

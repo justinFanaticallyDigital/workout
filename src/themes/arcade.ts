@@ -9,10 +9,10 @@ export const arcade: ThemeConfig = {
     bgCard: '#11111B',           // rgba(255,255,255,0.03) composited on bg
     bgElevated: '#161620',       // rgba(255,255,255,0.05) composited on bg
 
-    // CRT phosphor white — slightly cool/blue-shifted
+    // CRT phosphor white — slightly cool/blue-shifted (AA-tuned)
     textPrimary: '#E0E0F0',
-    textSecondary: 'rgba(224,224,240,0.5)',
-    textTertiary: 'rgba(224,224,240,0.38)',
+    textSecondary: 'rgba(224,224,240,0.65)',
+    textTertiary: 'rgba(224,224,240,0.55)',
 
     accent: '#FF50C8',          // hot pink / magenta — attract-mode neon
     accentSecondary: '#FFD700',  // gold — for scores, XP, achievements

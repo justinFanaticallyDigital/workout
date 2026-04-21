@@ -10,10 +10,10 @@ export const graffiti: ThemeConfig = {
     bgCard: '#323638',
     bgElevated: '#3A3E40',
 
-    // Text: light on dark — white/gray spectrum
+    // Text: light on dark — white/gray spectrum (AA-tuned)
     textPrimary: 'rgba(255,255,255,0.92)',
-    textSecondary: 'rgba(255,255,255,0.55)',
-    textTertiary: 'rgba(255,255,255,0.42)',
+    textSecondary: 'rgba(255,255,255,0.70)',
+    textTertiary: 'rgba(255,255,255,0.58)',
 
     // Accent: movement colors serve as accents — defaults to Push blue
     accent: '#3B82F6',

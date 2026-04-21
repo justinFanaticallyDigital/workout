@@ -9,9 +9,9 @@ export const cyberpunk: ThemeConfig = {
     bgCard: '#080E15',           // rgba(0,240,255,0.025) composited on bg
     bgElevated: '#081119',       // rgba(0,240,255,0.04) composited on bg
 
-    textPrimary: 'rgba(255,255,255,0.88)',
-    textSecondary: 'rgba(255,255,255,0.45)',
-    textTertiary: 'rgba(255,255,255,0.32)',
+    textPrimary: 'rgba(255,255,255,0.92)',
+    textSecondary: 'rgba(255,255,255,0.64)',
+    textTertiary: 'rgba(255,255,255,0.50)',
 
     accent: '#00F0FF',           // cyan — the signature color
     accentSecondary: '#FF3068',  // alert red/pink

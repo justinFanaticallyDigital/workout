@@ -10,10 +10,10 @@ export const iron: ThemeConfig = {
     bgCard: '#252422',
     bgElevated: '#2E2C29',
 
-    // Text: chalk white + warm grays
+    // Text: chalk white + warm grays (AA-tuned)
     textPrimary: 'rgba(255,252,245,0.92)',   // warm chalk white
-    textSecondary: 'rgba(255,252,245,0.55)',
-    textTertiary: 'rgba(255,252,245,0.42)',
+    textSecondary: 'rgba(255,252,245,0.70)',
+    textTertiary: 'rgba(255,252,245,0.58)',
 
     accent: '#C8A96E',          // brushed brass/gold — iron gym hardware
     accentSecondary: '#8B4513', // rust brown
