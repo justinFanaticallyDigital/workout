@@ -7,9 +7,9 @@
 @layer base {
   :root {
     /* 90s Street / Graffiti on Concrete — default theme RGB triplets */
-    --ft-bg: 42 45 47;
-    --ft-surface: 50 54 56;
-    --ft-card: 58 62 64;
+    --ft-bg: 35 39 42;
+    --ft-surface: 61 66 69;
+    --ft-card: 74 79 82;
     --ft-border: 255 255 255;
     --ft-muted: 255 255 255;
     --ft-dim: 255 255 255;

@@ -5,15 +5,15 @@ export const iron: ThemeConfig = {
   name: 'Iron & Chalk',
 
   colors: {
-    // Dark gym wall — warm dark gray, not cool/blue
-    bg: '#1C1B19',
-    bgCard: '#252422',
-    bgElevated: '#2E2C29',
+    // Dark gym wall — warm dark gray. Cards lifted so plates/cards stand off the wall.
+    bg: '#161514',
+    bgCard: '#2E2D2B',
+    bgElevated: '#3E3C38',
 
     // Text: chalk white + warm grays (AA-tuned)
     textPrimary: 'rgba(255,252,245,0.92)',   // warm chalk white
-    textSecondary: 'rgba(255,252,245,0.70)',
-    textTertiary: 'rgba(255,252,245,0.58)',
+    textSecondary: 'rgba(255,252,245,0.74)',
+    textTertiary: 'rgba(255,252,245,0.62)',
 
     accent: '#C8A96E',          // brushed brass/gold — iron gym hardware
     accentSecondary: '#8B4513', // rust brown
@@ -27,8 +27,8 @@ export const iron: ThemeConfig = {
     error: '#EF4444',
     warning: '#C8A96E',
 
-    border: '#33322F',           // rgba(255,252,245,0.1) composited on bg
-    borderSubtle: '#272624',     // rgba(255,252,245,0.05) composited on bg
+    border: '#4A4844',
+    borderSubtle: '#3E3C38',
   },
 
   fonts: {

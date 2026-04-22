@@ -5,15 +5,15 @@ export const notebook: ThemeConfig = {
   name: "Coach's Notebook",
 
   colors: {
-    // Light theme — cream/warm paper
-    bg: '#E8E0D4',             // desk/table surface behind notebook
+    // Light theme — cream/warm paper (desk darker so notebook page stands out)
+    bg: '#E2D9C9',             // desk/table surface behind notebook
     bgCard: '#FAF6ED',         // notebook page (warm cream)
     bgElevated: '#FFFFFF',
 
-    // Text: warm browns — 3-tier hierarchy
+    // Text: warm browns — 3-tier hierarchy (AA-tuned on both bg and bgCard)
     textPrimary: '#2C241E',    // near-black warm brown (exercise names, set data)
     textSecondary: '#6B5A4A',  // medium brown (labels, metadata, column headers)
-    textTertiary: '#73614E',   // receded brown (set numbers, unit labels, inactive)
+    textTertiary: '#6D5B46',   // receded brown (set numbers, unit labels, inactive)
 
     accent: '#B5312A',         // coaching red (underlines, active indicators)
     accentSecondary: '#1A6B3C', // dark green (checkmarks, completion)
