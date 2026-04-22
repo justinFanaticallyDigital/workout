@@ -5,8 +5,8 @@ export const lab: ThemeConfig = {
   name: 'Lab Report',
 
   colors: {
-    // Clean clinical white/gray
-    bg: '#F5F5F7',
+    // Clean clinical white/gray — bg darkened so white cards stand out clearly
+    bg: '#ECEDF0',
     bgCard: '#FFFFFF',
     bgElevated: '#FFFFFF',
 

@@ -37,7 +37,7 @@ export default function ThemePickerModal({ onClose }: ThemePickerModalProps) {
         style={{
           maxWidth: '420px',
           width: '100%',
-          background: THEME_SWATCHES[themeId]?.bg || '#2A2D2F',
+          background: THEME_SWATCHES[themeId]?.bg || '#23272A',
           border: `1px solid ${THEME_SWATCHES[themeId]?.accent || '#3B82F6'}`,
           padding: '24px',
           position: 'relative',

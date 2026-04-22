@@ -5,14 +5,15 @@ export const arcade: ThemeConfig = {
   name: 'Retro Arcade',
 
   colors: {
-    bg: '#0A0A14',
-    bgCard: '#11111B',           // rgba(255,255,255,0.03) composited on bg
-    bgElevated: '#161620',       // rgba(255,255,255,0.05) composited on bg
+    // Deep arcade cabinet bg with lifted phosphor-tinted surfaces
+    bg: '#07070F',
+    bgCard: '#22223A',
+    bgElevated: '#2E2E4A',
 
     // CRT phosphor white — slightly cool/blue-shifted (AA-tuned)
     textPrimary: '#E0E0F0',
-    textSecondary: 'rgba(224,224,240,0.65)',
-    textTertiary: 'rgba(224,224,240,0.55)',
+    textSecondary: 'rgba(224,224,240,0.70)',
+    textTertiary: 'rgba(224,224,240,0.60)',
 
     accent: '#FF50C8',          // hot pink / magenta — attract-mode neon
     accentSecondary: '#FFD700',  // gold — for scores, XP, achievements
@@ -26,8 +27,8 @@ export const arcade: ThemeConfig = {
     error: '#EF4444',
     warning: '#FFD700',
 
-    border: '#1E1E27',           // rgba(255,255,255,0.08) composited on bg
-    borderSubtle: '#14141D',     // rgba(255,255,255,0.04) composited on bg
+    border: '#3C3C5C',
+    borderSubtle: '#2E2E4A',
   },
 
   fonts: {

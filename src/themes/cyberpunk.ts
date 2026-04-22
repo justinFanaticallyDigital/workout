@@ -5,13 +5,14 @@ export const cyberpunk: ThemeConfig = {
   name: 'Dark Future',
 
   colors: {
-    bg: '#08080F',
-    bgCard: '#080E15',           // rgba(0,240,255,0.025) composited on bg
-    bgElevated: '#081119',       // rgba(0,240,255,0.04) composited on bg
+    // Deep void bg with lifted cyan-tinted surfaces for clear container separation
+    bg: '#05060C',
+    bgCard: '#1C2232',
+    bgElevated: '#2A3244',
 
     textPrimary: 'rgba(255,255,255,0.92)',
-    textSecondary: 'rgba(255,255,255,0.64)',
-    textTertiary: 'rgba(255,255,255,0.50)',
+    textSecondary: 'rgba(255,255,255,0.68)',
+    textTertiary: 'rgba(255,255,255,0.54)',
 
     accent: '#00F0FF',           // cyan — the signature color
     accentSecondary: '#FF3068',  // alert red/pink
@@ -25,8 +26,8 @@ export const cyberpunk: ThemeConfig = {
     error: '#FF3068',
     warning: '#EAB308',
 
-    border: '#07242C',           // rgba(0,240,255,0.12) composited on bg
-    borderSubtle: '#08141B',     // rgba(0,240,255,0.05) composited on bg
+    border: '#3A4660',
+    borderSubtle: '#2A3244',
   },
 
   fonts: {

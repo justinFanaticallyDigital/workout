@@ -5,15 +5,15 @@ export const graffiti: ThemeConfig = {
   name: '90s Street',
 
   colors: {
-    // Background: dark charcoal concrete
-    bg: '#2A2D2F',
-    bgCard: '#323638',
-    bgElevated: '#3A3E40',
+    // Background: dark charcoal concrete (surfaces lifted for visible container separation)
+    bg: '#23272A',
+    bgCard: '#3D4245',
+    bgElevated: '#4A4F52',
 
     // Text: light on dark — white/gray spectrum (AA-tuned)
     textPrimary: 'rgba(255,255,255,0.92)',
-    textSecondary: 'rgba(255,255,255,0.70)',
-    textTertiary: 'rgba(255,255,255,0.58)',
+    textSecondary: 'rgba(255,255,255,0.74)',
+    textTertiary: 'rgba(255,255,255,0.66)',
 
     // Accent: movement colors serve as accents — defaults to Push blue
     accent: '#3B82F6',
@@ -30,9 +30,9 @@ export const graffiti: ThemeConfig = {
     error: '#EF4444',
     warning: '#EAB308',
 
-    // Borders — composited on bg (#2A2D2F)
-    border: '#444648',
-    borderSubtle: '#373A3B',
+    // Borders — lifted to stay visible on the brighter card surface
+    border: '#5A5F63',
+    borderSubtle: '#4A4F52',
   },
 
   fonts: {

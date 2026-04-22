@@ -5,15 +5,15 @@ export const blueprint: ThemeConfig = {
   name: 'Blueprint',
 
   colors: {
-    // Blueprint blue background
-    bg: '#1A2744',
-    bgCard: '#23304B',           // rgba(255,255,255,0.04) composited on bg
-    bgElevated: '#28344F',       // rgba(255,255,255,0.06) composited on bg
+    // Blueprint blue — deeper shell with lifted card/elevated planes for visible separation
+    bg: '#142038',
+    bgCard: '#2D3C5C',
+    bgElevated: '#384A70',
 
     // Text: white/light blue on dark blue (AA-tuned)
     textPrimary: 'rgba(255,255,255,0.92)',
-    textSecondary: 'rgba(210,225,250,0.78)',
-    textTertiary: 'rgba(200,220,250,0.68)',
+    textSecondary: 'rgba(210,225,250,0.82)',
+    textTertiary: 'rgba(200,220,250,0.78)',
 
     accent: '#4A9EFF',          // bright blueprint blue for annotations
     accentSecondary: '#FF6B4A', // red for dimension callouts / alerts
@@ -27,8 +27,8 @@ export const blueprint: ThemeConfig = {
     error: '#FF6B4A',
     warning: '#EAB308',
 
-    border: '#35415A',           // rgba(255,255,255,0.12) composited on bg
-    borderSubtle: '#28344F',     // rgba(255,255,255,0.06) composited on bg
+    border: '#4A5C82',
+    borderSubtle: '#384A70',
   },
 
   fonts: {
