@@ -32,9 +32,9 @@ export const notebook: ThemeConfig = {
   },
 
   fonts: {
-    display: "'Caveat', cursive",                        // handwritten — exercise names, titles
-    data: "'Caveat', cursive",                           // handwritten — weights, reps, RIR
-    body: "'Libre Baskerville', Georgia, serif",         // printed — labels, headers, nav
+    display: "'Caveat', cursive",                    // handwritten — exercise names, titles
+    data: "'Caveat', cursive",                       // handwritten — weights, reps, RIR
+    body: "'Inter', system-ui, sans-serif",          // clean sans for labels, headers, nav
   },
 
   borders: {

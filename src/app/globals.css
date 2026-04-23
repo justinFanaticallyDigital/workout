@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Permanent+Marker&family=Caveat:wght@400;700&family=Barlow+Condensed:wght@300;400;500;600;700&family=Space+Mono:wght@400;700&family=Libre+Baskerville:wght@400;700&family=Press+Start+2P&family=IBM+Plex+Mono:wght@400;500;600;700&family=Anton&family=Inter:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Permanent+Marker&family=Caveat:wght@400;700&family=Barlow+Condensed:wght@300;400;500;600;700&family=Space+Mono:wght@400;700&family=Libre+Baskerville:wght@400;700&family=Press+Start+2P&family=IBM+Plex+Mono:wght@400;500;600;700&family=Anton&family=Inter:wght@300;400;500;600;700&family=VT323&family=Silkscreen:wght@400;700&family=Pixelify+Sans:wght@400;500;600;700&family=Orbitron:wght@400;500;600;700&family=Rajdhani:wght@300;400;500;600;700&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -963,4 +963,146 @@ body > * {
   font-size: 36px;
   font-weight: 600;
   color: rgba(255,252,245,0.92);
+}
+
+/*
+ * =============================================================================
+ * THEME DIFFERENTIATION — distinct visual treatments per dark theme so
+ * cyberpunk / arcade / iron / graffiti each feel like their own world, not
+ * just different accent colors on the same chassis. Triggered by the
+ * [data-theme="..."] attribute set by ThemeProvider.
+ * =============================================================================
+ */
+
+/* -----------------------------------------------------------------------------
+ * DARK FUTURE (cyberpunk) — neon HUD
+ * Distinguishing cues: cyan glow on display type + accents, soft glow
+ * outlines on cards, focus-glow on inputs, subtle scanline overlay.
+ * -------------------------------------------------------------------------- */
+[data-theme="cyberpunk"] .font-display {
+  text-shadow:
+    0 0 4px rgba(0,240,255,0.55),
+    0 0 12px rgba(0,240,255,0.25);
+  letter-spacing: 0.02em;
+}
+[data-theme="cyberpunk"] .font-handwritten {
+  text-shadow: 0 0 6px rgba(0,240,255,0.30);
+}
+[data-theme="cyberpunk"] .text-ft-accent {
+  text-shadow: 0 0 6px rgba(0,240,255,0.55);
+}
+[data-theme="cyberpunk"] .bg-ft-surface {
+  box-shadow:
+    inset 0 0 0 1px rgba(0,240,255,0.22),
+    0 0 18px rgba(0,240,255,0.08);
+}
+[data-theme="cyberpunk"] .cta-underline {
+  text-shadow: 0 0 6px rgba(0,240,255,0.55);
+}
+[data-theme="cyberpunk"] .cta-underline:hover {
+  text-shadow: 0 0 10px rgba(0,240,255,0.85);
+}
+[data-theme="cyberpunk"] input:focus,
+[data-theme="cyberpunk"] textarea:focus,
+[data-theme="cyberpunk"] select:focus {
+  box-shadow: 0 0 0 1px rgba(0,240,255,0.6), 0 0 12px rgba(0,240,255,0.3);
+  outline: none;
+}
+
+/* -----------------------------------------------------------------------------
+ * RETRO ARCADE — chunky 8-bit pixel art
+ * Distinguishing cues: hard pixel drop-shadow on cards, crisp-pixel text
+ * shadow, uppercase pixel fonts, full-screen scanline overlay, no smoothing.
+ * -------------------------------------------------------------------------- */
+[data-theme="arcade"] {
+  image-rendering: pixelated;
+}
+[data-theme="arcade"] .bg-ft-surface {
+  box-shadow:
+    3px 3px 0 0 rgba(0,0,0,0.5),
+    inset 0 0 0 1px rgba(255,80,200,0.22);
+}
+[data-theme="arcade"] .font-display {
+  text-shadow: 2px 2px 0 rgba(0,0,0,0.7);
+  line-height: 1.4;
+}
+[data-theme="arcade"] .font-body,
+[data-theme="arcade"] .font-handwritten {
+  letter-spacing: 0.02em;
+}
+[data-theme="arcade"] .cta-underline {
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+[data-theme="arcade"] input,
+[data-theme="arcade"] textarea,
+[data-theme="arcade"] select {
+  box-shadow: inset 2px 2px 0 rgba(0,0,0,0.35);
+}
+
+/* -----------------------------------------------------------------------------
+ * IRON & CHALK — forged metal + brass
+ * Distinguishing cues: brushed-metal gradient on cards, brass-gold dividers,
+ * heavy stencil display type, subtle plate-edge shadows.
+ * -------------------------------------------------------------------------- */
+[data-theme="iron"] .bg-ft-surface {
+  background-image: linear-gradient(
+    180deg,
+    rgba(255,252,245,0.045) 0%,
+    transparent 25%,
+    transparent 75%,
+    rgba(0,0,0,0.20) 100%
+  );
+  border-top: 1px solid rgba(255,252,245,0.09);
+  border-bottom: 1px solid rgba(0,0,0,0.35);
+}
+[data-theme="iron"] .section-divider {
+  border-top: 1px solid rgba(200,169,110,0.45);
+  box-shadow: 0 1px 0 rgba(0,0,0,0.25);
+}
+[data-theme="iron"] .font-display {
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  text-shadow: 0 1px 0 rgba(0,0,0,0.4);
+}
+
+/* -----------------------------------------------------------------------------
+ * 90s STREET (graffiti) — street/sticker aesthetic
+ * Distinguishing cues: drop-stroke on marker text, dashed dividers,
+ * subtle sticker/tape corner hint on elevated elements, slight tag rotation
+ * on page titles.
+ * -------------------------------------------------------------------------- */
+[data-theme="graffiti"] .font-display {
+  text-shadow:
+    1px 1px 0 rgba(0,0,0,0.55),
+    3px 3px 8px rgba(0,0,0,0.25);
+  letter-spacing: 0.01em;
+}
+[data-theme="graffiti"] h1.font-display {
+  display: inline-block;
+  transform: rotate(-1.5deg);
+  transform-origin: left center;
+}
+[data-theme="graffiti"] .section-divider {
+  border-top: 2px dashed rgba(255,255,255,0.18);
+}
+[data-theme="graffiti"] .bg-ft-surface {
+  /* Soft tag/sticker drop shadow — sits on the wall */
+  box-shadow: 2px 3px 0 rgba(0,0,0,0.25);
+}
+
+/* -----------------------------------------------------------------------------
+ * BLUEPRINT — paper + drafting ink
+ * Distinguishing cues: bright cyanotype paper bg, darker ink-bleed cards,
+ * thin white ruled borders, drafting-grid backdrop (theme texture).
+ * -------------------------------------------------------------------------- */
+[data-theme="blueprint"] .font-display {
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+[data-theme="blueprint"] .bg-ft-surface {
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,0.18);
+}
+[data-theme="blueprint"] .section-divider {
+  border-top: 1px dashed rgba(255,255,255,0.35);
 }

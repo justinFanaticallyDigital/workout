@@ -112,6 +112,7 @@ function applyThemeCssVars(theme: ThemeConfig) {
 
   // Component styles — exposed as data attributes for CSS utility classes
   root.dataset.buttonStyle = theme.components.button.style;
+  root.dataset.theme = theme.id;
 
   // Store theme-specific CSS vars for components
   root.style.setProperty('--bg', c.bg);

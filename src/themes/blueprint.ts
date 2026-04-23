@@ -5,18 +5,19 @@ export const blueprint: ThemeConfig = {
   name: 'Blueprint',
 
   colors: {
-    // Blueprint blue — deeper shell with lifted card/elevated planes for visible separation
-    bg: '#142038',
-    bgCard: '#2D3C5C',
-    bgElevated: '#384A70',
+    // Blueprint paper — authentic cyanotype blue. Cards are darker "ink bleed" planes
+    // so drawings/content stand off the paper like real technical blueprints.
+    bg: '#3868A3',              // blueprint paper
+    bgCard: '#2A5088',          // darker ink-wash area
+    bgElevated: '#1C3E6E',      // deepest trace / title block
 
-    // Text: white/light blue on dark blue (AA-tuned)
-    textPrimary: 'rgba(255,255,255,0.92)',
-    textSecondary: 'rgba(210,225,250,0.82)',
-    textTertiary: 'rgba(200,220,250,0.78)',
+    // Text: near-white ink on blue paper (AA-tuned for lighter bg)
+    textPrimary: 'rgba(255,255,255,0.96)',
+    textSecondary: 'rgba(240,248,255,0.95)',
+    textTertiary: 'rgba(230,245,255,0.92)',
 
-    accent: '#4A9EFF',          // bright blueprint blue for annotations
-    accentSecondary: '#FF6B4A', // red for dimension callouts / alerts
+    accent: '#4A9EFF',          // bright blueprint marker blue for active states
+    accentSecondary: '#FF6B4A', // dimension-callout red
 
     push: '#3B82F6',
     pull: '#22C55E',
@@ -27,8 +28,8 @@ export const blueprint: ThemeConfig = {
     error: '#FF6B4A',
     warning: '#EAB308',
 
-    border: '#4A5C82',
-    borderSubtle: '#384A70',
+    border: '#B8D0EC',          // pencil-on-paper blue-white border
+    borderSubtle: '#5884B8',
   },
 
   fonts: {
@@ -38,20 +39,20 @@ export const blueprint: ThemeConfig = {
   },
 
   borders: {
-    card: '1px solid rgba(255,255,255,0.12)',
-    divider: '1px solid rgba(255,255,255,0.08)',
+    card: '1px solid rgba(255,255,255,0.25)',
+    divider: '1px solid rgba(255,255,255,0.15)',
     radius: '0',
   },
 
   texture: {
     type: 'css',
-    // Blueprint grid — fine lines every 20px, bold lines every 100px
+    // Blueprint grid — visible white lines on the lighter paper bg
     value: `
       background-image:
-        linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px),
         linear-gradient(rgba(255,255,255,0.06) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(255,255,255,0.06) 1px, transparent 1px);
+        linear-gradient(90deg, rgba(255,255,255,0.06) 1px, transparent 1px),
+        linear-gradient(rgba(255,255,255,0.12) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,0.12) 1px, transparent 1px);
       background-size: 20px 20px, 20px 20px, 100px 100px, 100px 100px;
     `,
   },
@@ -64,7 +65,7 @@ export const blueprint: ThemeConfig = {
     nav: {
       activeIndicator: 'underline',
       activeStyle: {
-        borderColor: '#4A9EFF',
+        borderColor: '#FFFFFF',
         borderWidth: '1px',
       },
     },
