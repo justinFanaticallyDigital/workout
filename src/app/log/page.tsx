@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { authCheck } from "@/lib/fetch-helpers";
+import ThemedIcon from "@/components/themed/ThemedIcon";
 
 const ACTIVITY_TYPES = [
   {
@@ -258,10 +259,10 @@ export default function LogPage() {
               </div>
               <button
                 onClick={() => setShowDayPicker(false)}
-                className="text-ft-dim hover:text-ft-light text-lg font-body transition-colors px-1"
+                className="text-ft-dim hover:text-ft-light text-lg font-body transition-colors px-1 flex items-center"
                 aria-label="Close"
               >
-                &times;
+                <ThemedIcon name="x" size={18} />
               </button>
             </div>
             <div className="flex-1 overflow-y-auto px-4 py-3 pb-safe">
@@ -310,7 +311,9 @@ export default function LogPage() {
                     Build the session as you go
                   </p>
                 </div>
-                <span className="text-ft-dim text-lg font-body">+</span>
+                <span className="text-ft-dim flex items-center">
+                  <ThemedIcon name="plus" size={18} />
+                </span>
               </Link>
             </div>
           </div>

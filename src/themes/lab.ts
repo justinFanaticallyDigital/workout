@@ -32,9 +32,9 @@ export const lab: ThemeConfig = {
   },
 
   fonts: {
-    display: "'Inter', sans-serif",
-    data: "'Inter', sans-serif",         // clean, precise numbers
-    body: "'Inter', sans-serif",         // everything in Inter — clinical uniformity
+    display: "'IBM Plex Sans', 'Inter', system-ui, sans-serif",     // clinical, institutional
+    data: "'JetBrains Mono', 'IBM Plex Mono', monospace",           // tabular precision for values
+    body: "'IBM Plex Sans', 'Inter', system-ui, sans-serif",        // uniform clinical sans
   },
 
   borders: {

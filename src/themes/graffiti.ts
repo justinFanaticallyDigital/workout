@@ -36,9 +36,9 @@ export const graffiti: ThemeConfig = {
   },
 
   fonts: {
-    display: "'Permanent Marker', cursive",
-    data: "'Caveat', cursive",
-    body: "'Barlow Condensed', sans-serif",
+    display: "'Permanent Marker', cursive",                          // marker tag
+    data: "'Reenie Beanie', 'Caveat', cursive",                      // loose scrawl for data
+    body: "'Archivo Black', 'Barlow Condensed', sans-serif",         // heavy street-poster sans
   },
 
   borders: {

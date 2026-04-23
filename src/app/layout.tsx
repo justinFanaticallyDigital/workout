@@ -6,6 +6,7 @@ import SessionProvider from "@/components/SessionProvider";
 import OfflineSyncProvider from "@/components/OfflineSyncProvider";
 import { ThemeProvider } from "@/providers/ThemeProvider";
 import ThemedTexture from "@/components/themed/ThemedTexture";
+import ThemedOverlays from "@/components/themed/ThemedOverlays";
 
 export const metadata: Metadata = {
   title: "FitTrack",
@@ -45,6 +46,7 @@ export default function RootLayout({
         </a>
         <ThemeProvider>
           <ThemedTexture />
+          <ThemedOverlays />
           <SessionProvider>
             <OfflineSyncProvider>
               <ToastProvider>

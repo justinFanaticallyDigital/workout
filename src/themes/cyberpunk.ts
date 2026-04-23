@@ -31,9 +31,9 @@ export const cyberpunk: ThemeConfig = {
   },
 
   fonts: {
-    display: "'Space Mono', 'Courier New', monospace",
-    data: "'Space Mono', 'Courier New', monospace",
-    body: "'Barlow Condensed', sans-serif",
+    display: "'Orbitron', 'Space Mono', monospace",              // geometric sci-fi headers
+    data: "'Share Tech Mono', 'Space Mono', monospace",         // terminal-precision numerics
+    body: "'Rajdhani', 'Barlow Condensed', sans-serif",         // angular futurist sans
   },
 
   borders: {
