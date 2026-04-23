@@ -32,9 +32,9 @@ export const arcade: ThemeConfig = {
   },
 
   fonts: {
-    display: "'Press Start 2P', monospace",
-    data: "'Courier New', monospace",      // dense data tables use mono for readability
-    body: "'Barlow Condensed', sans-serif", // readable body text (Press Start 2P too small for labels)
+    display: "'Press Start 2P', monospace",          // big 8-bit titles
+    data: "'VT323', 'Courier New', monospace",       // 8-bit terminal digits, readable at any size
+    body: "'Pixelify Sans', 'Silkscreen', sans-serif", // pixel body type — arcade through and through
   },
 
   borders: {
@@ -45,15 +45,22 @@ export const arcade: ThemeConfig = {
 
   texture: {
     type: 'css',
-    // CRT scanlines — slightly more visible than cyberpunk
+    // CRT scanlines (stronger) + subtle pink aperture-grille column tint
     value: `
       background-image:
         repeating-linear-gradient(
           0deg,
-          transparent,
-          transparent 3px,
-          rgba(255,255,255,0.018) 3px,
-          rgba(255,255,255,0.018) 4px
+          transparent 0,
+          transparent 2px,
+          rgba(255,255,255,0.035) 2px,
+          rgba(255,255,255,0.035) 3px
+        ),
+        repeating-linear-gradient(
+          90deg,
+          rgba(255,80,200,0.025) 0,
+          rgba(255,80,200,0.025) 1px,
+          transparent 1px,
+          transparent 3px
         );
     `,
   },

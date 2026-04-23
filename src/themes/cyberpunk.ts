@@ -44,8 +44,28 @@ export const cyberpunk: ThemeConfig = {
 
   texture: {
     type: 'css',
-    // CRT scanlines (3-4px repeat) + faint calibration grid dots
-    value: 'repeating-linear-gradient(0deg, transparent, transparent 3px, rgba(0,240,255,0.012) 3px, rgba(0,240,255,0.012) 4px), radial-gradient(circle, rgba(0,240,255,0.03) 1px, transparent 1px)',
+    // Neon scanlines + cyan vignette glow + faint calibration grid
+    value: `
+      background-image:
+        repeating-linear-gradient(
+          0deg,
+          transparent 0,
+          transparent 2px,
+          rgba(0,240,255,0.025) 2px,
+          rgba(0,240,255,0.025) 3px
+        ),
+        radial-gradient(
+          ellipse 80% 60% at 50% 50%,
+          rgba(0,240,255,0.08) 0%,
+          transparent 70%
+        ),
+        radial-gradient(
+          circle,
+          rgba(0,240,255,0.04) 1px,
+          transparent 1px
+        );
+      background-size: auto, auto, 24px 24px;
+    `,
   },
 
   components: {
