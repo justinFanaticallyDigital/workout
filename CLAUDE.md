@@ -132,7 +132,9 @@ src/
 │   │   ├── ThemedCard.tsx         # Card using theme borders/radius/colors
 │   │   ├── ThemedDivider.tsx      # Divider using theme borders.divider
 │   │   ├── ThemedExerciseCard.tsx # Exercise card with movement indicator per theme
+│   │   ├── ThemedIcon.tsx         # Icon set with per-theme variants (check/plus/x/star/arrow-right)
 │   │   ├── ThemedNav.tsx          # Nav item with theme-aware active indicator
+│   │   ├── ThemedOverlays.tsx     # Fixed decorative overlays rendered conditionally per theme
 │   │   ├── ThemedRestTimer.tsx    # Timer (bar/radial/text) per theme config
 │   │   ├── ThemedTexture.tsx      # Background texture overlay (svg-inline/css/none)
 │   │   └── ThemePickerModal.tsx   # First-visit theme selection modal
@@ -242,22 +244,31 @@ prisma/
 ## Design System — Multi-Theme Architecture
 
 ### Theme System Overview
-The app supports 7 visual themes, each defined as a `ThemeConfig` in `src/themes/`. Themes are switched at runtime via `ThemeProvider`, which converts theme configs to CSS custom properties consumed by Tailwind `ft-*` utilities.
+The app supports 7 visual themes, each defined as a `ThemeConfig` in `src/themes/`. Themes are switched at runtime via `ThemeProvider`, which converts theme configs to CSS custom properties consumed by Tailwind `ft-*` utilities AND sets a `data-theme="<id>"` attribute on `<html>` that scopes additional ornamental CSS in `globals.css`.
 
-| Theme | Style | Background | Accent | Button Style | Nav Indicator |
-|-------|-------|-----------|--------|-------------|---------------|
-| graffiti | 90s Street | Dark charcoal | Blue #3B82F6 | underline | underline |
-| cyberpunk | Dark Future | Ultra-dark | Cyan #00F0FF | ghost | glow-dot |
-| notebook | Coach's Notebook | Cream (light) | Red #B5312A | underline | border-bottom |
-| blueprint | Blueprint | Navy | Blue #4A9EFF | outline | underline |
-| arcade | Retro Arcade | Deep black | Pink #FF50C8 | pixel-border | underline |
-| lab | Lab Report | White (light) | Blue #2563EB | fill | bg-fill |
-| iron | Iron & Chalk | Warm dark | Brass #C8A96E | outline | border-bottom |
+Each theme has its own **design language** — distinct fonts, container chrome, ornament, and motion — not just a different accent color. This is enforced by the rules below; when adding or editing a theme, preserve this distinctiveness.
+
+| Theme | Style | BG | Card | Accent | Button | Nav | Signature Ornament |
+|-------|-------|----|----|--------|--------|-----|--------------------|
+| graffiti | 90s Street | #23272A | #3D4245 | Blue #3B82F6 | underline | underline | Alternating card rotation, yellow tape stamp, torn-edge h1 underline, FRESH sticker |
+| cyberpunk | Dark Future | #05060C | #1C2232 | Cyan #00F0FF | ghost | glow-dot | Animated cyan border-breathe, HUD corner brackets, glowing h1/h2 underline, SYS:// watermark |
+| notebook | Coach's Notebook | #E2D9C9 | #FAF6ED | Red #B5312A | underline | border-bottom | Spiral binding + red margin line, coffee-ring, no card borders |
+| blueprint | Blueprint | #3868A3 | #2A5088 | Blue #4A9EFF | outline | underline | Cyanotype paper (inverted — cards DARKER than bg), crosshair corners, DWG title-block strip, grid texture |
+| arcade | Retro Arcade | #07070F | #22223A | Pink #FF50C8 | pixel-border | underline | Pink/cyan triple-bezel, hard 4px pixel shadow, 1P + HI 999999 badges, CRT vignette |
+| lab | Lab Report | #ECEDF0 | #FFFFFF | Blue #2563EB | fill | bg-fill | Barcode strip, SPECIMEN # watermark, alternating row shading, tabular-nums |
+| iron | Iron & Chalk | #161514 | #2E2D2B | Brass #C8A96E | outline | border-bottom | Brass-knurled rib strip on every card top, brushed-plate gradient, chalk spray behind headings, IRON • CHALK stamp |
 
 ### ThemeConfig Structure (`src/themes/types.ts`)
 Each theme defines:
-- **Colors** — bg, bgCard, bgElevated, textPrimary/Secondary/Tertiary, accent, movement colors (push/pull/legs/core — constant), state colors, borders
-- **Fonts** — display, data (handwritten), body (each theme picks from Google Fonts loaded in globals.css)
+- **Colors** — bg, bgCard, bgElevated, textPrimary/Secondary/Tertiary, accent, movement colors (push/pull/legs/core — constant), state colors, borders. All text tiers must clear **WCAG AA 4.5:1 on every surface** — see "Contrast floor" below.
+- **Fonts** — display / data / body. Each theme uses its own 2-3 font family stack. **Every dark theme must pick a different font set** so swiping themes changes typography visibly. Current stacks:
+  - graffiti — `Permanent Marker` / `Reenie Beanie` / `Archivo Black`
+  - cyberpunk — `Orbitron` / `Share Tech Mono` / `Rajdhani`
+  - notebook — `Caveat` / `Caveat` / `Patrick Hand`
+  - blueprint — `Major Mono Display` / `IBM Plex Mono` / `IBM Plex Mono`
+  - arcade — `Press Start 2P` / `VT323` / `Pixelify Sans`
+  - lab — `IBM Plex Sans` / `JetBrains Mono` / `IBM Plex Sans`
+  - iron — `Stardos Stencil` / `Teko` / `Oswald`
 - **Borders** — card (CSS shorthand), divider, radius (`0` for sharp themes, `0.5rem` for rounded)
 - **Texture** — type (`svg-inline` | `css` | `none`) + value (SVG markup, CSS background rules, or empty)
 - **Component overrides:**
@@ -267,10 +278,11 @@ Each theme defines:
   - `restTimer.style` — `bar` | `radial` | `text-countdown` (+ optional `glowEffect`)
 
 ### How Theming Works
-1. **ThemeProvider** (`src/providers/ThemeProvider.tsx`) — React context that stores current theme, applies CSS vars to `document.documentElement`, and shows the theme picker modal on first visit.
+1. **ThemeProvider** (`src/providers/ThemeProvider.tsx`) — React context that stores current theme, applies CSS vars to `document.documentElement`, sets `data-button-style` and `data-theme` attributes, and shows the theme picker modal on first visit.
 2. **CSS Variables** — All theme colors are converted to RGB triplets and set as `--ft-*` CSS vars. Tailwind's `ft-*` utilities (e.g. `bg-ft-surface`, `text-ft-white`) consume these via `rgb(var(--ft-*) / <alpha-value>)`.
-3. **Themed Components** (`src/components/themed/`) — Read `ThemeConfig` directly via `useTheme()` for component-level behavior (button style, nav indicators, timer style, textures).
-4. **CSS Utility Classes** — `.cta-underline` reads `data-button-style` attribute on `<html>` to adapt presentation per theme. `.section-divider` uses `--ft-border-divider` CSS var.
+3. **Themed Components** (`src/components/themed/`) — Read `ThemeConfig` directly via `useTheme()` for component-level behavior (button style, nav indicators, timer style, textures, icons, overlays).
+4. **Theme-scoped CSS** (`globals.css` → `[data-theme="X"]` blocks) — Each theme has a dedicated section in `globals.css` that adds aggressive ornamental chrome (glow effects, border decorations, pseudo-element stamps, ::before/::after corner marks). When adding a new visual treatment that should differ between themes, add it under the theme-scoped block rather than making it theme-conditional in React.
+5. **Data attributes** — `.cta-underline` reads `data-button-style`; everything else can select via `data-theme="<id>"`.
 
 ### Color Token Mapping (Tailwind → Theme)
 ```
@@ -278,23 +290,49 @@ ft-bg       → colors.bg            ft-surface  → colors.bgCard
 ft-card     → colors.bgElevated    ft-accent   → colors.accent
 ft-white    → colors.textPrimary   ft-pale     → colors.textPrimary
 ft-light    → colors.textSecondary ft-dim      → colors.textTertiary
-ft-border   → colors.border        ft-muted    → colors.borderSubtle
+ft-border   → colors.border        ft-muted    → colors.textTertiary (for legibility)
 ft-push/pull/legs/core → movement colors (constant across themes)
 ft-success/warn/danger → state colors
 ```
+Note: `--ft-muted` is **intentionally** mapped to `textTertiary` (not `borderSubtle`) so the many `text-ft-muted` and `placeholder:text-ft-muted` usages stay legible. The handful of `bg-ft-muted` / `border-ft-muted` uses render as subtle-tertiary and that's acceptable.
 
-### Fonts (Google Fonts — all loaded in globals.css)
-- **Display headers:** Theme-configurable (`font-display` class) — Permanent Marker, Orbitron, Reenie Beanie, Courier Prime, Press Start 2P, Inter, Oswald
-- **User-input data:** Theme-configurable (`font-handwritten` class) — Caveat, Share Tech Mono, Indie Flower, Architects Daughter, VT323, SF Mono, Teko
-- **Body text:** Theme-configurable (`font-body` class) — Barlow Condensed, Share Tech Mono, Patrick Hand, Courier Prime, Press Start 2P, Inter, Oswald
+### Contrast floor (WCAG AA — enforced)
+Every text tier (primary / secondary / tertiary) must clear **4.5:1 contrast** on every surface (`bg` / `bgCard` / `bgElevated`). Surface-to-surface (`bg → bgCard`) should clear **≥1.25:1** so containers visibly stand off the background — dark themes in particular need intentional card lift.
+
+Verification script (run after any color change):
+```bash
+node scripts/audit-theme-contrast.js
+```
+The script parses `src/themes/*.ts`, composites alpha over surfaces, and exits non-zero if any text-tier × surface combo drops under 4.5:1. It also warns on surface deltas below 1.25:1. If a change fails, either (a) bump the text alpha/hex brighter, or (b) adjust the surface luminance. Do NOT ship a theme with failing combos.
+
+### Theme differentiation rules
+When touching themes, keep the following contracts:
+1. **Fonts must differ across themes.** Three font slots (display / data / body) per theme; no dark theme shares its full stack with another.
+2. **At least one ornamental element per theme must be unique** — a texture, border treatment, pseudo-element stamp, or animation. Don't remove a theme's signature chrome without adding a replacement.
+3. **Theme-scoped CSS lives in `globals.css` under `[data-theme="X"]`.** Keep each theme's block labeled with its signature (see headers in the file).
+4. **Fixed-position decorative elements** (spiral binding, title-block watermark, arcade badges, etc.) belong in `ThemedOverlays.tsx`, gated on `themeId`. Not in individual pages.
+5. **Hardcoded icon characters** (`✓`, `×`, `+`, `★`) that carry thematic weight (completion, add, close, PR) should use `<ThemedIcon name="...">` so each theme renders its own variant (neon-line, pixel, sketchy, stencil, marker, drafted, clinical).
+6. **Don't introduce a new `ft-*` Tailwind token** without adding a matching line to `ThemeProvider.applyThemeCssVars` for every theme.
+
+### Themed Components
+- **`ThemedButton`, `ThemedCard`, `ThemedDivider`, `ThemedExerciseCard`, `ThemedNav`, `ThemedRestTimer`** — read `useTheme().theme.components.*` to adapt structure per theme.
+- **`ThemedTexture`** — renders the fixed-position texture overlay from `theme.texture.{type,value}`.
+- **`ThemedIcon`** — core-icon set (`check` / `plus` / `arrow-right` / `star` / `x`) with per-theme SVG variants. Use this for completion ticks, add/close buttons, and PR markers.
+- **`ThemedOverlays`** — returns fixed-position decorative elements based on `themeId`: spiral binding + margin line + coffee stain (notebook); title-block watermark + fold lines (blueprint); CRT vignette + 1P/HI badges (arcade); SYS:// watermark + glow line (cyberpunk); IRON • CHALK stamp (iron); FRESH tape (graffiti); barcode strip + specimen ID (lab). Rendered once in `layout.tsx` alongside `ThemedTexture`.
+
+### Fonts (Google Fonts — all loaded via one `@import` in globals.css)
+When adding a font, append it to the `@import url(...)` line at the top of `globals.css` **and** reference it in the relevant theme's `fonts` slot. Currently loaded families:
+Permanent Marker, Caveat, Barlow Condensed, Space Mono, Libre Baskerville, Press Start 2P, IBM Plex Mono, IBM Plex Sans, Anton, Inter, VT323, Silkscreen, Pixelify Sans, Orbitron, Rajdhani, Share Tech Mono, Stardos Stencil, Teko, Oswald, Archivo Black, Reenie Beanie, Patrick Hand, Major Mono Display, JetBrains Mono.
 
 ### Design Patterns
-- **CTA buttons** — `.cta-underline` class adapts per theme: spray-paint underline (graffiti), outline pill (blueprint), ghost border (cyberpunk), pixel shadow (arcade), solid fill (lab)
-- **Dividers** — `.section-divider` uses theme's `borders.divider` CSS var
-- **Cards** — `Card.tsx` uses `--ft-border-radius` CSS var (sharp corners for graffiti/arcade, rounded for lab/notebook)
+- **CTA buttons** — `.cta-underline` class adapts per theme via `data-button-style`: spray-paint underline (graffiti), outline pill (blueprint), ghost border (cyberpunk), pixel shadow (arcade), solid fill (lab)
+- **Dividers** — `.section-divider` uses theme's `borders.divider` CSS var; several themes override it under `[data-theme="X"]` for a theme-specific style (e.g. dashed for graffiti, brass for iron, dashed-heavy for blueprint)
+- **Cards** — `Card.tsx` uses `--ft-border-radius` CSS var (sharp corners for graffiti/arcade/cyberpunk/iron/blueprint, rounded for lab/notebook). Theme-scoped CSS then layers on chrome (glow, knurled strip, rotation, corner marks, etc.).
 - **Nav indicators** — BottomNav reads theme's `nav.activeIndicator` config (underline, glow-dot, bg-fill, border-bottom)
 - **Timer** — Stretch timer uses `ThemedRestTimer` which renders bar/radial/text-countdown per theme
-- **Textures** — `ThemedTexture` renders theme-specific overlays (concrete noise, scanlines, ruled lines, grid, chalk dust)
+- **Textures** — `ThemedTexture` renders theme-specific overlays (concrete noise, scanlines, ruled lines, grid, chalk dust, aperture grille)
+- **Blueprint is inverted** — unlike other themes where `bgCard` is *lighter* than `bg`, blueprint's cards are *darker* ink-bleed planes on a lighter paper bg. Keep this contract or the theme stops reading as drafting paper.
+- **Notebook has `main` padding-left: 40px** to make room for the spiral binding. Do not override.
 - Movement pattern colors (push/pull/legs/core) are constant across all themes
 
 ### Tailwind Extensions
@@ -431,6 +469,23 @@ NEXTAUTH_SECRET=...                    # Session encryption
 14. **Engine warnings banner** — Dismissible warnings on program detail for split mismatches, injury subs, recovery concerns
 15. **Generated program identity** — "Generated" badge, category lane display, alt swap UI, phase awareness throughout
 
+### Phase 7: Theme Differentiation + Logger Polish (COMPLETE)
+1. **Exercise swap/delete in workout logger** — Each active exercise has Swap and Remove buttons. Swap reuses `ExercisePicker` with a dynamic title; Remove prompts for confirmation if sets were logged. Works for both template and improv workouts.
+2. **Workout selector on `/log`** — Scheduled banner now deep-links to `/log/{blockDayId}` (previously always started blank). Added a bottom-sheet picker listing every day in the active block + a "Start Blank / Improv" option, reachable via "Change workout" or the Lifting tile.
+3. **WCAG AA contrast sweep** — Every text-tier × surface pair across all 7 themes clears 4.5:1 (min 4.64:1). Surface deltas (`bg → bgCard`) lifted to ≥1.25:1 so cards visibly stand off the background, especially on dark themes. Script pattern in `/tmp/verify.js` for future audits.
+4. **`--ft-muted` remapped** — previously mapped to `borderSubtle` (~1:1 contrast, invisible for text). Now maps to `textTertiary` so the 189 uses of `text-ft-muted` and all input placeholders are legible.
+5. **Distinct design languages per theme** — Each theme now has its own fonts, chrome, ornament, and motion (not just accent color):
+   - **Dark Future** — Orbitron / Share Tech Mono / Rajdhani; animated cyan border-breathe on cards, HUD corner brackets, glowing h1/h2 underline, pulsing accent
+   - **Retro Arcade** — Press Start 2P / VT323 / Pixelify Sans; pink/cyan triple-layer bezel, hard 4px pixel shadow, 1P + HI 999999 badges, CRT vignette
+   - **Iron & Chalk** — Stardos Stencil / Teko / Oswald; brass-knurled rib strip on every card top, brushed-plate gradient, chalk spray behind headings
+   - **90s Street** — Permanent Marker / Reenie Beanie / Archivo Black; alternating card rotation, yellow tape stamps, torn-edge h1 underline, FRESH sticker
+   - **Coach's Notebook** — Caveat / Caveat / Patrick Hand; spiral binding + red margin line + coffee stain, borderless paper-shadow cards
+   - **Blueprint** — Major Mono Display / IBM Plex Mono / IBM Plex Mono; cyanotype paper bg with *inverted* (darker) cards, `+` crosshair corner marks, DWG title-block strip
+   - **Lab Report** — IBM Plex Sans / JetBrains Mono / IBM Plex Sans; barcode strip, SPECIMEN # watermark, alternating row shading, tabular-nums
+6. **`ThemedIcon` component** — Per-theme SVG variants of `check` / `plus` / `arrow-right` / `star` / `x` (neon-line / pixel / sketchy / stencil / marker / drafted / clinical). Wired into workout logger for completion ticks, add/close buttons.
+7. **`ThemedOverlays` component** — Fixed-position decorative overlays rendered conditionally per theme (spiral binding, title-block, HI score, SYS:// watermark, IRON • CHALK stamp, FRESH tape, specimen barcode). Rendered once in `layout.tsx`.
+8. **`data-theme` attribute** — `ThemeProvider` sets `data-theme="<id>"` on `<html>`; ornamental chrome lives in `[data-theme="X"]` blocks in `globals.css` rather than being React-conditional.
+
 ### Future Work
 - Notification / reminder system
 - Mobile responsiveness pass
@@ -440,7 +495,7 @@ NEXTAUTH_SECRET=...                    # Session encryption
 - Calendar meal logging overlay
 
 ## Current State
-**Phase 1 through Phase 6 are complete.** The app is functional end-to-end with the multi-theme architecture and program builder engine:
+**Phase 1 through Phase 7 are complete.** The app is functional end-to-end with the multi-theme architecture, program builder engine, and a fully differentiated per-theme design language:
 - 5-tab bottom navigation with mobile-first layout
 - 367 exercises seeded, 37+ API routes connected to real Prisma queries
 - All pages fetch from database (no hardcoded data)
@@ -466,12 +521,15 @@ NEXTAUTH_SECRET=...                    # Session encryption
 - Block phase system with color-coded timeline (accumulation/intensification/peaking/deload)
 - Engine warnings banner for split mismatches, injury substitutions, and recovery concerns
 - Supports injuries, movement limitations, physique division priorities, powerlifting sticking points, recovery modifiers
-- **7 visual themes** with full design system: colors, fonts, borders, textures, component-level overrides
+- **7 visual themes with fully distinct design languages** — not just different accents, but different fonts (24 Google Fonts across 7 3-font stacks), container chrome (knurled brass rib, pink/cyan bezel, HUD corner brackets, spiral binding, crosshair marks, torn edges, barcode strips), ornament (tape stamps, watermarks, fold lines, chalk spray, coffee rings), and motion (cyan border-breathe animation, attract-mode pulse on accents)
+- Theme-scoped CSS in `[data-theme="X"]` blocks in `globals.css` — aggressive ornamental treatments without React branching
+- `ThemedIcon` component — 5-icon core set (check/plus/arrow-right/star/x) with per-theme SVG variants (neon-line, pixel, sketchy, stencil, marker, drafted, clinical)
+- `ThemedOverlays` component — fixed-position decorative elements rendered conditionally per theme (spiral binding, title-block, arcade badges, specimen barcode, etc.)
 - Theme-adaptive BottomNav (underline/glow-dot/bg-fill/border-bottom indicators)
 - Theme-adaptive CTA buttons (underline/outline/ghost/pixel-border/fill)
 - Theme-adaptive stretch timer (bar/radial/text-countdown)
 - Theme-adaptive Card border-radius and section dividers
-- WCAG AA compliant textTertiary contrast across all themes
+- **WCAG AA (4.5:1) text contrast on every text × surface combination across all 7 themes** (min 4.64:1); surface deltas ≥1.25:1 so containers stand off the bg
 - First-visit theme picker modal + settings page theme switcher
 
 **Important:** After schema changes, run `npx prisma db push` to create new tables in the database. The app is resilient to missing new tables (graceful degradation) but features like metric targets and stretch routines require the tables to exist.
