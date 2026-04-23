@@ -32,9 +32,9 @@ export const iron: ThemeConfig = {
   },
 
   fonts: {
-    display: "'Anton', sans-serif",          // bold, condensed — iron plate stencil
-    data: "'Barlow Condensed', sans-serif",  // clean data — chalked up numbers
-    body: "'Barlow Condensed', sans-serif",
+    display: "'Stardos Stencil', 'Anton', sans-serif",  // actual stenciled letters
+    data: "'Teko', 'Barlow Condensed', sans-serif",     // condensed sport digits
+    body: "'Oswald', 'Barlow Condensed', sans-serif",    // broad-shouldered gym sans
   },
 
   borders: {

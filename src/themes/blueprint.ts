@@ -33,9 +33,9 @@ export const blueprint: ThemeConfig = {
   },
 
   fonts: {
-    display: "'IBM Plex Mono', monospace",
-    data: "'IBM Plex Mono', monospace",
-    body: "'IBM Plex Mono', monospace",  // all mono — technical drawing feel
+    display: "'Major Mono Display', 'IBM Plex Mono', monospace",  // wide technical stencil
+    data: "'IBM Plex Mono', monospace",                           // drafted numerics
+    body: "'IBM Plex Mono', monospace",                           // everything on-grid
   },
 
   borders: {

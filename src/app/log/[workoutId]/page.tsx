@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { Card, SectionHeader, Tag } from "@/components/ui";
 import { useToast } from "@/components/ui/Toast";
 import { addToQueue } from "@/lib/offline-queue";
+import ThemedIcon from "@/components/themed/ThemedIcon";
 
 interface SearchExercise {
   id: string;
@@ -255,9 +256,10 @@ function ExercisePicker({
           </h2>
           <button
             onClick={onClose}
-            className="text-ft-dim hover:text-ft-light text-lg font-body transition-colors px-1"
+            className="text-ft-dim hover:text-ft-light text-lg font-body transition-colors px-1 flex items-center"
+            aria-label="Close"
           >
-            &times;
+            <ThemedIcon name="x" size={18} />
           </button>
         </div>
 
@@ -891,7 +893,9 @@ export default function ActiveWorkoutPage({
                         : "bg-ft-surface text-ft-dim hover:text-ft-light border border-ft-card"
                     }`}
                   >
-                    <span>{complete ? "\u2713" : `E${i + 1}`}</span>
+                    <span className="flex items-center">
+                      {complete ? <ThemedIcon name="check" size={14} /> : `E${i + 1}`}
+                    </span>
                     <span>{ex.shortName}</span>
                   </button>
                 );
@@ -899,8 +903,9 @@ export default function ActiveWorkoutPage({
               <button
                 onClick={() => setShowPicker(true)}
                 className="shrink-0 flex items-center gap-1 px-3 py-1.5 rounded font-body text-xs bg-ft-surface text-ft-dim hover:text-ft-light border border-dashed border-ft-card transition-colors"
+                aria-label="Add exercise"
               >
-                <span>+</span>
+                <ThemedIcon name="plus" size={12} />
               </button>
             </div>
           </div>
@@ -1029,8 +1034,8 @@ export default function ActiveWorkoutPage({
                   <span className={`text-ft-dim text-[11px] font-body uppercase text-center ${showRir ? "" : "hidden sm:block"}`}>
                     RIR
                   </span>
-                  <span className="text-ft-dim text-[11px] font-body uppercase text-center">
-                    &#10003;
+                  <span className="text-ft-dim text-[11px] font-body uppercase text-center flex items-center justify-center">
+                    <ThemedIcon name="check" size={12} />
                   </span>
                 </div>
 
@@ -1094,7 +1099,7 @@ export default function ActiveWorkoutPage({
                             : "border-ft-card hover:border-ft-dim"
                         }`}
                       >
-                        {s.done && <span className="text-sm">&#10003;</span>}
+                        {s.done && <ThemedIcon name="check" size={16} />}
                       </div>
                     </div>
                   </div>
@@ -1103,9 +1108,10 @@ export default function ActiveWorkoutPage({
                 <div className="flex items-center gap-2 mt-1">
                   <button
                     onClick={() => addSet(activeEx)}
-                    className="flex-1 border border-dashed border-ft-card rounded py-2.5 text-ft-dim text-xs font-body hover:border-ft-dim hover:text-ft-light transition-colors touch-target"
+                    className="flex-1 border border-dashed border-ft-card rounded py-2.5 text-ft-dim text-xs font-body hover:border-ft-dim hover:text-ft-light transition-colors touch-target flex items-center justify-center gap-1.5"
                   >
-                    + Add Set
+                    <ThemedIcon name="plus" size={12} />
+                    Add Set
                   </button>
                   <button
                     onClick={() => setShowRir(!showRir)}

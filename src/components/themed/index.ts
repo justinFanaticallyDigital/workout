@@ -5,4 +5,6 @@ export { default as ThemedNav } from './ThemedNav';
 export { default as ThemedExerciseCard } from './ThemedExerciseCard';
 export { default as ThemedRestTimer } from './ThemedRestTimer';
 export { default as ThemedTexture } from './ThemedTexture';
+export { default as ThemedIcon } from './ThemedIcon';
+export { default as ThemedOverlays } from './ThemedOverlays';
 export { default as ThemePickerModal } from './ThemePickerModal';
