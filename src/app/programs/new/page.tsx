@@ -1,188 +1,262 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import Card from "@/components/ui/Card";
 import { useToast } from "@/components/ui/Toast";
+import {
+  PROGRAM_TEMPLATES,
+  filterTemplates,
+  getTemplateById,
+  mergeTemplateConfig,
+} from "@/lib/program-engine";
+import type { ProgramConfig } from "@/lib/program-engine";
+import { templateToPlan, type PickerPlan } from "./_picker/derive";
+import {
+  Step1Welcome,
+  Step2Filter,
+  Step3List,
+  Step4Preview,
+  Step5Setup,
+  type Filters,
+  type FilterKey,
+  type PreviewBlueprint,
+} from "./_picker/Steps";
 
-const tiers = [
-  {
-    id: "generate",
-    icon: "**",
-    title: "Smart Generator",
-    subtitle: "Answer questions, get a program",
-    desc: "A coach-style intake questionnaire builds a complete periodized program with exercises, sets, reps, and progression — ready to train.",
-    href: "/programs/new/generate",
-  },
-  {
-    id: "builder",
-    icon: "//",
-    title: "Program Builder",
-    subtitle: "Visual block-by-block design",
-    desc: "Design your program with a visual timeline. Set goals, define block phases, configure training days — all in one view.",
-    href: "/programs/new/builder",
-  },
-  {
-    id: "template",
-    icon: "[]",
-    title: "Use a Template",
-    subtitle: "Start from a proven program",
-    desc: "Pick from pre-built templates like PPL, Upper/Lower, Full Body, or 5/3/1. Clone it and start training immediately.",
-    href: "/programs/new/templates",
-  },
-  {
-    id: "quick",
-    icon: ">>",
-    title: "Build As You Go",
-    subtitle: "Start with just a name",
-    desc: "Create a blank program and add blocks, days, and exercises as you train. Maximum flexibility.",
-    href: null, // handled inline
-  },
-  {
-    id: "goal",
-    icon: "^^",
-    title: "Goal-Driven",
-    subtitle: "Plan backward from a goal",
-    desc: "Set a strength, body weight, or frequency target. We'll suggest a program structure to get you there.",
-    href: "/programs/new/goal",
-  },
-];
+type Step = 1 | 2 | 3 | 4 | 5;
 
+/**
+ * Multi-step program-picker onboarding.
+ *
+ * Flow: Welcome → Filter → List → Preview → Setup → POST to
+ * /api/programs/generate → redirect to /programs/{id}.
+ *
+ * Each step is its own component in `_picker/Steps.tsx`; this file
+ * owns state + side effects only.
+ */
 export default function NewProgramPage() {
   const router = useRouter();
   const toast = useToast();
-  const [quickName, setQuickName] = useState("");
-  const [showQuick, setShowQuick] = useState(false);
-  const [saving, setSaving] = useState(false);
 
-  const handleQuickCreate = async () => {
-    if (!quickName.trim()) return;
-    setSaving(true);
+  const [step, setStep] = useState<Step>(1);
+  const [filters, setFilters] = useState<Filters>({});
+  const [filtersBypassed, setFiltersBypassed] = useState(false);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+
+  const [preview, setPreview] = useState<PreviewBlueprint | null>(null);
+  const [previewLoading, setPreviewLoading] = useState(false);
+  const [previewError, setPreviewError] = useState<string | null>(null);
+
+  const [startDate, setStartDate] = useState<string>(() => new Date().toISOString().slice(0, 10));
+  const [daysPerWeek, setDaysPerWeek] = useState<number>(3);
+  const [submitting, setSubmitting] = useState(false);
+
+  /* ─── Derived plan list (for step 3) ─────────────────────────── */
+
+  const plans: PickerPlan[] = useMemo(() => {
+    const goalFilter = filters.goal;
+    const dpwFilter = filters.daysPerWeek ? parseInt(filters.daysPerWeek, 10) : undefined;
+    const expFilter = filters.experience;
+
+    let templates = PROGRAM_TEMPLATES;
+    if (!filtersBypassed) {
+      templates = filterTemplates({
+        goal: goalFilter,
+        days: dpwFilter,
+        experience: expFilter,
+      });
+      // If equipment filter set, narrow further
+      if (filters.equipment) {
+        templates = templates.filter((t) => {
+          const eq = t.config.equipment;
+          if (!eq) return true;
+          // home -> only home/dumbbell-tagged templates pass
+          if (filters.equipment === "home") return eq === "home_minimal" || t.tags.includes("home");
+          if (filters.equipment === "limited_gym") return eq !== "full_gym";
+          return true;
+        });
+      }
+    }
+
+    return templates.map(templateToPlan);
+  }, [filters, filtersBypassed]);
+
+  const selectedPlan = useMemo(() => {
+    if (!selectedId) return null;
+    const tmpl = getTemplateById(selectedId);
+    return tmpl ? templateToPlan(tmpl) : null;
+  }, [selectedId]);
+
+  /* ─── Side effect: fetch preview when entering step 4 ────────── */
+
+  useEffect(() => {
+    if (step !== 4 || !selectedPlan) return;
+
+    const tmpl = selectedPlan.raw;
+    const config: ProgramConfig = mergeTemplateConfig(tmpl, {
+      daysPerWeek: daysPerWeek as ProgramConfig["daysPerWeek"],
+    }) as ProgramConfig;
+
+    setPreviewLoading(true);
+    setPreviewError(null);
+    let cancelled = false;
+
+    fetch("/api/programs/preview", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ config }),
+    })
+      .then(async (res) => {
+        if (!res.ok) throw new Error(`preview failed: ${res.status}`);
+        return res.json();
+      })
+      .then((data) => {
+        if (cancelled) return;
+        setPreview(data as PreviewBlueprint);
+      })
+      .catch((e: unknown) => {
+        if (cancelled) return;
+        setPreviewError(e instanceof Error ? e.message : "preview failed");
+        setPreview(null);
+      })
+      .finally(() => {
+        if (!cancelled) setPreviewLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [step, selectedPlan, daysPerWeek]);
+
+  /* ─── Pre-populate dpw default from selected template ────────── */
+
+  useEffect(() => {
+    if (selectedPlan) setDaysPerWeek(selectedPlan.daysPerWeek);
+  }, [selectedPlan]);
+
+  /* ─── Handlers ───────────────────────────────────────────────── */
+
+  const setFilter = (key: FilterKey, value: string | undefined) => {
+    setFilters((prev) => ({ ...prev, [key]: value }));
+  };
+  const clearFilter = (key: FilterKey) => setFilter(key, undefined);
+
+  const handleSubmit = async () => {
+    if (!selectedPlan) return;
+    setSubmitting(true);
     try {
-      const res = await fetch("/api/programs", {
+      const config = mergeTemplateConfig(selectedPlan.raw, {
+        daysPerWeek: daysPerWeek as ProgramConfig["daysPerWeek"],
+      }) as ProgramConfig;
+
+      const res = await fetch("/api/programs/generate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          name: quickName.trim(),
-          startDate: new Date().toISOString().split("T")[0],
-          status: "active",
-        }),
+        body: JSON.stringify({ config }),
       });
-      if (!res.ok) throw new Error("Failed");
-      const program = await res.json();
-      router.push(`/programs/${program.id}`);
-    } catch {
-      toast.error("Failed to create program.");
-      setSaving(false);
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw new Error(body.error ?? `Server returned ${res.status}`);
+      }
+      const data = await res.json();
+      // Update startDate on the program (engine defaults to today)
+      if (startDate && startDate !== new Date().toISOString().slice(0, 10)) {
+        await fetch(`/api/programs/${data.programId}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ startDate }),
+        }).catch(() => undefined);
+      }
+      toast.success("Gameplan created");
+      router.push(`/programs/${data.programId}`);
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : "Failed to create program";
+      toast.error(msg);
+      setSubmitting(false);
     }
   };
 
+  /* ─── Render the current step ────────────────────────────────── */
+
   return (
-    <div className="min-h-screen bg-ft-bg text-ft-white p-6 max-w-3xl mx-auto">
-      <Link
-        href="/programs"
-        className="inline-flex items-center gap-1.5 text-ft-dim text-sm font-body hover:text-ft-light transition-colors mb-6"
-      >
-        <span>&larr;</span>
-        <span>Programs</span>
-      </Link>
-
-      <h1 className="font-body text-2xl font-bold tracking-tight mb-2">
-        New Program
-      </h1>
-      <p className="text-ft-dim text-sm font-body mb-4">
-        Choose how you want to set up your training
-      </p>
-      <div className="bg-ft-surface border border-ft-border rounded-md px-4 py-3 mb-6">
-        <p className="text-ft-light text-xs font-body">
-          <span className="text-ft-white font-bold">New to training?</span>{" "}
-          Start with a <span className="text-ft-white font-bold">Template</span> — pick a proven program and customize it later.
-        </p>
-      </div>
-
-      <div className="space-y-4">
-        {tiers.map((tier) => (
-          <div key={tier.id}>
-            {tier.href ? (
-              <Link href={tier.href}>
-                <Card className="hover:border-ft-dim transition-colors cursor-pointer">
-                  <div className="flex items-start gap-4">
-                    <span className="text-2xl">{tier.icon}</span>
-                    <div>
-                      <h2 className="font-body text-base font-bold mb-0.5">
-                        {tier.title}
-                      </h2>
-                      <p className="text-ft-light text-xs font-body mb-2">
-                        {tier.subtitle}
-                      </p>
-                      <p className="text-ft-dim text-xs font-body">
-                        {tier.desc}
-                      </p>
-                    </div>
-                    <span className="text-ft-muted ml-auto mt-2">&rarr;</span>
-                  </div>
-                </Card>
-              </Link>
-            ) : (
-              <div>
-                <button
-                  onClick={() => setShowQuick(!showQuick)}
-                  className="w-full text-left"
-                >
-                  <Card className="hover:border-ft-dim transition-colors cursor-pointer">
-                    <div className="flex items-start gap-4">
-                      <span className="text-2xl">{tier.icon}</span>
-                      <div>
-                        <h2 className="font-body text-base font-bold mb-0.5">
-                          {tier.title}
-                        </h2>
-                        <p className="text-ft-light text-xs font-body mb-2">
-                          {tier.subtitle}
-                        </p>
-                        <p className="text-ft-dim text-xs font-body">
-                          {tier.desc}
-                        </p>
-                      </div>
-                      <span className="text-ft-muted ml-auto mt-2">
-                        {showQuick ? "▾" : "▸"}
-                      </span>
-                    </div>
-                  </Card>
-                </button>
-
-                {showQuick && (
-                  <Card className="mt-2 border-ft-white">
-                    <div className="flex items-end gap-3">
-                      <div className="flex-1">
-                        <label className="block text-ft-dim text-[10px] font-body uppercase tracking-wider mb-1">
-                          Program Name
-                        </label>
-                        <input
-                          type="text"
-                          value={quickName}
-                          onChange={(e) => setQuickName(e.target.value)}
-                          placeholder="e.g. My Training"
-                          autoFocus
-                          onKeyDown={(e) => e.key === "Enter" && handleQuickCreate()}
-                          className="w-full bg-ft-bg border border-ft-card rounded px-3 py-2 text-sm font-body text-ft-white placeholder:text-ft-muted focus:outline-none focus:border-ft-dim transition-colors"
-                        />
-                      </div>
-                      <button
-                        onClick={handleQuickCreate}
-                        disabled={saving || !quickName.trim()}
-                        className="bg-ft-white text-ft-bg font-body text-sm font-bold px-4 py-2 rounded hover:bg-ft-light transition-colors disabled:opacity-50"
-                      >
-                        {saving ? "..." : "Create & Start"}
-                      </button>
-                    </div>
-                  </Card>
-                )}
-              </div>
-            )}
+    <div className="bg-ft-bg text-ft-white -mx-4 -my-4 -mb-24 min-h-screen relative">
+      {step === 1 && (
+        <>
+          <Step1Welcome
+            onPick={() => setStep(2)}
+            onSkip={() => router.push("/programs")}
+          />
+          <div className="absolute bottom-2 left-0 right-0 text-center">
+            <Link
+              href="/programs/new/advanced"
+              className="font-body text-[10px] uppercase tracking-[0.2em] text-ft-dim hover:text-ft-light"
+            >
+              Advanced setup →
+            </Link>
           </div>
-        ))}
-      </div>
+        </>
+      )}
+
+      {step === 2 && (
+        <Step2Filter
+          filters={filters}
+          setFilter={setFilter}
+          onContinue={() => {
+            setFiltersBypassed(false);
+            setStep(3);
+          }}
+          onSkip={() => {
+            setFiltersBypassed(true);
+            setFilters({});
+            setStep(3);
+          }}
+          onBack={() => setStep(1)}
+        />
+      )}
+
+      {step === 3 && (
+        <Step3List
+          plans={plans}
+          filters={filters}
+          filtersBypassed={filtersBypassed}
+          onPickPlan={(id) => {
+            setSelectedId(id);
+            setStep(4);
+          }}
+          onClearFilter={(k) => clearFilter(k)}
+          onBack={() => setStep(2)}
+        />
+      )}
+
+      {step === 4 && selectedPlan && (
+        <Step4Preview
+          plan={selectedPlan}
+          blueprint={preview}
+          loading={previewLoading}
+          error={previewError}
+          onConfirm={() => setStep(5)}
+          onPickAnother={() => {
+            setSelectedId(null);
+            setPreview(null);
+            setPreviewError(null);
+            setStep(3);
+          }}
+          onBack={() => setStep(3)}
+        />
+      )}
+
+      {step === 5 && selectedPlan && (
+        <Step5Setup
+          plan={selectedPlan}
+          startDate={startDate}
+          setStartDate={setStartDate}
+          daysPerWeek={daysPerWeek}
+          setDaysPerWeek={setDaysPerWeek}
+          submitting={submitting}
+          onSubmit={handleSubmit}
+          onBack={() => setStep(4)}
+        />
+      )}
     </div>
   );
 }
