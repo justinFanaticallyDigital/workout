@@ -79,6 +79,7 @@ model User {
   userMetricTargets  UserMetricTarget[]
   scheduleOverrides  ScheduleOverride[]
   stretchRoutines    StretchRoutine[]
+  checkIns           CheckIn[]
 
   @@map("users")
 }
@@ -207,6 +208,7 @@ model Block {
   benchmarks        ProgramBenchmark[]
   nutritionTargets  NutritionTarget[]
   scheduleOverrides ScheduleOverride[]
+  checkIns          CheckIn[]
 
   @@index([programId])
   @@map("blocks")
@@ -770,4 +772,40 @@ model StretchRoutineItem {
 
   @@index([routineId])
   @@map("stretch_routine_items")
+}
+
+// ─── Weekly Check-Ins ────────────────────────────────────
+model CheckIn {
+  id         String    @id @default(uuid()) @db.Uuid
+  userId     String    @map("user_id") @db.Uuid
+  date       DateTime  @db.Date
+  weekNumber Int?      @map("week_number")
+  blockId    String?   @map("block_id") @db.Uuid
+
+  // Subjective ratings (1–5 scale)
+  energy       Int?
+  sleepQuality Int? @map("sleep_quality")
+  soreness     Int?
+  stress       Int?
+  motivation   Int?
+
+  // Adherence (% 0–100)
+  liftAdherence      Int? @map("lift_adherence")
+  cardioAdherence    Int? @map("cardio_adherence")
+  nutritionAdherence Int? @map("nutrition_adherence")
+
+  // Free text
+  wins      String?
+  struggles String?
+  notes     String?
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user  User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  block Block? @relation(fields: [blockId], references: [id], onDelete: SetNull)
+
+  @@unique([userId, date])
+  @@index([userId])
+  @@index([userId, date])
+  @@map("check_ins")
 }

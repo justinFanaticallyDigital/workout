@@ -44,6 +44,30 @@ export async function POST() {
     )`,
     `CREATE INDEX IF NOT EXISTS daily_metrics_user_id_idx ON daily_metrics(user_id)`,
     `CREATE INDEX IF NOT EXISTS daily_metrics_user_id_date_idx ON daily_metrics(user_id, date)`,
+
+    // CheckIn: weekly check-ins (B5)
+    `CREATE TABLE IF NOT EXISTS check_ins (
+      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      date DATE NOT NULL,
+      week_number INT,
+      block_id UUID REFERENCES blocks(id) ON DELETE SET NULL,
+      energy INT,
+      sleep_quality INT,
+      soreness INT,
+      stress INT,
+      motivation INT,
+      lift_adherence INT,
+      cardio_adherence INT,
+      nutrition_adherence INT,
+      wins TEXT,
+      struggles TEXT,
+      notes TEXT,
+      created_at TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      UNIQUE(user_id, date)
+    )`,
+    `CREATE INDEX IF NOT EXISTS check_ins_user_id_idx ON check_ins(user_id)`,
+    `CREATE INDEX IF NOT EXISTS check_ins_user_id_date_idx ON check_ins(user_id, date)`,
   ];
 
   for (const sql of migrations) {
