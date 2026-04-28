@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Contrast audit for all 7 themes.
+ * Contrast audit for all 8 themes.
  *
  * Parses color values out of src/themes/*.ts (bg, bgCard, bgElevated,
  * textPrimary, textSecondary, textTertiary) and reports:
@@ -18,7 +18,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 
 const THEMES_DIR = path.join(__dirname, '..', 'src', 'themes');
-const THEME_FILES = ['graffiti', 'cyberpunk', 'notebook', 'blueprint', 'arcade', 'lab', 'iron'];
+const THEME_FILES = ['default', 'graffiti', 'cyberpunk', 'notebook', 'blueprint', 'arcade', 'lab', 'iron'];
 
 const TEXT_FLOOR = 4.5;
 const SURFACE_FLOOR = 1.25;
@@ -89,6 +89,11 @@ let anySurfaceWarn = false;
 
 console.log('\n=== Surface deltas (target ≥ 1.25:1 between bg and bgCard) ===');
 for (const name of THEME_FILES) {
+  const file = path.join(THEMES_DIR, `${name}.ts`);
+  if (!fs.existsSync(file)) {
+    console.log(`  ${name.padEnd(12)} (missing — skipped)`);
+    continue;
+  }
   const t = loadTheme(name);
   const bgCard = surfaceContrast(t.bgCard, t.bg);
   const cardElev = surfaceContrast(t.bgElevated, t.bgCard);
@@ -102,6 +107,8 @@ for (const name of THEME_FILES) {
 
 console.log('\n=== Text on surfaces (WCAG AA floor = 4.5:1) ===');
 for (const name of THEME_FILES) {
+  const file = path.join(THEMES_DIR, `${name}.ts`);
+  if (!fs.existsSync(file)) continue;
   const t = loadTheme(name);
   const tiers = { primary: t.textPrimary, secondary: t.textSecondary, tertiary: t.textTertiary };
   const surfaces = { bg: t.bg, bgCard: t.bgCard, bgElevated: t.bgElevated };

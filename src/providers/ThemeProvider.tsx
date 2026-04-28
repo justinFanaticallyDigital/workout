@@ -13,125 +13,19 @@ interface ThemeContextType {
 const ThemeContext = createContext<ThemeContextType | null>(null);
 
 const THEME_KEY = 'fittrack-theme';
+const THEME_CHOSEN_KEY = 'fittrack-theme-chosen';
 
 /**
- * Parse a CSS color string to RGB triplet string (e.g. "42 45 47").
- * Supports hex (#rrggbb, #rgb) and rgba().
+ * Stamp `data-theme` and `data-button-style` on <html>. CSS owns
+ * all token values via `:root[data-theme="X"]` blocks in globals.css —
+ * this provider just toggles which block is active and exposes the
+ * theme's TS config (texture, component overrides) to themed React
+ * components via `useTheme()`.
  */
-function colorToRgbTriplet(color: string): string {
-  // Handle rgba() format — extract the RGB part
-  const rgbaMatch = color.match(/^rgba?\(\s*(\d+),\s*(\d+),\s*(\d+)/);
-  if (rgbaMatch) {
-    return `${rgbaMatch[1]} ${rgbaMatch[2]} ${rgbaMatch[3]}`;
-  }
-
-  // Handle hex
-  let hex = color.replace('#', '');
-  if (hex.length === 3) {
-    hex = hex[0] + hex[0] + hex[1] + hex[1] + hex[2] + hex[2];
-  }
-  const r = parseInt(hex.substring(0, 2), 16);
-  const g = parseInt(hex.substring(2, 4), 16);
-  const b = parseInt(hex.substring(4, 6), 16);
-  return `${r} ${g} ${b}`;
-}
-
-/**
- * Parse a text color with alpha to extract the alpha value.
- * Returns alpha as a number, or 1 if no alpha found.
- */
-function extractAlpha(color: string): number {
-  const match = color.match(/rgba?\([^)]*[\s,/]\s*([\d.]+)\s*\)/);
-  if (match) return parseFloat(match[1]);
-  return 1;
-}
-
-function applyThemeCssVars(theme: ThemeConfig) {
+function applyThemeAttributes(theme: ThemeConfig) {
   const root = document.documentElement;
-  const c = theme.colors;
-
-  // Background & surface colors
-  root.style.setProperty('--ft-bg', colorToRgbTriplet(c.bg));
-  root.style.setProperty('--ft-surface', colorToRgbTriplet(c.bgCard));
-  root.style.setProperty('--ft-card', colorToRgbTriplet(c.bgElevated));
-  root.style.setProperty('--ft-accent', colorToRgbTriplet(c.accent));
-  root.style.setProperty('--ft-accent-secondary', colorToRgbTriplet(c.accentSecondary));
-
-  // Border colors — preserve full rgba values for direct use AND extract RGB for Tailwind
-  // The RGB triplet loses alpha, so we also store the raw value as --ft-border-color
-  root.style.setProperty('--ft-border', colorToRgbTriplet(c.border));
-  root.style.setProperty('--ft-border-alpha', String(extractAlpha(c.border)));
-  root.style.setProperty('--ft-border-color', c.border);
-  root.style.setProperty('--ft-border-subtle-color', c.borderSubtle);
-
-  // State colors
-  root.style.setProperty('--ft-success', colorToRgbTriplet(c.success));
-  root.style.setProperty('--ft-warn', colorToRgbTriplet(c.warning));
-  root.style.setProperty('--ft-danger', colorToRgbTriplet(c.error));
-
-  // Movement colors (constant but included for completeness)
-  root.style.setProperty('--ft-push', colorToRgbTriplet(c.push));
-  root.style.setProperty('--ft-pull', colorToRgbTriplet(c.pull));
-  root.style.setProperty('--ft-legs', colorToRgbTriplet(c.legs));
-  root.style.setProperty('--ft-core', colorToRgbTriplet(c.core));
-
-  // Text colors — extract RGB and alpha separately
-  root.style.setProperty('--ft-text-primary', colorToRgbTriplet(c.textPrimary));
-  root.style.setProperty('--ft-text-secondary', colorToRgbTriplet(c.textSecondary));
-  root.style.setProperty('--ft-text-tertiary', colorToRgbTriplet(c.textTertiary));
-  root.style.setProperty('--ft-alpha-primary', String(extractAlpha(c.textPrimary)));
-  root.style.setProperty('--ft-alpha-secondary', String(extractAlpha(c.textSecondary)));
-  root.style.setProperty('--ft-alpha-tertiary', String(extractAlpha(c.textTertiary)));
-
-  // Muted token — maps to tertiary text so `text-ft-muted` and placeholders stay legible.
-  // The few places using it as a background color render as a subtle dim surface, which is acceptable.
-  root.style.setProperty('--ft-muted', colorToRgbTriplet(c.textTertiary));
-
-  // Backward-compat grayscale tokens (ft-dim, ft-light, ft-pale, ft-white)
-  // These map text hierarchy for Tailwind classes.
-  // For BOTH dark and light themes, ft-white/pale/light/dim follow the text hierarchy.
-  // On dark themes: white spectrum. On light themes: dark spectrum.
-  // Components using text-ft-white get the theme's primary text color (correct for both).
-  root.style.setProperty('--ft-dim', colorToRgbTriplet(c.textTertiary));
-  root.style.setProperty('--ft-light', colorToRgbTriplet(c.textSecondary));
-  root.style.setProperty('--ft-pale', colorToRgbTriplet(c.textPrimary));
-  root.style.setProperty('--ft-white', colorToRgbTriplet(c.textPrimary));
-
-  // Border & divider CSS shorthands for direct use in components
-  root.style.setProperty('--ft-border-card', theme.borders.card);
-  root.style.setProperty('--ft-border-divider', theme.borders.divider);
-
-  // Typography
-  root.style.setProperty('--ft-font-display', theme.fonts.display);
-  root.style.setProperty('--ft-font-handwritten', theme.fonts.data);
-  root.style.setProperty('--ft-font-body', theme.fonts.body);
-  root.style.setProperty('--ft-font-sans', theme.fonts.body);
-
-  // Border radius
-  root.style.setProperty('--ft-border-radius', theme.borders.radius);
-
-  // Component styles — exposed as data attributes for CSS utility classes
-  root.dataset.buttonStyle = theme.components.button.style;
   root.dataset.theme = theme.id;
-
-  // Store theme-specific CSS vars for components
-  root.style.setProperty('--bg', c.bg);
-  root.style.setProperty('--bg-card', c.bgCard);
-  root.style.setProperty('--bg-elevated', c.bgElevated);
-  root.style.setProperty('--text-primary', c.textPrimary);
-  root.style.setProperty('--text-secondary', c.textSecondary);
-  root.style.setProperty('--text-tertiary', c.textTertiary);
-  root.style.setProperty('--accent', c.accent);
-  root.style.setProperty('--accent-secondary', c.accentSecondary);
-  root.style.setProperty('--color-push', c.push);
-  root.style.setProperty('--color-pull', c.pull);
-  root.style.setProperty('--color-legs', c.legs);
-  root.style.setProperty('--color-core', c.core);
-  root.style.setProperty('--border', c.border);
-  root.style.setProperty('--border-subtle', c.borderSubtle);
-  root.style.setProperty('--font-display', theme.fonts.display);
-  root.style.setProperty('--font-data', theme.fonts.data);
-  root.style.setProperty('--font-body', theme.fonts.body);
+  root.dataset.buttonStyle = theme.components.button.style;
 }
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
@@ -143,21 +37,33 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     if (saved && themes[saved]) {
       setThemeId(saved);
     }
-    // Show theme picker on first visit (no theme chosen yet)
-    const hasChosen = localStorage.getItem('fittrack-theme-chosen');
-    if (!hasChosen) {
+    if (!localStorage.getItem(THEME_CHOSEN_KEY)) {
       setShowPicker(true);
     }
   }, []);
 
   useEffect(() => {
-    applyThemeCssVars(themes[themeId]);
+    applyThemeAttributes(themes[themeId]);
+  }, [themeId]);
+
+  // Listen for theme changes dispatched from lib/theme.ts setTheme()
+  // (e.g. from non-component code). Keeps context in sync.
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const detail = (e as CustomEvent<string>).detail;
+      if (detail && themes[detail] && detail !== themeId) {
+        setThemeId(detail);
+      }
+    };
+    window.addEventListener('fittrack-theme-change', handler);
+    return () => window.removeEventListener('fittrack-theme-change', handler);
   }, [themeId]);
 
   const setTheme = (id: string) => {
     if (!themes[id]) return;
     setThemeId(id);
     localStorage.setItem(THEME_KEY, id);
+    localStorage.setItem(THEME_CHOSEN_KEY, '1');
   };
 
   const theme = themes[themeId];
@@ -165,7 +71,10 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   return (
     <ThemeContext.Provider value={{ themeId, theme, setTheme }}>
       {children}
-      {showPicker && <ThemePickerModal onClose={() => setShowPicker(false)} />}
+      {showPicker && <ThemePickerModal onClose={() => {
+        localStorage.setItem(THEME_CHOSEN_KEY, '1');
+        setShowPicker(false);
+      }} />}
     </ThemeContext.Provider>
   );
 }
