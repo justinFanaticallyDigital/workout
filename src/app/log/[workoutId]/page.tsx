@@ -780,8 +780,24 @@ export default function ActiveWorkoutPage({
 
   const current = exercises.length > 0 ? exercises[activeEx] : null;
 
+  // Running totals for the FinishBar — recomputed on every render. Cheap
+  // for the set counts we deal with (low hundreds).
+  let setsDone = 0;
+  let setsTotal = 0;
+  let totalVolume = 0;
+  for (const ex of exercises) {
+    for (const s of ex.sets) {
+      setsTotal++;
+      if (s.done) {
+        setsDone++;
+        if (s.weight != null && s.reps != null) totalVolume += s.weight * s.reps;
+      }
+    }
+  }
+  const setsPct = setsTotal > 0 ? setsDone / setsTotal : 0;
+
   return (
-    <div className="min-h-screen bg-ft-bg text-ft-white pb-24 max-w-2xl mx-auto">
+    <div className="min-h-screen bg-ft-bg text-ft-white pb-32 max-w-2xl mx-auto">
       {/* Exercise Picker Overlay */}
       {showPicker && (
         <ExercisePicker
@@ -828,7 +844,8 @@ export default function ActiveWorkoutPage({
             <h1 className="font-display text-2xl text-ft-white tracking-wide leading-tight truncate">
               {dayInfo?.name ?? "Workout"}
             </h1>
-            <p className="text-ft-light text-[10px] uppercase tracking-[0.18em] font-body mt-0.5">
+            <p className="text-ft-light text-[10px] uppercase tracking-[0.18em] font-body mt-0.5 truncate">
+              {dayInfo?.blockName ? `${dayInfo.blockName.toUpperCase()} · ` : ""}
               {new Date().toLocaleDateString("en-US", {
                 weekday: "short",
                 month: "short",
@@ -836,18 +853,7 @@ export default function ActiveWorkoutPage({
               })}
             </p>
           </div>
-          <div className="flex items-center gap-2 shrink-0">
-            <WorkoutTimer startTime={startTime} />
-            {exercises.length > 0 && (
-              <button
-                onClick={handleFinish}
-                disabled={finishing}
-                className="bg-ft-success/20 text-ft-success font-body text-sm font-bold px-4 py-1.5 rounded hover:bg-ft-success/30 transition-colors disabled:opacity-50"
-              >
-                {finishing ? "Saving..." : "Finish"}
-              </button>
-            )}
-          </div>
+          <WorkoutTimer startTime={startTime} />
         </div>
       </div>
 
@@ -1161,6 +1167,94 @@ export default function ActiveWorkoutPage({
           </div>
         </>
       )}
+
+      {/*
+       * FinishBar — sticky bottom strip with running session stats.
+       * Sets done/total, total volume, elapsed time, plus the FINISH
+       * button. Bottom 3px progress bar tracks set completion.
+       *
+       * Only renders once at least one exercise is loaded; before that
+       * the empty state ("No exercises yet") is the only thing on screen
+       * and a stats bar would be noise.
+       */}
+      {exercises.length > 0 && (
+        <div className="ft-card fixed bottom-0 left-0 right-0 z-30 bg-ft-surface border-t border-ft-border">
+          <div className="max-w-2xl mx-auto px-4 pt-2.5 pb-3 flex items-center justify-between gap-3">
+            <div className="flex items-end gap-4 min-w-0">
+              <FinishStat label="SETS" value={`${setsDone}`} suffix={`/${setsTotal}`} />
+              <FinishStat label="VOL" value={formatVolume(totalVolume)} />
+              <FinishStat label="TIME" value={<WorkoutMin startTime={startTime} />} />
+            </div>
+            <button
+              onClick={handleFinish}
+              disabled={finishing}
+              className={[
+                "shrink-0 font-body text-[12px] tracking-[0.14em] uppercase font-bold px-4 py-2 border transition-colors",
+                "disabled:opacity-50 disabled:cursor-not-allowed",
+                setsPct >= 1
+                  ? "bg-ft-accent text-ft-bg border-ft-accent"
+                  : "bg-transparent text-ft-accent border-ft-accent hover:bg-ft-accent/10",
+              ].join(" ")}
+              style={{ borderRadius: "var(--ft-radius)" }}
+            >
+              {finishing ? "Saving…" : "Finish"}
+            </button>
+          </div>
+          <div className="h-[3px] bg-ft-border/40 relative overflow-hidden">
+            <div
+              className="absolute inset-y-0 left-0 bg-ft-accent transition-[width] duration-500"
+              style={{ width: `${setsPct * 100}%` }}
+              aria-label={`${setsDone} of ${setsTotal} sets complete`}
+            />
+          </div>
+        </div>
+      )}
     </div>
   );
+}
+
+/** Single stat block in the FinishBar. */
+function FinishStat({
+  label,
+  value,
+  suffix,
+}: {
+  label: string;
+  value: React.ReactNode;
+  suffix?: string;
+}) {
+  return (
+    <div className="leading-none min-w-0">
+      <div className="font-body text-[9px] uppercase tracking-[0.15em] text-ft-dim">
+        {label}
+      </div>
+      <div className="mt-1">
+        <span className="font-data text-base text-ft-white font-bold tabular-nums">
+          {value}
+        </span>
+        {suffix && (
+          <span className="font-data text-sm text-ft-dim font-medium tabular-nums">
+            {suffix}
+          </span>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/** Compact "12m" workout timer used inside the FinishBar. */
+function WorkoutMin({ startTime }: { startTime: number }) {
+  const [mins, setMins] = useState(() => Math.floor((Date.now() - startTime) / 60000));
+  useEffect(() => {
+    const id = setInterval(() => {
+      setMins(Math.floor((Date.now() - startTime) / 60000));
+    }, 30000);
+    return () => clearInterval(id);
+  }, [startTime]);
+  return <>{mins}m</>;
+}
+
+function formatVolume(v: number): string {
+  if (v >= 1000) return `${(v / 1000).toFixed(1)}k`;
+  return `${Math.round(v)}`;
 }
