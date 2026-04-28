@@ -3,10 +3,15 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Card, SectionHeader, Tag } from "@/components/ui";
+import { Card, SectionHeader } from "@/components/ui";
 import { useToast } from "@/components/ui/Toast";
 import { addToQueue } from "@/lib/offline-queue";
 import ThemedIcon from "@/components/themed/ThemedIcon";
+import Lane from "./_logger/Lane";
+import SetSheet from "./_logger/SetSheet";
+import type { ActiveCell } from "./_logger/types";
+
+const DEFAULT_REST_SECONDS = 90;
 
 interface SearchExercise {
   id: string;
@@ -61,10 +66,6 @@ interface BlockDayData {
     progressionType: string;
     progressionIncrement: number | null;
   }[];
-}
-
-function isExerciseComplete(ex: ExerciseData) {
-  return ex.sets.length > 0 && ex.sets.every((s) => s.done);
 }
 
 function makeShortName(name: string): string {
@@ -346,7 +347,6 @@ export default function ActiveWorkoutPage({
   const [blockId, setBlockId] = useState<string>("");
   const [exercises, setExercises] = useState<ExerciseData[]>([]);
   const [dayInfo, setDayInfo] = useState<{ name: string; blockName: string } | null>(null);
-  const [activeEx, setActiveEx] = useState(0);
   const [loading, setLoading] = useState(true);
   const [finishing, setFinishing] = useState(false);
   const [workoutNotes, setWorkoutNotes] = useState("");
@@ -354,7 +354,6 @@ export default function ActiveWorkoutPage({
   const [restored, setRestored] = useState(false);
   const [showPicker, setShowPicker] = useState(false);
   const [swapIndex, setSwapIndex] = useState<number | null>(null);
-  const [showRir, setShowRir] = useState(false);
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Auto-save to localStorage (debounced 2s)
@@ -484,27 +483,48 @@ export default function ActiveWorkoutPage({
       .catch(() => setLoading(false));
   }, [workoutId]);
 
-  const updateSet = useCallback(
-    (exIdx: number, setIdx: number, field: keyof SetData, value: unknown) => {
+  // Lane-based logger state (B3-followup-v2 port)
+  const [activeCell, setActiveCell] = useState<ActiveCell | null>(null);
+  const [restEndsAt, setRestEndsAt] = useState<number | null>(null);
+
+  /**
+   * Commits weight/reps/rir for a single set in one shot, marks done=true,
+   * and starts the rest-timer countdown. Used by SetSheet's "LOG SET"
+   * action — replaces the field-by-field updateSet path the inline inputs
+   * used to drive.
+   */
+  const commitSet = useCallback(
+    (
+      exIdx: number,
+      setIdx: number,
+      values: { weight: number; reps: number; rir: number | null },
+    ) => {
       setExercises((prev) =>
         prev.map((ex, ei) => {
           if (ei !== exIdx) return ex;
           const newSets = ex.sets.map((s, si) =>
-            si !== setIdx ? s : { ...s, [field]: value }
+            si !== setIdx
+              ? s
+              : {
+                  ...s,
+                  weight: values.weight,
+                  reps: values.reps,
+                  rir: values.rir,
+                  done: true,
+                },
           );
-          // Weight carry-forward: when weight is entered, fill empty subsequent sets
-          if (field === "weight" && value != null && typeof value === "number") {
-            for (let i = setIdx + 1; i < newSets.length; i++) {
-              if (newSets[i].weight === null) {
-                newSets[i] = { ...newSets[i], weight: value as number };
-              }
+          // Weight carry-forward, same rule the old inline path used.
+          for (let i = setIdx + 1; i < newSets.length; i++) {
+            if (newSets[i].weight === null) {
+              newSets[i] = { ...newSets[i], weight: values.weight };
             }
           }
           return { ...ex, sets: newSets };
-        })
+        }),
       );
+      setRestEndsAt(Date.now() + DEFAULT_REST_SECONDS * 1000);
     },
-    []
+    [],
   );
 
   const addSet = useCallback((exIdx: number) => {
@@ -526,12 +546,6 @@ export default function ActiveWorkoutPage({
               ],
             }
       )
-    );
-  }, []);
-
-  const updateExerciseNotes = useCallback((exIdx: number, notes: string) => {
-    setExercises((prev) =>
-      prev.map((ex, ei) => (ei !== exIdx ? ex : { ...ex, notes }))
     );
   }, []);
 
@@ -559,7 +573,6 @@ export default function ActiveWorkoutPage({
       progressionInfo: { estimated1RM: null, progressionStatus: null, stalledSessions: 0 },
     };
     setExercises((prev) => {
-      setActiveEx(prev.length);
       return [...prev, newEx];
     });
     setShowPicker(false);
@@ -642,11 +655,6 @@ export default function ActiveWorkoutPage({
       if (!confirmed) return;
     }
     setExercises((prev) => prev.filter((_, i) => i !== index));
-    setActiveEx((prevIdx) => {
-      if (prevIdx > index) return prevIdx - 1;
-      if (prevIdx === index) return Math.max(0, index - 1);
-      return prevIdx;
-    });
   }, [exercises]);
 
   // Finish workout handler
@@ -778,8 +786,6 @@ export default function ActiveWorkoutPage({
     );
   }
 
-  const current = exercises.length > 0 ? exercises[activeEx] : null;
-
   // Running totals for the FinishBar — recomputed on every render. Cheap
   // for the set counts we deal with (low hundreds).
   let setsDone = 0;
@@ -889,273 +895,44 @@ export default function ActiveWorkoutPage({
         </div>
       )}
 
-      {/* Exercise Tabs */}
-      {current && (
+      {/* Lane stack — every exercise is a row of tappable set cells. */}
+      {exercises.length > 0 && (
         <>
-          <div className="px-4 mt-4 mb-4">
-            <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-none">
-              {exercises.map((ex, i) => {
-                const complete = isExerciseComplete(ex);
-                const isActive = i === activeEx;
-                return (
-                  <button
-                    key={ex.id}
-                    onClick={() => setActiveEx(i)}
-                    className={`shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded font-body text-xs transition-colors ${
-                      isActive
-                        ? "bg-ft-white text-ft-bg font-bold"
-                        : "bg-ft-surface text-ft-dim hover:text-ft-light border border-ft-card"
-                    }`}
-                  >
-                    <span className="flex items-center">
-                      {complete ? <ThemedIcon name="check" size={14} /> : `E${i + 1}`}
-                    </span>
-                    <span>{ex.shortName}</span>
-                  </button>
-                );
-              })}
-              <button
-                onClick={() => setShowPicker(true)}
-                className="shrink-0 flex items-center gap-1 px-3 py-1.5 rounded font-body text-xs bg-ft-surface text-ft-dim hover:text-ft-light border border-dashed border-ft-card transition-colors"
-                aria-label="Add exercise"
-              >
-                <ThemedIcon name="plus" size={12} />
-              </button>
-            </div>
+          <div className="px-4 mt-4 mb-4 flex flex-col gap-3">
+            {exercises.map((ex, i) => (
+              <Lane
+                key={ex.id}
+                name={ex.name}
+                category={ex.category}
+                movementPattern={ex.category}
+                targetSets={ex.targetSets}
+                targetRepRange={ex.targetRepRange}
+                sets={ex.sets}
+                lastWeek={ex.lastSets.map((s) => ({ weight: s.weight, reps: s.reps }))}
+                activeCellIdx={
+                  activeCell?.exerciseIdx === i ? activeCell.setIdx : null
+                }
+                onTapSet={(setIdx) => setActiveCell({ exerciseIdx: i, setIdx })}
+                onAddSet={() => addSet(i)}
+                onSwap={() => {
+                  setSwapIndex(i);
+                  setShowPicker(true);
+                }}
+                onRemove={() => removeExercise(i)}
+              />
+            ))}
+            <button
+              onClick={() => setShowPicker(true)}
+              className="self-center cta-underline font-display text-base text-ft-accent px-5 py-2 mt-1"
+            >
+              + Add exercise
+            </button>
           </div>
 
-          <div className="px-4 flex flex-col gap-4">
-            {/* Active Exercise Detail */}
+          {/* Workout-level notes */}
+          <div className="px-4 mb-6">
             <Card className="ft-card">
-              <div className="mb-4 flex items-start justify-between gap-3">
-                <div className="min-w-0">
-                  <h2 className="font-display text-xl text-ft-white tracking-wide leading-tight">
-                    {current.name}
-                  </h2>
-                  <div className="flex items-center gap-2 mt-1.5 flex-wrap">
-                    <Tag>{current.category}</Tag>
-                  </div>
-                </div>
-                <div className="flex items-center gap-1 shrink-0">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setSwapIndex(activeEx);
-                      setShowPicker(true);
-                    }}
-                    className="text-ft-dim hover:text-ft-light border border-ft-card rounded px-2 py-1 text-[11px] font-body transition-colors touch-target"
-                    aria-label="Swap exercise"
-                    title="Swap exercise"
-                  >
-                    Swap
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => removeExercise(activeEx)}
-                    className="text-ft-dim hover:text-ft-danger border border-ft-card rounded px-2 py-1 text-[11px] font-body transition-colors touch-target"
-                    aria-label="Remove exercise"
-                    title="Remove exercise"
-                  >
-                    Remove
-                  </button>
-                </div>
-              </div>
-
-              {/* Stall Warning */}
-              {current.progressionInfo.progressionStatus === "stalled" && (
-                <div className="bg-ft-warn/10 border border-ft-warn/20 rounded p-2.5 mb-3">
-                  <div className="flex items-center gap-2">
-                    <span className="text-ft-warn text-sm">&#9888;</span>
-                    <div>
-                      <p className="text-ft-warn text-xs font-body font-bold">
-                        Progression stalled
-                      </p>
-                      <p className="text-ft-warn/70 text-[10px] font-body mt-0.5">
-                        Same weight for {current.progressionInfo.stalledSessions}+ sessions. Consider a deload week or adjusting your approach.
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {/* Target + Last Performance + e1RM */}
-              <div className="flex gap-3 mb-4 flex-wrap">
-                <div className="flex-1 min-w-[80px] bg-ft-bg rounded p-2.5">
-                  <p className="text-ft-dim text-[11px] font-body uppercase tracking-wider mb-0.5">
-                    Target
-                  </p>
-                  <p className="text-ft-light text-sm font-body font-bold">
-                    {current.suggestedWeight?.sets ?? current.targetSets}&times;{current.suggestedWeight?.reps ?? current.targetRepRange}
-                  </p>
-                  {current.progressionType !== "none" && (
-                    <p className="text-ft-muted text-[10px] font-body mt-0.5">
-                      {current.progressionType.replace("_", " ")}
-                    </p>
-                  )}
-                </div>
-                {current.lastSets.length > 0 && (
-                  <div className="flex-1 min-w-[80px] bg-ft-bg rounded p-2.5">
-                    <p className="text-ft-dim text-[11px] font-body uppercase tracking-wider mb-0.5">
-                      Last
-                    </p>
-                    <p className="text-ft-light text-sm font-body font-bold">
-                      {current.lastSets
-                        .slice(0, 3)
-                        .map((s) => `${s.weight ?? 0}\u00d7${s.reps ?? 0}`)
-                        .join(", ")}
-                      {current.lastSets.length > 3 && "..."}
-                    </p>
-                  </div>
-                )}
-                {current.progressionInfo.estimated1RM && (
-                  <div className="flex-1 min-w-[80px] bg-ft-bg rounded p-2.5">
-                    <p className="text-ft-dim text-[11px] font-body uppercase tracking-wider mb-0.5">
-                      Est. 1RM
-                    </p>
-                    <p className="text-ft-light text-sm font-body font-bold">
-                      {current.progressionInfo.estimated1RM} lbs
-                    </p>
-                  </div>
-                )}
-                {current.suggestedWeight && (
-                  <div className="flex-1 min-w-[80px] bg-ft-success/10 border border-ft-success/20 rounded p-2.5">
-                    <p className="text-ft-success text-[11px] font-body uppercase tracking-wider mb-0.5">
-                      Suggested
-                    </p>
-                    <p className="text-ft-success text-sm font-body font-bold">
-                      {current.suggestedWeight.weight} lbs
-                    </p>
-                    <p className="text-ft-success/70 text-[10px] font-body mt-0.5">
-                      {current.suggestedWeight.hint}
-                    </p>
-                  </div>
-                )}
-              </div>
-
-              {/* Set Table */}
-              <div className="mb-3">
-                {/* Header row — RIR hidden on mobile unless toggled */}
-                <div className={`grid gap-1.5 mb-1.5 ${showRir ? "grid-cols-[36px_1fr_1fr_1fr_40px]" : "grid-cols-[36px_1fr_1fr_40px] sm:grid-cols-[36px_1fr_1fr_1fr_40px]"}`}>
-                  <span className="text-ft-dim text-[11px] font-body uppercase text-center">
-                    Set
-                  </span>
-                  <span className="text-ft-dim text-[11px] font-body uppercase text-center">
-                    Weight
-                  </span>
-                  <span className="text-ft-dim text-[11px] font-body uppercase text-center">
-                    Reps
-                  </span>
-                  <span className={`text-ft-dim text-[11px] font-body uppercase text-center ${showRir ? "" : "hidden sm:block"}`}>
-                    RIR
-                  </span>
-                  <span className="text-ft-dim text-[11px] font-body uppercase text-center flex items-center justify-center">
-                    <ThemedIcon name="check" size={12} />
-                  </span>
-                </div>
-
-                {current.sets.map((s, si) => (
-                  <div
-                    key={si}
-                    className={`grid gap-1.5 mb-1.5 ${showRir ? "grid-cols-[36px_1fr_1fr_1fr_40px]" : "grid-cols-[36px_1fr_1fr_40px] sm:grid-cols-[36px_1fr_1fr_1fr_40px]"}`}
-                  >
-                    <div className="flex items-center justify-center">
-                      <span className="text-ft-dim text-sm font-body">
-                        {s.set}
-                      </span>
-                    </div>
-                    <input
-                      type="number"
-                      inputMode="decimal"
-                      value={s.weight ?? ""}
-                      onChange={(e) => {
-                        const val = e.target.value === "" ? null : Number(e.target.value);
-                        updateSet(activeEx, si, "weight", val);
-                      }}
-                      placeholder="-"
-                      className={`${
-                        s.done ? "bg-ft-card" : "bg-ft-bg"
-                      } border border-ft-card rounded px-2 py-2.5 text-center text-base font-body text-ft-white placeholder:text-ft-muted focus:outline-none focus:border-ft-dim transition-colors touch-target`}
-                    />
-                    <input
-                      type="number"
-                      inputMode="numeric"
-                      value={s.reps ?? ""}
-                      onChange={(e) => {
-                        const val = e.target.value === "" ? null : Number(e.target.value);
-                        updateSet(activeEx, si, "reps", val);
-                      }}
-                      placeholder="-"
-                      className={`${
-                        s.done ? "bg-ft-card" : "bg-ft-bg"
-                      } border border-ft-card rounded px-2 py-2.5 text-center text-base font-body text-ft-white placeholder:text-ft-muted focus:outline-none focus:border-ft-dim transition-colors touch-target`}
-                    />
-                    <input
-                      type="number"
-                      inputMode="numeric"
-                      value={s.rir ?? ""}
-                      onChange={(e) => {
-                        const val = e.target.value === "" ? null : Number(e.target.value);
-                        updateSet(activeEx, si, "rir", val);
-                      }}
-                      placeholder="-"
-                      className={`${
-                        s.done ? "bg-ft-card" : "bg-ft-bg"
-                      } border border-ft-card rounded px-2 py-2.5 text-center text-base font-body text-ft-white placeholder:text-ft-muted focus:outline-none focus:border-ft-dim transition-colors touch-target ${showRir ? "" : "hidden sm:block"}`}
-                    />
-                    <div
-                      onClick={() => updateSet(activeEx, si, "done", !s.done)}
-                      className="flex items-center justify-center cursor-pointer touch-target"
-                    >
-                      <div
-                        className={`w-7 h-7 rounded border-2 flex items-center justify-center transition-colors ${
-                          s.done
-                            ? "bg-ft-success/20 border-ft-success text-ft-success"
-                            : "border-ft-card hover:border-ft-dim"
-                        }`}
-                      >
-                        {s.done && <ThemedIcon name="check" size={16} />}
-                      </div>
-                    </div>
-                  </div>
-                ))}
-
-                <div className="flex items-center gap-2 mt-1">
-                  <button
-                    onClick={() => addSet(activeEx)}
-                    className="flex-1 border border-dashed border-ft-card rounded py-2.5 text-ft-dim text-xs font-body hover:border-ft-dim hover:text-ft-light transition-colors touch-target flex items-center justify-center gap-1.5"
-                  >
-                    <ThemedIcon name="plus" size={12} />
-                    Add Set
-                  </button>
-                  <button
-                    onClick={() => setShowRir(!showRir)}
-                    className={`sm:hidden border rounded py-2.5 px-3 text-xs font-body transition-colors touch-target ${
-                      showRir
-                        ? "border-ft-dim text-ft-light bg-ft-surface"
-                        : "border-ft-card text-ft-muted hover:text-ft-dim"
-                    }`}
-                  >
-                    RIR
-                  </button>
-                </div>
-              </div>
-            </Card>
-
-            {/* Exercise Notes */}
-            <Card className="ft-card">
-              <SectionHeader title="Notes" />
-              <textarea
-                rows={3}
-                value={current.notes}
-                onChange={(e) => updateExerciseNotes(activeEx, e.target.value)}
-                placeholder="Add notes for this exercise..."
-                className="w-full bg-ft-bg border border-ft-card rounded px-3 py-2 text-sm font-body text-ft-light placeholder:text-ft-muted focus:outline-none focus:border-ft-dim resize-none transition-colors"
-              />
-            </Card>
-
-            {/* Workout Notes */}
-            <Card className="ft-card">
-              <SectionHeader title="Workout Notes" />
+              <SectionHeader title="Workout notes" />
               <textarea
                 rows={2}
                 value={workoutNotes}
@@ -1166,6 +943,44 @@ export default function ActiveWorkoutPage({
             </Card>
           </div>
         </>
+      )}
+
+      {/* SetSheet — bottom modal for entering / editing one set's values. */}
+      {activeCell && exercises[activeCell.exerciseIdx] && (
+        <SetSheet
+          exerciseName={exercises[activeCell.exerciseIdx].name}
+          setIdx={activeCell.setIdx}
+          category={exercises[activeCell.exerciseIdx].category}
+          targetReps={exercises[activeCell.exerciseIdx].targetRepRange}
+          initial={{
+            weight:
+              exercises[activeCell.exerciseIdx].sets[activeCell.setIdx]?.weight ??
+              null,
+            reps:
+              exercises[activeCell.exerciseIdx].sets[activeCell.setIdx]?.reps ??
+              null,
+            rir:
+              exercises[activeCell.exerciseIdx].sets[activeCell.setIdx]?.rir ??
+              null,
+          }}
+          lastWeek={
+            exercises[activeCell.exerciseIdx].lastSets[activeCell.setIdx]
+              ? {
+                  weight:
+                    exercises[activeCell.exerciseIdx].lastSets[activeCell.setIdx]
+                      .weight,
+                  reps:
+                    exercises[activeCell.exerciseIdx].lastSets[activeCell.setIdx]
+                      .reps,
+                }
+              : null
+          }
+          onCommit={(values) => {
+            commitSet(activeCell.exerciseIdx, activeCell.setIdx, values);
+            setActiveCell(null);
+          }}
+          onCancel={() => setActiveCell(null)}
+        />
       )}
 
       {/*
@@ -1183,7 +998,15 @@ export default function ActiveWorkoutPage({
             <div className="flex items-end gap-4 min-w-0">
               <FinishStat label="SETS" value={`${setsDone}`} suffix={`/${setsTotal}`} />
               <FinishStat label="VOL" value={formatVolume(totalVolume)} />
-              <FinishStat label="TIME" value={<WorkoutMin startTime={startTime} />} />
+              {restEndsAt && restEndsAt > Date.now() ? (
+                <FinishStat
+                  label="REST"
+                  value={<RestCountdown endsAt={restEndsAt} onDone={() => setRestEndsAt(null)} />}
+                  accent
+                />
+              ) : (
+                <FinishStat label="TIME" value={<WorkoutMin startTime={startTime} />} />
+              )}
             </div>
             <button
               onClick={handleFinish}
@@ -1218,10 +1041,12 @@ function FinishStat({
   label,
   value,
   suffix,
+  accent,
 }: {
   label: string;
   value: React.ReactNode;
   suffix?: string;
+  accent?: boolean;
 }) {
   return (
     <div className="leading-none min-w-0">
@@ -1229,7 +1054,9 @@ function FinishStat({
         {label}
       </div>
       <div className="mt-1">
-        <span className="font-data text-base text-ft-white font-bold tabular-nums">
+        <span
+          className={`font-data text-base font-bold tabular-nums ${accent ? "text-ft-accent" : "text-ft-white"}`}
+        >
           {value}
         </span>
         {suffix && (
@@ -1240,6 +1067,26 @@ function FinishStat({
       </div>
     </div>
   );
+}
+
+/**
+ * Counts down from a fixed `endsAt` timestamp; renders "M:SS" and
+ * fires `onDone` exactly once when the deadline passes.
+ */
+function RestCountdown({ endsAt, onDone }: { endsAt: number; onDone: () => void }) {
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    const id = setInterval(() => setNow(Date.now()), 250);
+    return () => clearInterval(id);
+  }, []);
+  const remainingMs = Math.max(0, endsAt - now);
+  useEffect(() => {
+    if (remainingMs === 0) onDone();
+  }, [remainingMs, onDone]);
+  const totalSec = Math.ceil(remainingMs / 1000);
+  const m = Math.floor(totalSec / 60);
+  const s = totalSec % 60;
+  return <>{`${m}:${s.toString().padStart(2, "0")}`}</>;
 }
 
 /** Compact "12m" workout timer used inside the FinishBar. */
