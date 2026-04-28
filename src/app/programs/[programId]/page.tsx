@@ -10,6 +10,7 @@ import Timeline from "@/components/ui/Timeline";
 import EditableExerciseTable from "@/components/ui/EditableExerciseTable";
 import CategoryLaneView from "@/components/ui/CategoryLaneView";
 import { useToast } from "@/components/ui/Toast";
+import { PlanningSection, PlanningSectionHeader, PlanningStamp } from "@/components/ui/PlanningSection";
 
 interface BlockDayExercise {
   id: string;
@@ -446,70 +447,80 @@ export default function ProgramWorkspacePage({
         <span>Programs</span>
       </Link>
 
-      {/* Header */}
-      <div className="flex items-start justify-between mb-4">
-        <div>
-          <div className="flex items-center gap-3 mb-1">
-            <StatusIcon type="program" status={program.status as "active" | "paused" | "completed"} size="md" />
-            <h1 className="font-body text-2xl font-bold tracking-tight">
-              {program.name}
-            </h1>
-            {program.status === "active" && <Tag className="bg-ft-white text-ft-bg">Active</Tag>}
-            {program.status === "completed" && <Tag>Completed</Tag>}
-            {program.status === "paused" && <Tag variant="warn">Paused</Tag>}
-          </div>
-          {descriptionText && (
-            <p className="text-ft-dim text-sm font-body">{descriptionText}</p>
-          )}
+      {/* Planning-mode header */}
+      <div className="ft-card relative bg-ft-surface border border-ft-border p-5 mb-6">
+        <div className="absolute top-3 right-3">
+          <PlanningStamp />
+        </div>
+        <div className="flex items-center gap-3 mb-2">
+          <StatusIcon type="program" status={program.status as "active" | "paused" | "completed"} size="md" />
+          {program.status === "active" && <Tag className="bg-ft-success/20 text-ft-success border border-ft-success/40">Active</Tag>}
+          {program.status === "completed" && <Tag>Completed</Tag>}
+          {program.status === "paused" && <Tag variant="warn">Paused</Tag>}
           {isGenerated && (
-            <span className="inline-block mt-1 text-[10px] font-body px-1.5 py-0.5 rounded bg-ft-accent/15 text-ft-accent border border-ft-accent/30">
+            <span className="text-[10px] font-body uppercase tracking-[0.2em] px-1.5 py-0.5 bg-ft-accent/15 text-ft-accent border border-ft-accent/30">
               Generated
             </span>
           )}
         </div>
-      </div>
-
-      {/* Timeline */}
-      {program.blocks.length > 0 && (
-        <Timeline
-          className="mb-4"
-          segments={program.blocks.map((b) => ({
-            label: b.name,
-            width: b.durationWeeks ?? 1,
-            status: b.status as "active" | "completed" | "upcoming",
-            phase: b.phase,
-          }))}
-          currentPosition={progressPct > 0 ? progressPct : undefined}
-        />
-      )}
-
-      {/* Stats Row */}
-      <div className="grid grid-cols-4 gap-3 mb-6">
-        <Card><Stat label="Sessions" value={totalSessions} small /></Card>
-        <Card><Stat label="Blocks" value={program.blocks.length} small /></Card>
-        <Card>
-          <Stat
-            label="Progress"
-            value={totalWeeks > 0 ? `Wk ${currentWeek}/${totalWeeks}` : "—"}
-            small
-          />
-        </Card>
-        <Card><Stat label="Goal" value={program.goals?.[0]?.title ?? program.goal?.title ?? "—"} small /></Card>
-      </div>
-
-      {/* Engine Warnings */}
-      {engineWarnings.length > 0 && (
-        <div className="mb-4 bg-ft-warn/10 border border-ft-warn/30 rounded-lg p-3">
-          <div className="flex items-center justify-between mb-1">
-            <span className="text-ft-warn text-xs font-body font-bold">Engine Notes</span>
+        <h1 className="font-display text-3xl text-ft-white tracking-wide leading-tight">
+          {program.name}
+        </h1>
+        {totalWeeks > 0 && (
+          <div className="font-body text-[10px] uppercase tracking-[0.18em] text-ft-light font-semibold mt-1">
+            {activeBlock ? `BLOCK ${activeBlock.blockNumber} / ${program.blocks.length}` : `${program.blocks.length} BLOCKS`}
+            {currentWeek > 0 && ` · WK ${currentWeek} / ${totalWeeks}`}
           </div>
-          {engineWarnings.map((w: string, i: number) => (
-            <p key={i} className="text-ft-dim text-xs font-body">• {w}</p>
-          ))}
-        </div>
+        )}
+        {descriptionText && (
+          <p className="text-ft-light text-sm font-body mt-3">{descriptionText}</p>
+        )}
+      </div>
+
+      {/* Section 01 — Timeline */}
+      {program.blocks.length > 0 && (
+        <PlanningSection num="01" title="timeline" sub="block layout · phase markers · current week">
+          <Timeline
+            segments={program.blocks.map((b) => ({
+              label: b.name,
+              width: b.durationWeeks ?? 1,
+              status: b.status as "active" | "completed" | "upcoming",
+              phase: b.phase,
+            }))}
+            currentPosition={progressPct > 0 ? progressPct : undefined}
+          />
+        </PlanningSection>
       )}
 
-      {/* Workspace: Blocks panel + Day details */}
+      {/* Section 02 — Overview */}
+      <PlanningSection num="02" title="overview" sub="sessions · blocks · progress · goal">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          <Card className="ft-card"><Stat label="Sessions" value={totalSessions} small /></Card>
+          <Card className="ft-card"><Stat label="Blocks" value={program.blocks.length} small /></Card>
+          <Card className="ft-card">
+            <Stat
+              label="Progress"
+              value={totalWeeks > 0 ? `Wk ${currentWeek}/${totalWeeks}` : "—"}
+              small
+            />
+          </Card>
+          <Card className="ft-card"><Stat label="Goal" value={program.goals?.[0]?.title ?? program.goal?.title ?? "—"} small /></Card>
+        </div>
+
+        {engineWarnings.length > 0 && (
+          <div className="mt-4 bg-ft-warn/10 border border-ft-warn/30 p-3">
+            <div className="font-body text-[9px] uppercase tracking-[0.25em] text-ft-warn font-bold mb-1">
+              ENGINE NOTES
+            </div>
+            {engineWarnings.map((w: string, i: number) => (
+              <p key={i} className="text-ft-light text-xs font-body">• {w}</p>
+            ))}
+          </div>
+        )}
+      </PlanningSection>
+
+      {/* Section 03 — Blocks workspace */}
+      <PlanningSectionHeader num="03" title="blocks" sub="select a block · edit days and exercises" />
       <div className="grid grid-cols-1 lg:grid-cols-[200px_1fr] gap-4">
         {/* Left: Blocks Panel */}
         <div className="lg:block">
