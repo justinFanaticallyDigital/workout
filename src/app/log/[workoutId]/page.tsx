@@ -802,25 +802,33 @@ export default function ActiveWorkoutPage({
 
       {/* Header */}
       <div className="sticky top-0 z-10 bg-ft-bg border-b border-ft-card px-4 pt-4 pb-3">
-        <div className="flex items-center gap-2 mb-2">
-          <Link
-            href="/log"
-            className="text-ft-dim hover:text-ft-light text-sm font-body transition-colors"
+        <div className="flex items-center justify-between mb-2">
+          <div className="flex items-center gap-2 min-w-0">
+            <Link
+              href="/log"
+              className="text-ft-dim hover:text-ft-light text-sm font-body transition-colors shrink-0"
+            >
+              &larr; {dayInfo?.blockName ?? "Back"}
+            </Link>
+            <span className="text-ft-muted text-sm font-body">/</span>
+            <span className="text-ft-dim text-sm font-body truncate">
+              {dayInfo?.name ?? "Workout"}
+            </span>
+          </div>
+          <span
+            className="ft-stamp shrink-0"
+            style={{ borderColor: "rgb(var(--ft-success) / 0.5)", color: "rgb(var(--ft-success))" }}
           >
-            &larr; {dayInfo?.blockName ?? "Back"}
-          </Link>
-          <span className="text-ft-muted text-sm font-body">/</span>
-          <span className="text-ft-dim text-sm font-body">
-            {dayInfo?.name ?? "Workout"}
+            LOGGING
           </span>
         </div>
 
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="font-body text-lg font-bold text-ft-white">
+        <div className="flex items-center justify-between gap-3">
+          <div className="min-w-0">
+            <h1 className="font-display text-2xl text-ft-white tracking-wide leading-tight truncate">
               {dayInfo?.name ?? "Workout"}
             </h1>
-            <p className="text-ft-dim text-xs font-body mt-0.5">
+            <p className="text-ft-light text-[10px] uppercase tracking-[0.18em] font-body mt-0.5">
               {new Date().toLocaleDateString("en-US", {
                 weekday: "short",
                 month: "short",
@@ -828,7 +836,7 @@ export default function ActiveWorkoutPage({
               })}
             </p>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 shrink-0">
             <WorkoutTimer startTime={startTime} />
             {exercises.length > 0 && (
               <button
@@ -859,14 +867,14 @@ export default function ActiveWorkoutPage({
       {/* Empty state — no exercises yet */}
       {exercises.length === 0 && (
         <div className="px-4 mt-8">
-          <Card>
+          <Card className="ft-card">
             <div className="flex flex-col items-center py-6 gap-3">
-              <p className="text-ft-muted font-body text-sm text-center">
+              <p className="text-ft-light font-body text-sm text-center">
                 No exercises yet. Search and add exercises to start your workout.
               </p>
               <button
                 onClick={() => setShowPicker(true)}
-                className="bg-ft-surface border border-ft-card rounded px-4 py-2 text-ft-light font-body text-sm hover:border-ft-dim transition-colors"
+                className="cta-underline font-display text-base text-ft-accent px-4 py-2"
               >
                 + Add Exercise
               </button>
@@ -912,10 +920,10 @@ export default function ActiveWorkoutPage({
 
           <div className="px-4 flex flex-col gap-4">
             {/* Active Exercise Detail */}
-            <Card>
+            <Card className="ft-card">
               <div className="mb-4 flex items-start justify-between gap-3">
                 <div className="min-w-0">
-                  <h2 className="font-body text-base font-bold text-ft-white">
+                  <h2 className="font-display text-xl text-ft-white tracking-wide leading-tight">
                     {current.name}
                   </h2>
                   <div className="flex items-center gap-2 mt-1.5 flex-wrap">
@@ -1128,7 +1136,7 @@ export default function ActiveWorkoutPage({
             </Card>
 
             {/* Exercise Notes */}
-            <Card>
+            <Card className="ft-card">
               <SectionHeader title="Notes" />
               <textarea
                 rows={3}
@@ -1140,7 +1148,7 @@ export default function ActiveWorkoutPage({
             </Card>
 
             {/* Workout Notes */}
-            <Card>
+            <Card className="ft-card">
               <SectionHeader title="Workout Notes" />
               <textarea
                 rows={2}
