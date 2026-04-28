@@ -25,8 +25,8 @@ const tabs = [
     ),
   },
   {
-    label: "Program",
-    href: "/program",
+    label: "Gameplan",
+    href: "/gameplan",
     icon: (active: boolean) => (
       <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={active ? 2.2 : 1.8} strokeLinecap="round" strokeLinejoin="round">
         <line x1="18" y1="20" x2="18" y2="10" />
@@ -119,8 +119,8 @@ export default function BottomNav() {
 
   const isActive = (href: string) => {
     if (href === "/") return pathname === "/";
-    // Program tab should highlight for /program and /programs/* paths
-    if (href === "/program") return pathname.startsWith("/program");
+    // Gameplan tab highlights for /gameplan AND /program(s)/* (program editor + legacy)
+    if (href === "/gameplan") return pathname.startsWith("/gameplan") || pathname.startsWith("/program");
     return pathname.startsWith(href);
   };
 
