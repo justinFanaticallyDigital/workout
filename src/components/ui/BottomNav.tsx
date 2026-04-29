@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useTheme } from "@/providers/ThemeProvider";
+import LogActivitySheet from "@/components/ui/LogActivitySheet";
 
 const moreLinks = [
   { label: "Home", href: "/", icon: "🏠" },
@@ -113,16 +114,38 @@ function useNavIndicatorStyles(active: boolean) {
 export default function BottomNav() {
   const pathname = usePathname();
   const [moreOpen, setMoreOpen] = useState(false);
+  const [logSheetOpen, setLogSheetOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
   const isActive = (href: string) => {
-    // Gameplan owns / (legacy home) + /gameplan + /program(s)/* (editor + redirect)
+    // Gameplan owns: /, /gameplan/*, /program(s)/* (legacy editor + redirect),
+    // /checkin (Gameplan-scoped flow per spec §6.2).
     if (href === "/gameplan") {
       return (
         pathname === "/" ||
         pathname.startsWith("/gameplan") ||
-        pathname.startsWith("/program")
+        pathname.startsWith("/program") ||
+        pathname.startsWith("/programs") ||
+        pathname.startsWith("/checkin")
       );
+    }
+    // Progress owns: /progress/*, /calendar (legacy redirect), /injuries
+    // (legacy redirect), /history (workout history is a Progress-tab affordance).
+    if (href === "/progress") {
+      return (
+        pathname.startsWith("/progress") ||
+        pathname.startsWith("/calendar") ||
+        pathname.startsWith("/injuries") ||
+        pathname.startsWith("/history")
+      );
+    }
+    // Settings owns /settings/* including the four new sub-routes.
+    if (href === "/settings") {
+      return pathname.startsWith("/settings");
+    }
+    // Nutrition owns /nutrition/*.
+    if (href === "/nutrition") {
+      return pathname.startsWith("/nutrition");
     }
     return pathname.startsWith(href);
   };
@@ -144,8 +167,19 @@ export default function BottomNav() {
     return () => document.removeEventListener("mousedown", handleClick);
   }, [moreOpen]);
 
-  // Hide bottom nav on workout logger and stretch timer (full screen flows)
-  if (pathname.match(/^\/log\/[^/]+$/) || pathname.startsWith("/stretch-timer")) {
+  // Hide bottom nav during full-screen flows per fittrack-v2-spec.md §5:
+  //   /log/[workoutId], /log/stretch-timer, /gameplan/new,
+  //   /gameplan/[id]/planning, /checkin
+  // The /log/[workoutId] regex must not match /log/library or
+  // /log/stretch-timer — those are still real subpaths but the nav
+  // hides on stretch-timer separately and stays on /log/library.
+  const hideNav =
+    (pathname.match(/^\/log\/[^/]+$/) && pathname !== "/log/library") ||
+    pathname === "/log/stretch-timer" ||
+    pathname === "/gameplan/new" ||
+    pathname.match(/^\/gameplan\/[^/]+\/planning$/) ||
+    pathname === "/checkin";
+  if (hideNav) {
     return null;
   }
 
@@ -194,10 +228,13 @@ export default function BottomNav() {
             const active = isActive(tab.href);
 
             if (tab.isCenter) {
+              // FAB is a sheet trigger, not a route. No active state.
               return (
-                <Link
+                <button
                   key={tab.href}
-                  href={tab.href}
+                  type="button"
+                  onClick={() => setLogSheetOpen(true)}
+                  aria-label="Log an activity"
                   className="flex flex-col items-center -mt-5"
                 >
                   <div
@@ -210,11 +247,11 @@ export default function BottomNav() {
                   </div>
                   <span
                     className="text-[10px] font-body font-semibold mt-1"
-                    style={{ color: active ? "rgb(var(--ft-accent))" : "rgba(var(--ft-text-tertiary) / var(--ft-alpha-tertiary))" }}
+                    style={{ color: "rgba(var(--ft-text-tertiary) / var(--ft-alpha-tertiary))" }}
                   >
                     {tab.label}
                   </span>
-                </Link>
+                </button>
               );
             }
 
@@ -227,6 +264,10 @@ export default function BottomNav() {
           <MoreTab active={moreActive || moreOpen} onClick={() => setMoreOpen(!moreOpen)} />
         </nav>
       </div>
+
+      {/* +Log activity sheet — mounted at the BottomNav level so it
+          overlays everything regardless of the active route. */}
+      <LogActivitySheet open={logSheetOpen} onClose={() => setLogSheetOpen(false)} />
     </>
   );
 }

@@ -1,74 +1,121 @@
 import { ThemeConfig } from './types';
 
+/**
+ * Arcade / Retro Arcade — values pulled from theme-bridge.jsx.
+ * Notable changes: text became solid #FFFFFF, border tied to pink,
+ * borderStrong = cyan secondary signal.
+ */
 export const arcade: ThemeConfig = {
   id: 'arcade',
   name: 'Retro Arcade',
+  chrome: 'arcade',
+  isDark: true,
 
   colors: {
-    // Deep arcade cabinet bg with lifted phosphor-tinted surfaces
     bg: '#07070F',
+    bgAlt: '#0E0E1C',
     bgCard: '#22223A',
-    bgElevated: '#2E2E4A',
+    surface: '#22223A',
+    surfaceAlt: '#1A1A2E',
+    bgElevated: '#2A2A44',
+    surfaceRaised: '#2A2A44',
 
-    // CRT phosphor white — slightly cool/blue-shifted (AA-tuned)
-    textPrimary: '#E0E0F0',
-    textSecondary: 'rgba(224,224,240,0.70)',
-    textTertiary: 'rgba(224,224,240,0.60)',
+    textPrimary: '#FFFFFF',
+    text: '#FFFFFF',
+    textSecondary: '#DCD7F0',
+    textSec: '#DCD7F0',
+    textTertiary: '#A8A3D2',
+    textTer: '#A8A3D2',
+    textOnAccent: '#07070F',
+    textOnBg: '#FFFFFF',
+    textOnBgSec: '#DCD7F0',
+    textOnBgTer: '#A8A3D2',
 
-    accent: '#FF50C8',          // hot pink / magenta — attract-mode neon
-    accentSecondary: '#FFD700',  // gold — for scores, XP, achievements
+    border: '#FF50C8',
+    borderFaint: 'rgba(255,80,200,0.30)',
+    borderSubtle: 'rgba(255,80,200,0.30)',
+    borderStrong: '#00F0FF',
 
-    push: '#3B82F6',
-    pull: '#22C55E',
-    legs: '#EF4444',
-    core: '#EAB308',
+    accent: '#FF50C8',
+    accentSecondary: '#FFD700',
+    accentFg: '#FF50C8',
+    accentFaint: 'rgba(255,80,200,0.15)',
+    accentBorder: 'rgba(255,80,200,0.55)',
 
-    success: '#22C55E',
-    error: '#EF4444',
-    warning: '#FFD700',
+    push: '#00F0FF',
+    pull: '#50FF8C',
+    legs: '#FF508C',
+    core: '#FFDC3C',
 
-    border: '#3C3C5C',
-    borderSubtle: '#2E2E4A',
+    success: '#32F082',
+    successFg: '#50FF8C',
+    successBg: 'rgba(50,240,130,0.10)',
+    successBorder: '#32F082',
+
+    error: '#FF508C',
+    danger: '#FF508C',
+    dangerFg: '#FF6EA0',
+    dangerBg: 'rgba(255,80,140,0.10)',
+    dangerBorder: '#FF508C',
+
+    warning: '#FFDC3C',
+    warn: '#FFDC3C',
+    warnFg: '#FFEB5A',
+    warnBg: 'rgba(255,220,60,0.10)',
+    warnBorder: '#FFDC3C',
+
+    info: '#00F0FF',
+    infoFg: '#00F0FF',
+    infoBg: 'rgba(0,240,255,0.10)',
+    infoBorder: '#00F0FF',
   },
 
   fonts: {
-    display: "'Press Start 2P', monospace",          // big 8-bit titles
-    data: "'VT323', 'Courier New', monospace",       // 8-bit terminal digits, readable at any size
-    body: "'Pixelify Sans', 'Silkscreen', sans-serif", // pixel body type — arcade through and through
+    display: "'Press Start 2P', monospace",
+    fontDisplay: "'Press Start 2P', monospace",
+    data: "'VT323', monospace",
+    fontData: "'VT323', monospace",
+    body: "'Pixelify Sans', sans-serif",
+    fontBody: "'Pixelify Sans', sans-serif",
+    fontNumber: "'VT323', monospace",
   },
 
   borders: {
-    card: '2px solid rgba(255,255,255,0.08)',   // pixel-style — always 2px
+    card: '2px solid rgba(255,255,255,0.08)',
     divider: '2px solid rgba(255,255,255,0.06)',
-    radius: '0',  // zero radius — pixels are square
+    radius: '0',
+  },
+
+  radius: {
+    sm: '0',
+    md: '0',
+    lg: '0',
+  },
+
+  shadows: {
+    sm: '2px 2px 0 rgba(0,240,255,0.5)',
+    md: '4px 4px 0 rgba(255,80,200,0.35)',
+  },
+
+  stamp: {
+    fg: '#00F0FF',
+    bg: 'transparent',
+    border: '#00F0FF',
   },
 
   texture: {
     type: 'css',
-    // CRT scanlines (stronger) + subtle pink aperture-grille column tint
     value: `
       background-image:
-        repeating-linear-gradient(
-          0deg,
-          transparent 0,
-          transparent 2px,
-          rgba(255,255,255,0.035) 2px,
-          rgba(255,255,255,0.035) 3px
-        ),
-        repeating-linear-gradient(
-          90deg,
-          rgba(255,80,200,0.025) 0,
-          rgba(255,80,200,0.025) 1px,
-          transparent 1px,
-          transparent 3px
-        );
+        repeating-linear-gradient(0deg, transparent 0, transparent 2px, rgba(255,255,255,0.035) 2px, rgba(255,255,255,0.035) 3px),
+        repeating-linear-gradient(90deg, rgba(255,80,200,0.025) 0, rgba(255,80,200,0.025) 1px, transparent 1px, transparent 3px);
     `,
   },
 
   components: {
     exerciseCard: {
       movementIndicator: 'left-bar',
-      movementIndicatorWidth: '4px', // chunkier — pixel style
+      movementIndicatorWidth: '4px',
     },
     nav: {
       activeIndicator: 'underline',
@@ -82,7 +129,7 @@ export const arcade: ThemeConfig = {
     },
     restTimer: {
       style: 'bar',
-      glowEffect: false, // no glow — CRTs don't glow smooth
+      glowEffect: false,
     },
   },
 };
