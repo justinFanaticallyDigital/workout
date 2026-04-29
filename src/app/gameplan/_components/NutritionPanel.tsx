@@ -1,11 +1,16 @@
 "use client";
 
 import Link from "next/link";
+import { Marker, Archivo } from "./typography";
+import { DashedDivider } from "./Ornaments";
+import { EditPlanBtn } from "./EditPlanBtn";
 import type { MealsData, NutritionTarget } from "./types";
 
 interface Props {
   meals: MealsData | null;
   target: NutritionTarget | null;
+  /** Active program id for the EditPlanBtn link target. */
+  programId: string | null;
 }
 
 const MACRO_COLORS = {
@@ -14,7 +19,7 @@ const MACRO_COLORS = {
   fat: "rgb(var(--ft-legs))",
 };
 
-export default function NutritionPanel({ meals, target }: Props) {
+export default function NutritionPanel({ meals, target, programId }: Props) {
   const calCur = meals ? Math.round(meals.totals.calories) : 0;
   const calTarget = target?.calories ?? null;
   const calPct = calTarget ? Math.min(100, (calCur / calTarget) * 100) : 0;
@@ -118,6 +123,29 @@ export default function NutritionPanel({ meals, target }: Props) {
           </p>
         </div>
       )}
+
+      {/* NEXT REFEED footer — verbatim port of gameplan-active.jsx
+          NutritionTab footer (lines 1470–1479). **R6**: refeed-week
+          schedule lives in template `nutritionTarget.notes` only, not
+          on Block. Render `—` placeholder until Block.refeedWeeks lands. */}
+      <DashedDivider style={{ margin: "12px 0 8px" }} />
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+        <div>
+          <Archivo
+            size={8}
+            color="rgb(var(--ft-text-on-bg-ter))"
+            style={{ letterSpacing: ".18em", textTransform: "uppercase" }}
+          >
+            NEXT REFEED
+          </Archivo>
+          <Marker
+            style={{ fontSize: 14, color: "rgb(var(--ft-text-on-bg))", display: "block", marginTop: 1 }}
+          >
+            —
+          </Marker>
+        </div>
+        {programId && <EditPlanBtn align="flex-end" href={`/programs/${programId}`} />}
+      </div>
     </div>
   );
 }

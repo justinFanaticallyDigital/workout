@@ -1,5 +1,8 @@
 "use client";
 
+import { useTheme } from "@/providers/ThemeProvider";
+import { Marker, Reenie, Archivo } from "./typography";
+import { SprayUnderline } from "./Ornaments";
 import type { ActiveProgram, ActiveBlock } from "./types";
 
 interface Props {
@@ -11,63 +14,158 @@ interface Props {
  * Sticky header strip — program name, week-of-total, current block,
  * active badge, days-left counter, and the week progress bar.
  *
- * Computes week-in-program from program.startDate, with a graceful
- * fallback if startDate is null.
+ * Verbatim port of gameplan-active.jsx#StatusStrip (lines 341–407):
+ * Marker display name + SprayUnderline + Archivo metadata + days-left
+ * Reenie counter + chrome-branched progress bar fill (graffiti uses a
+ * 45° hatched stripe; every other chrome uses a flat accent fill).
  */
 export default function Header({ program, block }: Props) {
+  const { chrome } = useTheme();
   const totalWeeks = program.durationWeeks ?? 12;
   const currentWeek = computeCurrentWeek(program.startDate, totalWeeks);
   const daysLeft = computeDaysLeft(program.startDate, totalWeeks);
   const weekPct = Math.min(100, Math.max(0, (currentWeek / totalWeeks) * 100));
+  const progressFill =
+    chrome === "graffiti"
+      ? "repeating-linear-gradient(45deg, rgb(var(--ft-info-fg)) 0 4px, rgb(var(--ft-info-fg) / 0.8) 4px 8px)"
+      : "rgb(var(--ft-accent))";
 
   return (
-    <header className="ft-card bg-ft-surface border-b border-ft-border px-5 py-4 sticky top-0 z-10">
-      <div className="flex justify-between items-start gap-3">
-        <div className="flex-1 min-w-0">
-          <h1 className="font-display text-2xl text-ft-white tracking-wide leading-tight m-0 truncate">
+    <header
+      className="ft-card sticky top-0 z-10"
+      style={{
+        background: "rgb(var(--ft-surface-alt))",
+        borderBottom: "1px solid rgb(var(--ft-border-faint))",
+        padding: "14px 18px 12px",
+      }}
+    >
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12 }}>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <Marker
+            style={{
+              fontSize: 26,
+              color: "rgb(var(--ft-text-primary))",
+              letterSpacing: ".01em",
+              display: "block",
+              lineHeight: 1.05,
+              transform: "rotate(-1deg)",
+              transformOrigin: "left",
+            }}
+          >
             {program.name}
-          </h1>
-          <div className="flex items-center gap-2 mt-1.5">
-            <span className="font-body text-[9px] uppercase tracking-[0.18em] text-ft-light">
+          </Marker>
+          <SprayUnderline width={170} style={{ marginTop: 2, marginLeft: -4 }} />
+          <div style={{ marginTop: 6, display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+            <Archivo
+              size={9}
+              color="rgb(var(--ft-text-secondary))"
+              style={{ letterSpacing: ".10em", textTransform: "uppercase" }}
+            >
               WEEK {currentWeek} OF {totalWeeks}
-            </span>
+            </Archivo>
             {block && (
               <>
-                <span className="w-1 h-1 rounded-full bg-ft-border" />
-                <span className="font-body text-[9px] uppercase tracking-[0.18em] text-ft-light">
+                <span
+                  aria-hidden
+                  style={{
+                    width: 4,
+                    height: 4,
+                    background: "rgb(var(--ft-border-strong))",
+                    borderRadius: "50%",
+                    display: "inline-block",
+                  }}
+                />
+                <Archivo
+                  size={9}
+                  color="rgb(var(--ft-text-secondary))"
+                  style={{ letterSpacing: ".10em", textTransform: "uppercase" }}
+                >
                   BLOCK {block.blockNumber}: {block.name.toUpperCase()}
-                </span>
+                </Archivo>
               </>
             )}
           </div>
         </div>
-        <div className="text-right shrink-0">
-          <span className="inline-flex items-center gap-1.5 px-2 py-1 border border-ft-success/40 bg-ft-success/10">
-            <span className="w-1.5 h-1.5 rounded-full bg-ft-success" />
-            <span className="font-body text-[9px] uppercase tracking-[0.2em] text-ft-success">ACTIVE</span>
+        <div style={{ textAlign: "right", flexShrink: 0 }}>
+          <span
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 6,
+              padding: "4px 9px",
+              border: "1px solid rgb(var(--ft-success-border))",
+              background: "rgb(var(--ft-success-bg))",
+            }}
+          >
+            <span
+              aria-hidden
+              style={{
+                width: 8,
+                height: 8,
+                borderRadius: "50%",
+                background: "rgb(var(--ft-success-fg))",
+                boxShadow: "0 0 6px rgb(var(--ft-success-fg) / 0.55)",
+                display: "inline-block",
+              }}
+            />
+            <Archivo
+              size={9}
+              color="rgb(var(--ft-success-fg))"
+              style={{ letterSpacing: ".18em", textTransform: "uppercase" }}
+            >
+              ACTIVE
+            </Archivo>
           </span>
           {daysLeft !== null && (
-            <div className="mt-2 leading-none">
-              <span className="font-data text-3xl text-ft-white">{daysLeft}</span>
-              <div className="font-body text-[8px] uppercase tracking-[0.2em] text-ft-dim mt-0.5">
+            <div style={{ marginTop: 8, lineHeight: 1 }}>
+              <Reenie style={{ fontSize: 36, color: "rgb(var(--ft-text-primary))" }}>{daysLeft}</Reenie>
+              <Archivo
+                size={8}
+                color="rgb(var(--ft-text-tertiary))"
+                style={{ display: "block", letterSpacing: ".18em", marginTop: 2, textTransform: "uppercase" }}
+              >
                 DAYS LEFT
-              </div>
+              </Archivo>
             </div>
           )}
         </div>
       </div>
-
-      <div className="mt-2.5 relative">
-        <div className="h-1.5 bg-ft-border/40 border border-ft-border/40 relative">
+      <div style={{ marginTop: 10, position: "relative" }}>
+        <div
+          style={{
+            height: 6,
+            background: "rgb(var(--ft-border-faint))",
+            border: "1px solid rgb(var(--ft-border-faint))",
+            position: "relative",
+          }}
+        >
           <div
-            className="absolute inset-y-0 left-0 bg-ft-accent"
-            style={{ width: `${weekPct}%` }}
+            style={{
+              position: "absolute",
+              top: 0,
+              bottom: 0,
+              left: 0,
+              width: `${weekPct}%`,
+              background: progressFill,
+            }}
             aria-label={`Week ${currentWeek} of ${totalWeeks}`}
           />
         </div>
-        <div className="flex justify-between mt-1">
-          <span className="font-body text-[8px] uppercase tracking-[0.15em] text-ft-dim">W1</span>
-          <span className="font-body text-[8px] uppercase tracking-[0.15em] text-ft-dim">W{totalWeeks}</span>
+        <div style={{ display: "flex", justifyContent: "space-between", marginTop: 4 }}>
+          <Archivo
+            size={8}
+            color="rgb(var(--ft-text-tertiary))"
+            style={{ letterSpacing: ".15em", textTransform: "uppercase" }}
+          >
+            W1
+          </Archivo>
+          <Archivo
+            size={8}
+            color="rgb(var(--ft-text-tertiary))"
+            style={{ letterSpacing: ".15em", textTransform: "uppercase" }}
+          >
+            W{totalWeeks}
+          </Archivo>
         </div>
       </div>
     </header>

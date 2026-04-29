@@ -24,9 +24,12 @@ function phaseColor(phase: string | null): string {
 export default function BlockTimeline({
   blocks,
   activeBlockId,
+  currentWeekInActiveBlock = null,
 }: {
   blocks: ProgramBlock[];
   activeBlockId: string | null;
+  /** 0-indexed week within the active block (e.g. 1 = "we're at the start of week 2"). */
+  currentWeekInActiveBlock?: number | null;
 }) {
   if (blocks.length === 0) {
     return <div className="font-body text-xs text-ft-dim">No blocks defined yet.</div>;
@@ -35,25 +38,62 @@ export default function BlockTimeline({
 
   return (
     <div className="space-y-2">
-      {/* Compact horizontal bar */}
-      <div className="flex w-full h-2 gap-px">
+      {/* Compact horizontal bar — verbatim port of gameplan-active.jsx
+          #BlockTimeline (lines 1258–1311) with current-week marker
+          line on the active block. `currentWeekInBlock` is the
+          week-of-block (1-indexed) computed from program.startDate
+          + sum of prior block durations. */}
+      <div className="flex w-full gap-[3px]" style={{ height: 28 }}>
         {blocks.map((b) => {
           const w = b.durationWeeks ?? 4;
           const pct = (w / totalWeeks) * 100;
           const color = phaseColor(b.phase);
           const isActive = b.id === activeBlockId;
+          const currentWeekInBlock = isActive ? currentWeekInActiveBlock : null;
           return (
             <div
               key={b.id}
-              className="h-full"
               style={{
                 width: `${pct}%`,
-                background: color,
-                opacity: isActive ? 1 : 0.55,
-                boxShadow: isActive ? "inset 0 -2px 0 rgba(255,255,255,0.4)" : undefined,
+                position: "relative",
+                background: isActive ? color : "rgb(var(--ft-border-faint))",
+                border: isActive
+                  ? `1px solid ${color}`
+                  : "1px solid rgb(var(--ft-border-faint))",
+                opacity: isActive ? 1 : 0.85,
               }}
               aria-label={`Block ${b.blockNumber}: ${b.name}, ${w} weeks${isActive ? ", active" : ""}`}
-            />
+            >
+              {currentWeekInBlock != null && (
+                <div
+                  aria-hidden
+                  style={{
+                    position: "absolute",
+                    top: -6,
+                    bottom: -6,
+                    left: `${(currentWeekInBlock / w) * 100}%`,
+                    width: 3,
+                    background: "rgb(var(--ft-text-primary))",
+                    boxShadow: "0 0 6px rgb(var(--ft-text-primary) / 0.55)",
+                  }}
+                />
+              )}
+              <span
+                className="font-data"
+                style={{
+                  position: "absolute",
+                  inset: 0,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  fontSize: 9,
+                  color: isActive ? "rgb(var(--ft-text-on-accent))" : "rgb(var(--ft-text-tertiary))",
+                  letterSpacing: ".1em",
+                }}
+              >
+                B{b.blockNumber}
+              </span>
+            </div>
           );
         })}
       </div>

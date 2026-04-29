@@ -9,6 +9,15 @@ import WeekStrip from "./_components/WeekStrip";
 import BlockTimeline from "./_components/BlockTimeline";
 import NutritionPanel from "./_components/NutritionPanel";
 import LifestylePanel from "./_components/LifestylePanel";
+import { SectionH } from "./_components/SectionH";
+import { EditPlanBtn } from "./_components/EditPlanBtn";
+import { GoalPulse } from "./_components/GoalPulse";
+import { CheckInCard } from "./_components/CheckInCard";
+import { NextActionLogged } from "./_components/NextActionLogged";
+import { SprayDotsLayer, FreshTape } from "./_components/Ornaments";
+import type { GoalPlan } from "./_components/GoalCard";
+import type { LoggedSummary } from "./_components/NextActionLogged";
+import type { GoalIconKind } from "./_components/icons";
 import type {
   HomeData,
   ProgramDetail,
@@ -16,6 +25,7 @@ import type {
   NutritionTarget,
   CheckIn,
   TabId,
+  ScheduleOverride,
 } from "./_components/types";
 
 export const dynamic = "force-dynamic";
@@ -35,12 +45,34 @@ export const dynamic = "force-dynamic";
  * Tabs: Training | Nutrition | Lifestyle. Tab state lives in URL hash
  * (#training / #nutrition / #lifestyle) so deep links survive reloads.
  */
+interface RawGoal {
+  id: string;
+  type: string;
+  title: string;
+  metric: string | null;
+  startValue: number | string | null;
+  targetValue: number | string | null;
+  targetUnit: string | null;
+  programId: string | null;
+}
+
+interface RawWorkout {
+  id: string;
+  date: string;
+  endTime: string | null;
+  blockDayId: string | null;
+  exercises: { exercise: { movementPattern: string | null }; sets: { weight: number | string | null; reps: number | null }[] }[];
+}
+
 export default function GameplanPage() {
   const [home, setHome] = useState<HomeData | null>(null);
   const [program, setProgram] = useState<ProgramDetail | null>(null);
   const [meals, setMeals] = useState<MealsData | null>(null);
   const [nutritionTarget, setNutritionTarget] = useState<NutritionTarget | null>(null);
   const [checkIns, setCheckIns] = useState<CheckIn[]>([]);
+  const [goals, setGoals] = useState<RawGoal[]>([]);
+  const [weekWorkouts, setWeekWorkouts] = useState<RawWorkout[]>([]);
+  const [overrides, setOverrides] = useState<ScheduleOverride[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [tab, setTab] = useState<TabId>(() => readHashTab());
@@ -76,20 +108,46 @@ export default function GameplanPage() {
         setHome(homeData);
 
         const today = new Date().toISOString().split("T")[0];
-        const [programRes, mealsRes, targetRes, checkInsRes] = await Promise.all([
-          homeData.activeProgram
-            ? fetch(`/api/programs/${homeData.activeProgram.id}`)
-            : Promise.resolve(null),
-          fetch(`/api/nutrition/meals?date=${today}`),
-          fetch("/api/nutrition/targets"),
-          fetch("/api/checkins?weeks=4"),
-        ]);
+        // Compute Mon..Sun range for this week's workouts fetch.
+        const todayDow = (new Date().getDay() + 6) % 7;
+        const monday = new Date();
+        monday.setDate(monday.getDate() - todayDow);
+        monday.setHours(0, 0, 0, 0);
+        const sunday = new Date(monday);
+        sunday.setDate(sunday.getDate() + 7);
+        const fromIso = monday.toISOString().slice(0, 10);
+        const toIso = sunday.toISOString().slice(0, 10);
 
-        const [programDataRaw, mealsData, targetData, checkInsData] = await Promise.all([
+        const programId = homeData.activeProgram?.id;
+        const [programRes, mealsRes, targetRes, checkInsRes, goalsRes, weekWorkoutsRes, overridesRes] =
+          await Promise.all([
+            programId ? fetch(`/api/programs/${programId}`) : Promise.resolve(null),
+            fetch(`/api/nutrition/meals?date=${today}`),
+            fetch("/api/nutrition/targets"),
+            fetch("/api/checkins?weeks=16"),
+            fetch("/api/goals"),
+            fetch(`/api/workouts?from=${fromIso}&to=${toIso}&limit=20`),
+            programId
+              ? fetch(`/api/schedule-overrides?programId=${programId}`)
+              : Promise.resolve(null),
+          ]);
+
+        const [
+          programDataRaw,
+          mealsData,
+          targetData,
+          checkInsData,
+          goalsData,
+          weekWorkoutsData,
+          overridesData,
+        ] = await Promise.all([
           programRes?.ok ? programRes.json() : null,
           mealsRes.ok ? mealsRes.json() : null,
           targetRes.ok ? targetRes.json() : null,
           checkInsRes.ok ? checkInsRes.json() : { checkIns: [] },
+          goalsRes.ok ? goalsRes.json() : { goals: [] },
+          weekWorkoutsRes.ok ? weekWorkoutsRes.json() : { workouts: [] },
+          overridesRes?.ok ? overridesRes.json() : [],
         ]);
 
         if (cancelled) return;
@@ -97,6 +155,9 @@ export default function GameplanPage() {
         setMeals(mealsData ? normalizeMeals(mealsData) : null);
         setNutritionTarget(targetData ? normalizeTarget(targetData) : null);
         setCheckIns(checkInsData?.checkIns ?? []);
+        setGoals(Array.isArray(goalsData?.goals) ? goalsData.goals : Array.isArray(goalsData) ? goalsData : []);
+        setWeekWorkouts(Array.isArray(weekWorkoutsData?.workouts) ? weekWorkoutsData.workouts : []);
+        setOverrides(Array.isArray(overridesData) ? overridesData : []);
       } catch (e) {
         if (!cancelled) {
           setError(e instanceof Error ? e.message : "Failed to load");
@@ -153,61 +214,255 @@ export default function GameplanPage() {
   }
 
   const todayDow = (new Date().getDay() + 6) % 7; // 0=Mon
-  const dayLabel = (["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"] as const)[todayDow];
+
+  // Derive done/today/future state for the WeekStrip from week-workouts.
+  const workoutsByDow: Record<number, boolean> = {};
+  for (const w of weekWorkouts) {
+    if (!w.endTime) continue; // incomplete sessions don't count as "done"
+    const dow = (new Date(w.date).getDay() + 6) % 7;
+    workoutsByDow[dow] = true;
+  }
+
+  // Compute current week-in-active-block for the BlockTimeline marker.
+  const currentWeekInActiveBlock = computeWeekInActiveBlock(
+    program,
+    home.activeBlock?.id ?? null,
+  );
+
+  // Build NextActionLogged summary if today's workout is logged.
+  const loggedSummary = buildLoggedSummary(home, weekWorkouts, todayDow);
+
+  // Map live Goal records → GoalPlan payloads for GoalPulse. Body
+  // weight + strength goals get rich icons; everything else falls back
+  // to the "weight" stencil so the pulse strip never crashes.
+  const goalPlans: GoalPlan[] = goals
+    .map((g) => goalToPlan(g))
+    .filter((p): p is GoalPlan => p != null)
+    .slice(0, 3);
 
   return (
-    <div className="bg-ft-bg text-ft-white -mx-4 -my-4 -mb-24 min-h-screen">
+    <div className="bg-ft-bg text-ft-white -mx-4 -my-4 -mb-24 min-h-screen relative">
+      {/* SprayDotsLayer — graffiti-only decorative dot field. No-op
+          on every other chrome via internal gating. */}
+      <SprayDotsLayer seed={3} />
+
+      {/* Floating FRESH stamp — verbatim port of gameplan-active.jsx
+          ScreenMain (lines 2040–2042). Pinned top-right of the
+          training-content strip. */}
+      <div style={{ position: "absolute", top: 102, right: 14, zIndex: 5 }}>
+        <FreshTape rotate={8} size="sm" />
+      </div>
+
       <Header program={home.activeProgram} block={home.activeBlock} />
       <TabBar active={tab} onChange={updateTab} />
 
       <div className="px-5 py-5 space-y-5">
         {tab === "training" && (
           <>
-            <TodayCard
-              scheduledDay={home.scheduledDay}
-              todayCompleted={home.todayCompleted}
-              todaysWorkoutId={home.todaysWorkout?.id ?? null}
-            />
+            <SectionH kicker="UP NEXT" sprayWidth={120}>
+              {home.todayCompleted ? "DONE TODAY" : "NEXT ACTION"}
+            </SectionH>
+
+            {home.todayCompleted && loggedSummary ? (
+              <NextActionLogged summary={loggedSummary} tilt={-0.3} />
+            ) : (
+              <TodayCard
+                scheduledDay={home.scheduledDay}
+                todayCompleted={home.todayCompleted}
+                todaysWorkoutId={home.todaysWorkout?.id ?? null}
+              />
+            )}
+
+            <CheckInCard recentCheckIns={checkIns} tilt={0.3} />
+
+            <SectionH kicker="TARGETS" sprayWidth={130}>
+              GOAL PULSE
+            </SectionH>
+            <GoalPulse goals={goalPlans} />
+
             {home.activeBlock && (
               <section>
-                <SectionHeader kicker="THIS WEEK" title={`Schedule · ${dayLabel} today`} />
-                <WeekStrip block={home.activeBlock} todayDayOfWeek={todayDow} />
+                <SectionH kicker="THIS WEEK" sprayWidth={140}>
+                  SCHEDULE
+                </SectionH>
+                <WeekStrip
+                  block={home.activeBlock}
+                  todayDayOfWeek={todayDow}
+                  workoutsByDow={workoutsByDow}
+                  overrides={overrides.filter(
+                    (o) => o.weekNumber == null || o.weekNumber === weekOfProgram(home.activeProgram?.startDate ?? null),
+                  )}
+                />
               </section>
             )}
             {program && (
               <section>
-                <SectionHeader kicker="STRUCTURE" title="Program map" />
-                <BlockTimeline blocks={program.blocks} activeBlockId={home.activeBlock?.id ?? null} />
+                <SectionH kicker="STRUCTURE" sprayWidth={130}>
+                  PROGRAM MAP
+                </SectionH>
+                <BlockTimeline
+                  blocks={program.blocks}
+                  activeBlockId={home.activeBlock?.id ?? null}
+                  currentWeekInActiveBlock={currentWeekInActiveBlock}
+                />
               </section>
             )}
-            <Link
-              href={home.activeProgram?.id ? `/programs/${home.activeProgram.id}` : "/programs"}
-              className="block text-center font-body text-[11px] uppercase tracking-[0.18em] text-ft-dim border-t border-dashed border-ft-border pt-3 hover:text-ft-light"
-            >
-              Edit gameplan →
-            </Link>
+            {home.activeProgram?.id && (
+              <EditPlanBtn align="flex-end" href={`/programs/${home.activeProgram.id}`} />
+            )}
           </>
         )}
 
         {tab === "nutrition" && (
-          <NutritionPanel meals={meals} target={nutritionTarget} />
+          <NutritionPanel
+            meals={meals}
+            target={nutritionTarget}
+            programId={home.activeProgram?.id ?? null}
+          />
         )}
 
         {tab === "lifestyle" && (
-          <LifestylePanel stretchRoutine={home.stretchRoutine} recentCheckIns={checkIns} />
+          <LifestylePanel
+            stretchRoutine={home.stretchRoutine}
+            recentCheckIns={checkIns}
+            programId={home.activeProgram?.id ?? null}
+            programStartDate={home.activeProgram?.startDate ?? null}
+            programDurationWeeks={home.activeProgram?.durationWeeks ?? null}
+          />
         )}
       </div>
     </div>
   );
 }
 
-function SectionHeader({ kicker, title }: { kicker: string; title: string }) {
-  return (
-    <div className="mb-2">
-      <div className="font-body text-[9px] uppercase tracking-[0.22em] text-ft-dim">{kicker}</div>
-      <div className="font-display text-lg text-ft-white tracking-wide leading-tight">{title}</div>
-    </div>
-  );
+
+/** ISO-week-of-program (1-indexed). Returns 1 when startDate is null. */
+function weekOfProgram(startDate: string | null): number {
+  if (!startDate) return 1;
+  const ms = Date.now() - new Date(startDate).getTime();
+  return Math.max(1, Math.floor(ms / (7 * 86400000)) + 1);
+}
+
+/**
+ * Compute current week-of-active-block for the BlockTimeline marker.
+ * Returns 0-indexed week within the active block, or null if the
+ * active block isn't in the timeline yet.
+ */
+function computeWeekInActiveBlock(program: ProgramDetail | null, activeBlockId: string | null): number | null {
+  if (!program || !program.startDate || !activeBlockId) return null;
+  const start = new Date(program.startDate).getTime();
+  const totalWeeks = Math.floor((Date.now() - start) / (7 * 86400000));
+  let weeksBefore = 0;
+  for (const b of program.blocks) {
+    const dur = b.durationWeeks ?? 4;
+    if (b.id === activeBlockId) {
+      const inBlock = totalWeeks - weeksBefore;
+      return Math.max(0, Math.min(dur - 1, inBlock));
+    }
+    weeksBefore += dur;
+  }
+  return null;
+}
+
+/**
+ * Build a `LoggedSummary` for `NextActionLogged` from today's logged
+ * workout. Pulls volume / top-set / duration from the live Workout.
+ */
+function buildLoggedSummary(
+  home: HomeData,
+  weekWorkouts: RawWorkout[],
+  todayDow: number,
+): LoggedSummary | null {
+  const today = home.todaysWorkout;
+  if (!today || !home.todayCompleted) return null;
+  const w = weekWorkouts.find((x) => x.id === today.id);
+  let volume = 0;
+  let topSet: { weight: number; reps: number } | null = null;
+  let movement: "push" | "pull" | "legs" | "core" = "core";
+  if (w) {
+    for (const ex of w.exercises ?? []) {
+      const mp = ex.exercise?.movementPattern;
+      if (mp === "push" || mp === "pull" || mp === "legs") movement = mp;
+      for (const s of ex.sets ?? []) {
+        const wt = s.weight != null ? Number(s.weight) : 0;
+        const reps = s.reps ?? 0;
+        if (wt && reps) {
+          volume += wt * reps;
+          if (!topSet || wt > topSet.weight) topSet = { weight: wt, reps };
+        }
+      }
+    }
+  }
+  // Tomorrow preview from the active block's day cycle.
+  let tomorrow: LoggedSummary["tomorrow"] = null;
+  const days = home.activeBlock?.days ?? [];
+  const tomorrowIdx = (todayDow + 1) % Math.max(1, days.length || 7);
+  const tomorrowDay = days[tomorrowIdx];
+  if (tomorrowDay) {
+    const mp = tomorrowDay.exercises?.[0]?.movementPattern;
+    const tmove: "push" | "pull" | "legs" | "core" =
+      mp === "push" ? "push" : mp === "pull" ? "pull" : mp === "legs" ? "legs" : "core";
+    tomorrow = {
+      name: tomorrowDay.name,
+      moveKind: tmove,
+      dayNumber: tomorrowDay.dayNumber,
+    };
+  }
+  return {
+    moveKind: movement,
+    shortName: home.scheduledDay?.name?.split(" ")[0] ?? "Workout",
+    volumeLbs: volume,
+    topSet,
+    minutes: 0,
+    workoutId: today.id,
+    tomorrow,
+  };
+}
+
+/**
+ * Map a live `Goal` record → `GoalPlan` shape consumed by GoalPulse.
+ * Falls back to the "weight" icon when the goal type isn't recognized.
+ *
+ * **R8 stub**: the trajectory series is synthesized in
+ * `seriesUtil.buildSeries` since live goals don't carry daily history
+ * yet.
+ */
+function goalToPlan(g: RawGoal): GoalPlan | null {
+  const start = g.startValue != null ? Number(g.startValue) : null;
+  const target = g.targetValue != null ? Number(g.targetValue) : null;
+  if (start == null || target == null || start === target) return null;
+  // Use start as currentValue placeholder until daily series ships (R8).
+  // Halfway-between gives a visually reasonable midpoint.
+  const currentValue = start + (target - start) * 0.4;
+  const icon: GoalIconKind =
+    g.type === "bodyweight" || g.type === "weight"
+      ? "weight"
+      : g.type === "strength" || g.type === "powerlifting"
+      ? "bench"
+      : g.type === "frequency"
+      ? "bolt"
+      : "weight";
+  // Tone: green when ahead, yellow when slightly behind, red for far behind.
+  // Without daily series, default to "yellow" so we don't lie.
+  const tone: "green" | "yellow" | "red" = "yellow";
+  const unit = (g.targetUnit ?? "").toUpperCase() || "—";
+  return {
+    label: g.title.toUpperCase(),
+    icon,
+    value: currentValue.toFixed(1),
+    unit,
+    target: target.toFixed(0),
+    tone,
+    series: {
+      start,
+      target,
+      currentValue,
+      unit,
+      decimals: 1,
+      noise: Math.abs(target - start) * 0.02,
+      seed: g.id.charCodeAt(0) || 1,
+    },
+  };
 }
 
 function readHashTab(): TabId {
