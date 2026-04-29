@@ -9,6 +9,7 @@ import { addToQueue } from "@/lib/offline-queue";
 import ThemedIcon from "@/components/themed/ThemedIcon";
 import Lane from "./_logger/Lane";
 import SetSheet from "./_logger/SetSheet";
+import WeekStrip, { type WeekTab } from "./_logger/WeekStrip";
 import type { ActiveCell } from "./_logger/types";
 
 const DEFAULT_REST_SECONDS = 90;
@@ -49,6 +50,29 @@ interface ExerciseData {
   lastSets: LastSet[];
   suggestedWeight: Suggestion | null;
   progressionInfo: ProgressionInfo;
+}
+
+/**
+ * Shape of a sibling workout (same blockDayId, prior weeks of the block).
+ * Returned by GET /api/workouts?blockDayId=X. Used to populate the
+ * WeekStrip and back the read-only past-week view.
+ */
+interface SiblingExerciseSet {
+  setNumber: number;
+  weight: number | string | null;
+  reps: number | null;
+  rir: number | null;
+}
+interface SiblingExercise {
+  id: string;
+  exercise: { id?: string; name: string };
+  sets: SiblingExerciseSet[];
+}
+interface SiblingWorkout {
+  id: string;
+  date: string;
+  endTime: string | null;
+  exercises: SiblingExercise[];
 }
 
 interface BlockDayData {
@@ -487,6 +511,40 @@ export default function ActiveWorkoutPage({
   const [activeCell, setActiveCell] = useState<ActiveCell | null>(null);
   const [restEndsAt, setRestEndsAt] = useState<number | null>(null);
 
+  // WeekStrip — sibling workouts (same blockDayId) sorted earliest first.
+  // currentWeekIdx = siblings.length (the current workout sits after them).
+  // selectedWeekIdx defaults to currentWeekIdx; tapping a past tab switches
+  // the lanes into a read-only view of that workout's logged sets.
+  const [siblingWorkouts, setSiblingWorkouts] = useState<SiblingWorkout[]>([]);
+  const [selectedWeekIdx, setSelectedWeekIdx] = useState<number>(0);
+
+  /**
+   * Fetch every workout that shares this blockDayId — those are the
+   * "same day, different week" siblings. Sort earliest-first so each
+   * sibling's index = its zero-based week-of-block. The current
+   * workout is implicitly week N (after all completed siblings).
+   */
+  useEffect(() => {
+    if (!blockDayId) return;
+    let cancelled = false;
+    fetch(`/api/workouts?blockDayId=${blockDayId}&limit=20`)
+      .then((res) => (res.ok ? res.json() : { workouts: [] }))
+      .then((data: { workouts: SiblingWorkout[] }) => {
+        if (cancelled) return;
+        const sibs = (data.workouts ?? [])
+          .filter((w) => w.endTime != null && w.id !== workoutId)
+          .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+        setSiblingWorkouts(sibs);
+        setSelectedWeekIdx(sibs.length); // current week sits after all siblings
+      })
+      .catch(() => {
+        // best-effort — WeekStrip degrades to "current week only" on failure
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [blockDayId, workoutId]);
+
   /**
    * Commits weight/reps/rir for a single set in one shot, marks done=true,
    * and starts the rest-timer countdown. Used by SetSheet's "LOG SET"
@@ -802,6 +860,50 @@ export default function ActiveWorkoutPage({
   }
   const setsPct = setsTotal > 0 ? setsDone / setsTotal : 0;
 
+  // Build the WeekStrip tab list. Each completed sibling is a past week;
+  // the current workout is the trailing "TODAY" tab.
+  const currentWeekIdx = siblingWorkouts.length;
+  const weeks: WeekTab[] = [
+    ...siblingWorkouts.map((s, i) => ({
+      weekIdx: i,
+      label: `W${i + 1}`,
+      date: shortDate(s.date),
+      pastComplete: true,
+      isCurrent: false,
+    })),
+    {
+      weekIdx: currentWeekIdx,
+      label: `W${currentWeekIdx + 1}`,
+      date: null,
+      pastComplete: false,
+      isCurrent: true,
+    },
+  ];
+
+  // When viewing a past week, overlay each lane's sets with the sibling's
+  // logged values. Match by exerciseId; lanes without a match render empty.
+  const isViewingPast = selectedWeekIdx < currentWeekIdx;
+  const viewingSibling = isViewingPast ? siblingWorkouts[selectedWeekIdx] : null;
+  const displayExercises =
+    viewingSibling != null
+      ? exercises.map((curr) => {
+          const past = viewingSibling.exercises.find(
+            (pe) => pe.exercise && (pe.exercise as { id?: string }).id === curr.exerciseId,
+          );
+          if (!past) return { ...curr, sets: [] };
+          return {
+            ...curr,
+            sets: past.sets.map((s, idx) => ({
+              set: s.setNumber ?? idx + 1,
+              weight: s.weight != null ? Number(s.weight) : null,
+              reps: s.reps,
+              rir: s.rir,
+              done: true,
+            })),
+          };
+        })
+      : exercises;
+
   return (
     <div className="min-h-screen bg-ft-bg text-ft-white pb-32 max-w-2xl mx-auto">
       {/* Exercise Picker Overlay */}
@@ -895,11 +997,37 @@ export default function ActiveWorkoutPage({
         </div>
       )}
 
+      {/* WeekStrip — only render once we know currentWeekIdx (after the
+          sibling-workouts fetch resolves). Default "current only" tab on
+          first paint reads as a single highlighted W1 — fine. */}
+      {weeks.length > 0 && (
+        <WeekStrip
+          weeks={weeks}
+          selected={selectedWeekIdx}
+          onSelect={(w) => setSelectedWeekIdx(w)}
+        />
+      )}
+
+      {/* Read-only banner when viewing a past week */}
+      {isViewingPast && viewingSibling && (
+        <div className="mx-4 mt-3 bg-ft-accent/10 border border-ft-accent/30 px-3 py-2 flex items-center justify-between rounded-ft">
+          <span className="text-ft-accent text-xs font-body uppercase tracking-[0.15em]">
+            VIEWING WEEK {selectedWeekIdx + 1} · READ ONLY
+          </span>
+          <button
+            onClick={() => setSelectedWeekIdx(currentWeekIdx)}
+            className="text-ft-accent text-[11px] font-body uppercase tracking-[0.15em] border-b border-ft-accent"
+          >
+            Back to today
+          </button>
+        </div>
+      )}
+
       {/* Lane stack — every exercise is a row of tappable set cells. */}
       {exercises.length > 0 && (
         <>
           <div className="px-4 mt-4 mb-4 flex flex-col gap-3">
-            {exercises.map((ex, i) => (
+            {displayExercises.map((ex, i) => (
               <Lane
                 key={ex.id}
                 name={ex.name}
@@ -910,8 +1038,11 @@ export default function ActiveWorkoutPage({
                 sets={ex.sets}
                 lastWeek={ex.lastSets.map((s) => ({ weight: s.weight, reps: s.reps }))}
                 activeCellIdx={
-                  activeCell?.exerciseIdx === i ? activeCell.setIdx : null
+                  !isViewingPast && activeCell?.exerciseIdx === i
+                    ? activeCell.setIdx
+                    : null
                 }
+                readOnly={isViewingPast}
                 onTapSet={(setIdx) => setActiveCell({ exerciseIdx: i, setIdx })}
                 onAddSet={() => addSet(i)}
                 onSwap={() => {
@@ -921,12 +1052,14 @@ export default function ActiveWorkoutPage({
                 onRemove={() => removeExercise(i)}
               />
             ))}
-            <button
-              onClick={() => setShowPicker(true)}
-              className="self-center cta-underline font-display text-base text-ft-accent px-5 py-2 mt-1"
-            >
-              + Add exercise
-            </button>
+            {!isViewingPast && (
+              <button
+                onClick={() => setShowPicker(true)}
+                className="self-center cta-underline font-display text-base text-ft-accent px-5 py-2 mt-1"
+              >
+                + Add exercise
+              </button>
+            )}
           </div>
 
           {/* Workout-level notes */}
@@ -1104,4 +1237,14 @@ function WorkoutMin({ startTime }: { startTime: number }) {
 function formatVolume(v: number): string {
   if (v >= 1000) return `${(v / 1000).toFixed(1)}k`;
   return `${Math.round(v)}`;
+}
+
+/** "MM/DD" short date for the WeekStrip kicker. */
+function shortDate(iso: string): string {
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return "—";
+  return `${(d.getMonth() + 1).toString().padStart(2, "0")}/${d
+    .getDate()
+    .toString()
+    .padStart(2, "0")}`;
 }

@@ -11,6 +11,10 @@ interface SetCellProps {
   ghost?: { weight: number | null; reps: number | null } | null;
   isActive: boolean;
   cat: MovementCat;
+  /** When >= 5 cells in a lane, shrink typography so they still fit. */
+  dense?: boolean;
+  /** Disable tap (used for read-only past-week view). */
+  disabled?: boolean;
   onTap: () => void;
 }
 
@@ -22,9 +26,8 @@ interface SetCellProps {
  *   - ghost    — last-week's values rendered dim (when provided)
  *   - filled   — current weight × reps in display weight, check corner
  *
- * Surface tinting is theme-driven via tokens; per-theme refinements
- * live in globals.css (e.g. notebook italic ghost, arcade neon tint)
- * if/when we add them. Default treatment uses ft-card / ft-accent.
+ * The `dense` prop scales typography down so 5–6 sets still fit a
+ * 360–390px-wide lane on a phone — mirrors the prototype's rule.
  */
 export default function SetCell({
   setIdx,
@@ -34,27 +37,41 @@ export default function SetCell({
   ghost,
   isActive,
   cat,
+  dense = false,
+  disabled = false,
   onTap,
 }: SetCellProps) {
   const filled = done && weight != null;
   const showGhost = !filled && !!(ghost && ghost.weight != null);
   const catVar = `var(--ft-${cat})`;
 
+  const wClass = filled
+    ? dense
+      ? "text-xl" // ~20px for dense filled
+      : "text-2xl" // ~24px for normal filled (was text-xl)
+    : dense
+    ? "text-base"
+    : "text-lg";
+  const rClass = dense ? "text-[10px]" : "text-xs";
+
   return (
     <button
       onClick={onTap}
+      disabled={disabled}
       aria-label={
         filled
-          ? `Set ${setIdx + 1}: ${weight} × ${reps}, edit`
-          : `Set ${setIdx + 1}: empty, log set`
+          ? `Set ${setIdx + 1}: ${weight} × ${reps}${disabled ? "" : ", edit"}`
+          : `Set ${setIdx + 1}: empty${disabled ? "" : ", log set"}`
       }
       className={[
-        "relative aspect-square min-h-[52px] min-w-0 flex flex-col items-center justify-center rounded-ft transition-colors",
-        "border touch-target overflow-hidden",
+        "relative aspect-square min-h-[56px] min-w-0 flex flex-col items-center justify-center rounded-ft transition-colors",
+        "border touch-target overflow-hidden p-0.5",
         filled
           ? "bg-ft-accent/10 border-ft-accent/60"
-          : "bg-ft-card border-ft-border/55 hover:border-ft-accent/50",
+          : "bg-ft-card border-ft-border/55",
+        !disabled && !filled ? "hover:border-ft-accent/50" : "",
         isActive ? "!bg-ft-accent/20 !border-ft-accent" : "",
+        disabled ? "opacity-60 cursor-not-allowed" : "cursor-pointer",
       ].join(" ")}
     >
       {/* set number corner */}
@@ -69,7 +86,16 @@ export default function SetCell({
           aria-hidden
           style={{ color: `rgb(${catVar})` }}
         >
-          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+          <svg
+            width={dense ? 9 : 11}
+            height={dense ? 9 : 11}
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="3"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
             <polyline points="20 6 9 17 4 12" />
           </svg>
         </span>
@@ -77,38 +103,50 @@ export default function SetCell({
 
       {filled ? (
         <>
-          <span className="font-data text-xl font-bold leading-none text-ft-white tabular-nums">
+          <span
+            className={`font-data ${wClass} font-bold leading-none text-ft-white tabular-nums`}
+          >
             {fmtWeight(weight)}
           </span>
-          <span className="font-data text-[11px] text-ft-dim mt-0.5 tabular-nums">
+          <span className={`font-data ${rClass} text-ft-dim mt-1 tabular-nums`}>
             ×{reps}
           </span>
         </>
       ) : showGhost && ghost ? (
         <>
-          <span className="font-data text-base leading-none text-ft-dim/90 font-medium tabular-nums">
+          <span
+            className={`font-data ${wClass} leading-none text-ft-dim/90 font-medium tabular-nums`}
+          >
             {fmtWeight(ghost.weight)}
           </span>
-          <span className="font-data text-[10px] text-ft-dim/70 mt-0.5 tabular-nums">
+          <span className={`font-data ${rClass} text-ft-dim/70 mt-1 tabular-nums`}>
             ×{ghost.reps}
           </span>
         </>
       ) : (
-        <span className="text-sm text-ft-dim/50">·</span>
+        <span className="text-base text-ft-dim/50">·</span>
       )}
     </button>
   );
 }
 
 /** "Add set" trailing affordance shown after the last cell. */
-export function AddSetCell({ onTap }: { onTap: () => void }) {
+export function AddSetCell({
+  onTap,
+  dense = false,
+}: {
+  onTap: () => void;
+  dense?: boolean;
+}) {
   return (
     <button
       onClick={onTap}
       aria-label="Add set"
-      className="aspect-square min-h-[52px] min-w-[36px] flex flex-col items-center justify-center rounded-ft border border-dashed border-ft-border/70 text-ft-dim hover:bg-ft-accent/5 hover:border-ft-accent/55 hover:text-ft-accent transition-colors touch-target"
+      className="aspect-square min-h-[56px] min-w-0 flex flex-col items-center justify-center rounded-ft border border-dashed border-ft-border/70 text-ft-dim hover:bg-ft-accent/5 hover:border-ft-accent/55 hover:text-ft-accent transition-colors touch-target"
     >
-      <span className="text-base leading-none">+</span>
+      <span className={dense ? "text-base leading-none" : "text-xl leading-none"}>
+        +
+      </span>
       <span className="font-data text-[8px] tracking-[0.12em] uppercase opacity-80 mt-0.5">
         SET
       </span>
