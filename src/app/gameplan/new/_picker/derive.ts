@@ -133,7 +133,7 @@ function tagsFor(t: ProgramTemplate): PickerPlan["tags"] {
   return out.slice(0, 2);
 }
 
-export function templateToPlan(t: ProgramTemplate): PickerPlan {
+export function templateToPlan(t: ProgramTemplate, filters?: Partial<Record<string, string>>): PickerPlan {
   const dpw = t.config.daysPerWeek ?? 3;
   const dur = t.config.durationWeeks ?? 12;
   const goal = (t.config.primaryGoal as string) ?? "general";
@@ -148,6 +148,36 @@ export function templateToPlan(t: ProgramTemplate): PickerPlan {
     blocks: blocksFor(dur, goal),
     freq: freqFor(t),
     tags: tagsFor(t),
+    bestFit: filters ? computeBestFit(t, filters) : false,
     raw: t,
   };
+}
+
+/**
+ * Best-fit heuristic — true when the template matches every non-empty
+ * filter slot the user set (Goal / Experience / Days / Equipment).
+ * Mirrors the prototype's `best: true` flag on PLANS — we compute it
+ * on the fly instead of hand-flagging templates.
+ */
+function computeBestFit(
+  t: ProgramTemplate,
+  filters: Partial<Record<string, string>>,
+): boolean {
+  const activeKeys = Object.entries(filters).filter(([, v]) => v != null && v !== "");
+  if (activeKeys.length === 0) return false;
+  const goal = filters.goal;
+  const experience = filters.experience;
+  const days = filters.daysPerWeek;
+  const equipment = filters.equipment;
+  if (goal && !t.tags.includes(goal)) return false;
+  if (experience && !t.tags.includes(experience) && !t.tags.includes("any-level")) return false;
+  if (days && !t.tags.includes(`${days}-day`)) return false;
+  if (equipment) {
+    const eq = t.config.equipment;
+    if (eq) {
+      if (equipment === "home" && !(eq === "home_minimal" || t.tags.includes("home"))) return false;
+      if (equipment === "limited_gym" && eq === "full_gym") return false;
+    }
+  }
+  return true;
 }

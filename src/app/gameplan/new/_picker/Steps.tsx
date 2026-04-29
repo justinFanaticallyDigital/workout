@@ -1,6 +1,6 @@
 "use client";
 
-import { ReactNode } from "react";
+import { useEffect, useState } from "react";
 import {
   Stamp,
   Chip,
@@ -12,7 +12,13 @@ import {
   StepHeader,
   PickerHeading,
   PickerButton,
+  CornerStamp,
+  PickerCard,
 } from "./PickerPrimitives";
+import { DisciplineIcon, type DisciplineKind } from "./icons";
+import { CalorieScale } from "./CalorieScale";
+import { BodyWeightChart } from "./BodyWeightChart";
+import { FieldRow, NumInput } from "./FieldRow";
 import type { PickerPlan } from "./derive";
 
 /* ─── Filter spec ──────────────────────────────────────────────── */
@@ -72,9 +78,9 @@ export const FILTER_GROUPS: {
 
 export function Step1Welcome({ onPick, onSkip }: { onPick: () => void; onSkip: () => void }) {
   return (
-    <div className="min-h-[calc(100vh-2rem)] flex flex-col px-6 pt-14 pb-7">
+    <div className="min-h-[calc(100vh-2rem)] flex flex-col px-6 pt-14 pb-7 relative">
       <Stamp className="mb-9 self-start">FITTRACK · NEW MEMBER</Stamp>
-      <PickerHeading kicker="STEP 01">
+      <PickerHeading kicker="STEP 01" variant={1}>
         Pick your
         <br />
         Gameplan.
@@ -85,16 +91,30 @@ export function Step1Welcome({ onPick, onSkip }: { onPick: () => void; onSkip: (
 
       <div className="flex-1" />
 
+      {/* Stenciled-schedule-sheet placeholder ornament — verbatim port of
+          picker-screens.jsx#Step1Welcome lines 526–552. The triangle
+          wedge + G/P stencil text is intentionally decorative; on iron
+          chrome it picks up Stardos Stencil for the G/P glyph. */}
       <div className="my-8 -mx-6 px-6 py-7 border-y border-dashed border-ft-border flex items-center justify-between gap-4">
         <div>
           <Stamp className="block mb-2">CONTAINS</Stamp>
-          <span className="font-data text-2xl text-ft-white">03</span>
+          <span className="font-data tabular-nums text-2xl text-ft-white">03</span>
           <span className="font-body text-[11px] uppercase tracking-[0.1em] text-ft-light ml-2">COMPONENTS</span>
           <div className="mt-1.5 font-body text-[13px] text-ft-white">Training · Nutrition · Lifestyle</div>
         </div>
         <svg width="64" height="64" viewBox="0 0 64 64" className="shrink-0 text-ft-accent">
           <polygon points="32,4 60,56 4,56" fill="none" stroke="currentColor" strokeWidth="1.2" opacity="0.6" />
           <line x1="32" y1="4" x2="32" y2="56" stroke="currentColor" strokeWidth="0.5" strokeDasharray="2 3" opacity="0.4" />
+          <text
+            x="32"
+            y="42"
+            textAnchor="middle"
+            fontSize="14"
+            fill="currentColor"
+            className="font-display"
+          >
+            G/P
+          </text>
         </svg>
       </div>
 
@@ -107,6 +127,8 @@ export function Step1Welcome({ onPick, onSkip }: { onPick: () => void; onSkip: (
       <div className="mt-3.5 text-center font-body text-[11px] text-ft-dim">
         You can pick one later from the Programs tab.
       </div>
+
+      <CornerStamp />
     </div>
   );
 }
@@ -127,9 +149,9 @@ export function Step2Filter({
   onBack: () => void;
 }) {
   return (
-    <div className="min-h-[calc(100vh-2rem)] flex flex-col px-5 pt-5 pb-5">
+    <div className="min-h-[calc(100vh-2rem)] flex flex-col px-5 pt-5 pb-5 relative">
       <StepHeader step={2} onBack={onBack} onSkip={onSkip} />
-      <PickerHeading>Help us narrow it down.</PickerHeading>
+      <PickerHeading variant={2}>Help us narrow it down.</PickerHeading>
 
       <div className="flex-1 flex flex-col gap-4 mt-2">
         {FILTER_GROUPS.map((g) => (
@@ -158,6 +180,8 @@ export function Step2Filter({
       <PickerButton variant="primary" full onClick={onContinue} className="mt-4">
         Show me Gameplans →
       </PickerButton>
+
+      <CornerStamp />
     </div>
   );
 }
@@ -174,53 +198,73 @@ function PlanCard({
   return (
     <button
       onClick={onPick}
-      className="ft-card w-full text-left bg-ft-surface border border-ft-border p-3.5 hover:border-ft-accent transition-colors relative"
+      className="w-full text-left transition-colors hover:[&_.ft-card]:border-ft-accent"
     >
-      {plan.bestFit && (
-        <div className="absolute top-2 right-2 font-body text-[9px] tracking-[0.2em] uppercase text-ft-accent">
-          BEST FIT
-        </div>
-      )}
-      <div className="font-display text-lg text-ft-white tracking-wide mb-0.5">{plan.name}</div>
-      <div className="font-body text-xs text-ft-light mb-2.5">{plan.description}</div>
-
-      <div className="pt-2.5 border-t border-dashed border-ft-border">
-        <div className="flex justify-between items-baseline mb-1.5">
-          <Stamp>FREQUENCY · PER WEEK</Stamp>
-          <div className="flex items-center gap-1.5">
-            <span className="font-data text-sm text-ft-white">{plan.durationWeeks}</span>
-            <span className="font-body text-[8px] uppercase tracking-[0.18em] text-ft-dim">WK</span>
-            <span className="w-px h-2.5 bg-ft-border mx-1" />
-            <DifficultyBars level={plan.difficulty} />
+      <PickerCard
+        padding={14}
+        style={{ paddingTop: 14, paddingBottom: 12 }}
+      >
+        {plan.bestFit && (
+          <div className="absolute top-2 right-2 font-body text-[9px] tracking-[0.2em] uppercase text-ft-accent">
+            BEST FIT
           </div>
-        </div>
-        <FrequencyRow plan={plan} />
-      </div>
+        )}
+        <div className="font-display text-lg text-ft-white tracking-wide mb-0.5">{plan.name}</div>
+        <div className="font-body text-xs text-ft-light mb-2.5">{plan.description}</div>
 
-      <div className="flex gap-1 flex-wrap mt-2.5 pt-2 border-t border-dashed border-ft-border">
-        {plan.tags.map((t) => (
-          <MovementTag key={t.label} kind={t.kind}>
-            {t.label}
-          </MovementTag>
-        ))}
-      </div>
+        <div className="pt-2.5 border-t border-dashed border-ft-border">
+          <div className="flex justify-between items-baseline mb-1.5">
+            <Stamp>FREQUENCY · PER WEEK</Stamp>
+            <div className="flex items-center gap-1.5">
+              <span className="font-data tabular-nums text-sm text-ft-white">{plan.durationWeeks}</span>
+              <span className="font-body text-[8px] uppercase tracking-[0.18em] text-ft-dim">WK</span>
+              <span className="w-px h-2.5 bg-ft-border mx-1" />
+              <DifficultyBars level={plan.difficulty} />
+            </div>
+          </div>
+          <FrequencyRow plan={plan} />
+        </div>
+
+        <div className="flex gap-1 flex-wrap mt-2.5 pt-2 border-t border-dashed border-ft-border">
+          {plan.tags.map((t) => (
+            <MovementTag key={t.label} kind={t.kind}>
+              {t.label}
+            </MovementTag>
+          ))}
+        </div>
+      </PickerCard>
     </button>
   );
 }
 
+/**
+ * FrequencyRow — extended port of picker-screens.jsx#FrequencyRow
+ * (lines 282–375). Each discipline row renders:
+ *   - tracked-out label (LIFT / CARDIO / COND)
+ *   - tabular-num count (e.g. "3" or "3–4")
+ *   - **repeating DisciplineIcon** glyphs: solid = guaranteed (lo),
+ *     outline = optional (lo+1 .. hi)
+ * Right column shows nutrition + mobility flags when set.
+ */
 function FrequencyRow({ plan }: { plan: PickerPlan }) {
   const fmt = (v: number | [number, number]) =>
     Array.isArray(v) ? (v[0] === v[1] ? `${v[0]}` : `${v[0]}–${v[1]}`) : `${v}`;
-  const items: { label: string; val: number | [number, number] }[] = [
-    { label: "LIFT", val: plan.freq.lift },
-    { label: "CARDIO", val: plan.freq.cardio },
-    { label: "COND", val: plan.freq.cond },
+  const lo = (v: number | [number, number]) => (Array.isArray(v) ? v[0] : v);
+  const hi = (v: number | [number, number]) => (Array.isArray(v) ? v[1] : v);
+  const items: { label: string; kind: DisciplineKind; val: number | [number, number] }[] = [
+    { label: "LIFT", kind: "lift", val: plan.freq.lift },
+    { label: "CARDIO", kind: "cardio", val: plan.freq.cardio },
+    { label: "COND", kind: "cond", val: plan.freq.cond },
   ];
+  const ICON = 13;
+
   return (
     <div className="flex gap-3.5 items-start">
       <div className="flex-1 flex flex-col gap-1.5">
         {items.map((it) => {
           const dim = it.val === 0 || (Array.isArray(it.val) && it.val[1] === 0);
+          const lowVal = lo(it.val);
+          const hiVal = hi(it.val);
           return (
             <div
               key={it.label}
@@ -228,12 +272,35 @@ function FrequencyRow({ plan }: { plan: PickerPlan }) {
             >
               <div className="font-body text-[9px] uppercase tracking-[0.2em] text-ft-dim">{it.label}</div>
               <div className="flex items-baseline gap-px justify-end">
-                <span className={`font-data text-sm leading-none ${dim ? "text-ft-dim" : "text-ft-white"}`}>
+                <span className={`font-data tabular-nums text-sm leading-none ${dim ? "text-ft-dim" : "text-ft-white"}`}>
                   {fmt(it.val)}
                 </span>
                 <span className="font-body text-[8px] uppercase tracking-[0.1em] text-ft-dim">×</span>
               </div>
-              <div className="text-[10px] text-ft-dim font-body">/wk</div>
+              <div className="flex gap-[3px] items-center">
+                {hiVal === 0 ? (
+                  <span className="font-body text-[9px] tracking-[0.15em] text-ft-border">—</span>
+                ) : (
+                  Array.from({ length: Math.max(hiVal, 1) }, (_, i) => {
+                    const guaranteed = i < lowVal;
+                    const optional = i >= lowVal && i < hiVal;
+                    if (!guaranteed && !optional) return null;
+                    return (
+                      <span
+                        key={i}
+                        style={{
+                          color: guaranteed
+                            ? "rgb(var(--ft-accent))"
+                            : "rgb(var(--ft-accent) / 0.4)",
+                          display: "inline-flex",
+                        }}
+                      >
+                        <DisciplineIcon kind={it.kind} size={ICON} />
+                      </span>
+                    );
+                  })
+                )}
+              </div>
             </div>
           );
         })}
@@ -241,10 +308,20 @@ function FrequencyRow({ plan }: { plan: PickerPlan }) {
       {(plan.freq.nutrition || plan.freq.mobility) && (
         <div className="flex flex-col gap-1.5 pl-3 border-l border-dashed border-ft-border self-stretch">
           {plan.freq.nutrition && (
-            <span className="font-body text-[9px] uppercase tracking-[0.2em] text-ft-accent">NUTR</span>
+            <div className="flex items-center gap-1.5">
+              <span style={{ color: "rgb(var(--ft-accent))", display: "inline-flex" }}>
+                <DisciplineIcon kind="nutrition" size={ICON} />
+              </span>
+              <span className="font-body text-[9px] uppercase tracking-[0.2em] text-ft-accent">NUTR</span>
+            </div>
           )}
           {plan.freq.mobility && (
-            <span className="font-body text-[9px] uppercase tracking-[0.2em] text-ft-accent">MOB</span>
+            <div className="flex items-center gap-1.5">
+              <span style={{ color: "rgb(var(--ft-accent))", display: "inline-flex" }}>
+                <DisciplineIcon kind="mobility" size={ICON} />
+              </span>
+              <span className="font-body text-[9px] uppercase tracking-[0.2em] text-ft-accent">MOB</span>
+            </div>
           )}
         </div>
       )}
@@ -256,6 +333,7 @@ export function Step3List({
   plans,
   filters,
   filtersBypassed,
+  closestFit,
   onPickPlan,
   onClearFilter,
   onBack,
@@ -263,6 +341,10 @@ export function Step3List({
   plans: PickerPlan[];
   filters: Filters;
   filtersBypassed: boolean;
+  /** When `plans` is empty after filtering, this is the single closest
+   *  match drawn from the full template list — surfaces the prototype's
+   *  "STATE — Empty filter result" closest-fit recovery flow. */
+  closestFit?: PickerPlan | null;
   onPickPlan: (id: string) => void;
   onClearFilter: (key: FilterKey) => void;
   onBack: () => void;
@@ -272,13 +354,30 @@ export function Step3List({
     .map(([k, v]) => ({ key: k, label: filterLabel(k, v!) }));
 
   return (
-    <div className="min-h-[calc(100vh-2rem)] flex flex-col px-5 pt-5">
+    <div className="min-h-[calc(100vh-2rem)] flex flex-col px-5 pt-5 relative">
       <StepHeader
         step={3}
         onBack={onBack}
-        trailingLabel={`${plans.length} GAMEPLAN${plans.length === 1 ? "" : "S"}`}
+        trailingLabel={
+          plans.length === 0 && closestFit
+            ? "NO EXACT MATCH"
+            : filtersBypassed
+            ? `ALL ${plans.length} GAMEPLAN${plans.length === 1 ? "" : "S"}`
+            : `${plans.length} GAMEPLAN${plans.length === 1 ? "" : "S"}`
+        }
       />
-      <PickerHeading>{filtersBypassed ? "Pick a Gameplan." : "Closest fits."}</PickerHeading>
+      <PickerHeading variant={plans.length === 0 && closestFit ? 2 : filtersBypassed ? 5 : 4}>
+        {plans.length === 0 && closestFit
+          ? "Closest fit."
+          : filtersBypassed
+          ? "Pick a Gameplan."
+          : "Closest fits."}
+      </PickerHeading>
+      {filtersBypassed && (
+        <div className="font-body text-[11px] text-ft-dim mt-0.5 mb-2">
+          Filter skipped · showing all
+        </div>
+      )}
 
       {activeFilters.length > 0 && (
         <div className="flex flex-wrap gap-1.5 mt-1 mb-3">
@@ -291,7 +390,18 @@ export function Step3List({
       )}
 
       {plans.length === 0 ? (
-        <EmptyResultsBanner onBack={onBack} />
+        <ClosestFitFallback
+          activeFilters={activeFilters}
+          closestFit={closestFit}
+          onPickPlan={onPickPlan}
+          onBack={onBack}
+        />
+      ) : filtersBypassed ? (
+        <div className="flex-1 overflow-auto pb-4 flex flex-col gap-1.5">
+          {plans.map((p) => (
+            <CompactPlanRow key={p.id} plan={p} onPick={() => onPickPlan(p.id)} />
+          ))}
+        </div>
       ) : (
         <div className="flex-1 overflow-auto pb-4 flex flex-col gap-2.5">
           {plans.map((p) => (
@@ -299,24 +409,79 @@ export function Step3List({
           ))}
         </div>
       )}
+      <CornerStamp />
     </div>
   );
 }
 
-function EmptyResultsBanner({ onBack }: { onBack: () => void }) {
+/**
+ * Empty-result recovery — verbatim port of picker-screens.jsx
+ * #StateEmptyFilter (lines 1259–1303). Renders a danger-tinted
+ * advisory banner + a single closest-fit PlanCard + broaden-filter
+ * link. Closest fit is sourced from the full template list when no
+ * filtered results match (set by parent via `closestFit` prop).
+ */
+function ClosestFitFallback({
+  activeFilters,
+  closestFit,
+  onPickPlan,
+  onBack,
+}: {
+  activeFilters: { key: FilterKey; label: string }[];
+  closestFit: PickerPlan | null | undefined;
+  onPickPlan: (id: string) => void;
+  onBack: () => void;
+}) {
+  const reason =
+    activeFilters.length === 0
+      ? "No Gameplans available right now."
+      : `${activeFilters.map((f) => f.label).join(" + ")} is too restrictive. Try broadening one of the filters above${closestFit ? ", or pick the closest fit below." : "."}`;
   return (
-    <div className="border border-dashed border-ft-danger/60 bg-ft-danger/5 p-4 mt-4">
-      <Stamp className="text-ft-danger">NO MATCH</Stamp>
-      <div className="font-body text-xs text-ft-white mt-2 leading-relaxed">
-        No Gameplans match every filter. Try removing one above, or:
+    <div className="flex-1 flex flex-col">
+      <div className="border border-dashed border-ft-danger/60 bg-ft-danger/5 p-4 mt-2">
+        <Stamp className="text-ft-danger">NO MATCH</Stamp>
+        <div className="font-body text-xs text-ft-white mt-2 leading-relaxed">{reason}</div>
       </div>
+
+      {closestFit && (
+        <>
+          <Stamp className="mt-4 mb-2 block">CLOSEST FIT</Stamp>
+          <PlanCard plan={closestFit} onPick={() => onPickPlan(closestFit.id)} />
+        </>
+      )}
+
       <button
         onClick={onBack}
-        className="mt-3 font-body text-[12px] uppercase tracking-[0.1em] text-ft-accent border-b border-ft-accent"
+        className="mt-4 mb-4 py-2.5 self-stretch text-center font-body text-[12px] uppercase tracking-[0.1em] text-ft-accent border-t border-dashed border-ft-border"
       >
         ← Broaden filter
       </button>
     </div>
+  );
+}
+
+/**
+ * Compact one-line plan row — verbatim port of picker-screens.jsx
+ * #StateFilterSkipped row body (lines 1326–1346). Used when the user
+ * skipped the filter and we render all templates as a dense list.
+ */
+function CompactPlanRow({ plan, onPick }: { plan: PickerPlan; onPick: () => void }) {
+  return (
+    <button onClick={onPick} className="w-full text-left">
+      <PickerCard padding={10} style={{ paddingTop: 8, paddingBottom: 10 }}>
+        <div className="flex items-baseline gap-2 mb-1">
+          <div className="flex-1 font-display text-sm text-ft-white tracking-wide">{plan.name}</div>
+          <DifficultyBars level={plan.difficulty} />
+          <span className="text-ft-accent text-base leading-none">›</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <div className="flex-1">
+            <WeeksBar weeks={plan.durationWeeks} blocks={plan.blocks} height={5} showLabel={false} />
+          </div>
+          <DaysDots pattern={plan.pattern} compact />
+        </div>
+      </PickerCard>
+    </button>
   );
 }
 
@@ -350,9 +515,9 @@ export function Step4Preview({
   const wkPattern = plan.pattern;
 
   return (
-    <div className="min-h-[calc(100vh-2rem)] flex flex-col px-5 pt-5">
+    <div className="min-h-[calc(100vh-2rem)] flex flex-col px-5 pt-5 relative">
       <StepHeader step={4} onBack={onBack} />
-      <PickerHeading>{plan.name}</PickerHeading>
+      <PickerHeading variant={5}>{plan.name}</PickerHeading>
       <p className="font-body text-[13px] text-ft-light m-0">{plan.description}</p>
 
       <div className="grid grid-cols-[1fr_auto_auto] gap-3.5 items-end mt-3 pb-3 border-b border-dashed border-ft-border">
@@ -388,9 +553,12 @@ export function Step4Preview({
       )}
 
       {blueprint && !loading && (
-        <div className="flex-1 mt-4 flex flex-col gap-4">
+        <div className="flex-1 mt-4 flex flex-col gap-3">
           <BlockCalendar blueprint={blueprint} />
           <SampleWeek blueprint={blueprint} />
+          <NutritionCard blueprint={blueprint} plan={plan} />
+          <LifestylePicksCard plan={plan} />
+          <GoalsToGenerateCard blueprint={blueprint} plan={plan} />
           {blueprint.warnings && blueprint.warnings.length > 0 && (
             <div className="border border-dashed border-ft-warn/60 bg-ft-warn/5 p-3">
               <Stamp className="text-ft-warn">HEADS UP</Stamp>
@@ -412,8 +580,136 @@ export function Step4Preview({
           Pick another
         </PickerButton>
       </div>
+      <CornerStamp />
     </div>
   );
+}
+
+/**
+ * NUTRITION card — port of picker-screens.jsx Step4 lines 928–945.
+ * Renders the calorie scale with a delta-vs-maintenance estimate
+ * derived from the engine blueprint.
+ *
+ * Stub strategy (flagged in schema-gap): live engine returns absolute
+ * `nutritionTargets.calories`, not a delta-vs-maintenance. We compute
+ * delta against a typical maintenance baseline (2400 kcal). When user
+ * profile.maintenanceCalories lands in **R6**, swap the baseline.
+ */
+function NutritionCard({
+  blueprint,
+  plan,
+}: {
+  blueprint: PreviewBlueprint;
+  plan: PickerPlan;
+}) {
+  const cals = blueprint.nutritionTargets?.calories;
+  if (!cals) return null;
+  // Flagged for R6: replace 2400 with the user's actual TDEE.
+  const baseline = 2400;
+  const delta = Math.round(cals - baseline);
+  // Range estimate: ±100 around the projected delta to show the band.
+  const range: [number, number] = [delta - 100, delta + 100];
+  return (
+    <PickerCard padding={12} style={{ paddingTop: 12 }}>
+      <div className="flex justify-between items-baseline mb-0.5 pt-1">
+        <Stamp className="text-ft-accent">NUTRITION</Stamp>
+        <span className="font-body text-[10px] text-ft-dim uppercase tracking-[0.1em]">
+          vs maintenance
+        </span>
+      </div>
+      <CalorieScale delta={delta} range={range} />
+      <div className="flex justify-between items-center pt-1.5 border-t border-dashed border-ft-border-faint font-body text-[11px] text-ft-white">
+        <span>~{plan.freq.nutrition ? "1 g protein / lb" : "macros: optional"}</span>
+        <span className="text-ft-dim">·</span>
+        <span>{plan.freq.nutrition ? "Macros tracked" : "Untracked"}</span>
+      </div>
+    </PickerCard>
+  );
+}
+
+/**
+ * LIFESTYLE PICKS card — port of Step4 lines 947–955.
+ *
+ * Stub strategy (flagged for R6): the prototype shows 3 hand-picked
+ * Tags (SLEEP / STRESS / PROTEIN). Live derives them from the
+ * template's tag set since persistent lifestyle-target schema doesn't
+ * exist yet. Cuts → PROTEIN · 1g/lb. Recovery/longevity → SLEEP · 7+ H.
+ * Powerlifting/strength → STRESS · ≤3.
+ */
+function LifestylePicksCard({ plan }: { plan: PickerPlan }) {
+  const tags = plan.raw.tags;
+  const picks: { kind: "push" | "pull" | "legs" | "core" | "accent"; label: string }[] = [];
+  if (tags.some((t) => ["recovery", "longevity", "any-level"].includes(t))) {
+    picks.push({ kind: "pull", label: "SLEEP · 7+ H" });
+  }
+  if (tags.some((t) => ["strength", "powerlifting", "advanced"].includes(t))) {
+    picks.push({ kind: "push", label: "STRESS · ≤3" });
+  }
+  if (tags.some((t) => ["cut", "fat-loss", "physique", "bikini", "hypertrophy"].includes(t))) {
+    picks.push({ kind: "core", label: "PROTEIN · 1g/lb" });
+  }
+  if (picks.length === 0) {
+    picks.push({ kind: "accent", label: "BALANCED" });
+  }
+  return (
+    <PickerCard padding={12} style={{ paddingTop: 12 }}>
+      <Stamp className="text-ft-accent block mb-1.5">LIFESTYLE PICKS</Stamp>
+      <div className="flex gap-1.5 flex-wrap">
+        {picks.map((p) => (
+          <MovementTag key={p.label} kind={p.kind}>
+            {p.label}
+          </MovementTag>
+        ))}
+      </div>
+    </PickerCard>
+  );
+}
+
+/**
+ * GOALS IT'LL GENERATE card — port of Step4 lines 957–968.
+ *
+ * Renders a vertical accent-bordered list of metric targets the engine
+ * persists when the program is generated (`/api/programs/generate`
+ * already writes these to ProgramBenchmark). The engine populates
+ * `blueprint.metricTargets` based on goal/duration/experience.
+ */
+function GoalsToGenerateCard({
+  blueprint,
+  plan,
+}: {
+  blueprint: PreviewBlueprint;
+  plan: PickerPlan;
+}) {
+  const targets = (blueprint as PreviewBlueprint & { metricTargets?: { metricKey: string; targetValue: number; unit: string }[] }).metricTargets;
+  // Fallback to a derived list when the engine doesn't return targets.
+  const lines = targets?.length
+    ? targets.map((t) => `${humanMetric(t.metricKey)} · ${t.targetValue} ${t.unit} · ${plan.durationWeeks} wk`)
+    : [
+        `Sessions completed · ${plan.durationWeeks * plan.daysPerWeek} of ${plan.durationWeeks * plan.daysPerWeek}`,
+        `Body weight · trend over ${plan.durationWeeks} wk`,
+      ];
+  return (
+    <PickerCard padding={12} style={{ paddingTop: 12, marginBottom: 4 }}>
+      <Stamp className="text-ft-accent block mb-1.5">GOALS IT&apos;LL GENERATE</Stamp>
+      <div className="flex flex-col gap-1">
+        {lines.slice(0, 4).map((g, i) => (
+          <div
+            key={i}
+            className="font-body text-xs text-ft-white pl-2.5"
+            style={{ borderLeft: "2px solid rgb(var(--ft-accent))" }}
+          >
+            {g}
+          </div>
+        ))}
+      </div>
+    </PickerCard>
+  );
+}
+
+function humanMetric(key: string): string {
+  return key
+    .replace(/_/g, " ")
+    .replace(/\b\w/g, (c) => c.toUpperCase());
 }
 
 export interface PreviewBlueprint {
@@ -432,6 +728,19 @@ export interface PreviewBlueprint {
     }>;
   }>;
   warnings?: string[];
+  /** Engine-derived nutrition macros (Step4 NutritionCard reads). */
+  nutritionTargets?: {
+    calories: number;
+    protein: number;
+    carbs: number;
+    fat: number;
+  };
+  /** Engine-derived metric targets (Step4 GoalsToGenerateCard reads). */
+  metricTargets?: Array<{
+    metricKey: string;
+    targetValue: number;
+    unit: string;
+  }>;
 }
 
 function phaseColor(phase?: string | null): string {
@@ -585,12 +894,38 @@ function dayTypeColor(t: string): string {
 
 /* ─── Step 5 — Setup ───────────────────────────────────────────── */
 
+/** Body weight goal payload for parent state. */
+export interface BodyWeightGoal {
+  current: string;
+  target: string;
+  byDate: string;
+}
+
+/** Strength goal payload for parent state. */
+export interface StrengthGoal {
+  exerciseId: string;
+  exerciseName: string;
+  current1RM: string;
+  target1RM: string;
+}
+
+interface ExerciseSearchResult {
+  id: string;
+  name: string;
+  primaryMuscle: string | null;
+  movementPattern: string | null;
+}
+
 export function Step5Setup({
   plan,
   startDate,
   setStartDate,
   daysPerWeek,
   setDaysPerWeek,
+  bodyWeight,
+  setBodyWeight,
+  strength,
+  setStrength,
   submitting,
   onSubmit,
   onBack,
@@ -600,26 +935,34 @@ export function Step5Setup({
   setStartDate: (s: string) => void;
   daysPerWeek: number;
   setDaysPerWeek: (n: number) => void;
+  bodyWeight: BodyWeightGoal;
+  setBodyWeight: (v: BodyWeightGoal) => void;
+  strength: StrengthGoal;
+  setStrength: (v: StrengthGoal) => void;
   submitting: boolean;
   onSubmit: () => void;
   onBack: () => void;
 }) {
-  return (
-    <div className="min-h-[calc(100vh-2rem)] flex flex-col px-5 pt-5">
-      <StepHeader step={5} onBack={onBack} trailingLabel={plan.name.toUpperCase()} />
-      <PickerHeading>Let&apos;s set you up.</PickerHeading>
+  const bwStart = parseFloat(bodyWeight.current);
+  const bwTarget = parseFloat(bodyWeight.target);
+  const showBwChart = Number.isFinite(bwStart) && Number.isFinite(bwTarget) && bwStart !== bwTarget;
 
-      <div className="flex-1 mt-4 flex flex-col gap-5">
-        <Field label="Start date" kicker="01">
+  return (
+    <div className="min-h-[calc(100vh-2rem)] flex flex-col px-5 pt-5 relative">
+      <StepHeader step={5} onBack={onBack} trailingLabel={plan.name.toUpperCase()} />
+      <PickerHeading variant={6}>Let&apos;s set you up.</PickerHeading>
+
+      <div className="flex-1 mt-4 flex flex-col">
+        <FieldRow label="Start date" kicker="01" icon="calendar">
           <input
             type="date"
             value={startDate}
             onChange={(e) => setStartDate(e.target.value)}
-            className="w-full bg-ft-bg/40 border border-ft-border px-3 py-2 font-data text-base text-ft-white focus:outline-none focus:border-ft-accent transition-colors rounded-ft"
+            className="w-full bg-ft-bg/40 border border-ft-border px-3 py-2 font-data text-base text-ft-white focus:outline-none focus:border-ft-accent transition-colors"
           />
-        </Field>
+        </FieldRow>
 
-        <Field label="Days per week" kicker="02">
+        <FieldRow label="Days per week" kicker="02" icon="days">
           <Segments
             options={[3, 4, 5, 6].map((n) => ({ value: n, label: `${n}` }))}
             active={daysPerWeek}
@@ -628,11 +971,46 @@ export function Step5Setup({
           <div className="font-body text-[10px] text-ft-dim mt-1.5 uppercase tracking-wider">
             Template default: {plan.daysPerWeek}
           </div>
-        </Field>
+        </FieldRow>
 
-        <div className="border-t border-dashed border-ft-border pt-3 text-ft-dim font-body text-[11px] uppercase tracking-[0.15em]">
-          Goal targets and customization come next, after the program is created.
-        </div>
+        <FieldRow label="Body weight goal" kicker="03 · OPTIONAL" icon="scale">
+          <div className="grid grid-cols-3 gap-1.5 mb-2">
+            <div>
+              <div className="font-body ft-stamp text-[8px] text-ft-dim mb-0.5">CURRENT</div>
+              <NumInput
+                value={bodyWeight.current}
+                onChange={(v) => setBodyWeight({ ...bodyWeight, current: v })}
+                unit="LB"
+                placeholder="—"
+              />
+            </div>
+            <div>
+              <div className="font-body ft-stamp text-[8px] text-ft-dim mb-0.5">TARGET</div>
+              <NumInput
+                value={bodyWeight.target}
+                onChange={(v) => setBodyWeight({ ...bodyWeight, target: v })}
+                unit="LB"
+                placeholder="—"
+              />
+            </div>
+            <div>
+              <div className="font-body ft-stamp text-[8px] text-ft-dim mb-0.5">BY</div>
+              <input
+                type="date"
+                value={bodyWeight.byDate}
+                onChange={(e) => setBodyWeight({ ...bodyWeight, byDate: e.target.value })}
+                className="w-full bg-ft-bg/40 border border-ft-border px-2 py-2 font-data text-sm text-ft-white focus:outline-none focus:border-ft-accent transition-colors"
+              />
+            </div>
+          </div>
+          {showBwChart && (
+            <BodyWeightChart start={bwStart} target={bwTarget} weeks={plan.durationWeeks} />
+          )}
+        </FieldRow>
+
+        <FieldRow label="Strength goal" kicker="04 · OPTIONAL" icon="barbell">
+          <StrengthGoalPicker strength={strength} setStrength={setStrength} />
+        </FieldRow>
       </div>
 
       <div className="py-4">
@@ -640,21 +1018,124 @@ export function Step5Setup({
           {submitting ? "Creating…" : "Start Gameplan"}
         </PickerButton>
       </div>
+      <CornerStamp />
     </div>
   );
 }
 
-function Field({ label, kicker, children }: { label: string; kicker?: string; children: ReactNode }) {
+/**
+ * Strength-goal picker — exercise search bar + current/target 1RM
+ * NumInputs. Verbatim port of picker-screens.jsx Step5 lines 1228–1247
+ * (Strength goal field). Search hits live `/api/exercises?search=`.
+ */
+function StrengthGoalPicker({
+  strength,
+  setStrength,
+}: {
+  strength: StrengthGoal;
+  setStrength: (v: StrengthGoal) => void;
+}) {
+  const [query, setQuery] = useState("");
+  const [results, setResults] = useState<ExerciseSearchResult[]>([]);
+  const [showSearch, setShowSearch] = useState(false);
+
+  useEffect(() => {
+    if (query.length < 2) {
+      setResults([]);
+      return;
+    }
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => {
+      fetch(`/api/exercises?search=${encodeURIComponent(query)}`, { signal: ctrl.signal })
+        .then((r) => (r.ok ? r.json() : { exercises: [] }))
+        .then((data: { exercises: ExerciseSearchResult[] }) =>
+          setResults((data.exercises ?? []).slice(0, 8)),
+        )
+        .catch(() => {});
+    }, 250);
+    return () => {
+      ctrl.abort();
+      clearTimeout(timer);
+    };
+  }, [query]);
+
   return (
     <div>
-      <div className="flex items-baseline gap-2 mb-1.5">
-        {kicker && <Stamp>{kicker}</Stamp>}
-        <span className="font-body text-[13px] uppercase tracking-[0.1em] text-ft-white">{label}</span>
+      <div
+        className="border border-ft-border px-3 py-2 mb-2 flex items-center justify-between"
+        style={{ background: "rgb(var(--ft-bg-alt))" }}
+      >
+        <span className="font-data tabular-nums text-base text-ft-white truncate">
+          {strength.exerciseName || "Pick an exercise…"}
+        </span>
+        <button
+          onClick={() => setShowSearch((s) => !s)}
+          className="font-body text-[11px] uppercase tracking-[0.1em] text-ft-accent border-b border-ft-accent"
+        >
+          {strength.exerciseName ? "Change" : "Pick"}
+        </button>
       </div>
-      {children}
+
+      {showSearch && (
+        <div className="mb-2">
+          <input
+            type="text"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Search exercises…"
+            className="w-full bg-ft-bg/40 border border-ft-border px-3 py-2 font-body text-sm text-ft-white placeholder:text-ft-dim focus:outline-none focus:border-ft-accent"
+          />
+          {results.length > 0 && (
+            <div className="mt-1 border border-ft-border max-h-44 overflow-auto">
+              {results.map((ex) => (
+                <button
+                  key={ex.id}
+                  onClick={() => {
+                    setStrength({ ...strength, exerciseId: ex.id, exerciseName: ex.name });
+                    setQuery("");
+                    setShowSearch(false);
+                  }}
+                  className="w-full text-left px-3 py-2 border-b border-ft-border last:border-b-0 hover:bg-ft-card transition-colors"
+                >
+                  <div className="font-body text-sm text-ft-white">{ex.name}</div>
+                  <div className="font-body text-[10px] text-ft-dim">
+                    {[ex.primaryMuscle, ex.movementPattern].filter(Boolean).join(" · ")}
+                  </div>
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      <div className="grid grid-cols-2 gap-2">
+        <div>
+          <div className="font-body ft-stamp text-[8px] text-ft-dim mb-0.5">CURRENT 1RM</div>
+          <NumInput
+            value={strength.current1RM}
+            onChange={(v) => setStrength({ ...strength, current1RM: v })}
+            unit="LB"
+            placeholder="—"
+          />
+        </div>
+        <div>
+          <div className="font-body ft-stamp text-[8px] text-ft-dim mb-0.5">TARGET 1RM</div>
+          <NumInput
+            value={strength.target1RM}
+            onChange={(v) => setStrength({ ...strength, target1RM: v })}
+            unit="LB"
+            placeholder="—"
+          />
+        </div>
+      </div>
     </div>
   );
 }
+
+// Note: the R1 `Field` helper (kicker + label header) was replaced by
+// `FieldRow` in R4 — adds the per-field icon glyph (calendar/days/scale/
+// barbell) per picker-screens.jsx#FieldRow (lines 1128–1145). Imported
+// from `./FieldRow` at the top of this file.
 
 function Segments<T extends string | number>({
   options,
