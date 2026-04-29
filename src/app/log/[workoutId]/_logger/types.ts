@@ -27,3 +27,18 @@ export function movementCat(pattern: string | null | undefined): MovementCat {
       return "core";
   }
 }
+
+/**
+ * `chrome` discriminator from ThemeProvider — every theme renders one.
+ * Used by Lane / SetCell / SetSheet / WeekStrip / WorkoutHeader to
+ * branch on per-chrome ornamental treatments verbatim from the
+ * prototype.
+ */
+export type LoggerChrome =
+  | "lab"
+  | "notebook"
+  | "iron"
+  | "arcade"
+  | "blueprint"
+  | "cyberpunk"
+  | "graffiti";

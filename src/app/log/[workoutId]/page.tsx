@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Card, SectionHeader } from "@/components/ui";
 import { useToast } from "@/components/ui/Toast";
@@ -10,6 +9,9 @@ import ThemedIcon from "@/components/themed/ThemedIcon";
 import Lane from "./_logger/Lane";
 import SetSheet from "./_logger/SetSheet";
 import WeekStrip, { type WeekTab } from "./_logger/WeekStrip";
+import WorkoutHeader from "./_logger/WorkoutHeader";
+import FinishBar from "./_logger/FinishBar";
+import { shortDate } from "./_logger/util";
 import type { ActiveCell } from "./_logger/types";
 
 const DEFAULT_REST_SECONDS = 90;
@@ -21,6 +23,19 @@ interface SearchExercise {
   primaryMuscle: string | null;
   equipment: string | null;
 }
+
+// Note: TabNav (logger-app.jsx#962-994) is OMITTED — R1's BottomNav
+// supersedes the prototype's faded in-session tab strip and the logger
+// pages already hide BottomNav while active.
+//
+// VariantDropdown (logger-app.jsx#439-500) is OMITTED — see comment in
+// _logger/Lane.tsx; the swap path uses ExercisePicker instead. Schema
+// support deferred to R6.
+//
+// Skeleton variants B (FocusCard), C (DenseGrid), D (TimerFirst) from
+// logger-skeletons.jsx are OMITTED — variant A (LoggerScreen, the
+// canonical horizontal-weeks layout) is the active layout. Variant
+// switching requires a tweaks/settings UI; no toggle exists in live.
 
 interface SetData {
   set: number;
@@ -42,8 +57,12 @@ interface ExerciseData {
   name: string;
   shortName: string;
   category: string;
+  /** Specific muscle for the lane rail label (e.g. "Lateral Delt"). */
+  primaryMuscle: string | null;
   targetSets: number;
   targetRepRange: string;
+  /** Stored as Decimal in DB; passed to SetSheet as the RPE-side string. */
+  targetRpe: string | null;
   progressionType: string;
   sets: SetData[];
   notes: string;
@@ -84,9 +103,10 @@ interface BlockDayData {
   exercises: {
     id: string;
     exerciseId: string;
-    exercise: { name: string; movementPattern: string | null };
+    exercise: { name: string; movementPattern: string | null; primaryMuscle: string | null };
     targetSets: number | null;
     targetRepRange: string | null;
+    targetRpe: number | string | null;
     progressionType: string;
     progressionIncrement: number | null;
   }[];
@@ -111,9 +131,24 @@ function WorkoutTimer({ startTime }: { startTime: number }) {
   }, [startTime]);
 
   return (
-    <div className="flex items-center gap-1.5 bg-ft-surface border border-ft-card rounded px-2.5 py-1.5">
-      <span className="text-ft-dim text-xs font-body">&#9201;</span>
-      <span className="text-ft-light text-sm font-body tabular-nums">
+    <div
+      className="flex items-center gap-1.5 px-2.5 py-1.5"
+      style={{
+        background: "rgb(var(--ft-surface))",
+        border: "1px solid rgb(var(--ft-border))",
+        borderRadius: 4,
+      }}
+    >
+      <span
+        className="font-body"
+        style={{ fontSize: 12, color: "rgb(var(--ft-text-tertiary))" }}
+      >
+        &#9201;
+      </span>
+      <span
+        className="font-body tabular-nums"
+        style={{ fontSize: 13, color: "rgb(var(--ft-text-secondary))" }}
+      >
         {elapsed}
       </span>
     </div>
@@ -448,8 +483,10 @@ export default function ActiveWorkoutPage({
           name: bde.exercise.name,
           shortName: makeShortName(bde.exercise.name),
           category: bde.exercise.movementPattern || "—",
+          primaryMuscle: bde.exercise.primaryMuscle ?? null,
           targetSets: bde.targetSets ?? 3,
           targetRepRange: bde.targetRepRange ?? "8-12",
+          targetRpe: bde.targetRpe != null ? String(bde.targetRpe) : null,
           progressionType: bde.progressionType ?? "none",
           sets: Array.from({ length: bde.targetSets ?? 3 }, (_, i) => ({
             set: i + 1,
@@ -615,8 +652,10 @@ export default function ActiveWorkoutPage({
       name: ex.name,
       shortName: makeShortName(ex.name),
       category: ex.movementPattern || "—",
+      primaryMuscle: ex.primaryMuscle ?? null,
       targetSets: 3,
       targetRepRange: "8-12",
+      targetRpe: null,
       progressionType: "none",
       sets: [1, 2, 3].map((n) => ({
         set: n,
@@ -668,6 +707,7 @@ export default function ActiveWorkoutPage({
               name: ex.name,
               shortName: makeShortName(ex.name),
               category: ex.movementPattern || "—",
+              primaryMuscle: ex.primaryMuscle ?? null,
               // Reset last performance data; will be re-fetched for the new exercise
               lastSets: [],
               suggestedWeight: null,
@@ -858,8 +898,6 @@ export default function ActiveWorkoutPage({
       }
     }
   }
-  const setsPct = setsTotal > 0 ? setsDone / setsTotal : 0;
-
   // Build the WeekStrip tab list. Each completed sibling is a past week;
   // the current workout is the trailing "TODAY" tab.
   const currentWeekIdx = siblingWorkouts.length;
@@ -924,46 +962,21 @@ export default function ActiveWorkoutPage({
         />
       )}
 
-      {/* Header */}
-      <div className="sticky top-0 z-10 bg-ft-bg border-b border-ft-card px-4 pt-4 pb-3">
-        <div className="flex items-center justify-between mb-2">
-          <div className="flex items-center gap-2 min-w-0">
-            <Link
-              href="/log"
-              className="text-ft-dim hover:text-ft-light text-sm font-body transition-colors shrink-0"
-            >
-              &larr; {dayInfo?.blockName ?? "Back"}
-            </Link>
-            <span className="text-ft-muted text-sm font-body">/</span>
-            <span className="text-ft-dim text-sm font-body truncate">
-              {dayInfo?.name ?? "Workout"}
-            </span>
-          </div>
-          <span
-            className="ft-stamp shrink-0"
-            style={{ borderColor: "rgb(var(--ft-success) / 0.5)", color: "rgb(var(--ft-success))" }}
-          >
-            LOGGING
-          </span>
-        </div>
-
-        <div className="flex items-center justify-between gap-3">
-          <div className="min-w-0">
-            <h1 className="font-display text-2xl text-ft-white tracking-wide leading-tight truncate">
-              {dayInfo?.name ?? "Workout"}
-            </h1>
-            <p className="text-ft-light text-[10px] uppercase tracking-[0.18em] font-body mt-0.5 truncate">
-              {dayInfo?.blockName ? `${dayInfo.blockName.toUpperCase()} · ` : ""}
-              {new Date().toLocaleDateString("en-US", {
-                weekday: "short",
-                month: "short",
-                day: "numeric",
-              })}
-            </p>
-          </div>
-          <WorkoutTimer startTime={startTime} />
-        </div>
-      </div>
+      {/* Header — per-chrome theme branches preserved */}
+      <WorkoutHeader
+        blockName={dayInfo?.blockName ?? null}
+        dayName={dayInfo?.name ?? "Workout"}
+        currentWeekIdx={siblingWorkouts.length}
+        totalWeeks={null}
+        dateLabel={new Date().toLocaleDateString("en-US", {
+          weekday: "short",
+          month: "short",
+          day: "numeric",
+        })}
+        backHref="/gameplan"
+        backLabel={dayInfo?.blockName ?? "Back"}
+        rightSlot={<WorkoutTimer startTime={startTime} />}
+      />
 
       {/* Restored draft banner */}
       {restored && (
@@ -1033,6 +1046,7 @@ export default function ActiveWorkoutPage({
                 name={ex.name}
                 category={ex.category}
                 movementPattern={ex.category}
+                primaryMuscle={ex.primaryMuscle}
                 targetSets={ex.targetSets}
                 targetRepRange={ex.targetRepRange}
                 sets={ex.sets}
@@ -1083,8 +1097,9 @@ export default function ActiveWorkoutPage({
         <SetSheet
           exerciseName={exercises[activeCell.exerciseIdx].name}
           setIdx={activeCell.setIdx}
-          category={exercises[activeCell.exerciseIdx].category}
+          category={exercises[activeCell.exerciseIdx].primaryMuscle ?? exercises[activeCell.exerciseIdx].category}
           targetReps={exercises[activeCell.exerciseIdx].targetRepRange}
+          targetRpe={exercises[activeCell.exerciseIdx].targetRpe}
           initial={{
             weight:
               exercises[activeCell.exerciseIdx].sets[activeCell.setIdx]?.weight ??
@@ -1118,133 +1133,24 @@ export default function ActiveWorkoutPage({
 
       {/*
        * FinishBar — sticky bottom strip with running session stats.
-       * Sets done/total, total volume, elapsed time, plus the FINISH
-       * button. Bottom 3px progress bar tracks set completion.
+       * Per-chrome theme branches (arcade text-color, lab/notebook
+       * radii) ported verbatim from logger-app.jsx#FinishBar.
        *
        * Only renders once at least one exercise is loaded; before that
-       * the empty state ("No exercises yet") is the only thing on screen
-       * and a stats bar would be noise.
+       * the empty state ("No exercises yet") is the only thing on screen.
        */}
       {exercises.length > 0 && (
-        <div className="ft-card fixed bottom-0 left-0 right-0 z-30 bg-ft-surface border-t border-ft-border">
-          <div className="max-w-2xl mx-auto px-4 pt-2.5 pb-3 flex items-center justify-between gap-3">
-            <div className="flex items-end gap-4 min-w-0">
-              <FinishStat label="SETS" value={`${setsDone}`} suffix={`/${setsTotal}`} />
-              <FinishStat label="VOL" value={formatVolume(totalVolume)} />
-              {restEndsAt && restEndsAt > Date.now() ? (
-                <FinishStat
-                  label="REST"
-                  value={<RestCountdown endsAt={restEndsAt} onDone={() => setRestEndsAt(null)} />}
-                  accent
-                />
-              ) : (
-                <FinishStat label="TIME" value={<WorkoutMin startTime={startTime} />} />
-              )}
-            </div>
-            <button
-              onClick={handleFinish}
-              disabled={finishing}
-              className={[
-                "shrink-0 font-body text-[12px] tracking-[0.14em] uppercase font-bold px-4 py-2 border transition-colors",
-                "disabled:opacity-50 disabled:cursor-not-allowed",
-                setsPct >= 1
-                  ? "bg-ft-accent text-ft-bg border-ft-accent"
-                  : "bg-transparent text-ft-accent border-ft-accent hover:bg-ft-accent/10",
-              ].join(" ")}
-              style={{ borderRadius: "var(--ft-radius)" }}
-            >
-              {finishing ? "Saving…" : "Finish"}
-            </button>
-          </div>
-          <div className="h-[3px] bg-ft-border/40 relative overflow-hidden">
-            <div
-              className="absolute inset-y-0 left-0 bg-ft-accent transition-[width] duration-500"
-              style={{ width: `${setsPct * 100}%` }}
-              aria-label={`${setsDone} of ${setsTotal} sets complete`}
-            />
-          </div>
-        </div>
+        <FinishBar
+          setsDone={setsDone}
+          setsTotal={setsTotal}
+          totalVolume={totalVolume}
+          startTime={startTime}
+          restEndsAt={restEndsAt}
+          onClearRest={() => setRestEndsAt(null)}
+          finishing={finishing}
+          onFinish={handleFinish}
+        />
       )}
     </div>
   );
-}
-
-/** Single stat block in the FinishBar. */
-function FinishStat({
-  label,
-  value,
-  suffix,
-  accent,
-}: {
-  label: string;
-  value: React.ReactNode;
-  suffix?: string;
-  accent?: boolean;
-}) {
-  return (
-    <div className="leading-none min-w-0">
-      <div className="font-body text-[9px] uppercase tracking-[0.15em] text-ft-dim">
-        {label}
-      </div>
-      <div className="mt-1">
-        <span
-          className={`font-data text-base font-bold tabular-nums ${accent ? "text-ft-accent" : "text-ft-white"}`}
-        >
-          {value}
-        </span>
-        {suffix && (
-          <span className="font-data text-sm text-ft-dim font-medium tabular-nums">
-            {suffix}
-          </span>
-        )}
-      </div>
-    </div>
-  );
-}
-
-/**
- * Counts down from a fixed `endsAt` timestamp; renders "M:SS" and
- * fires `onDone` exactly once when the deadline passes.
- */
-function RestCountdown({ endsAt, onDone }: { endsAt: number; onDone: () => void }) {
-  const [now, setNow] = useState(() => Date.now());
-  useEffect(() => {
-    const id = setInterval(() => setNow(Date.now()), 250);
-    return () => clearInterval(id);
-  }, []);
-  const remainingMs = Math.max(0, endsAt - now);
-  useEffect(() => {
-    if (remainingMs === 0) onDone();
-  }, [remainingMs, onDone]);
-  const totalSec = Math.ceil(remainingMs / 1000);
-  const m = Math.floor(totalSec / 60);
-  const s = totalSec % 60;
-  return <>{`${m}:${s.toString().padStart(2, "0")}`}</>;
-}
-
-/** Compact "12m" workout timer used inside the FinishBar. */
-function WorkoutMin({ startTime }: { startTime: number }) {
-  const [mins, setMins] = useState(() => Math.floor((Date.now() - startTime) / 60000));
-  useEffect(() => {
-    const id = setInterval(() => {
-      setMins(Math.floor((Date.now() - startTime) / 60000));
-    }, 30000);
-    return () => clearInterval(id);
-  }, [startTime]);
-  return <>{mins}m</>;
-}
-
-function formatVolume(v: number): string {
-  if (v >= 1000) return `${(v / 1000).toFixed(1)}k`;
-  return `${Math.round(v)}`;
-}
-
-/** "MM/DD" short date for the WeekStrip kicker. */
-function shortDate(iso: string): string {
-  const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return "—";
-  return `${(d.getMonth() + 1).toString().padStart(2, "0")}/${d
-    .getDate()
-    .toString()
-    .padStart(2, "0")}`;
 }

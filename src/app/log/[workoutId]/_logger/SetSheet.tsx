@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useTheme } from "@/providers/ThemeProvider";
+import { fmtWeight } from "./util";
 
 interface SetSheetProps {
   /** Lane context shown in the header. */
@@ -20,17 +22,29 @@ interface SetSheetProps {
 type Field = "weight" | "reps" | "rpe";
 
 /**
- * Bottom sheet for entering / editing a single set's values.
+ * Bottom sheet for entering / editing a single set's values. Ports
+ * `SetSheet` from logger-app.jsx (lines 706–856).
  *
  * Three big tappable fields (WEIGHT / REPS / RPE) up top — taps focus
  * one and the keypad below routes digit input there. Quick adjustment
  * buttons (-5, +2.5, +5, +10) appear when WEIGHT is focused. A
  * "MATCH LAST" pill copies last-week's weight + reps if available.
  *
+ * Per-chrome attestations (logger-app.jsx#754-851):
+ *   lab       → 16px top-radius (rounded sheet), tracked caps actions
+ *   notebook  → 8px top-radius, paper-feel
+ *   arcade    → 0 radius, FINISH btn text-color = #000 on neon pink
+ *   iron      → 0 radius, accent-bordered LOG SET btn
+ *   blueprint → 0 radius, R0-token fallback
+ *   cyberpunk → 0 radius, R0-token fallback
+ *   graffiti  → 0 radius, R0-token fallback
+ *
  * Note on the RPE/RIR mapping:
- *   The schema stores RIR (reps-in-reserve). The prototype talks about
- *   RPE. We collect RPE from the user (more common framing) and store
- *   it as `rir = 10 - rpe`. RPE 10 = RIR 0, RPE 7 = RIR 3, etc.
+ *   The schema stores both `rir` (reps-in-reserve) and `rpe` columns
+ *   on Set. The prototype talks about RPE. We collect RPE from the
+ *   user (more common framing) and store it as `rir = 10 - rpe` —
+ *   matches the existing `/api/sets` payload contract. R3 stays
+ *   UI-only and does not start writing the `rpe` column directly.
  */
 export default function SetSheet({
   exerciseName,
@@ -43,6 +57,13 @@ export default function SetSheet({
   onCommit,
   onCancel,
 }: SetSheetProps) {
+  const { chrome } = useTheme();
+  const isArcade = chrome === "arcade";
+  const isLab = chrome === "lab";
+  const isNotebook = chrome === "notebook";
+  const topRadius = isLab ? 16 : isNotebook ? 8 : 0;
+  const btnRadius = isLab ? 6 : isNotebook ? 4 : 0;
+
   // Pre-fill: prefer initial values, fall back to last-week ghost, else sensible defaults.
   const [weight, setWeight] = useState<number>(
     initial.weight ?? lastWeek?.weight ?? 0,
@@ -50,9 +71,12 @@ export default function SetSheet({
   const [reps, setReps] = useState<number>(
     initial.reps ?? lastWeek?.reps ?? parseTargetReps(targetReps) ?? 8,
   );
-  const initialRpe = initial.rir != null ? 10 - initial.rir : parseTargetRpe(targetRpe) ?? 8;
+  const initialRpe =
+    initial.rir != null ? 10 - initial.rir : parseTargetRpe(targetRpe) ?? 8;
   const [rpe, setRpe] = useState<number>(initialRpe);
-  const [focus, setFocus] = useState<Field>(initial.weight == null ? "weight" : "reps");
+  const [focus, setFocus] = useState<Field>(
+    initial.weight == null ? "weight" : "reps",
+  );
 
   /** Close on Escape for desktop. */
   useEffect(() => {
@@ -63,7 +87,8 @@ export default function SetSheet({
     return () => window.removeEventListener("keydown", onKey);
   }, [onCancel]);
 
-  const get = (f: Field): number => (f === "weight" ? weight : f === "reps" ? reps : rpe);
+  const get = (f: Field): number =>
+    f === "weight" ? weight : f === "reps" ? reps : rpe;
   const set = (f: Field, v: number) => {
     if (f === "weight") setWeight(v);
     else if (f === "reps") setReps(v);
@@ -96,36 +121,90 @@ export default function SetSheet({
     <>
       <div
         onClick={onCancel}
-        className="fixed inset-0 bg-black/50 z-[90]"
+        className="fixed inset-0 z-[90]"
+        style={{ background: "rgb(0 0 0 / 0.5)" }}
         aria-hidden
       />
       <div
         role="dialog"
         aria-label={`Log set ${setIdx + 1} for ${exerciseName}`}
-        className="fixed bottom-0 left-0 right-0 z-[91] bg-ft-surface border-t border-ft-border rounded-ft px-4 pt-3 pb-5 max-w-2xl mx-auto"
-        style={{ boxShadow: "0 -20px 40px rgba(0,0,0,.3)" }}
+        className="fixed bottom-0 left-0 right-0 z-[91] max-w-2xl mx-auto"
+        style={{
+          background: "rgb(var(--ft-surface))",
+          borderTop: "1px solid rgb(var(--ft-border))",
+          borderTopLeftRadius: topRadius,
+          borderTopRightRadius: topRadius,
+          padding: "10px 14px 16px",
+          boxShadow: "0 -20px 40px rgb(0 0 0 / 0.3)",
+        }}
       >
         {/* grabber */}
-        <div className="w-9 h-1 bg-ft-dim/40 rounded mx-auto mb-3" aria-hidden />
+        <div
+          aria-hidden
+          style={{
+            width: 36,
+            height: 4,
+            background: "rgb(var(--ft-text-tertiary) / 0.4)",
+            borderRadius: 2,
+            margin: "0 auto 10px",
+          }}
+        />
 
         {/* context row */}
-        <div className="flex items-center justify-between mb-3 gap-2">
+        <div className="flex items-center justify-between mb-2.5 gap-2">
           <div className="min-w-0">
-            <div className="font-data text-[10px] uppercase tracking-[0.15em] text-ft-dim">
+            <div
+              className="font-data"
+              style={{
+                fontSize: 10,
+                color: "rgb(var(--ft-text-tertiary))",
+                letterSpacing: ".15em",
+                textTransform: "uppercase",
+              }}
+            >
               {category ? `${category.toUpperCase()} · ` : ""}SET {setIdx + 1}
             </div>
-            <div className="font-display text-base text-ft-white truncate mt-0.5">
+            <div
+              className="font-display truncate mt-0.5"
+              style={{
+                fontSize: 14,
+                color: "rgb(var(--ft-text-primary))",
+              }}
+            >
               {exerciseName}
             </div>
           </div>
           {lastWeek?.weight != null && (
             <button
               onClick={matchLast}
-              className="shrink-0 bg-ft-card border border-ft-border/60 rounded-ft px-2.5 py-1.5 text-left"
+              className="shrink-0 text-left"
+              style={{
+                background: "rgb(var(--ft-bg-alt))",
+                border: "1px solid rgb(var(--ft-border) / 0.6)",
+                borderRadius: btnRadius,
+                padding: "6px 10px",
+              }}
             >
-              <div className="font-data text-[9px] tracking-[0.12em] text-ft-dim">LAST</div>
-              <div className="font-data text-[13px] text-ft-white font-semibold tabular-nums">
-                {lastWeek.weight}×{lastWeek.reps}
+              <div
+                className="font-data"
+                style={{
+                  fontSize: 9,
+                  letterSpacing: ".12em",
+                  color: "rgb(var(--ft-text-tertiary))",
+                  textTransform: "uppercase",
+                }}
+              >
+                LAST
+              </div>
+              <div
+                className="font-data tabular-nums"
+                style={{
+                  fontSize: 13,
+                  color: "rgb(var(--ft-text-primary))",
+                  fontWeight: 600,
+                }}
+              >
+                {fmtWeight(lastWeek.weight)}×{lastWeek.reps}
               </div>
             </button>
           )}
@@ -139,6 +218,7 @@ export default function SetSheet({
             unit="lb"
             active={focus === "weight"}
             onClick={() => setFocus("weight")}
+            radius={btnRadius}
           />
           <FieldButton
             label="REPS"
@@ -146,6 +226,7 @@ export default function SetSheet({
             unit={targetReps ? `target ${targetReps}` : ""}
             active={focus === "reps"}
             onClick={() => setFocus("reps")}
+            radius={btnRadius}
           />
           <FieldButton
             label="RPE"
@@ -153,37 +234,69 @@ export default function SetSheet({
             unit={targetRpe ? `target @${targetRpe}` : "1–10"}
             active={focus === "rpe"}
             onClick={() => setFocus("rpe")}
+            radius={btnRadius}
           />
         </div>
 
-        {/* quick weight adjusters when weight is focused */}
+        {/* quick weight adjusters */}
         {focus === "weight" && (
           <div className="grid grid-cols-4 gap-1.5 mb-2">
-            <QuickBtn onClick={() => setWeight(Math.max(0, weight - 5))}>− 5</QuickBtn>
-            <QuickBtn onClick={() => setWeight(weight + 2.5)}>+ 2.5</QuickBtn>
-            <QuickBtn onClick={() => setWeight(weight + 5)}>+ 5</QuickBtn>
-            <QuickBtn onClick={() => setWeight(weight + 10)}>+ 10</QuickBtn>
+            <QuickBtn radius={btnRadius} onClick={() => setWeight(Math.max(0, weight - 5))}>
+              − 5
+            </QuickBtn>
+            <QuickBtn radius={btnRadius} onClick={() => setWeight(weight + 2.5)}>
+              + 2.5
+            </QuickBtn>
+            <QuickBtn radius={btnRadius} onClick={() => setWeight(weight + 5)}>
+              + 5
+            </QuickBtn>
+            <QuickBtn radius={btnRadius} onClick={() => setWeight(weight + 10)}>
+              + 10
+            </QuickBtn>
           </div>
         )}
 
         {/* keypad */}
         <div className="grid grid-cols-3 gap-1.5">
-          {(["1", "2", "3", "4", "5", "6", "7", "8", "9", "clear", "0", "back"] as const).map((k) => (
-            <PadKey key={k} k={k} onClick={() => onPad(k)} />
-          ))}
+          {(["1", "2", "3", "4", "5", "6", "7", "8", "9", "clear", "0", "back"] as const).map(
+            (k) => (
+              <PadKey key={k} k={k} radius={btnRadius} onClick={() => onPad(k)} />
+            ),
+          )}
         </div>
 
         {/* actions */}
         <div className="flex gap-2 mt-3">
           <button
             onClick={onCancel}
-            className="flex-1 py-3 bg-transparent border border-ft-border/60 rounded-ft text-ft-light font-body text-[13px] font-semibold uppercase tracking-[0.1em]"
+            className="font-body flex-1 py-3"
+            style={{
+              background: "transparent",
+              border: "1px solid rgb(var(--ft-border) / 0.6)",
+              borderRadius: btnRadius,
+              color: "rgb(var(--ft-text-secondary))",
+              fontSize: 13,
+              fontWeight: 600,
+              letterSpacing: ".1em",
+              textTransform: "uppercase",
+            }}
           >
             Cancel
           </button>
           <button
             onClick={commit}
-            className="flex-[2] py-3 bg-ft-accent text-ft-bg border border-ft-accent rounded-ft font-body text-[13px] font-bold uppercase tracking-[0.1em]"
+            className="font-body py-3"
+            style={{
+              flex: 2,
+              background: "rgb(var(--ft-accent))",
+              border: "1px solid rgb(var(--ft-accent))",
+              borderRadius: btnRadius,
+              color: isArcade ? "rgb(var(--ft-bg))" : "rgb(var(--ft-text-on-accent))",
+              fontSize: 13,
+              fontWeight: 700,
+              letterSpacing: ".1em",
+              textTransform: "uppercase",
+            }}
           >
             Log set
           </button>
@@ -199,50 +312,121 @@ function FieldButton({
   unit,
   active,
   onClick,
+  radius,
 }: {
   label: string;
   value: number;
   unit: string;
   active: boolean;
   onClick: () => void;
+  radius: number;
 }) {
   return (
     <button
       onClick={onClick}
-      className={[
-        "py-2 px-2.5 rounded-ft text-center transition-colors",
-        active ? "bg-ft-accent/15 border border-ft-accent" : "bg-ft-card border border-ft-border/40",
-      ].join(" ")}
+      style={{
+        padding: "8px 10px",
+        textAlign: "center",
+        background: active
+          ? "rgb(var(--ft-accent) / 0.15)"
+          : "rgb(var(--ft-bg-alt))",
+        border: `1px solid ${
+          active ? "rgb(var(--ft-accent))" : "rgb(var(--ft-border) / 0.4)"
+        }`,
+        borderRadius: radius,
+        cursor: "pointer",
+      }}
     >
-      <div className="font-data text-[9px] tracking-[0.12em] text-ft-dim">{label}</div>
-      <div className="font-data text-2xl font-bold leading-tight text-ft-white tabular-nums">
+      <div
+        className="font-data"
+        style={{
+          fontSize: 9,
+          color: "rgb(var(--ft-text-tertiary))",
+          letterSpacing: ".12em",
+          textTransform: "uppercase",
+        }}
+      >
+        {label}
+      </div>
+      <div
+        className="font-data tabular-nums"
+        style={{
+          fontSize: 26,
+          color: "rgb(var(--ft-text-primary))",
+          fontWeight: 700,
+          lineHeight: 1.05,
+        }}
+      >
         {value}
       </div>
-      {unit && <div className="font-data text-[9px] text-ft-dim truncate">{unit}</div>}
+      {unit && (
+        <div
+          className="font-data truncate"
+          style={{
+            fontSize: 9,
+            color: "rgb(var(--ft-text-tertiary))",
+          }}
+        >
+          {unit}
+        </div>
+      )}
     </button>
   );
 }
 
-function QuickBtn({ children, onClick }: { children: React.ReactNode; onClick: () => void }) {
+function QuickBtn({
+  children,
+  onClick,
+  radius,
+}: {
+  children: React.ReactNode;
+  onClick: () => void;
+  radius: number;
+}) {
   return (
     <button
       onClick={onClick}
-      className="py-2 bg-ft-card border border-ft-border/60 rounded-ft text-ft-light font-body text-[13px] font-semibold"
+      className="font-body"
+      style={{
+        padding: "8px 0",
+        background: "rgb(var(--ft-bg-alt))",
+        border: "1px solid rgb(var(--ft-border) / 0.6)",
+        borderRadius: radius,
+        color: "rgb(var(--ft-text-secondary))",
+        fontSize: 13,
+        fontWeight: 600,
+        cursor: "pointer",
+      }}
     >
       {children}
     </button>
   );
 }
 
-function PadKey({ k, onClick }: { k: string; onClick: () => void }) {
+function PadKey({
+  k,
+  onClick,
+  radius,
+}: {
+  k: string;
+  onClick: () => void;
+  radius: number;
+}) {
   const isAction = k === "clear" || k === "back";
   return (
     <button
       onClick={onClick}
-      className={[
-        "py-3.5 rounded-ft border border-ft-border/40 text-ft-white font-body text-xl font-semibold tabular-nums",
-        isAction ? "bg-ft-card" : "bg-ft-surface",
-      ].join(" ")}
+      className="font-body tabular-nums"
+      style={{
+        padding: "14px 0",
+        background: isAction ? "rgb(var(--ft-bg-alt))" : "rgb(var(--ft-surface))",
+        border: "1px solid rgb(var(--ft-border) / 0.4)",
+        borderRadius: radius,
+        color: "rgb(var(--ft-text-primary))",
+        fontSize: 20,
+        fontWeight: 600,
+        cursor: "pointer",
+      }}
     >
       {k === "back" ? "⌫" : k === "clear" ? "C" : k}
     </button>
@@ -257,6 +441,6 @@ function parseTargetReps(target: string | null | undefined): number | null {
 
 function parseTargetRpe(target: string | null | undefined): number | null {
   if (!target) return null;
-  const first = parseInt(target.split("-")[0], 10);
+  const first = parseFloat(target.split("-")[0]);
   return Number.isFinite(first) ? first : null;
 }
