@@ -1,11 +1,15 @@
 "use client";
 
+import { useTheme } from "@/providers/ThemeProvider";
+import ThemedIcon from "@/components/themed/ThemedIcon";
+import { fmtWeight } from "./util";
 import type { MovementCat } from "./types";
 
 interface SetCellProps {
   setIdx: number;
   weight: number | null;
   reps: number | null;
+  rir: number | null;
   done: boolean;
   /** Last-week values for ghost-state preview. */
   ghost?: { weight: number | null; reps: number | null } | null;
@@ -24,15 +28,29 @@ interface SetCellProps {
  * Three visual states:
  *   - empty    — center dot, dashed-feel border, taps open SetSheet
  *   - ghost    — last-week's values rendered dim (when provided)
- *   - filled   — current weight × reps in display weight, check corner
+ *   - filled   — current weight × reps in display weight, themed check corner
+ *
+ * Per-chrome attestations (port of logger-app.jsx#SetCell lines 527–657):
+ *   notebook  → cream paper-tile pocket, italic ghost text
+ *   iron      → darker pocket vs brass-rimmed plate, inset highlight
+ *   lab       → paper-white surface, 2px shadow
+ *   arcade    → deep navy pocket with cyan inset rim, larger numerals
+ *   blueprint → lighter navy on dark drawing card, white inset
+ *   cyberpunk → deep midnight panel, cyan inner-glow
+ *   graffiti  → concrete shade, dark drop-shadow
  *
  * The `dense` prop scales typography down so 5–6 sets still fit a
  * 360–390px-wide lane on a phone — mirrors the prototype's rule.
+ *
+ * Note: the prototype's bare-SVG check icon is replaced by ThemedIcon
+ * `check` — gives each theme its native completion glyph (neon-line /
+ * pixel / sketchy / stencil / marker / drafted / clinical).
  */
 export default function SetCell({
   setIdx,
   weight,
   reps,
+  rir,
   done,
   ghost,
   isActive,
@@ -41,18 +59,20 @@ export default function SetCell({
   disabled = false,
   onTap,
 }: SetCellProps) {
+  const { chrome } = useTheme();
   const filled = done && weight != null;
   const showGhost = !filled && !!(ghost && ghost.weight != null);
-  const catVar = `var(--ft-${cat})`;
+  const palette = cellPalette(chrome);
 
-  const wClass = filled
-    ? dense
-      ? "text-xl" // ~20px for dense filled
-      : "text-2xl" // ~24px for normal filled (was text-xl)
-    : dense
-    ? "text-base"
-    : "text-lg";
-  const rClass = dense ? "text-[10px]" : "text-xs";
+  // Arcade gets a typography bump (its native sizes were undersized for legibility).
+  const isArcade = chrome === "arcade";
+  const wFontFilled = isArcade ? (dense ? 22 : 26) : dense ? 16 : 22;
+  const rFontFilled = isArcade ? (dense ? 14 : 16) : dense ? 10 : 12;
+  const wFontGhost = isArcade ? (dense ? 18 : 22) : dense ? 14 : 18;
+  const rFontGhost = isArcade ? (dense ? 12 : 14) : dense ? 9 : 11;
+  const ghostItalic = chrome === "notebook" ? "italic" : "normal";
+
+  const rpe = rir != null ? 10 - rir : null;
 
   return (
     <button
@@ -63,68 +83,128 @@ export default function SetCell({
           ? `Set ${setIdx + 1}: ${weight} × ${reps}${disabled ? "" : ", edit"}`
           : `Set ${setIdx + 1}: empty${disabled ? "" : ", log set"}`
       }
-      className={[
-        "relative aspect-square min-h-[56px] min-w-0 flex flex-col items-center justify-center rounded-ft transition-colors",
-        "border touch-target overflow-hidden p-0.5",
-        filled
-          ? "bg-ft-accent/10 border-ft-accent/60"
-          : "bg-ft-card border-ft-border/55",
-        !disabled && !filled ? "hover:border-ft-accent/50" : "",
-        isActive ? "!bg-ft-accent/20 !border-ft-accent" : "",
-        disabled ? "opacity-60 cursor-not-allowed" : "cursor-pointer",
-      ].join(" ")}
+      className="touch-target"
+      style={{
+        position: "relative",
+        flex: 1,
+        aspectRatio: dense ? "1 / 1" : "1 / 0.85",
+        minHeight: dense ? 46 : 56,
+        minWidth: 0,
+        background: filled
+          ? palette.filled
+          : isActive
+          ? "rgb(var(--ft-accent) / 0.22)"
+          : palette.surface,
+        border: `1px solid ${
+          isActive
+            ? "rgb(var(--ft-accent))"
+            : filled
+            ? "rgb(var(--ft-accent) / 0.6)"
+            : "rgb(var(--ft-border) / 0.55)"
+        }`,
+        boxShadow: palette.shadow,
+        borderRadius: chrome === "lab" ? 6 : chrome === "notebook" ? 4 : 0,
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        justifyContent: "center",
+        padding: dense ? 1 : 2,
+        overflow: "hidden",
+        transition: "border-color .15s, background .15s",
+        opacity: disabled ? 0.6 : 1,
+        cursor: disabled ? "not-allowed" : "pointer",
+      }}
     >
       {/* set number corner */}
-      <span className="absolute top-0.5 left-1 font-data text-[8px] tracking-[0.05em] text-ft-dim">
+      <span
+        className="font-data"
+        style={{
+          position: "absolute",
+          top: 2,
+          left: 4,
+          fontSize: dense ? 7 : 8,
+          color: "rgb(var(--ft-text-tertiary))",
+          letterSpacing: ".05em",
+        }}
+      >
         {setIdx + 1}
       </span>
 
-      {/* check corner when filled */}
+      {/* themed check corner when filled */}
       {filled && (
         <span
-          className="absolute top-0.5 right-1"
           aria-hidden
-          style={{ color: `rgb(${catVar})` }}
+          style={{
+            position: "absolute",
+            top: 2,
+            right: 3,
+            color: `rgb(var(--ft-${cat}))`,
+            display: "inline-flex",
+          }}
         >
-          <svg
-            width={dense ? 9 : 11}
-            height={dense ? 9 : 11}
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="3"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          >
-            <polyline points="20 6 9 17 4 12" />
-          </svg>
+          <ThemedIcon name="check" size={dense ? 9 : 11} />
         </span>
       )}
 
       {filled ? (
         <>
           <span
-            className={`font-data ${wClass} font-bold leading-none text-ft-white tabular-nums`}
+            className="font-data tabular-nums"
+            style={{
+              fontSize: wFontFilled,
+              lineHeight: 1,
+              color: "rgb(var(--ft-text-primary))",
+              fontWeight: 700,
+            }}
           >
             {fmtWeight(weight)}
           </span>
-          <span className={`font-data ${rClass} text-ft-dim mt-1 tabular-nums`}>
+          <span
+            className="font-data tabular-nums"
+            style={{
+              fontSize: rFontFilled,
+              color: "rgb(var(--ft-text-tertiary))",
+              marginTop: isArcade ? 2 : 1,
+            }}
+          >
             ×{reps}
+            {!dense && rpe != null ? ` @${rpe}` : ""}
           </span>
         </>
       ) : showGhost && ghost ? (
         <>
           <span
-            className={`font-data ${wClass} leading-none text-ft-dim/90 font-medium tabular-nums`}
+            className="font-data tabular-nums"
+            style={{
+              fontSize: wFontGhost,
+              lineHeight: 1,
+              color: "rgb(var(--ft-text-tertiary) / 0.9)",
+              fontWeight: 500,
+              fontStyle: ghostItalic,
+            }}
           >
             {fmtWeight(ghost.weight)}
           </span>
-          <span className={`font-data ${rClass} text-ft-dim/70 mt-1 tabular-nums`}>
+          <span
+            className="font-data tabular-nums"
+            style={{
+              fontSize: rFontGhost,
+              color: "rgb(var(--ft-text-tertiary) / 0.7)",
+              marginTop: 1,
+            }}
+          >
             ×{ghost.reps}
           </span>
         </>
       ) : (
-        <span className="text-base text-ft-dim/50">·</span>
+        <span
+          style={{
+            fontSize: 14,
+            color: "rgb(var(--ft-text-tertiary) / 0.5)",
+          }}
+        >
+          ·
+        </span>
       )}
     </button>
   );
@@ -138,24 +218,109 @@ export function AddSetCell({
   onTap: () => void;
   dense?: boolean;
 }) {
+  const { chrome } = useTheme();
+  const isNotebook = chrome === "notebook";
   return (
     <button
       onClick={onTap}
       aria-label="Add set"
-      className="aspect-square min-h-[56px] min-w-0 flex flex-col items-center justify-center rounded-ft border border-dashed border-ft-border/70 text-ft-dim hover:bg-ft-accent/5 hover:border-ft-accent/55 hover:text-ft-accent transition-colors touch-target"
+      className="touch-target"
+      style={{
+        flex: 1,
+        aspectRatio: dense ? "1 / 1" : "1 / 0.85",
+        minHeight: dense ? 46 : 56,
+        minWidth: 0,
+        background: "transparent",
+        border: "1px dashed rgb(var(--ft-border) / 0.7)",
+        borderRadius: chrome === "lab" ? 6 : isNotebook ? 4 : 0,
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        justifyContent: "center",
+        padding: dense ? 1 : 2,
+        color: "rgb(var(--ft-text-tertiary))",
+        cursor: "pointer",
+        transition: "background .15s, color .15s, border-color .15s",
+      }}
     >
-      <span className={dense ? "text-base leading-none" : "text-xl leading-none"}>
-        +
-      </span>
-      <span className="font-data text-[8px] tracking-[0.12em] uppercase opacity-80 mt-0.5">
-        SET
+      <span style={{ fontSize: 18, lineHeight: 1, fontWeight: 400 }}>+</span>
+      <span
+        className="font-data"
+        style={{
+          fontSize: 8,
+          letterSpacing: ".12em",
+          textTransform: isNotebook ? "lowercase" : "uppercase",
+          opacity: 0.8,
+          marginTop: 2,
+        }}
+      >
+        {isNotebook ? "add" : "SET"}
       </span>
     </button>
   );
 }
 
-function fmtWeight(w: number | null): string {
-  if (w == null) return "—";
-  if (Number.isInteger(w)) return String(w);
-  return w.toFixed(1).replace(/\.0$/, "");
+/**
+ * Per-chrome cell surface palette — ported from logger-app.jsx#SetCell
+ * (lines 556–582) with R0 token approximations. Each chrome picks a
+ * tint that fits its own palette so cells read as a "step away" from
+ * the surrounding lane card.
+ */
+function cellPalette(chrome: string): {
+  surface: string;
+  filled: string;
+  shadow: string;
+} {
+  switch (chrome) {
+    case "notebook":
+      return {
+        surface: "rgb(var(--ft-surface-raised))",
+        filled: "rgb(var(--ft-accent) / 0.10)",
+        shadow:
+          "0 1px 0 rgb(0 0 0 / 0.05), inset 0 1px 0 rgb(255 255 255 / 0.5)",
+      };
+    case "iron":
+      return {
+        surface: "rgb(var(--ft-bg-alt))",
+        filled: "rgb(var(--ft-accent) / 0.12)",
+        shadow:
+          "inset 0 1px 0 rgb(0 0 0 / 0.35), inset 0 -1px 0 rgb(255 255 255 / 0.04)",
+      };
+    case "lab":
+      return {
+        surface: "rgb(var(--ft-surface))",
+        filled: "rgb(var(--ft-accent) / 0.08)",
+        shadow: "0 1px 2px rgb(15 23 42 / 0.06)",
+      };
+    case "arcade":
+      return {
+        surface: "rgb(var(--ft-bg-alt))",
+        filled: "rgb(var(--ft-accent) / 0.18)",
+        shadow: "inset 0 0 0 1px rgb(var(--ft-info-fg) / 0.18)",
+      };
+    case "blueprint":
+      return {
+        surface: "rgb(var(--ft-surface-alt))",
+        filled: "rgb(var(--ft-text-primary) / 0.16)",
+        shadow: "inset 0 0 0 1px rgb(255 255 255 / 0.08)",
+      };
+    case "cyberpunk":
+      return {
+        surface: "rgb(var(--ft-bg-alt))",
+        filled: "rgb(var(--ft-accent) / 0.10)",
+        shadow: "inset 0 0 12px rgb(var(--ft-accent) / 0.06)",
+      };
+    case "graffiti":
+      return {
+        surface: "rgb(var(--ft-bg-alt))",
+        filled: "rgb(var(--ft-accent) / 0.14)",
+        shadow: "0 1px 0 rgb(0 0 0 / 0.4)",
+      };
+    default:
+      return {
+        surface: "rgb(var(--ft-bg-alt))",
+        filled: "rgb(var(--ft-accent) / 0.10)",
+        shadow: "none",
+      };
+  }
 }
