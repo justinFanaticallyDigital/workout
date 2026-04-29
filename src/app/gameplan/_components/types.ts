@@ -132,3 +132,25 @@ export interface CheckIn {
 }
 
 export type TabId = "training" | "nutrition" | "lifestyle";
+
+/** ScheduleOverride — sourced from `/api/schedule-overrides`. */
+export interface ScheduleOverride {
+  id: string;
+  scope: string;
+  action: string;
+  weekNumber: number | null;
+  dayOfWeek: number | null;
+  payload: unknown;
+}
+
+/** Today's workout summary surfaced by `NextActionLogged`. */
+export interface TodaysWorkoutSummary {
+  id: string;
+  exercises: number;
+  sets: number;
+  totalVolume: number;
+  topSet: { weight: number; reps: number } | null;
+  durationMin: number;
+  movementPattern: "push" | "pull" | "legs" | "core";
+  shortName: string;
+}

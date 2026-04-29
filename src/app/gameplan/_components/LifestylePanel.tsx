@@ -1,21 +1,74 @@
 "use client";
 
 import Link from "next/link";
+import { SectionH } from "./SectionH";
+import { Archivo } from "./typography";
+import { EditPlanBtn } from "./EditPlanBtn";
+import { SleepCard } from "./SleepCard";
+import { StressCard } from "./StressCard";
+import { ProteinHitCard } from "./ProteinHitCard";
 import type { CheckIn, StretchRoutine } from "./types";
 
 interface Props {
   stretchRoutine: StretchRoutine | null;
   recentCheckIns: CheckIn[];
+  /** Active program for goal-pulse start date + EditPlanBtn target. */
+  programId: string | null;
+  programStartDate: string | null;
+  programDurationWeeks: number | null;
 }
 
-export default function LifestylePanel({ stretchRoutine, recentCheckIns }: Props) {
+export default function LifestylePanel({
+  stretchRoutine,
+  recentCheckIns,
+  programId,
+  programStartDate,
+  programDurationWeeks,
+}: Props) {
   const latest = recentCheckIns[0] ?? null;
+  const durationWeeks = programDurationWeeks ?? 16;
 
   return (
     <div className="space-y-4">
       <CheckInCard latest={latest} count={recentCheckIns.length} />
       <StretchCard routine={stretchRoutine} />
       <RecoveryTrendCard checkIns={recentCheckIns} />
+
+      {/* Daily vitals strip — verbatim port of gameplan-active.jsx
+          LifestyleTab (lines 1989–2008). 3 cards: Sleep / Stress /
+          Protein. All three are **R6-stubbed** to weekly check-in
+          granularity; flagged inline. */}
+      <SectionH kicker="HABITS · 16-WEEK PLAN" sprayWidth={170}>
+        DAILY VITALS
+      </SectionH>
+      <Archivo
+        size={10}
+        color="rgb(var(--ft-text-on-bg-ter))"
+        style={{ display: "block", lineHeight: 1.45, marginBottom: 12 }}
+      >
+        Where you&apos;re at vs the plan to date. Solid line = you. Dashed = plan.
+      </Archivo>
+      <div className="flex flex-col gap-3.5">
+        <SleepCard
+          recentCheckIns={recentCheckIns}
+          programStartDate={programStartDate}
+          durationWeeks={durationWeeks}
+          tilt={-0.4}
+        />
+        <StressCard
+          recentCheckIns={recentCheckIns}
+          programStartDate={programStartDate}
+          durationWeeks={durationWeeks}
+          tilt={0.4}
+        />
+        <ProteinHitCard
+          recentCheckIns={recentCheckIns}
+          programStartDate={programStartDate}
+          durationWeeks={durationWeeks}
+          tilt={-0.3}
+        />
+      </div>
+      {programId && <EditPlanBtn align="flex-end" href={`/programs/${programId}`} />}
     </div>
   );
 }
