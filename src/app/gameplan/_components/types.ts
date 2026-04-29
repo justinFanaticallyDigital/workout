@@ -28,6 +28,10 @@ export interface ActiveBlock {
   blockNumber: number;
   durationWeeks: number | null;
   days: BlockDay[];
+  /** R6 — week numbers within this block when a refeed is scheduled. */
+  refeedWeeks?: number[];
+  /** R6 — used by NutritionPanel to compute the next-refeed Sunday. */
+  startDate?: string | null;
 }
 
 export interface ScheduledDay {
@@ -77,6 +81,10 @@ export interface ProgramBlock {
   durationWeeks: number | null;
   phase: string | null;
   status: string;
+  /** R6 — refeed weeks within this block (1-indexed). */
+  refeedWeeks?: number[];
+  /** R6 — block start date for refeed-Sunday computation. */
+  startDate?: string | null;
 }
 
 export interface ProgramDetail {
@@ -132,6 +140,38 @@ export interface CheckIn {
 }
 
 export type TabId = "training" | "nutrition" | "lifestyle";
+
+/**
+ * R6 — DailyMetric subset consumed by SleepCard / StressCard. Fed by
+ * `/api/integrations/fitbit/daily?days=N`.
+ */
+export interface DailyMetricLite {
+  id: string;
+  date: string;
+  sleepMinutes: number | null;
+  stress: number | null;
+}
+
+/**
+ * R6 — LifestyleTarget row. Fed by `/api/lifestyle-targets`.
+ */
+export interface LifestyleTargetLite {
+  id: string;
+  programId: string | null;
+  key: string;
+  value: number;
+  unit: string;
+  comparator: "gte" | "lte" | "eq";
+}
+
+/**
+ * R6 — Daily protein point from `/api/nutrition/meals/range`.
+ */
+export interface DailyProteinPoint {
+  date: string;
+  totalProtein: number;
+  totalCalories: number;
+}
 
 /** ScheduleOverride — sourced from `/api/schedule-overrides`. */
 export interface ScheduleOverride {

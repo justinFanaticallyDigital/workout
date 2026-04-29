@@ -1,20 +1,17 @@
 "use client";
 
 /**
- * Stress card — prototype layout adapted to live data.
+ * Stress card — daily 1-10 bar series over the program canvas.
  *
- * **Schema gap (flagged for R6)**: gameplan-active.jsx#StressCard
- * (lines 1708–1834) renders a 39-day daily 1-10 bar series. Live
- * `CheckIn.stress` is **weekly 1-5**, not daily 1-10. R6 needs
- * `DailyMetric.stress`. Until then we render check-in points (1-5
- * mapped to 2-10 with linear scaling) and adherence vs a "≤5"
- * threshold.
+ * Reads `DailyMetric.stress` directly (R6 schema landing — resolves
+ * the prior 1-5→1-10 weekly check-in mapping). Threshold driven by
+ * `LifestyleTarget` rows when present, otherwise defaults to ≤5.
  */
 
 import { useMemo } from "react";
 import { LifestyleShell } from "./LifestyleShell";
 import { Reenie, Archivo } from "./typography";
-import type { CheckIn } from "./types";
+import type { DailyMetricLite, LifestyleTargetLite } from "./types";
 
 const W = 348;
 const H = 86;
@@ -25,21 +22,25 @@ const PAD_R = 8;
 const TOTAL_DAYS = 112;
 
 export function StressCard({
-  recentCheckIns,
+  dailyMetrics,
+  lifestyleTargets = [],
   durationWeeks = 16,
   programStartDate,
   tilt = 0.4,
 }: {
-  recentCheckIns: CheckIn[];
+  dailyMetrics: DailyMetricLite[];
+  lifestyleTargets?: LifestyleTargetLite[];
   durationWeeks?: number;
   programStartDate: string | null;
   tilt?: number;
 }) {
   const points = useMemo(
-    () => mapCheckInsToStress(recentCheckIns, programStartDate, durationWeeks),
-    [recentCheckIns, programStartDate, durationWeeks],
+    () => mapDailyMetricsToStress(dailyMetrics, programStartDate, durationWeeks),
+    [dailyMetrics, programStartDate, durationWeeks],
   );
-  const target = 5;
+  // Target: prefer a lifestyle-target row keyed "stress_max"; default 5.
+  const stressTarget = lifestyleTargets.find((t) => t.key === "stress_max");
+  const target = stressTarget ? Math.round(stressTarget.value) : 5;
   const hits = points.filter((p) => p.value <= target).length;
   const adherence = points.length ? Math.round((hits / points.length) * 100) : 0;
   const tone: "red" | "yellow" | "green" =
@@ -64,7 +65,7 @@ export function StressCard({
       icon="bolt"
       tone={tone}
       tilt={tilt}
-      kicker="WEEKLY 1–5 SCALED TO 1–10"
+      kicker="DAILY 1–10 SCALE"
       statusLabel={status}
       hero={
         <div style={{ display: "flex", alignItems: "baseline", gap: 8 }}>
@@ -72,7 +73,7 @@ export function StressCard({
             {today}
           </Reenie>
           <Archivo size={9} color="rgb(var(--ft-text-tertiary))" style={{ letterSpacing: ".14em" }}>
-            / 10 · LATEST
+            / 10 · TODAY
           </Archivo>
           <div style={{ marginLeft: "auto", textAlign: "right" }}>
             <Archivo
@@ -197,25 +198,24 @@ export function StressCard({
 }
 
 /**
- * Map weekly `CheckIn.stress` (1-5) to a 1-10 scale. **R6**: replace
- * with `DailyMetric.stress` direct read once the column exists.
+ * Map `DailyMetric.stress` rows to (dayIndex, value) points along
+ * the program canvas. R6 — replaces the prior weekly CheckIn.stress
+ * 1-5→1-10 synthesis.
  */
-function mapCheckInsToStress(
-  checkIns: CheckIn[],
+function mapDailyMetricsToStress(
+  metrics: DailyMetricLite[],
   programStart: string | null,
   durationWeeks: number,
 ): Array<{ dayIndex: number; value: number }> {
-  if (!programStart || checkIns.length === 0) return [];
+  if (!programStart || metrics.length === 0) return [];
   const start = new Date(programStart).getTime();
   const totalDays = durationWeeks * 7;
   const points: Array<{ dayIndex: number; value: number }> = [];
-  for (const c of [...checkIns].reverse()) {
-    if (c.stress == null) continue;
-    const day = Math.floor((new Date(c.date).getTime() - start) / 86400000);
+  for (const m of metrics) {
+    if (m.stress == null) continue;
+    const day = Math.floor((new Date(m.date).getTime() - start) / 86400000);
     if (day < 0 || day > totalDays) continue;
-    // Linear 1-5 → 2-10 scale (so a "3" reads as "6/10" in the prototype's idiom).
-    const value = (c.stress - 1) * 2 + 2;
-    points.push({ dayIndex: day, value });
+    points.push({ dayIndex: day, value: m.stress });
   }
-  return points;
+  return points.sort((a, b) => a.dayIndex - b.dayIndex);
 }

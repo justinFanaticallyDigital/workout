@@ -1,24 +1,17 @@
 "use client";
 
 /**
- * Protein-hit card — prototype 16-week × 7-day grid adapted to live data.
+ * Protein-hit card — daily 16-week × 7-day adherence calendar.
  *
- * **Schema gap (flagged for R6)**: gameplan-active.jsx#ProteinHitCard
- * (lines 1838–1987) renders a daily hit/miss calendar (16 weeks × 7
- * days = 112 cells). Live data exposes `CheckIn.nutritionAdherence`
- * (weekly 0-100 %), not per-day hit/miss. R6 needs either a
- * multi-date meals roll-up endpoint or a Goal Engine adherence cache.
- *
- * Until then we render the 16-cell weekly row colored by adherence
- * tier (≥85% green / ≥70% yellow / <70% red). Days 1-7 of each cell
- * are stretched to fill the column. Today's-pending cell is the
- * trailing column of the current week.
+ * Reads daily protein totals from `/api/nutrition/meals/range` (R6
+ * additive endpoint) and compares each day's protein-grams to the
+ * `LifestyleTarget` row keyed "protein_g" (or a default ≥ 130g).
  */
 
 import { useMemo } from "react";
 import { LifestyleShell } from "./LifestyleShell";
 import { Reenie, Archivo } from "./typography";
-import type { CheckIn } from "./types";
+import type { DailyProteinPoint, LifestyleTargetLite } from "./types";
 
 const W = 348;
 const H = 86;
@@ -28,22 +21,29 @@ const PAD_L = 22;
 const PAD_R = 4;
 
 export function ProteinHitCard({
-  recentCheckIns,
+  dailyProtein,
+  lifestyleTargets = [],
   durationWeeks = 16,
   programStartDate,
   tilt = -0.3,
 }: {
-  recentCheckIns: CheckIn[];
+  /** Daily protein totals from /api/nutrition/meals/range. */
+  dailyProtein: DailyProteinPoint[];
+  /** Optional LifestyleTarget rows; "protein_g" drives the daily threshold. */
+  lifestyleTargets?: LifestyleTargetLite[];
   durationWeeks?: number;
   programStartDate: string | null;
   tilt?: number;
 }) {
+  const proteinTarget = lifestyleTargets.find((t) => t.key === "protein_g");
+  const targetGrams = proteinTarget?.value ?? 130;
+
   const cells = useMemo(
-    () => buildAdherenceRow(recentCheckIns, programStartDate, durationWeeks),
-    [recentCheckIns, programStartDate, durationWeeks],
+    () => buildDailyAdherenceGrid(dailyProtein, programStartDate, durationWeeks, targetGrams),
+    [dailyProtein, programStartDate, durationWeeks, targetGrams],
   );
 
-  const completed = cells.filter((c) => c.state === "hit" || c.state === "partial" || c.state === "miss");
+  const completed = cells.filter((c) => c.state === "hit" || c.state === "miss");
   const hits = cells.filter((c) => c.state === "hit").length;
   const adherence = completed.length ? Math.round((hits / completed.length) * 100) : 0;
   const tone: "red" | "yellow" | "green" =
@@ -61,8 +61,18 @@ export function ProteinHitCard({
   const innerH = H - PAD_T - PAD_B;
   const cellW = innerW / durationWeeks;
   const cellH = innerH / 7;
-  const cellPad = 1.2;
+  const cellPad = 0.8;
   const dayLabels = ["M", "T", "W", "T", "F", "S", "S"];
+
+  // Re-shape cells (flat array of weeks*7) into a [week][dow] grid for SVG.
+  const grid: GridCell[][] = [];
+  for (let w = 0; w < durationWeeks; w++) {
+    const week: GridCell[] = [];
+    for (let d = 0; d < 7; d++) {
+      week.push(cells[w * 7 + d] ?? { state: "future" });
+    }
+    grid.push(week);
+  }
 
   return (
     <LifestyleShell
@@ -70,7 +80,7 @@ export function ProteinHitCard({
       icon="protein"
       tone={tone}
       tilt={tilt}
-      kicker="WEEKLY NUTRITION ADHERENCE · DERIVED FROM CHECK-INS"
+      kicker={`DAILY PROTEIN · TARGET ≥ ${Math.round(targetGrams)}G`}
       statusLabel={status}
       hero={
         <div style={{ display: "flex", alignItems: "baseline", gap: 8 }}>
@@ -79,7 +89,7 @@ export function ProteinHitCard({
             <span style={{ fontSize: 28 }}>%</span>
           </Reenie>
           <Archivo size={9} color="rgb(var(--ft-text-tertiary))" style={{ letterSpacing: ".14em" }}>
-            {hits}/{completed.length} WEEKS HIT
+            {hits}/{completed.length} DAYS HIT
           </Archivo>
           <div style={{ marginLeft: "auto", textAlign: "right" }}>
             <Archivo
@@ -100,7 +110,7 @@ export function ProteinHitCard({
               }
               style={{ letterSpacing: ".04em" }}
             >
-              {streak}W
+              {streak}D
             </Archivo>
           </div>
         </div>
@@ -121,45 +131,42 @@ export function ProteinHitCard({
               {dl}
             </text>
           ))}
-          {cells.map((cell, w) => {
-            const x = PAD_L + cellW * w + cellPad;
-            const cw = cellW - cellPad * 2;
-            const ch = cellH - cellPad * 2;
-            let fill = "rgb(var(--ft-border-faint))";
-            let stroke = "rgb(var(--ft-border-faint))";
-            let opacity = 1;
-            if (cell.state === "hit") {
-              fill = "rgb(var(--ft-pull))";
-              stroke = "rgb(var(--ft-pull))";
-              opacity = 0.85;
-            } else if (cell.state === "partial") {
-              fill = "rgb(var(--ft-core))";
-              stroke = "rgb(var(--ft-core))";
-              opacity = 0.7;
-            } else if (cell.state === "miss") {
-              fill = "rgb(var(--ft-legs))";
-              stroke = "rgb(var(--ft-legs))";
-              opacity = 0.55;
-            } else if (cell.state === "today-pending") {
-              fill = "rgb(var(--ft-accent) / 0.18)";
-              stroke = "rgb(var(--ft-accent))";
-            }
-            // Render the whole 7-day column as one tall rect since we
-            // only have weekly granularity; flagged for R6.
-            return (
-              <rect
-                key={w}
-                x={x}
-                y={PAD_T + cellPad}
-                width={cw}
-                height={ch * 7 - cellPad * 2}
-                fill={fill}
-                stroke={stroke}
-                strokeWidth=".6"
-                opacity={opacity}
-              />
-            );
-          })}
+          {grid.map((week, w) =>
+            week.map((cell, d) => {
+              const x = PAD_L + cellW * w + cellPad;
+              const y = PAD_T + cellH * d + cellPad;
+              const cw = cellW - cellPad * 2;
+              const ch = cellH - cellPad * 2;
+              let fill = "rgb(var(--ft-border-faint))";
+              let stroke = "rgb(var(--ft-border-faint))";
+              let opacity = 1;
+              if (cell.state === "hit") {
+                fill = "rgb(var(--ft-pull))";
+                stroke = "rgb(var(--ft-pull))";
+                opacity = 0.85;
+              } else if (cell.state === "miss") {
+                fill = "rgb(var(--ft-legs))";
+                stroke = "rgb(var(--ft-legs))";
+                opacity = 0.55;
+              } else if (cell.state === "today-pending") {
+                fill = "rgb(var(--ft-accent) / 0.18)";
+                stroke = "rgb(var(--ft-accent))";
+              }
+              return (
+                <rect
+                  key={`${w}-${d}`}
+                  x={x}
+                  y={y}
+                  width={cw}
+                  height={ch}
+                  fill={fill}
+                  stroke={stroke}
+                  strokeWidth=".4"
+                  opacity={opacity}
+                />
+              );
+            }),
+          )}
           {[0, 4, 8, 12, durationWeeks].map((w) => (
             <text
               key={w}
@@ -210,46 +217,47 @@ export function ProteinHitCard({
   );
 }
 
-interface AdherenceCell {
-  weekIndex: number;
-  state: "hit" | "partial" | "miss" | "future" | "today-pending";
+interface GridCell {
+  state: "hit" | "miss" | "future" | "today-pending";
 }
 
 /**
- * Reduce weekly `CheckIn.nutritionAdherence` to per-week cell states.
- * ≥85% → hit, 70-84% → partial, <70% → miss, no data → future,
- * current ISO-week with no entry yet → today-pending.
+ * Build the 16-week × 7-day adherence grid by stamping each day's
+ * protein total against the user's target. R6 — replaces the prior
+ * weekly CheckIn.nutritionAdherence aggregation.
  *
- * **R6**: replace with daily meal roll-ups for true 16-week × 7-day grid.
+ * Cell states:
+ *   - hit            → grams >= target
+ *   - miss           → grams < target (or no data on a past day)
+ *   - future         → day is past program duration
+ *   - today-pending  → today's day with no entry yet
  */
-function buildAdherenceRow(
-  checkIns: CheckIn[],
+function buildDailyAdherenceGrid(
+  dailyProtein: DailyProteinPoint[],
   programStart: string | null,
   durationWeeks: number,
-): AdherenceCell[] {
+  targetGrams: number,
+): GridCell[] {
+  const totalDays = durationWeeks * 7;
+  const cells: GridCell[] = [];
   if (!programStart) {
-    return Array.from({ length: durationWeeks }, (_, i) => ({ weekIndex: i, state: "future" as const }));
+    for (let i = 0; i < totalDays; i++) cells.push({ state: "future" });
+    return cells;
   }
   const start = new Date(programStart).getTime();
-  const cells: AdherenceCell[] = [];
-  const todayWeek = Math.floor((Date.now() - start) / (7 * 86400000));
-  for (let w = 0; w < durationWeeks; w++) {
-    const weekStart = start + w * 7 * 86400000;
-    const weekEnd = weekStart + 7 * 86400000;
-    const ci = checkIns.find((c) => {
-      const t = new Date(c.date).getTime();
-      return t >= weekStart && t < weekEnd;
-    });
-    if (!ci || ci.nutritionAdherence == null) {
-      if (w === todayWeek) cells.push({ weekIndex: w, state: "today-pending" });
-      else if (w < todayWeek) cells.push({ weekIndex: w, state: "miss" });
-      else cells.push({ weekIndex: w, state: "future" });
-      continue;
-    }
-    const a = ci.nutritionAdherence;
-    if (a >= 85) cells.push({ weekIndex: w, state: "hit" });
-    else if (a >= 70) cells.push({ weekIndex: w, state: "partial" });
-    else cells.push({ weekIndex: w, state: "miss" });
+  const todayDay = Math.floor((Date.now() - start) / 86400000);
+  const byDate = new Map<string, number>();
+  for (const p of dailyProtein) byDate.set(p.date, p.totalProtein);
+
+  for (let i = 0; i < totalDays; i++) {
+    const d = new Date(start);
+    d.setDate(d.getDate() + i);
+    const key = d.toISOString().slice(0, 10);
+    const grams = byDate.get(key);
+    if (i > todayDay) cells.push({ state: "future" });
+    else if (i === todayDay && (grams == null || grams === 0)) cells.push({ state: "today-pending" });
+    else if (grams != null && grams >= targetGrams) cells.push({ state: "hit" });
+    else cells.push({ state: "miss" });
   }
   return cells;
 }

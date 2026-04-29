@@ -11,6 +11,8 @@ interface Props {
   target: NutritionTarget | null;
   /** Active program id for the EditPlanBtn link target. */
   programId: string | null;
+  /** Active block — drives the NEXT REFEED footer via `block.refeedWeeks`. */
+  activeBlock: { startDate: string | null; refeedWeeks?: number[] } | null;
 }
 
 const MACRO_COLORS = {
@@ -19,7 +21,8 @@ const MACRO_COLORS = {
   fat: "rgb(var(--ft-legs))",
 };
 
-export default function NutritionPanel({ meals, target, programId }: Props) {
+export default function NutritionPanel({ meals, target, programId, activeBlock }: Props) {
+  const nextRefeed = computeNextRefeedLabel(activeBlock);
   const calCur = meals ? Math.round(meals.totals.calories) : 0;
   const calTarget = target?.calories ?? null;
   const calPct = calTarget ? Math.min(100, (calCur / calTarget) * 100) : 0;
@@ -125,9 +128,9 @@ export default function NutritionPanel({ meals, target, programId }: Props) {
       )}
 
       {/* NEXT REFEED footer — verbatim port of gameplan-active.jsx
-          NutritionTab footer (lines 1470–1479). **R6**: refeed-week
-          schedule lives in template `nutritionTarget.notes` only, not
-          on Block. Render `—` placeholder until Block.refeedWeeks lands. */}
+          NutritionTab footer (lines 1470–1479). Reads
+          `Block.refeedWeeks` (R6 schema landing) + `block.startDate`
+          to compute the next upcoming refeed week. */}
       <DashedDivider style={{ margin: "12px 0 8px" }} />
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
         <div>
@@ -141,13 +144,44 @@ export default function NutritionPanel({ meals, target, programId }: Props) {
           <Marker
             style={{ fontSize: 14, color: "rgb(var(--ft-text-on-bg))", display: "block", marginTop: 1 }}
           >
-            —
+            {nextRefeed}
           </Marker>
         </div>
         {programId && <EditPlanBtn align="flex-end" href={`/programs/${programId}`} />}
       </div>
     </div>
   );
+}
+
+/**
+ * Compute the next-upcoming refeed label (e.g. "SUN · WK 8") from
+ * the active block's `refeedWeeks` array + `startDate`. Each entry
+ * in `refeedWeeks` is the 1-indexed week within the block; refeed
+ * day defaults to Sunday (the canonical "weekly check-in + refeed"
+ * day per the prototype templates).
+ *
+ * Returns "—" when no upcoming refeed is scheduled.
+ */
+function computeNextRefeedLabel(
+  block: { startDate: string | null; refeedWeeks?: number[] } | null,
+): string {
+  const weeks = block?.refeedWeeks ?? [];
+  if (!block?.startDate || weeks.length === 0) return "—";
+  const start = new Date(block.startDate).getTime();
+  const now = Date.now();
+  for (const w of [...weeks].sort((a, b) => a - b)) {
+    // Sunday of the (w-1)-th week from block.startDate. If startDate
+    // is itself a Monday, Sunday is +6 days.
+    const sundayMs = start + ((w - 1) * 7 + 6) * 86400000;
+    if (sundayMs >= now) {
+      const sunday = new Date(sundayMs);
+      const dow = sunday
+        .toLocaleDateString("en-US", { weekday: "short" })
+        .toUpperCase();
+      return `${dow} · WK ${w}`;
+    }
+  }
+  return "—";
 }
 
 function CalorieRing({ pct }: { pct: number }) {

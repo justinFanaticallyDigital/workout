@@ -1,21 +1,18 @@
 "use client";
 
 /**
- * Sleep card — prototype layout adapted to live data.
+ * Sleep card — daily hours-per-night line over the program canvas.
  *
- * **Schema gap (flagged for R6)**: gameplan-active.jsx#SleepCard
- * (lines 1564–1704) renders a daily hours-per-night line over a
- * 16-week canvas. Live `CheckIn.sleepQuality` is a **weekly 1-5
- * self-report**, not daily hours. R6 needs `DailyMetric.sleepHours`
- * for the prototype's granularity. Until then we render check-in
- * points (1-5 mapped to 5-9h equivalent) with weekly cadence and
- * mark the chart as derived-from-checkins inline.
+ * Reads `DailyMetric.sleepMinutes` directly (R6 schema landing —
+ * resolves the prior weekly-CheckIn synthesis). Sleep target band
+ * driven by `LifestyleTarget` rows when present, otherwise defaults
+ * to 7.5h.
  */
 
 import { useMemo } from "react";
 import { LifestyleShell } from "./LifestyleShell";
 import { Reenie, Archivo } from "./typography";
-import type { CheckIn } from "./types";
+import type { DailyMetricLite, LifestyleTargetLite } from "./types";
 
 const W = 348;
 const H = 86;
@@ -26,27 +23,35 @@ const PAD_R = 8;
 const TOTAL_DAYS = 112;
 
 export function SleepCard({
-  recentCheckIns,
+  dailyMetrics,
+  lifestyleTargets = [],
   durationWeeks = 16,
   programStartDate,
   tilt = -0.4,
 }: {
-  recentCheckIns: CheckIn[];
+  /** DailyMetric rows for this user, sourced from /api/integrations/fitbit/daily. */
+  dailyMetrics: DailyMetricLite[];
+  /** Optional LifestyleTarget rows; "sleep_hours_min" drives the target line. */
+  lifestyleTargets?: LifestyleTargetLite[];
   durationWeeks?: number;
   programStartDate: string | null;
   tilt?: number;
 }) {
   const points = useMemo(
-    () => mapCheckInsToHours(recentCheckIns, programStartDate, durationWeeks),
-    [recentCheckIns, programStartDate, durationWeeks],
+    () => mapDailyMetricsToHours(dailyMetrics, programStartDate, durationWeeks),
+    [dailyMetrics, programStartDate, durationWeeks],
   );
 
-  const last7 = points.slice(-1).map((p) => p.hours);
+  // Target: prefer a lifestyle-target row keyed "sleep_hours_min";
+  // fallback to 7.5h.
+  const sleepTarget = lifestyleTargets.find((t) => t.key === "sleep_hours_min");
+  const targetH = sleepTarget?.value ?? 7.5;
+
+  // Hero value = rolling 7-day average of the last 7 days that have data.
+  const last7 = points.slice(-7).map((p) => p.hours);
   const avg = last7.length ? last7.reduce((s, v) => s + v, 0) / last7.length : 0;
   const avgH = Math.floor(avg);
   const avgM = Math.round((avg - avgH) * 60);
-  // Plan target: 7.5h.
-  const targetH = 7.5;
   const delta = (avg || targetH) - targetH;
   const tone: "red" | "yellow" | "green" = delta < -0.5 ? "red" : delta < -0.15 ? "yellow" : "green";
   const status = tone === "red" ? "BEHIND" : tone === "yellow" ? "BELOW" : "ON TRACK";
@@ -59,8 +64,9 @@ export function SleepCard({
   const xAt = (d: number) => PAD_L + (d / (TOTAL_DAYS - 1)) * innerW;
   const yAt = (v: number) => PAD_T + (1 - (v - yMin) / ySpan) * innerH;
 
-  const targetTop = yAt(7.75);
-  const targetBot = yAt(7.25);
+  // Target band: ±0.25h around the user's sleep target.
+  const targetTop = yAt(targetH + 0.25);
+  const targetBot = yAt(targetH - 0.25);
   const weekTicks = [0, 4, 8, 12, durationWeeks];
 
   // Plan line: linear from start (target − 0.5h to make the line read
@@ -86,7 +92,7 @@ export function SleepCard({
       icon="sleep"
       tone={tone}
       tilt={tilt}
-      kicker="HOURS PER NIGHT · DERIVED FROM CHECK-INS"
+      kicker="HOURS PER NIGHT"
       statusLabel={status}
       hero={
         <div style={{ display: "flex", alignItems: "baseline", gap: 8 }}>
@@ -96,7 +102,7 @@ export function SleepCard({
             <span style={{ fontSize: 28 }}>m</span>
           </Reenie>
           <Archivo size={9} color="rgb(var(--ft-text-tertiary))" style={{ letterSpacing: ".14em" }}>
-            LATEST CHECK-IN
+            7-DAY AVG
           </Archivo>
           <div style={{ marginLeft: "auto", textAlign: "right" }}>
             <Archivo
@@ -233,7 +239,7 @@ export function SleepCard({
           <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
             <span style={{ width: 5, height: 5, background: "rgb(var(--ft-accent))", display: "inline-block" }} />
             <Archivo size={8} color="rgb(var(--ft-text-tertiary))" style={{ letterSpacing: ".10em" }}>
-              TARGET 7.5h
+              TARGET {targetH.toFixed(1)}h
             </Archivo>
           </div>
         </div>
@@ -243,36 +249,24 @@ export function SleepCard({
 }
 
 /**
- * Map weekly `CheckIn.sleepQuality` (1-5) to an approximate
- * hours-per-night value. **R6**: replace with DailyMetric.sleepHours
- * direct read once the column exists.
- *
- * Mapping: 1 → 5h, 2 → 6h, 3 → 7h, 4 → 7.75h, 5 → 8.5h.
+ * Map `DailyMetric.sleepMinutes` rows to (dayIndex, hours) points
+ * along the program canvas. R6 — replaces the prior weekly
+ * CheckIn.sleepQuality 1-5 synthesis.
  */
-function mapCheckInsToHours(
-  checkIns: CheckIn[],
+function mapDailyMetricsToHours(
+  metrics: DailyMetricLite[],
   programStart: string | null,
   durationWeeks: number,
 ): Array<{ dayIndex: number; hours: number }> {
-  if (!programStart || checkIns.length === 0) return [];
+  if (!programStart || metrics.length === 0) return [];
   const start = new Date(programStart).getTime();
   const totalDays = durationWeeks * 7;
   const points: Array<{ dayIndex: number; hours: number }> = [];
-  for (const c of [...checkIns].reverse()) {
-    if (c.sleepQuality == null) continue;
-    const day = Math.floor((new Date(c.date).getTime() - start) / 86400000);
+  for (const m of metrics) {
+    if (m.sleepMinutes == null) continue;
+    const day = Math.floor((new Date(m.date).getTime() - start) / 86400000);
     if (day < 0 || day > totalDays) continue;
-    const hours =
-      c.sleepQuality === 1
-        ? 5
-        : c.sleepQuality === 2
-        ? 6
-        : c.sleepQuality === 3
-        ? 7
-        : c.sleepQuality === 4
-        ? 7.75
-        : 8.5;
-    points.push({ dayIndex: day, hours });
+    points.push({ dayIndex: day, hours: m.sleepMinutes / 60 });
   }
-  return points;
+  return points.sort((a, b) => a.dayIndex - b.dayIndex);
 }

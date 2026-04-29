@@ -5,7 +5,7 @@
  *
  * Mirrors the Prisma CheckIn model exactly. The prototype's
  * snapshot/recommendations concepts are intentionally absent from
- * this shape; they land with the Gameplan schema in R6.
+ * this shape; recommendation feed lands with the Goal Engine in R8.
  */
 export interface CheckIn {
   id: string;
