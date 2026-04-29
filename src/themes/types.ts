@@ -1,60 +1,139 @@
+/**
+ * ThemeConfig — extended to match design-prototypes/theme-bridge.jsx contract.
+ *
+ * Every prototype token name is available, either as a direct field or as
+ * an alias of an existing live name. New fields populate the missing slots
+ * (state-fg/bg/border, accent-fg/faint/border, surface-alt/raised, etc.).
+ *
+ * Naming strategy: existing nested groups (`colors`, `fonts`, `borders`,
+ * `texture`, `components`) are preserved so every existing callsite reading
+ * `theme.colors.bgCard`, `theme.fonts.display`, etc. continues to work.
+ * Prototype-shape names are added as additional keys inside those groups,
+ * plus three new groups (`radius`, `shadows`, `stamp`) and two top-level
+ * fields (`chrome`, `isDark`).
+ */
 export interface ThemeConfig {
   id: string;
   name: string;
 
+  /** Theme-bridge `chrome` discriminator (e.g. 'iron', 'lab'). Aliases `id`. */
+  chrome: string;
+
+  /** True when the theme's primary surface tone is dark. */
+  isDark: boolean;
+
   // === COLORS ===
   colors: {
-    // Background
-    bg: string;              // main app background
-    bgCard: string;          // card/container surface
-    bgElevated: string;      // elevated surfaces (modals, popovers)
+    // Background hierarchy
+    bg: string;
+    bgAlt: string;            // intermediate tone between bg and surface
+    bgCard: string;           // legacy alias of `surface`
+    surface: string;          // primary card surface (theme-bridge)
+    surfaceAlt: string;       // sub-surface (e.g. set cell tile)
+    bgElevated: string;       // legacy alias of `surfaceRaised`
+    surfaceRaised: string;    // raised surface (modals, popovers)
 
-    // Text — these are the ONLY colors allowed for text content
-    textPrimary: string;     // highest contrast text (exercise names, set data)
-    textSecondary: string;   // medium contrast (labels, metadata)
-    textTertiary: string;    // lowest contrast (hints, inactive)
+    // Text hierarchy
+    textPrimary: string;
+    text: string;             // alias of textPrimary
+    textSecondary: string;
+    textSec: string;          // alias of textSecondary
+    textTertiary: string;
+    textTer: string;          // alias of textTertiary
+    textOnAccent: string;     // foreground on accent fill
+    textOnBg: string;         // foreground when rendered directly on page bg
+    textOnBgSec: string;
+    textOnBgTer: string;
 
-    // Accents — STRUCTURAL ONLY, never used as text color
-    accent: string;          // theme's primary accent
-    accentSecondary: string; // secondary accent (if theme has one)
-
-    // Movement colors (CONSTANT across all themes)
-    push: string;   // #3B82F6
-    pull: string;   // #22C55E
-    legs: string;   // #EF4444
-    core: string;   // #EAB308
-
-    // State
-    success: string;
-    error: string;
-    warning: string;
-
-    // Borders & dividers
+    // Borders
     border: string;
-    borderSubtle: string;
+    borderFaint: string;      // alias of borderSubtle
+    borderSubtle: string;     // legacy alias of borderFaint
+    borderStrong: string;
+
+    // Accents
+    accent: string;
+    accentSecondary: string;
+    accentFg: string;         // accent as text color
+    accentFaint: string;      // accent as background tint
+    accentBorder: string;     // accent as border color
+
+    // Movement (constant across themes — but stored per theme for completeness)
+    push: string;
+    pull: string;
+    legs: string;
+    core: string;
+
+    // State — base color + Fg/Bg/Border for each
+    success: string;
+    successFg: string;
+    successBg: string;
+    successBorder: string;
+
+    error: string;            // legacy alias of `danger`
+    danger: string;
+    dangerFg: string;
+    dangerBg: string;
+    dangerBorder: string;
+
+    warning: string;          // legacy alias of `warn`
+    warn: string;
+    warnFg: string;
+    warnBg: string;
+    warnBorder: string;
+
+    info: string;
+    infoFg: string;
+    infoBg: string;
+    infoBorder: string;
   };
 
   // === TYPOGRAPHY ===
   fonts: {
-    display: string;     // headers, titles, exercise names
-    data: string;        // user-entered values (weights, reps, RIR)
-    body: string;        // labels, metadata, nav items
+    display: string;
+    fontDisplay: string;      // alias of `display`
+    data: string;
+    fontData: string;         // alias of `data`
+    body: string;
+    fontBody: string;         // alias of `body`
+    /** Distinct font for big numerals (e.g. graffiti uses Bungee, others may match `data`). */
+    fontNumber: string;
   };
 
-  // === BORDERS ===
+  // === BORDERS (existing) ===
   borders: {
-    card: string;        // CSS border shorthand for cards
-    divider: string;     // CSS border shorthand for dividers
-    radius: string;      // border-radius for cards ('0' for sharp themes)
+    card: string;
+    divider: string;
+    radius: string;           // legacy single-value radius (== radius.md)
+  };
+
+  // === RADIUS (NEW) ===
+  radius: {
+    sm: string;
+    md: string;
+    lg: string;
+  };
+
+  // === SHADOWS (NEW) ===
+  shadows: {
+    sm: string;
+    md: string;
+  };
+
+  // === STAMP (NEW — for the .ft-stamp pill element) ===
+  stamp: {
+    fg: string;
+    bg: string;
+    border: string;
   };
 
   // === THEME-SPECIFIC TEXTURE ===
   texture: {
     type: 'css' | 'svg' | 'svg-inline' | 'none';
-    value: string;  // CSS background property, SVG background URL, raw SVG markup, or empty
+    value: string;
   };
 
-  // === COMPONENT OVERRIDES ===
+  // === COMPONENT OVERRIDES (existing) ===
   components: {
     exerciseCard: {
       movementIndicator: 'left-bar' | 'top-bar' | 'border';

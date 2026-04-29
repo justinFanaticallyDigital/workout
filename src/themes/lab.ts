@@ -1,51 +1,112 @@
 import { ThemeConfig } from './types';
 
+/**
+ * Lab Report — values pulled from theme-bridge.jsx.
+ * Notable changes: text darkened (#1A1A1A → #121823), textSec/Ter
+ * align to clinical grays, success/warn/danger move to darker shades
+ * for AA on light surfaces.
+ */
 export const lab: ThemeConfig = {
   id: 'lab',
   name: 'Lab Report',
+  chrome: 'lab',
+  isDark: false,
 
   colors: {
-    // Clean clinical white/gray — bg darkened so white cards stand out clearly
     bg: '#ECEDF0',
+    bgAlt: '#F8F9FB',
     bgCard: '#FFFFFF',
+    surface: '#FFFFFF',
+    surfaceAlt: '#F8F9FB',
     bgElevated: '#FFFFFF',
+    surfaceRaised: '#FFFFFF',
 
-    // Text: dark grays — clinical precision (AA-tuned)
-    textPrimary: '#1A1A1A',
-    textSecondary: '#555C68',
-    textTertiary: '#595F6B',
+    textPrimary: '#121823',
+    text: '#121823',
+    textSecondary: '#3A4254',
+    textSec: '#3A4254',
+    textTertiary: '#5A6473',
+    textTer: '#5A6473',
+    textOnAccent: '#FFFFFF',
+    textOnBg: '#121823',
+    textOnBgSec: '#3A4254',
+    textOnBgTer: '#5A6473',
 
-    accent: '#2563EB',          // clinical blue — data highlights, active states
-    accentSecondary: '#059669', // clinical green — success, completion
+    border: '#D2D6DC',
+    borderFaint: '#E5E7EB',
+    borderSubtle: '#E5E7EB',
+    borderStrong: '#9CA3AF',
 
-    push: '#3B82F6',
-    pull: '#22C55E',
-    legs: '#EF4444',
-    core: '#EAB308',
+    accent: '#2563EB',
+    accentSecondary: '#059669',
+    accentFg: '#2563EB',
+    accentFaint: '#EFF4FE',
+    accentBorder: '#C7D7FB',
 
-    success: '#059669',
-    error: '#DC2626',
-    warning: '#D97706',
+    push: '#4A90D9',
+    pull: '#5CB85C',
+    legs: '#D9534F',
+    core: '#F0AD4E',
 
-    border: '#E5E7EB',
-    borderSubtle: '#F3F4F6',
+    success: '#15803D',
+    successFg: '#15803D',
+    successBg: '#ECFDF3',
+    successBorder: '#A7E0BC',
+
+    error: '#B42318',
+    danger: '#B42318',
+    dangerFg: '#B42318',
+    dangerBg: '#FEF1F0',
+    dangerBorder: '#F5B5AE',
+
+    warning: '#C77405',
+    warn: '#C77405',
+    warnFg: '#C77405',
+    warnBg: '#FFF6E5',
+    warnBorder: '#F4D69A',
+
+    info: '#2563EB',
+    infoFg: '#2563EB',
+    infoBg: '#EFF4FE',
+    infoBorder: '#C7D7FB',
   },
 
   fonts: {
-    display: "'IBM Plex Sans', 'Inter', system-ui, sans-serif",     // clinical, institutional
-    data: "'JetBrains Mono', 'IBM Plex Mono', monospace",           // tabular precision for values
-    body: "'IBM Plex Sans', 'Inter', system-ui, sans-serif",        // uniform clinical sans
+    display: "'IBM Plex Sans', sans-serif",
+    fontDisplay: "'IBM Plex Sans', sans-serif",
+    data: "'JetBrains Mono', monospace",
+    fontData: "'JetBrains Mono', monospace",
+    body: "'IBM Plex Sans', sans-serif",
+    fontBody: "'IBM Plex Sans', sans-serif",
+    fontNumber: "'JetBrains Mono', monospace",
   },
 
   borders: {
     card: '1px solid #E5E7EB',
     divider: '1px solid #F3F4F6',
-    radius: '6px',  // slight rounding — medical UI feel
+    radius: '6px',
+  },
+
+  radius: {
+    sm: '4px',
+    md: '6px',
+    lg: '10px',
+  },
+
+  shadows: {
+    sm: '0 1px 2px rgba(0,0,0,0.04)',
+    md: '0 4px 12px rgba(0,0,0,0.08)',
+  },
+
+  stamp: {
+    fg: '#6B7280',
+    bg: 'transparent',
+    border: '#D2D6DC',
   },
 
   texture: {
     type: 'none',
-    value: '',  // no texture — clinical environments are clean
+    value: '',
   },
 
   components: {

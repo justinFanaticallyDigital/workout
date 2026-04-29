@@ -6,48 +6,56 @@
 
 @layer base {
   /* ═════════════════════════════════════════════════════════════
-     Theme tokens. CSS owns all color/font/border values; React
-     just stamps `data-theme="<id>"` on <html>. Per-theme TS files
-     in `src/themes/*.ts` carry the same values + the runtime-only
-     bits (texture markup, component config) that themed React
-     components still consume via `useTheme()`.
+     Theme tokens. CSS owns the static first-paint values. After
+     ThemeProvider hydrates, runtime CSS-var injection takes over
+     (writeRuntimeCssVars in src/providers/ThemeProvider.tsx) and
+     keeps every prototype-shape token (theme-bridge.jsx contract)
+     in sync with the active theme.
 
      `:root` is the graffiti baseline (preserves first-paint for
-     existing users with no data-theme attribute set yet). The
-     `default` theme is its own explicit override below.
+     existing users with no data-theme attribute set yet). Each
+     named theme overrides via `:root[data-theme="X"]`.
 
-     Movement colors (push/pull/legs/core) and the chart data
-     palette are constants — declared once on :root and inherited
-     by all named themes.
+     Movement colors (push/pull/legs/core), state base colors
+     (success/warn/danger/info), and the data-viz palette are
+     declared once on :root and inherited where unchanged.
      ═════════════════════════════════════════════════════════════ */
 
   :root {
     /* Graffiti baseline (first-paint default before ThemeProvider hydrates) */
-    --ft-bg: 35 39 42;
-    --ft-surface: 61 66 69;
-    --ft-card: 74 79 82;
-    --ft-border: 90 95 99;
+    --ft-bg: 28 28 30;
+    --ft-bg-alt: 42 42 45;
+    --ft-surface: 58 58 62;
+    --ft-surface-alt: 45 45 48;
+    --ft-card: 72 72 76;
+    --ft-surface-raised: 72 72 76;
+    --ft-border: 245 220 60;
     --ft-border-alpha: 1;
-    --ft-border-color: #5A5F63;
-    --ft-border-subtle-color: #4A4F52;
-    --ft-muted: 255 255 255;
-    --ft-dim: 255 255 255;
-    --ft-light: 255 255 255;
-    --ft-pale: 255 255 255;
-    --ft-white: 255 255 255;
-    --ft-accent: 59 130 246;
+    --ft-border-color: rgba(245,220,60,0.35);
+    --ft-border-subtle-color: rgba(255,255,255,0.10);
+    --ft-border-faint: 255 255 255;
+    --ft-border-strong: 245 220 60;
+    --ft-muted: 192 192 195;
+    --ft-dim: 192 192 195;
+    --ft-light: 215 215 220;
+    --ft-pale: 250 250 248;
+    --ft-white: 250 250 248;
+    --ft-accent: 245 220 60;
     --ft-accent-secondary: 253 202 64;
-    --ft-success: 34 197 94;
-    --ft-warn: 234 179 8;
-    --ft-danger: 239 68 68;
+    --ft-accent-fg: 245 220 60;
+    --ft-accent-faint: 245 220 60;
+    --ft-accent-border: 245 220 60;
+    --ft-success: 92 184 92;
+    --ft-warn: 240 173 78;
+    --ft-danger: 255 80 140;
 
-    /* Movement pattern colors (constant across all themes — declared here only) */
-    --ft-push: 59 130 246;
-    --ft-pull: 34 197 94;
-    --ft-legs: 239 68 68;
-    --ft-core: 234 179 8;
+    /* Movement pattern colors — graffiti baseline */
+    --ft-push: 92 156 250;
+    --ft-pull: 125 209 125;
+    --ft-legs: 255 122 168;
+    --ft-core: 245 194 117;
 
-    /* Data visualization palette (constant across all themes — declared here only) */
+    /* Data visualization palette (constant across all themes) */
     --ft-data-1: 59 130 246;
     --ft-data-2: 234 179 8;
     --ft-data-3: 239 68 68;
@@ -55,50 +63,79 @@
     --ft-data-5: 251 146 60;
     --ft-data-6: 34 211 238;
 
-    /* Text hierarchy with alpha — graffiti baseline */
-    --ft-text-primary: 255 255 255;
-    --ft-text-secondary: 255 255 255;
-    --ft-text-tertiary: 255 255 255;
-    --ft-alpha-primary: 0.92;
-    --ft-alpha-secondary: 0.74;
-    --ft-alpha-tertiary: 0.66;
+    /* Text hierarchy — solid colors (alpha vars retained for backward compat) */
+    --ft-text-primary: 250 250 248;
+    --ft-text-secondary: 215 215 220;
+    --ft-text-tertiary: 192 192 195;
+    --ft-text-on-accent: 28 28 30;
+    --ft-text-on-bg: 250 250 248;
+    --ft-text-on-bg-sec: 215 215 220;
+    --ft-text-on-bg-ter: 192 192 195;
+    --ft-alpha-primary: 1;
+    --ft-alpha-secondary: 1;
+    --ft-alpha-tertiary: 1;
 
-    /* State color triplets for badges/inline messages (Phase B) */
-    --ft-success-fg: 34 197 94;
-    --ft-success-bg: 20 40 24;
-    --ft-success-br: 40 90 55;
-    --ft-warn-fg: 234 179 8;
-    --ft-warn-bg: 50 40 18;
-    --ft-warn-br: 110 85 35;
-    --ft-danger-fg: 239 68 68;
-    --ft-danger-bg: 60 22 20;
-    --ft-danger-br: 110 45 40;
-    --ft-info-fg: 140 180 220;
-    --ft-info-bg: 18 30 48;
-    --ft-info-br: 50 80 120;
+    /* State families — base + Fg/Bg/Border for graffiti */
+    --ft-success: 92 184 92;
+    --ft-success-fg: 125 209 125;
+    --ft-success-bg: 92 184 92;
+    --ft-success-border: 92 184 92;
+    --ft-success-br: 92 184 92;
+    --ft-warn: 240 173 78;
+    --ft-warn-fg: 245 194 117;
+    --ft-warn-bg: 240 173 78;
+    --ft-warn-border: 240 173 78;
+    --ft-warn-br: 240 173 78;
+    --ft-danger: 255 80 140;
+    --ft-danger-fg: 255 122 168;
+    --ft-danger-bg: 255 80 140;
+    --ft-danger-border: 255 80 140;
+    --ft-danger-br: 255 80 140;
+    --ft-info: 59 130 246;
+    --ft-info-fg: 92 156 250;
+    --ft-info-bg: 59 130 246;
+    --ft-info-border: 59 130 246;
+    --ft-info-br: 59 130 246;
 
     /* Font stacks — graffiti baseline */
     --ft-font-display: 'Permanent Marker', cursive;
-    --ft-font-data: 'Reenie Beanie', 'Caveat', cursive;
-    --ft-font-handwritten: 'Reenie Beanie', 'Caveat', cursive;
-    --ft-font-body: 'Archivo Black', 'Barlow Condensed', sans-serif;
+    --ft-font-data: 'Bungee', sans-serif;
+    --ft-font-handwritten: 'Bungee', sans-serif;
+    --ft-font-body: 'Permanent Marker', cursive;
     --ft-font-mono: 'Courier New', Courier, monospace;
-    --ft-font-sans: 'Archivo Black', 'Barlow Condensed', sans-serif;
+    --ft-font-sans: 'Permanent Marker', cursive;
+    --ft-font-number: 'Bungee', sans-serif;
 
     /* Border shorthands + radius */
     --ft-border-card: 1px dashed rgba(255,255,255,0.12);
     --ft-border-divider: 1px dashed rgba(255,255,255,0.10);
     --ft-border-radius: 0;
     --ft-radius: 0;
+    --ft-radius-sm: 0;
+    --ft-radius-md: 1px;
+    --ft-radius-lg: 2px;
+
+    /* Shadows */
+    --ft-shadow-sm: 2px 2px 0 rgba(0,0,0,0.3);
+    --ft-shadow-md: 0 6px 18px rgba(0,0,0,0.4);
+
+    /* Stamp pill */
+    --ft-stamp-fg: 28 28 30;
+    --ft-stamp-bg: 245 220 60;
+    --ft-stamp-border: 245 220 60;
   }
 
   /* ═════════════ DEFAULT (8th theme — stock dark) ═════════════ */
   :root[data-theme="default"] {
     --ft-bg: 26 26 26;
+    --ft-bg-alt: 34 34 34;
     --ft-surface: 46 46 46;
+    --ft-surface-alt: 56 56 56;
     --ft-card: 67 67 67;
+    --ft-surface-raised: 67 67 67;
     --ft-border: 85 85 85;
-    --ft-border-alpha: 1;
+    --ft-border-faint: 58 58 58;
+    --ft-border-strong: 122 122 122;
     --ft-border-color: #555555;
     --ft-border-subtle-color: #3A3A3A;
     --ft-muted: 184 184 184;
@@ -108,412 +145,608 @@
     --ft-white: 239 239 239;
     --ft-accent: 224 224 224;
     --ft-accent-secondary: 253 202 64;
-    --ft-success: 111 191 115;
-    --ft-warn: 230 162 60;
-    --ft-danger: 239 83 80;
-
+    --ft-accent-fg: 224 224 224;
+    --ft-accent-faint: 224 224 224;
+    --ft-accent-border: 224 224 224;
     --ft-text-primary: 239 239 239;
     --ft-text-secondary: 204 204 204;
     --ft-text-tertiary: 184 184 184;
+    --ft-text-on-accent: 26 26 26;
+    --ft-text-on-bg: 239 239 239;
+    --ft-text-on-bg-sec: 204 204 204;
+    --ft-text-on-bg-ter: 184 184 184;
     --ft-alpha-primary: 1;
     --ft-alpha-secondary: 1;
     --ft-alpha-tertiary: 1;
-
-    --ft-success-fg: 111 191 115;
-    --ft-success-bg: 20 40 24;
-    --ft-success-br: 40 90 55;
-    --ft-warn-fg: 230 162 60;
-    --ft-warn-bg: 50 40 18;
-    --ft-warn-br: 110 85 35;
-    --ft-danger-fg: 239 83 80;
-    --ft-danger-bg: 60 22 20;
-    --ft-danger-br: 110 45 40;
+    --ft-push: 59 130 246;
+    --ft-pull: 34 197 94;
+    --ft-legs: 239 68 68;
+    --ft-core: 234 179 8;
+    --ft-success: 111 191 115;
+    --ft-success-fg: 130 215 140;
+    --ft-success-bg: 111 191 115;
+    --ft-success-border: 111 191 115;
+    --ft-success-br: 111 191 115;
+    --ft-warn: 230 162 60;
+    --ft-warn-fg: 238 184 97;
+    --ft-warn-bg: 230 162 60;
+    --ft-warn-border: 230 162 60;
+    --ft-warn-br: 230 162 60;
+    --ft-danger: 239 83 80;
+    --ft-danger-fg: 244 122 120;
+    --ft-danger-bg: 239 83 80;
+    --ft-danger-border: 239 83 80;
+    --ft-danger-br: 239 83 80;
+    --ft-info: 140 180 220;
     --ft-info-fg: 140 180 220;
-    --ft-info-bg: 18 30 48;
-    --ft-info-br: 50 80 120;
-
+    --ft-info-bg: 140 180 220;
+    --ft-info-border: 140 180 220;
+    --ft-info-br: 140 180 220;
     --ft-font-display: system-ui, -apple-system, sans-serif;
     --ft-font-data: 'Courier New', Courier, monospace;
     --ft-font-handwritten: 'Courier New', Courier, monospace;
     --ft-font-body: system-ui, -apple-system, sans-serif;
     --ft-font-mono: 'Courier New', Courier, monospace;
     --ft-font-sans: system-ui, -apple-system, sans-serif;
-
+    --ft-font-number: 'Courier New', Courier, monospace;
     --ft-border-card: 1px solid rgba(255,255,255,0.08);
     --ft-border-divider: 1px solid rgba(255,255,255,0.06);
     --ft-border-radius: 4px;
     --ft-radius: 4px;
+    --ft-radius-sm: 2px;
+    --ft-radius-md: 4px;
+    --ft-radius-lg: 8px;
+    --ft-shadow-sm: 0 1px 2px rgba(0,0,0,0.3);
+    --ft-shadow-md: 0 4px 12px rgba(0,0,0,0.4);
+    --ft-stamp-fg: 184 184 184;
+    --ft-stamp-bg: 0 0 0;
+    --ft-stamp-border: 85 85 85;
   }
 
   /* ═════════════ GRAFFITI (90s Street) ═════════════ */
   :root[data-theme="graffiti"] {
-    --ft-bg: 35 39 42;
-    --ft-surface: 61 66 69;
-    --ft-card: 74 79 82;
-    --ft-border: 90 95 99;
-    --ft-border-alpha: 1;
-    --ft-border-color: #5A5F63;
-    --ft-border-subtle-color: #4A4F52;
-    --ft-muted: 255 255 255;
-    --ft-dim: 255 255 255;
-    --ft-light: 255 255 255;
-    --ft-pale: 255 255 255;
-    --ft-white: 255 255 255;
-    --ft-accent: 59 130 246;
+    --ft-bg: 28 28 30;
+    --ft-bg-alt: 42 42 45;
+    --ft-surface: 58 58 62;
+    --ft-surface-alt: 45 45 48;
+    --ft-card: 72 72 76;
+    --ft-surface-raised: 72 72 76;
+    --ft-border: 245 220 60;
+    --ft-border-faint: 255 255 255;
+    --ft-border-strong: 245 220 60;
+    --ft-border-color: rgba(245,220,60,0.35);
+    --ft-border-subtle-color: rgba(255,255,255,0.10);
+    --ft-muted: 192 192 195;
+    --ft-dim: 192 192 195;
+    --ft-light: 215 215 220;
+    --ft-pale: 250 250 248;
+    --ft-white: 250 250 248;
+    --ft-accent: 245 220 60;
     --ft-accent-secondary: 253 202 64;
-    --ft-success: 34 197 94;
-    --ft-warn: 234 179 8;
-    --ft-danger: 239 68 68;
-
-    --ft-text-primary: 255 255 255;
-    --ft-text-secondary: 255 255 255;
-    --ft-text-tertiary: 255 255 255;
-    --ft-alpha-primary: 0.92;
-    --ft-alpha-secondary: 0.74;
-    --ft-alpha-tertiary: 0.66;
-
-    --ft-success-fg: 34 197 94;
-    --ft-success-bg: 20 40 24;
-    --ft-success-br: 40 90 55;
-    --ft-warn-fg: 234 179 8;
-    --ft-warn-bg: 50 40 18;
-    --ft-warn-br: 110 85 35;
-    --ft-danger-fg: 239 68 68;
-    --ft-danger-bg: 60 22 20;
-    --ft-danger-br: 110 45 40;
-    --ft-info-fg: 140 180 220;
-    --ft-info-bg: 18 30 48;
-    --ft-info-br: 50 80 120;
-
+    --ft-accent-fg: 245 220 60;
+    --ft-accent-faint: 245 220 60;
+    --ft-accent-border: 245 220 60;
+    --ft-text-primary: 250 250 248;
+    --ft-text-secondary: 215 215 220;
+    --ft-text-tertiary: 192 192 195;
+    --ft-text-on-accent: 28 28 30;
+    --ft-text-on-bg: 250 250 248;
+    --ft-text-on-bg-sec: 215 215 220;
+    --ft-text-on-bg-ter: 192 192 195;
+    --ft-alpha-primary: 1;
+    --ft-alpha-secondary: 1;
+    --ft-alpha-tertiary: 1;
+    --ft-push: 92 156 250;
+    --ft-pull: 125 209 125;
+    --ft-legs: 255 122 168;
+    --ft-core: 245 194 117;
+    --ft-success: 92 184 92;
+    --ft-success-fg: 125 209 125;
+    --ft-success-bg: 92 184 92;
+    --ft-success-border: 92 184 92;
+    --ft-success-br: 92 184 92;
+    --ft-warn: 240 173 78;
+    --ft-warn-fg: 245 194 117;
+    --ft-warn-bg: 240 173 78;
+    --ft-warn-border: 240 173 78;
+    --ft-warn-br: 240 173 78;
+    --ft-danger: 255 80 140;
+    --ft-danger-fg: 255 122 168;
+    --ft-danger-bg: 255 80 140;
+    --ft-danger-border: 255 80 140;
+    --ft-danger-br: 255 80 140;
+    --ft-info: 59 130 246;
+    --ft-info-fg: 92 156 250;
+    --ft-info-bg: 59 130 246;
+    --ft-info-border: 59 130 246;
+    --ft-info-br: 59 130 246;
     --ft-font-display: 'Permanent Marker', cursive;
-    --ft-font-data: 'Reenie Beanie', 'Caveat', cursive;
-    --ft-font-handwritten: 'Reenie Beanie', 'Caveat', cursive;
-    --ft-font-body: 'Archivo Black', 'Barlow Condensed', sans-serif;
+    --ft-font-data: 'Bungee', sans-serif;
+    --ft-font-handwritten: 'Bungee', sans-serif;
+    --ft-font-body: 'Permanent Marker', cursive;
     --ft-font-mono: 'Courier New', Courier, monospace;
-    --ft-font-sans: 'Archivo Black', 'Barlow Condensed', sans-serif;
-
+    --ft-font-sans: 'Permanent Marker', cursive;
+    --ft-font-number: 'Bungee', sans-serif;
     --ft-border-card: 1px dashed rgba(255,255,255,0.12);
     --ft-border-divider: 1px dashed rgba(255,255,255,0.10);
     --ft-border-radius: 0;
     --ft-radius: 0;
+    --ft-radius-sm: 0;
+    --ft-radius-md: 1px;
+    --ft-radius-lg: 2px;
+    --ft-shadow-sm: 2px 2px 0 rgba(0,0,0,0.3);
+    --ft-shadow-md: 0 6px 18px rgba(0,0,0,0.4);
+    --ft-stamp-fg: 28 28 30;
+    --ft-stamp-bg: 245 220 60;
+    --ft-stamp-border: 245 220 60;
   }
 
   /* ═════════════ CYBERPUNK (Dark Future) ═════════════ */
   :root[data-theme="cyberpunk"] {
-    --ft-bg: 5 6 12;
-    --ft-surface: 28 34 50;
-    --ft-card: 42 50 68;
-    --ft-border: 58 70 96;
-    --ft-border-alpha: 1;
-    --ft-border-color: #3A4660;
-    --ft-border-subtle-color: #2A3244;
-    --ft-muted: 255 255 255;
-    --ft-dim: 255 255 255;
-    --ft-light: 255 255 255;
-    --ft-pale: 255 255 255;
-    --ft-white: 255 255 255;
+    --ft-bg: 5 10 22;
+    --ft-bg-alt: 12 20 38;
+    --ft-surface: 18 30 52;
+    --ft-surface-alt: 14 24 40;
+    --ft-card: 26 42 74;
+    --ft-surface-raised: 26 42 74;
+    --ft-border: 0 240 255;
+    --ft-border-faint: 0 240 255;
+    --ft-border-strong: 0 240 255;
+    --ft-border-color: rgba(0,240,255,0.35);
+    --ft-border-subtle-color: rgba(0,240,255,0.15);
+    --ft-muted: 144 176 200;
+    --ft-dim: 144 176 200;
+    --ft-light: 200 230 245;
+    --ft-pale: 235 250 255;
+    --ft-white: 235 250 255;
     --ft-accent: 0 240 255;
     --ft-accent-secondary: 255 48 104;
-    --ft-success: 0 240 255;
-    --ft-warn: 234 179 8;
-    --ft-danger: 255 48 104;
-
-    --ft-text-primary: 255 255 255;
-    --ft-text-secondary: 255 255 255;
-    --ft-text-tertiary: 255 255 255;
-    --ft-alpha-primary: 0.92;
-    --ft-alpha-secondary: 0.68;
-    --ft-alpha-tertiary: 0.54;
-
-    --ft-success-fg: 0 240 255;
-    --ft-success-bg: 6 30 38;
-    --ft-success-br: 0 180 200;
-    --ft-warn-fg: 234 179 8;
-    --ft-warn-bg: 50 40 18;
-    --ft-warn-br: 110 85 35;
-    --ft-danger-fg: 255 48 104;
-    --ft-danger-bg: 50 10 24;
-    --ft-danger-br: 200 40 80;
+    --ft-accent-fg: 0 240 255;
+    --ft-accent-faint: 0 240 255;
+    --ft-accent-border: 0 240 255;
+    --ft-text-primary: 235 250 255;
+    --ft-text-secondary: 200 230 245;
+    --ft-text-tertiary: 144 176 200;
+    --ft-text-on-accent: 5 10 22;
+    --ft-text-on-bg: 235 250 255;
+    --ft-text-on-bg-sec: 200 230 245;
+    --ft-text-on-bg-ter: 144 176 200;
+    --ft-alpha-primary: 1;
+    --ft-alpha-secondary: 1;
+    --ft-alpha-tertiary: 1;
+    --ft-push: 0 240 255;
+    --ft-pull: 125 255 184;
+    --ft-legs: 255 138 162;
+    --ft-core: 255 208 80;
+    --ft-success: 80 240 160;
+    --ft-success-fg: 125 255 184;
+    --ft-success-bg: 80 240 160;
+    --ft-success-border: 80 240 160;
+    --ft-success-br: 80 240 160;
+    --ft-warn: 255 208 80;
+    --ft-warn-fg: 255 224 120;
+    --ft-warn-bg: 255 208 80;
+    --ft-warn-border: 255 208 80;
+    --ft-warn-br: 255 208 80;
+    --ft-danger: 255 88 120;
+    --ft-danger-fg: 255 138 162;
+    --ft-danger-bg: 255 88 120;
+    --ft-danger-border: 255 88 120;
+    --ft-danger-br: 255 88 120;
+    --ft-info: 0 240 255;
     --ft-info-fg: 0 240 255;
-    --ft-info-bg: 6 30 38;
-    --ft-info-br: 0 180 200;
-
-    --ft-font-display: 'Orbitron', 'Space Mono', monospace;
-    --ft-font-data: 'Share Tech Mono', 'Space Mono', monospace;
-    --ft-font-handwritten: 'Share Tech Mono', 'Space Mono', monospace;
-    --ft-font-body: 'Rajdhani', 'Barlow Condensed', sans-serif;
-    --ft-font-mono: 'Share Tech Mono', 'Space Mono', monospace;
-    --ft-font-sans: 'Rajdhani', 'Barlow Condensed', sans-serif;
-
+    --ft-info-bg: 0 240 255;
+    --ft-info-border: 0 240 255;
+    --ft-info-br: 0 240 255;
+    --ft-font-display: 'Orbitron', sans-serif;
+    --ft-font-data: 'Share Tech Mono', monospace;
+    --ft-font-handwritten: 'Share Tech Mono', monospace;
+    --ft-font-body: 'Share Tech Mono', monospace;
+    --ft-font-mono: 'Share Tech Mono', monospace;
+    --ft-font-sans: 'Share Tech Mono', monospace;
+    --ft-font-number: 'Share Tech Mono', monospace;
     --ft-border-card: 1px solid rgba(0,240,255,0.12);
     --ft-border-divider: 1px solid rgba(0,240,255,0.07);
     --ft-border-radius: 0;
     --ft-radius: 0;
+    --ft-radius-sm: 0;
+    --ft-radius-md: 0;
+    --ft-radius-lg: 2px;
+    --ft-shadow-sm: 0 0 6px rgba(0,240,255,0.25);
+    --ft-shadow-md: 0 0 20px rgba(0,240,255,0.18);
+    --ft-stamp-fg: 0 240 255;
+    --ft-stamp-bg: 0 0 0;
+    --ft-stamp-border: 0 240 255;
   }
 
   /* ═════════════ NOTEBOOK (Coach's Notebook) ═════════════ */
   :root[data-theme="notebook"] {
-    --ft-bg: 226 217 201;
-    --ft-surface: 250 246 237;
+    --ft-bg: 250 246 237;
+    --ft-bg-alt: 240 235 221;
+    --ft-surface: 255 252 244;
+    --ft-surface-alt: 250 246 237;
     --ft-card: 255 255 255;
-    --ft-border: 213 208 200;
-    --ft-border-alpha: 1;
-    --ft-border-color: #D5D0C8;
-    --ft-border-subtle-color: #E5E0D8;
-    --ft-muted: 109 91 70;
-    --ft-dim: 109 91 70;
-    --ft-light: 107 90 74;
-    --ft-pale: 44 36 30;
-    --ft-white: 44 36 30;
+    --ft-surface-raised: 255 255 255;
+    --ft-border: 210 198 178;
+    --ft-border-faint: 229 219 203;
+    --ft-border-strong: 168 155 133;
+    --ft-border-color: #D2C6B2;
+    --ft-border-subtle-color: #E5DBCB;
+    --ft-muted: 110 95 74;
+    --ft-dim: 110 95 74;
+    --ft-light: 90 79 64;
+    --ft-pale: 38 33 25;
+    --ft-white: 38 33 25;
     --ft-accent: 181 49 42;
     --ft-accent-secondary: 26 107 60;
-    --ft-success: 26 158 69;
-    --ft-warn: 212 136 15;
-    --ft-danger: 181 49 42;
-
-    --ft-text-primary: 44 36 30;
-    --ft-text-secondary: 107 90 74;
-    --ft-text-tertiary: 109 91 70;
+    --ft-accent-fg: 181 49 42;
+    --ft-accent-faint: 181 49 42;
+    --ft-accent-border: 181 49 42;
+    --ft-text-primary: 38 33 25;
+    --ft-text-secondary: 90 79 64;
+    --ft-text-tertiary: 110 95 74;
+    --ft-text-on-accent: 255 252 244;
+    --ft-text-on-bg: 38 33 25;
+    --ft-text-on-bg-sec: 90 79 64;
+    --ft-text-on-bg-ter: 110 95 74;
     --ft-alpha-primary: 1;
     --ft-alpha-secondary: 1;
     --ft-alpha-tertiary: 1;
-
+    --ft-push: 90 133 199;
+    --ft-pull: 107 170 100;
+    --ft-legs: 194 90 79;
+    --ft-core: 212 154 72;
+    --ft-success: 64 122 60;
     --ft-success-fg: 64 122 60;
     --ft-success-bg: 230 240 215;
+    --ft-success-border: 180 205 145;
     --ft-success-br: 180 205 145;
+    --ft-warn: 170 95 20;
     --ft-warn-fg: 170 95 20;
     --ft-warn-bg: 246 232 200;
+    --ft-warn-border: 210 175 110;
     --ft-warn-br: 210 175 110;
+    --ft-danger: 181 49 42;
     --ft-danger-fg: 181 49 42;
     --ft-danger-bg: 245 220 213;
+    --ft-danger-border: 210 145 130;
     --ft-danger-br: 210 145 130;
+    --ft-info: 50 85 130;
     --ft-info-fg: 50 85 130;
     --ft-info-bg: 220 230 240;
+    --ft-info-border: 170 190 210;
     --ft-info-br: 170 190 210;
-
     --ft-font-display: 'Caveat', cursive;
     --ft-font-data: 'Caveat', cursive;
     --ft-font-handwritten: 'Caveat', cursive;
-    --ft-font-body: 'Patrick Hand', 'Kalam', cursive;
+    --ft-font-body: 'Patrick Hand', cursive;
     --ft-font-mono: 'Courier New', Courier, monospace;
-    --ft-font-sans: 'Patrick Hand', 'Kalam', cursive;
-
+    --ft-font-sans: 'Patrick Hand', cursive;
+    --ft-font-number: 'Caveat', cursive;
     --ft-border-card: none;
-    --ft-border-divider: 1px solid #D5D0C8;
-    --ft-border-radius: 0;
-    --ft-radius: 0;
+    --ft-border-divider: 1px solid #D2C6B2;
+    --ft-border-radius: 2px;
+    --ft-radius: 2px;
+    --ft-radius-sm: 2px;
+    --ft-radius-md: 2px;
+    --ft-radius-lg: 3px;
+    --ft-shadow-sm: 0 1px 2px rgba(0,0,0,0.08);
+    --ft-shadow-md: 0 4px 10px rgba(0,0,0,0.1);
+    --ft-stamp-fg: 140 125 105;
+    --ft-stamp-bg: 0 0 0;
+    --ft-stamp-border: 210 198 178;
   }
 
   /* ═════════════ BLUEPRINT ═════════════ */
   :root[data-theme="blueprint"] {
-    --ft-bg: 56 104 163;
-    --ft-surface: 42 80 136;
-    --ft-card: 28 62 110;
-    --ft-border: 184 208 236;
-    --ft-border-alpha: 1;
-    --ft-border-color: #B8D0EC;
-    --ft-border-subtle-color: #5884B8;
-    --ft-muted: 230 245 255;
-    --ft-dim: 230 245 255;
-    --ft-light: 240 248 255;
-    --ft-pale: 255 255 255;
-    --ft-white: 255 255 255;
-    --ft-accent: 74 158 255;
+    --ft-bg: 222 233 244;
+    --ft-bg-alt: 205 217 230;
+    --ft-surface: 19 44 82;
+    --ft-surface-alt: 30 60 110;
+    --ft-card: 30 60 110;
+    --ft-surface-raised: 30 60 110;
+    --ft-border: 19 44 82;
+    --ft-border-faint: 19 44 82;
+    --ft-border-strong: 19 44 82;
+    --ft-border-color: #132C52;
+    --ft-border-subtle-color: rgba(19,44,82,0.35);
+    --ft-muted: 144 176 204;
+    --ft-dim: 144 176 204;
+    --ft-light: 210 225 240;
+    --ft-pale: 250 253 255;
+    --ft-white: 250 253 255;
+    --ft-accent: 250 253 255;
     --ft-accent-secondary: 255 107 74;
-    --ft-success: 34 197 94;
-    --ft-warn: 234 179 8;
-    --ft-danger: 255 107 74;
-
-    --ft-text-primary: 255 255 255;
-    --ft-text-secondary: 240 248 255;
-    --ft-text-tertiary: 230 245 255;
-    --ft-alpha-primary: 0.96;
-    --ft-alpha-secondary: 0.95;
-    --ft-alpha-tertiary: 0.92;
-
-    --ft-success-fg: 152 226 178;
-    --ft-success-bg: 14 60 36;
-    --ft-success-br: 60 140 90;
-    --ft-warn-fg: 234 179 8;
-    --ft-warn-bg: 50 40 18;
-    --ft-warn-br: 110 85 35;
-    --ft-danger-fg: 255 107 74;
-    --ft-danger-bg: 60 22 20;
-    --ft-danger-br: 200 90 60;
-    --ft-info-fg: 74 158 255;
-    --ft-info-bg: 18 36 60;
-    --ft-info-br: 60 110 180;
-
-    --ft-font-display: 'Major Mono Display', 'IBM Plex Mono', monospace;
-    --ft-font-data: 'IBM Plex Mono', monospace;
-    --ft-font-handwritten: 'IBM Plex Mono', monospace;
-    --ft-font-body: 'IBM Plex Mono', monospace;
-    --ft-font-mono: 'IBM Plex Mono', monospace;
-    --ft-font-sans: 'IBM Plex Mono', monospace;
-
+    --ft-accent-fg: 250 253 255;
+    --ft-accent-faint: 250 253 255;
+    --ft-accent-border: 250 253 255;
+    --ft-text-primary: 250 253 255;
+    --ft-text-secondary: 210 225 240;
+    --ft-text-tertiary: 144 176 204;
+    --ft-text-on-accent: 19 44 82;
+    --ft-text-on-bg: 19 44 82;
+    --ft-text-on-bg-sec: 30 60 110;
+    --ft-text-on-bg-ter: 63 95 138;
+    --ft-alpha-primary: 1;
+    --ft-alpha-secondary: 1;
+    --ft-alpha-tertiary: 1;
+    --ft-push: 144 200 255;
+    --ft-pull: 160 229 176;
+    --ft-legs: 255 168 156;
+    --ft-core: 245 218 122;
+    --ft-success: 116 216 148;
+    --ft-success-fg: 160 229 176;
+    --ft-success-bg: 116 216 148;
+    --ft-success-border: 116 216 148;
+    --ft-success-br: 116 216 148;
+    --ft-warn: 240 205 90;
+    --ft-warn-fg: 245 218 122;
+    --ft-warn-bg: 240 205 90;
+    --ft-warn-border: 240 205 90;
+    --ft-warn-br: 240 205 90;
+    --ft-danger: 255 139 126;
+    --ft-danger-fg: 255 168 156;
+    --ft-danger-bg: 255 139 126;
+    --ft-danger-border: 255 139 126;
+    --ft-danger-br: 255 139 126;
+    --ft-info: 144 200 255;
+    --ft-info-fg: 144 200 255;
+    --ft-info-bg: 144 200 255;
+    --ft-info-border: 144 200 255;
+    --ft-info-br: 144 200 255;
+    --ft-font-display: 'Major Mono Display', monospace;
+    --ft-font-data: 'Space Mono', monospace;
+    --ft-font-handwritten: 'Space Mono', monospace;
+    --ft-font-body: 'Space Mono', monospace;
+    --ft-font-mono: 'Space Mono', monospace;
+    --ft-font-sans: 'Space Mono', monospace;
+    --ft-font-number: 'Space Mono', monospace;
     --ft-border-card: 1px solid rgba(255,255,255,0.25);
     --ft-border-divider: 1px solid rgba(255,255,255,0.15);
     --ft-border-radius: 0;
     --ft-radius: 0;
+    --ft-radius-sm: 0;
+    --ft-radius-md: 0;
+    --ft-radius-lg: 2px;
+    --ft-shadow-sm: 0 1px 0 rgba(19,44,82,0.3);
+    --ft-shadow-md: 0 4px 16px rgba(19,44,82,0.18);
+    --ft-stamp-fg: 250 253 255;
+    --ft-stamp-bg: 0 0 0;
+    --ft-stamp-border: 250 253 255;
   }
 
   /* ═════════════ ARCADE (Retro Arcade) ═════════════ */
   :root[data-theme="arcade"] {
     --ft-bg: 7 7 15;
+    --ft-bg-alt: 14 14 28;
     --ft-surface: 34 34 58;
-    --ft-card: 46 46 74;
-    --ft-border: 60 60 92;
-    --ft-border-alpha: 1;
-    --ft-border-color: #3C3C5C;
-    --ft-border-subtle-color: #2E2E4A;
-    --ft-muted: 224 224 240;
-    --ft-dim: 224 224 240;
-    --ft-light: 224 224 240;
-    --ft-pale: 224 224 240;
-    --ft-white: 224 224 240;
+    --ft-surface-alt: 26 26 46;
+    --ft-card: 42 42 68;
+    --ft-surface-raised: 42 42 68;
+    --ft-border: 255 80 200;
+    --ft-border-faint: 255 80 200;
+    --ft-border-strong: 0 240 255;
+    --ft-border-color: #FF50C8;
+    --ft-border-subtle-color: rgba(255,80,200,0.30);
+    --ft-muted: 168 163 210;
+    --ft-dim: 168 163 210;
+    --ft-light: 220 215 240;
+    --ft-pale: 255 255 255;
+    --ft-white: 255 255 255;
     --ft-accent: 255 80 200;
     --ft-accent-secondary: 255 215 0;
-    --ft-success: 34 197 94;
-    --ft-warn: 255 215 0;
-    --ft-danger: 239 68 68;
-
-    --ft-text-primary: 224 224 240;
-    --ft-text-secondary: 224 224 240;
-    --ft-text-tertiary: 224 224 240;
+    --ft-accent-fg: 255 80 200;
+    --ft-accent-faint: 255 80 200;
+    --ft-accent-border: 255 80 200;
+    --ft-text-primary: 255 255 255;
+    --ft-text-secondary: 220 215 240;
+    --ft-text-tertiary: 168 163 210;
+    --ft-text-on-accent: 7 7 15;
+    --ft-text-on-bg: 255 255 255;
+    --ft-text-on-bg-sec: 220 215 240;
+    --ft-text-on-bg-ter: 168 163 210;
     --ft-alpha-primary: 1;
-    --ft-alpha-secondary: 0.70;
-    --ft-alpha-tertiary: 0.60;
-
+    --ft-alpha-secondary: 1;
+    --ft-alpha-tertiary: 1;
+    --ft-push: 0 240 255;
+    --ft-pull: 80 255 140;
+    --ft-legs: 255 80 140;
+    --ft-core: 255 220 60;
+    --ft-success: 50 240 130;
     --ft-success-fg: 80 255 140;
-    --ft-success-bg: 10 50 25;
+    --ft-success-bg: 50 240 130;
+    --ft-success-border: 50 240 130;
     --ft-success-br: 50 240 130;
+    --ft-warn: 255 220 60;
     --ft-warn-fg: 255 235 90;
-    --ft-warn-bg: 50 40 10;
+    --ft-warn-bg: 255 220 60;
+    --ft-warn-border: 255 220 60;
     --ft-warn-br: 255 220 60;
+    --ft-danger: 255 80 140;
     --ft-danger-fg: 255 110 160;
-    --ft-danger-bg: 50 10 30;
+    --ft-danger-bg: 255 80 140;
+    --ft-danger-border: 255 80 140;
     --ft-danger-br: 255 80 140;
+    --ft-info: 0 240 255;
     --ft-info-fg: 0 240 255;
-    --ft-info-bg: 10 35 50;
+    --ft-info-bg: 0 240 255;
+    --ft-info-border: 0 240 255;
     --ft-info-br: 0 240 255;
-
     --ft-font-display: 'Press Start 2P', monospace;
-    --ft-font-data: 'VT323', 'Courier New', monospace;
-    --ft-font-handwritten: 'VT323', 'Courier New', monospace;
-    --ft-font-body: 'Pixelify Sans', 'Silkscreen', sans-serif;
-    --ft-font-mono: 'VT323', 'Courier New', monospace;
-    --ft-font-sans: 'Pixelify Sans', 'Silkscreen', sans-serif;
-
+    --ft-font-data: 'VT323', monospace;
+    --ft-font-handwritten: 'VT323', monospace;
+    --ft-font-body: 'Pixelify Sans', sans-serif;
+    --ft-font-mono: 'VT323', monospace;
+    --ft-font-sans: 'Pixelify Sans', sans-serif;
+    --ft-font-number: 'VT323', monospace;
     --ft-border-card: 2px solid rgba(255,255,255,0.08);
     --ft-border-divider: 2px solid rgba(255,255,255,0.06);
     --ft-border-radius: 0;
     --ft-radius: 0;
+    --ft-radius-sm: 0;
+    --ft-radius-md: 0;
+    --ft-radius-lg: 0;
+    --ft-shadow-sm: 2px 2px 0 rgba(0,240,255,0.5);
+    --ft-shadow-md: 4px 4px 0 rgba(255,80,200,0.35);
+    --ft-stamp-fg: 0 240 255;
+    --ft-stamp-bg: 0 0 0;
+    --ft-stamp-border: 0 240 255;
   }
 
   /* ═════════════ LAB (Lab Report) ═════════════ */
   :root[data-theme="lab"] {
     --ft-bg: 236 237 240;
+    --ft-bg-alt: 248 249 251;
     --ft-surface: 255 255 255;
+    --ft-surface-alt: 248 249 251;
     --ft-card: 255 255 255;
-    --ft-border: 229 231 235;
-    --ft-border-alpha: 1;
-    --ft-border-color: #E5E7EB;
-    --ft-border-subtle-color: #F3F4F6;
-    --ft-muted: 89 95 107;
-    --ft-dim: 89 95 107;
-    --ft-light: 85 92 104;
-    --ft-pale: 26 26 26;
-    --ft-white: 26 26 26;
+    --ft-surface-raised: 255 255 255;
+    --ft-border: 210 214 220;
+    --ft-border-faint: 229 231 235;
+    --ft-border-strong: 156 163 175;
+    --ft-border-color: #D2D6DC;
+    --ft-border-subtle-color: #E5E7EB;
+    --ft-muted: 90 100 115;
+    --ft-dim: 90 100 115;
+    --ft-light: 58 66 84;
+    --ft-pale: 18 24 35;
+    --ft-white: 18 24 35;
     --ft-accent: 37 99 235;
     --ft-accent-secondary: 5 150 105;
-    --ft-success: 5 150 105;
-    --ft-warn: 217 119 6;
-    --ft-danger: 220 38 38;
-
-    --ft-text-primary: 26 26 26;
-    --ft-text-secondary: 85 92 104;
-    --ft-text-tertiary: 89 95 107;
+    --ft-accent-fg: 37 99 235;
+    --ft-accent-faint: 239 244 254;
+    --ft-accent-border: 199 215 251;
+    --ft-text-primary: 18 24 35;
+    --ft-text-secondary: 58 66 84;
+    --ft-text-tertiary: 90 100 115;
+    --ft-text-on-accent: 255 255 255;
+    --ft-text-on-bg: 18 24 35;
+    --ft-text-on-bg-sec: 58 66 84;
+    --ft-text-on-bg-ter: 90 100 115;
     --ft-alpha-primary: 1;
     --ft-alpha-secondary: 1;
     --ft-alpha-tertiary: 1;
-
+    --ft-push: 74 144 217;
+    --ft-pull: 92 184 92;
+    --ft-legs: 217 83 79;
+    --ft-core: 240 173 78;
+    --ft-success: 21 128 61;
     --ft-success-fg: 21 128 61;
     --ft-success-bg: 236 253 243;
+    --ft-success-border: 167 224 188;
     --ft-success-br: 167 224 188;
+    --ft-warn: 199 116 5;
     --ft-warn-fg: 199 116 5;
     --ft-warn-bg: 255 246 229;
+    --ft-warn-border: 244 214 154;
     --ft-warn-br: 244 214 154;
+    --ft-danger: 180 35 24;
     --ft-danger-fg: 180 35 24;
     --ft-danger-bg: 254 241 240;
+    --ft-danger-border: 245 181 174;
     --ft-danger-br: 245 181 174;
+    --ft-info: 37 99 235;
     --ft-info-fg: 37 99 235;
     --ft-info-bg: 239 244 254;
+    --ft-info-border: 199 215 251;
     --ft-info-br: 199 215 251;
-
-    --ft-font-display: 'IBM Plex Sans', 'Inter', system-ui, sans-serif;
-    --ft-font-data: 'JetBrains Mono', 'IBM Plex Mono', monospace;
-    --ft-font-handwritten: 'JetBrains Mono', 'IBM Plex Mono', monospace;
-    --ft-font-body: 'IBM Plex Sans', 'Inter', system-ui, sans-serif;
-    --ft-font-mono: 'JetBrains Mono', 'IBM Plex Mono', monospace;
-    --ft-font-sans: 'IBM Plex Sans', 'Inter', system-ui, sans-serif;
-
+    --ft-font-display: 'IBM Plex Sans', sans-serif;
+    --ft-font-data: 'JetBrains Mono', monospace;
+    --ft-font-handwritten: 'JetBrains Mono', monospace;
+    --ft-font-body: 'IBM Plex Sans', sans-serif;
+    --ft-font-mono: 'JetBrains Mono', monospace;
+    --ft-font-sans: 'IBM Plex Sans', sans-serif;
+    --ft-font-number: 'JetBrains Mono', monospace;
     --ft-border-card: 1px solid #E5E7EB;
     --ft-border-divider: 1px solid #F3F4F6;
     --ft-border-radius: 6px;
     --ft-radius: 6px;
+    --ft-radius-sm: 4px;
+    --ft-radius-md: 6px;
+    --ft-radius-lg: 10px;
+    --ft-shadow-sm: 0 1px 2px rgba(0,0,0,0.04);
+    --ft-shadow-md: 0 4px 12px rgba(0,0,0,0.08);
+    --ft-stamp-fg: 107 114 128;
+    --ft-stamp-bg: 0 0 0;
+    --ft-stamp-border: 210 214 220;
   }
 
   /* ═════════════ IRON (Iron & Chalk) ═════════════ */
   :root[data-theme="iron"] {
     --ft-bg: 22 21 20;
+    --ft-bg-alt: 30 29 27;
     --ft-surface: 46 45 43;
-    --ft-card: 62 60 56;
-    --ft-border: 74 72 68;
-    --ft-border-alpha: 1;
-    --ft-border-color: #4A4844;
-    --ft-border-subtle-color: #3E3C38;
-    --ft-muted: 255 252 245;
-    --ft-dim: 255 252 245;
-    --ft-light: 255 252 245;
-    --ft-pale: 255 252 245;
-    --ft-white: 255 252 245;
+    --ft-surface-alt: 58 56 53;
+    --ft-card: 60 58 55;
+    --ft-surface-raised: 60 58 55;
+    --ft-border: 200 169 110;
+    --ft-border-faint: 200 169 110;
+    --ft-border-strong: 200 169 110;
+    --ft-border-color: rgba(200,169,110,0.25);
+    --ft-border-subtle-color: rgba(200,169,110,0.12);
+    --ft-muted: 186 177 161;
+    --ft-dim: 186 177 161;
+    --ft-light: 215 205 190;
+    --ft-pale: 245 240 230;
+    --ft-white: 245 240 230;
     --ft-accent: 200 169 110;
     --ft-accent-secondary: 139 69 19;
-    --ft-success: 34 197 94;
-    --ft-warn: 200 169 110;
-    --ft-danger: 239 68 68;
-
-    --ft-text-primary: 255 252 245;
-    --ft-text-secondary: 255 252 245;
-    --ft-text-tertiary: 255 252 245;
-    --ft-alpha-primary: 0.92;
-    --ft-alpha-secondary: 0.74;
-    --ft-alpha-tertiary: 0.62;
-
+    --ft-accent-fg: 200 169 110;
+    --ft-accent-faint: 200 169 110;
+    --ft-accent-border: 200 169 110;
+    --ft-text-primary: 245 240 230;
+    --ft-text-secondary: 215 205 190;
+    --ft-text-tertiary: 186 177 161;
+    --ft-text-on-accent: 22 21 20;
+    --ft-text-on-bg: 245 240 230;
+    --ft-text-on-bg-sec: 215 205 190;
+    --ft-text-on-bg-ter: 186 177 161;
+    --ft-alpha-primary: 1;
+    --ft-alpha-secondary: 1;
+    --ft-alpha-tertiary: 1;
+    --ft-push: 91 160 224;
+    --ft-pull: 122 201 122;
+    --ft-legs: 224 114 104;
+    --ft-core: 232 184 96;
+    --ft-success: 110 200 130;
     --ft-success-fg: 130 215 145;
-    --ft-success-bg: 18 46 28;
-    --ft-success-br: 40 90 55;
+    --ft-success-bg: 110 200 130;
+    --ft-success-border: 110 200 130;
+    --ft-success-br: 110 200 130;
+    --ft-warn: 240 190 90;
     --ft-warn-fg: 240 200 110;
-    --ft-warn-bg: 60 46 20;
-    --ft-warn-br: 110 85 35;
+    --ft-warn-bg: 240 190 90;
+    --ft-warn-border: 240 190 90;
+    --ft-warn-br: 240 190 90;
+    --ft-danger: 240 95 85;
     --ft-danger-fg: 245 130 120;
-    --ft-danger-bg: 60 22 20;
-    --ft-danger-br: 110 45 40;
+    --ft-danger-bg: 240 95 85;
+    --ft-danger-border: 240 95 85;
+    --ft-danger-br: 240 95 85;
+    --ft-info: 200 169 110;
     --ft-info-fg: 200 169 110;
-    --ft-info-bg: 46 38 22;
-    --ft-info-br: 90 72 35;
-
-    --ft-font-display: 'Stardos Stencil', 'Anton', sans-serif;
-    --ft-font-data: 'Teko', 'Barlow Condensed', sans-serif;
-    --ft-font-handwritten: 'Teko', 'Barlow Condensed', sans-serif;
-    --ft-font-body: 'Oswald', 'Barlow Condensed', sans-serif;
+    --ft-info-bg: 200 169 110;
+    --ft-info-border: 200 169 110;
+    --ft-info-br: 200 169 110;
+    --ft-font-display: 'Stardos Stencil', serif;
+    --ft-font-data: 'Teko', sans-serif;
+    --ft-font-handwritten: 'Teko', sans-serif;
+    --ft-font-body: 'Oswald', sans-serif;
     --ft-font-mono: 'Courier New', Courier, monospace;
-    --ft-font-sans: 'Oswald', 'Barlow Condensed', sans-serif;
-
+    --ft-font-sans: 'Oswald', sans-serif;
+    --ft-font-number: 'Teko', sans-serif;
     --ft-border-card: 1px solid rgba(255,252,245,0.08);
     --ft-border-divider: 1px solid rgba(255,252,245,0.06);
     --ft-border-radius: 0;
     --ft-radius: 0;
+    --ft-radius-sm: 0;
+    --ft-radius-md: 0;
+    --ft-radius-lg: 2px;
+    --ft-shadow-sm: 0 1px 0 rgba(0,0,0,0.4);
+    --ft-shadow-md: 0 4px 12px rgba(0,0,0,0.5);
+    --ft-stamp-fg: 200 169 110;
+    --ft-stamp-bg: 0 0 0;
+    --ft-stamp-border: 200 169 110;
   }
 }
 
