@@ -11,6 +11,7 @@ import {
   mergeTemplateConfig,
 } from "@/lib/program-engine";
 import type { ProgramConfig } from "@/lib/program-engine";
+import { saveDraft, loadDraft, clearDraft } from "@/lib/draft-store";
 import { templateToPlan, type PickerPlan } from "./_picker/derive";
 import {
   Step1Welcome,
@@ -21,7 +22,30 @@ import {
   type Filters,
   type FilterKey,
   type PreviewBlueprint,
+  type BodyWeightGoal,
+  type StrengthGoal,
 } from "./_picker/Steps";
+
+interface PickerDraft {
+  step: 1 | 2 | 3 | 4 | 5;
+  filters: Filters;
+  filtersBypassed: boolean;
+  selectedId: string | null;
+  startDate: string;
+  daysPerWeek: number;
+  bodyWeight: BodyWeightGoal;
+  strength: StrengthGoal;
+}
+
+const DRAFT_KEY = "picker-draft-v1";
+
+const EMPTY_BODY_WEIGHT: BodyWeightGoal = { current: "", target: "", byDate: "" };
+const EMPTY_STRENGTH: StrengthGoal = {
+  exerciseId: "",
+  exerciseName: "",
+  current1RM: "",
+  target1RM: "",
+};
 
 type Step = 1 | 2 | 3 | 4 | 5;
 
@@ -49,7 +73,41 @@ export default function NewProgramPage() {
 
   const [startDate, setStartDate] = useState<string>(() => new Date().toISOString().slice(0, 10));
   const [daysPerWeek, setDaysPerWeek] = useState<number>(3);
+  const [bodyWeight, setBodyWeight] = useState<BodyWeightGoal>(EMPTY_BODY_WEIGHT);
+  const [strength, setStrength] = useState<StrengthGoal>(EMPTY_STRENGTH);
   const [submitting, setSubmitting] = useState(false);
+  const [draftRestored, setDraftRestored] = useState(false);
+
+  /* ─── Draft persistence ──────────────────────────────────────── */
+
+  // Restore draft on mount.
+  useEffect(() => {
+    const draft = loadDraft<PickerDraft>(DRAFT_KEY);
+    if (!draft) return;
+    setStep(draft.step);
+    setFilters(draft.filters);
+    setFiltersBypassed(draft.filtersBypassed);
+    setSelectedId(draft.selectedId);
+    setStartDate(draft.startDate);
+    setDaysPerWeek(draft.daysPerWeek);
+    setBodyWeight(draft.bodyWeight);
+    setStrength(draft.strength);
+    setDraftRestored(true);
+  }, []);
+
+  // Save draft on every state change (cheap; localStorage write).
+  useEffect(() => {
+    saveDraft<PickerDraft>(DRAFT_KEY, {
+      step,
+      filters,
+      filtersBypassed,
+      selectedId,
+      startDate,
+      daysPerWeek,
+      bodyWeight,
+      strength,
+    });
+  }, [step, filters, filtersBypassed, selectedId, startDate, daysPerWeek, bodyWeight, strength]);
 
   /* ─── Derived plan list (for step 3) ─────────────────────────── */
 
@@ -78,14 +136,43 @@ export default function NewProgramPage() {
       }
     }
 
-    return templates.map(templateToPlan);
+    return templates.map((t) => templateToPlan(t, filters));
   }, [filters, filtersBypassed]);
+
+  /**
+   * Closest-fit recovery — when filters return nothing, surface the
+   * single template that matches the most filter slots so the user
+   * still has a starting point. Mirrors picker-screens.jsx
+   * #StateEmptyFilter "CLOSEST FIT" pattern.
+   */
+  const closestFit: PickerPlan | null = useMemo(() => {
+    if (plans.length > 0) return null;
+    const activeFilters = Object.entries(filters).filter(([, v]) => v != null && v !== "");
+    if (activeFilters.length === 0) return null;
+    let best: { tmpl: typeof PROGRAM_TEMPLATES[number]; score: number } | null = null;
+    for (const t of PROGRAM_TEMPLATES) {
+      let score = 0;
+      if (filters.goal && t.tags.includes(filters.goal)) score += 1;
+      if (filters.experience && (t.tags.includes(filters.experience) || t.tags.includes("any-level"))) score += 1;
+      if (filters.daysPerWeek && t.tags.includes(`${filters.daysPerWeek}-day`)) score += 1;
+      if (filters.equipment) {
+        const eq = t.config.equipment;
+        const ok =
+          (filters.equipment === "home" && (eq === "home_minimal" || t.tags.includes("home"))) ||
+          (filters.equipment === "limited_gym" && eq !== "full_gym") ||
+          filters.equipment === "full_gym";
+        if (ok) score += 1;
+      }
+      if (!best || score > best.score) best = { tmpl: t, score };
+    }
+    return best ? templateToPlan(best.tmpl, filters) : null;
+  }, [filters, plans.length]);
 
   const selectedPlan = useMemo(() => {
     if (!selectedId) return null;
     const tmpl = getTemplateById(selectedId);
-    return tmpl ? templateToPlan(tmpl) : null;
-  }, [selectedId]);
+    return tmpl ? templateToPlan(tmpl, filters) : null;
+  }, [selectedId, filters]);
 
   /* ─── Side effect: fetch preview when entering step 4 ────────── */
 
@@ -159,6 +246,7 @@ export default function NewProgramPage() {
         throw new Error(body.error ?? `Server returned ${res.status}`);
       }
       const data = await res.json();
+
       // Update startDate on the program (engine defaults to today)
       if (startDate && startDate !== new Date().toISOString().slice(0, 10)) {
         await fetch(`/api/programs/${data.programId}`, {
@@ -167,6 +255,54 @@ export default function NewProgramPage() {
           body: JSON.stringify({ startDate }),
         }).catch(() => undefined);
       }
+
+      /* Body-weight + strength goals — Step5's optional fields. POST
+       * each as a `Goal` linked via `programId`. Errors are swallowed
+       * so a goal-creation failure doesn't kill the program creation. */
+      const bwStart = parseFloat(bodyWeight.current);
+      const bwTarget = parseFloat(bodyWeight.target);
+      if (Number.isFinite(bwStart) && Number.isFinite(bwTarget)) {
+        await fetch("/api/goals", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            type: "bodyweight",
+            title: "Body weight",
+            programId: data.programId,
+            startValue: bwStart,
+            targetValue: bwTarget,
+            targetUnit: "lb",
+            targetDate: bodyWeight.byDate || null,
+          }),
+        }).catch(() => undefined);
+      }
+
+      const stStart = parseFloat(strength.current1RM);
+      const stTarget = parseFloat(strength.target1RM);
+      if (
+        strength.exerciseId &&
+        strength.exerciseName &&
+        Number.isFinite(stStart) &&
+        Number.isFinite(stTarget)
+      ) {
+        await fetch("/api/goals", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            type: "strength",
+            title: `${strength.exerciseName} 1RM`,
+            programId: data.programId,
+            metric: strength.exerciseId,
+            startValue: stStart,
+            targetValue: stTarget,
+            targetUnit: "lb 1RM",
+          }),
+        }).catch(() => undefined);
+      }
+
+      // Picker draft is now consumed; clear it.
+      clearDraft(DRAFT_KEY);
+
       toast.success("Gameplan created");
       router.push(`/programs/${data.programId}`);
     } catch (e) {
@@ -180,6 +316,31 @@ export default function NewProgramPage() {
 
   return (
     <div className="bg-ft-bg text-ft-white -mx-4 -my-4 -mb-24 min-h-screen relative">
+      {draftRestored && (
+        <div className="sticky top-0 z-20 px-4 py-2 bg-ft-accent/10 border-b border-ft-accent/30 flex items-center justify-between">
+          <span className="font-body text-[11px] uppercase tracking-[0.15em] text-ft-accent">
+            Resumed previous picker
+          </span>
+          <button
+            onClick={() => {
+              clearDraft(DRAFT_KEY);
+              setStep(1);
+              setFilters({});
+              setFiltersBypassed(false);
+              setSelectedId(null);
+              setStartDate(new Date().toISOString().slice(0, 10));
+              setDaysPerWeek(3);
+              setBodyWeight(EMPTY_BODY_WEIGHT);
+              setStrength(EMPTY_STRENGTH);
+              setDraftRestored(false);
+            }}
+            className="font-body text-[11px] uppercase tracking-[0.1em] text-ft-accent border-b border-ft-accent"
+          >
+            Start over
+          </button>
+        </div>
+      )}
+
       {step === 1 && (
         <>
           <Step1Welcome
@@ -219,6 +380,7 @@ export default function NewProgramPage() {
           plans={plans}
           filters={filters}
           filtersBypassed={filtersBypassed}
+          closestFit={closestFit}
           onPickPlan={(id) => {
             setSelectedId(id);
             setStep(4);
@@ -252,6 +414,10 @@ export default function NewProgramPage() {
           setStartDate={setStartDate}
           daysPerWeek={daysPerWeek}
           setDaysPerWeek={setDaysPerWeek}
+          bodyWeight={bodyWeight}
+          setBodyWeight={setBodyWeight}
+          strength={strength}
+          setStrength={setStrength}
           submitting={submitting}
           onSubmit={handleSubmit}
           onBack={() => setStep(4)}

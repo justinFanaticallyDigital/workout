@@ -1,6 +1,7 @@
 "use client";
 
 import { ReactNode } from "react";
+import { ChalkSpray } from "./Ornaments";
 
 /* ─── Visual primitives shared across picker steps ─────────────────
  *
@@ -8,7 +9,17 @@ import { ReactNode } from "react";
  * that the per-theme chrome from globals.css (.ft-card brass rib on
  * iron, pixel bezel on arcade, paper shadow on notebook, etc.) and
  * the data-theme color tokens apply automatically.
+ *
+ * Iron-specific ornaments (ChalkSpray, BrassRib, CornerStamp) live in
+ * `Ornaments.tsx` and self-gate on `chrome === "iron"`. Add them
+ * directly inside step bodies — they render `null` on every other
+ * chrome.
  * ────────────────────────────────────────────────────────────────── */
+
+// Re-export iron-only ornaments for callers (Steps.tsx) that import
+// from this barrel. ChalkSpray + BrassRib + CornerStamp + PickerCard
+// all gate on chrome === "iron".
+export { ChalkSpray, BrassRib, CornerStamp, PickerCard } from "./Ornaments";
 
 /** Small-caps stamp pill (theme-adaptive shape). */
 export function Stamp({ children, className = "" }: { children: ReactNode; className?: string }) {
@@ -204,22 +215,35 @@ export function StepHeader({
 
 /**
  * Big page heading with theme-adaptive display font and optional kicker.
+ *
+ * `variant` controls the ChalkSpray seed (1..6) so each heading on the
+ * same screen gets a slightly different chalk-dust ornament when the
+ * iron chrome is active. Other chromes render `null` for the spray.
  */
 export function PickerHeading({
   kicker,
+  variant = 3,
   children,
   className = "",
 }: {
   kicker?: string;
+  variant?: number;
   children: ReactNode;
   className?: string;
 }) {
   return (
-    <div className={`mb-3 ${className}`}>
+    <div className={`relative mb-3 ${className}`}>
+      <ChalkSpray
+        width={360}
+        height={120}
+        variant={variant}
+        opacity={0.28}
+        style={{ left: -60, top: -34, filter: "blur(0.5px)" }}
+      />
       {kicker && (
-        <div className="font-body text-[10px] uppercase tracking-[0.3em] text-ft-accent mb-1">{kicker}</div>
+        <div className="font-body text-[10px] uppercase tracking-[0.3em] text-ft-accent mb-1 relative">{kicker}</div>
       )}
-      <h1 className="font-display text-3xl leading-tight tracking-wide text-ft-white m-0">{children}</h1>
+      <h1 className="font-display text-3xl leading-tight tracking-wide text-ft-white m-0 relative">{children}</h1>
     </div>
   );
 }
