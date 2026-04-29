@@ -7,7 +7,13 @@ import { EditPlanBtn } from "./EditPlanBtn";
 import { SleepCard } from "./SleepCard";
 import { StressCard } from "./StressCard";
 import { ProteinHitCard } from "./ProteinHitCard";
-import type { CheckIn, StretchRoutine } from "./types";
+import type {
+  CheckIn,
+  StretchRoutine,
+  DailyMetricLite,
+  LifestyleTargetLite,
+  DailyProteinPoint,
+} from "./types";
 
 interface Props {
   stretchRoutine: StretchRoutine | null;
@@ -16,6 +22,12 @@ interface Props {
   programId: string | null;
   programStartDate: string | null;
   programDurationWeeks: number | null;
+  /** R6 — fed from /api/integrations/fitbit/daily; SleepCard + StressCard read. */
+  dailyMetrics: DailyMetricLite[];
+  /** R6 — fed from /api/lifestyle-targets; SleepCard + StressCard + ProteinHitCard read. */
+  lifestyleTargets: LifestyleTargetLite[];
+  /** R6 — fed from /api/nutrition/meals/range; ProteinHitCard reads. */
+  dailyProtein: DailyProteinPoint[];
 }
 
 export default function LifestylePanel({
@@ -24,6 +36,9 @@ export default function LifestylePanel({
   programId,
   programStartDate,
   programDurationWeeks,
+  dailyMetrics,
+  lifestyleTargets,
+  dailyProtein,
 }: Props) {
   const latest = recentCheckIns[0] ?? null;
   const durationWeeks = programDurationWeeks ?? 16;
@@ -36,8 +51,9 @@ export default function LifestylePanel({
 
       {/* Daily vitals strip — verbatim port of gameplan-active.jsx
           LifestyleTab (lines 1989–2008). 3 cards: Sleep / Stress /
-          Protein. All three are **R6-stubbed** to weekly check-in
-          granularity; flagged inline. */}
+          Protein. All three read real R6 schema fields:
+          DailyMetric.sleepMinutes (Sleep), DailyMetric.stress (Stress),
+          and per-day protein totals from /api/nutrition/meals/range. */}
       <SectionH kicker="HABITS · 16-WEEK PLAN" sprayWidth={170}>
         DAILY VITALS
       </SectionH>
@@ -50,19 +66,22 @@ export default function LifestylePanel({
       </Archivo>
       <div className="flex flex-col gap-3.5">
         <SleepCard
-          recentCheckIns={recentCheckIns}
+          dailyMetrics={dailyMetrics}
+          lifestyleTargets={lifestyleTargets}
           programStartDate={programStartDate}
           durationWeeks={durationWeeks}
           tilt={-0.4}
         />
         <StressCard
-          recentCheckIns={recentCheckIns}
+          dailyMetrics={dailyMetrics}
+          lifestyleTargets={lifestyleTargets}
           programStartDate={programStartDate}
           durationWeeks={durationWeeks}
           tilt={0.4}
         />
         <ProteinHitCard
-          recentCheckIns={recentCheckIns}
+          dailyProtein={dailyProtein}
+          lifestyleTargets={lifestyleTargets}
           programStartDate={programStartDate}
           durationWeeks={durationWeeks}
           tilt={-0.3}

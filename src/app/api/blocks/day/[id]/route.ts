@@ -26,6 +26,7 @@ export async function GET(
           progressionType: true,
           progressionIncrement: true,
           notes: true,
+          variants: true, // R6 — array of variant names; UI wiring deferred
           exercise: { select: { name: true, movementPattern: true, primaryMuscle: true } },
           altExercise: { select: { name: true } },
         },

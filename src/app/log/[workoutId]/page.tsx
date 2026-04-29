@@ -28,9 +28,10 @@ interface SearchExercise {
 // supersedes the prototype's faded in-session tab strip and the logger
 // pages already hide BottomNav while active.
 //
-// VariantDropdown (logger-app.jsx#439-500) is OMITTED — see comment in
-// _logger/Lane.tsx; the swap path uses ExercisePicker instead. Schema
-// support deferred to R6.
+// VariantDropdown (logger-app.jsx#439-500) — schema field
+// `BlockDayExercise.variants String[]` landed in R6; UI dropdown
+// surface deferred to a follow-up UI-only pass. The swap path
+// continues to use ExercisePicker.
 //
 // Skeleton variants B (FocusCard), C (DenseGrid), D (TimerFirst) from
 // logger-skeletons.jsx are OMITTED — variant A (LoggerScreen, the

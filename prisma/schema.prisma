@@ -59,6 +59,10 @@ model User {
   createdAt     DateTime  @default(now()) @map("created_at")
   updatedAt     DateTime  @updatedAt @map("updated_at")
 
+  // R6: maintenance TDEE estimate, drives delta-vs-maintenance in
+  // /gameplan/new picker NutritionCard. Replaces 2400 hardcoded baseline.
+  maintenanceCalories Int? @map("maintenance_calories")
+
   accounts       Account[]
   sessions       Session[]
   goals          Goal[]
@@ -80,6 +84,7 @@ model User {
   scheduleOverrides  ScheduleOverride[]
   stretchRoutines    StretchRoutine[]
   checkIns           CheckIn[]
+  lifestyleTargets   LifestyleTarget[]
 
   @@map("users")
 }
@@ -155,6 +160,7 @@ model Program {
   progressPhotos    ProgressPhoto[]
   userMetricTargets UserMetricTarget[]
   scheduleOverrides ScheduleOverride[]
+  lifestyleTargets  LifestyleTarget[]
 
   @@index([userId])
   @@index([userId, status])
@@ -201,6 +207,12 @@ model Block {
   focus               String?
   status              BlockStatus @default(upcoming)
   createdAt           DateTime    @default(now()) @map("created_at")
+
+  // R6: refeed weeks within this block (1-indexed). Drives the
+  // /gameplan NutritionPanel "NEXT REFEED" footer (e.g. "SUN · WK 8").
+  // Forward-compatible: future per-refeed notes/protocols can migrate
+  // to a BlockRefeed join table embedding these as weekNumber.
+  refeedWeeks         Int[]       @default([]) @map("refeed_weeks")
 
   program           Program            @relation(fields: [programId], references: [id], onDelete: Cascade)
   days              BlockDay[]
@@ -261,6 +273,12 @@ model BlockDayExercise {
   progressionType       ProgressionType @default(none) @map("progression_type")
   progressionIncrement  Decimal?        @map("progression_increment")
   notes                 String?
+
+  // R6: per-exercise variant catalogue. Drives the prototype's
+  // VariantDropdown (logger-screens.jsx#VariantDropdown). Schema
+  // landed in R6; UI surface still uses the existing Swap →
+  // ExercisePicker path until a later UI-only PR wires VariantDropdown.
+  variants              String[]        @default([])
 
   blockDay    BlockDay  @relation(fields: [blockDayId], references: [id], onDelete: Cascade)
   exercise    Exercise  @relation("primary", fields: [exerciseId], references: [id], onDelete: Cascade)
@@ -411,6 +429,10 @@ model DailyMetric {
   sleepWake        Int?     @map("sleep_wake")       // minutes
   // Heart Rate
   restingHr        Int?     @map("resting_hr")
+  // R6: daily 1-10 stress self-report. Drives /gameplan
+  // LifestylePanel StressCard (replaces 1-5→1-10 mapping from weekly
+  // CheckIn.stress). Sleep-hours read uses existing sleepMinutes / 60.
+  stress           Int?
   // Source
   source           String   @default("fitbit")
   createdAt        DateTime @default(now()) @map("created_at")
@@ -772,6 +794,37 @@ model StretchRoutineItem {
 
   @@index([routineId])
   @@map("stretch_routine_items")
+}
+
+// ─── Lifestyle Targets (R6) ─────────────────────────────
+//
+// Per-user, optionally per-program standing targets for sleep /
+// stress / protein / etc. Drives the /gameplan/new picker
+// LifestylePicksCard ("SLEEP · 7+ H" tags) and the dashboard
+// SleepCard / StressCard / ProteinHitCard target bands.
+//
+// Distinct from UserMetricTarget (which is a single Float per
+// metric) because lifestyle goals carry comparator semantics — a
+// stress target reads "≤ 5" and a protein target reads "≥ 1g/lb".
+model LifestyleTarget {
+  id         String  @id @default(uuid()) @db.Uuid
+  userId     String  @map("user_id") @db.Uuid
+  programId  String? @map("program_id") @db.Uuid
+  /// Stable key: "sleep_hours_min" / "stress_max" / "protein_g_per_lb" / etc.
+  key        String
+  value      Float
+  unit       String
+  /// "gte" / "lte" / "eq" — drives the in-band check on dashboard cards.
+  comparator String
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
+
+  user    User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  program Program? @relation(fields: [programId], references: [id], onDelete: SetNull)
+
+  @@unique([userId, programId, key])
+  @@index([userId])
+  @@map("lifestyle_targets")
 }
 
 // ─── Weekly Check-Ins ────────────────────────────────────

@@ -5,7 +5,8 @@ import { IconWeight, IconBarbell, IconFlame, IconMoon } from "./icons";
 /**
  * Tiny projection chart (current line vs target). Used inside
  * recommendation card body to make "X behind target" visible.
- * Currently renders empty-state shell — needs goal projections (R6 + R8).
+ * Currently renders empty-state shell — daily goal projections land
+ * with the Goal Engine in R8.
  */
 export function ProjectionMini({
   width = 100,
@@ -191,8 +192,9 @@ export function EngineFlowDiagram() {
 
 /**
  * 6-week trajectory chart. Renders shell only — body-weight series
- * not on CheckIn schema (R6 territory). When `checkIns` is provided,
- * dots are colored by average rating per check-in as a proxy.
+ * is `BodyMetric` history (already in schema); a dedicated read+plot
+ * pass lands in a follow-up UI PR. When `checkIns` is provided, dots
+ * are colored by average rating per check-in as a proxy.
  */
 export function HistoryTrajectory({
   width = 360,

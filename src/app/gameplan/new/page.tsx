@@ -24,6 +24,7 @@ import {
   type PreviewBlueprint,
   type BodyWeightGoal,
   type StrengthGoal,
+  type LifestyleTargetRow,
 } from "./_picker/Steps";
 
 interface PickerDraft {
@@ -77,6 +78,42 @@ export default function NewProgramPage() {
   const [strength, setStrength] = useState<StrengthGoal>(EMPTY_STRENGTH);
   const [submitting, setSubmitting] = useState(false);
   const [draftRestored, setDraftRestored] = useState(false);
+
+  // R6 — pull stored profile maintenance TDEE + lifestyle targets so
+  // Step4 NutritionCard / LifestylePicksCard can render real values
+  // instead of generic baselines.
+  const [maintenanceCalories, setMaintenanceCalories] = useState<number | null>(null);
+  const [lifestyleTargets, setLifestyleTargets] = useState<LifestyleTargetRow[]>([]);
+
+  useEffect(() => {
+    let cancelled = false;
+    Promise.all([
+      fetch("/api/profile").then((r) => (r.ok ? r.json() : null)),
+      fetch("/api/lifestyle-targets").then((r) => (r.ok ? r.json() : [])),
+    ])
+      .then(([profile, targets]) => {
+        if (cancelled) return;
+        if (profile && typeof profile.maintenanceCalories === "number") {
+          setMaintenanceCalories(profile.maintenanceCalories);
+        }
+        if (Array.isArray(targets)) {
+          setLifestyleTargets(
+            targets
+              .filter((t: { key?: unknown }) => typeof t.key === "string")
+              .map((t: { key: string; value: number; unit: string; comparator: string }) => ({
+                key: t.key,
+                value: Number(t.value),
+                unit: t.unit,
+                comparator: (t.comparator as "gte" | "lte" | "eq") ?? "eq",
+              })),
+          );
+        }
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   /* ─── Draft persistence ──────────────────────────────────────── */
 
@@ -396,6 +433,8 @@ export default function NewProgramPage() {
           blueprint={preview}
           loading={previewLoading}
           error={previewError}
+          maintenanceCalories={maintenanceCalories}
+          lifestyleTargets={lifestyleTargets}
           onConfirm={() => setStep(5)}
           onPickAnother={() => {
             setSelectedId(null);

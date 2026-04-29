@@ -32,10 +32,10 @@ export default function RecommendationStub() {
               Goal Engine recommendations land here
             </Plex>
             <Plex size={12} weight={400} color="rgb(var(--ft-text-secondary))" style={{ display: "block", lineHeight: 1.5 }}>
-              Once the Gameplan schema (R6) and Goal Engine (R8) ship, this card will surface 0–3 weekly
-              recommendations: behind-target adjustments, deload-shift suggestions, refeed timing, plateau
-              detection, lifestyle-streak callouts. Each will have Apply / Dismiss / Open in Planning Mode
-              actions per the v2 spec §8.
+              The Gameplan schema (R6) is in place; once the Goal Engine (R8) ships, this card will
+              surface 0–3 weekly recommendations: behind-target adjustments, deload-shift suggestions,
+              refeed timing, plateau detection, lifestyle-streak callouts. Each will have Apply /
+              Dismiss / Open in Planning Mode actions per the v2 spec §8.
             </Plex>
           </div>
         </div>

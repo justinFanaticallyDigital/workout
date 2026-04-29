@@ -494,11 +494,28 @@ function filterLabel(key: FilterKey, value: string): string {
 
 /* ─── Step 4 — Preview ─────────────────────────────────────────── */
 
+/**
+ * R6 — LifestyleTarget row passed to LifestylePicksCard. Subset of
+ * the Prisma LifestyleTarget model.
+ */
+export interface LifestyleTargetRow {
+  key: string;
+  value: number;
+  unit: string;
+  comparator: "gte" | "lte" | "eq";
+}
+
+function formatComparator(c: "gte" | "lte" | "eq"): string {
+  return c === "gte" ? "≥" : c === "lte" ? "≤" : "=";
+}
+
 export function Step4Preview({
   plan,
   blueprint,
   loading,
   error,
+  maintenanceCalories,
+  lifestyleTargets,
   onConfirm,
   onPickAnother,
   onBack,
@@ -507,6 +524,10 @@ export function Step4Preview({
   blueprint: PreviewBlueprint | null;
   loading: boolean;
   error: string | null;
+  /** R6 — User.maintenanceCalories from /api/profile. null when unset. */
+  maintenanceCalories: number | null;
+  /** R6 — LifestyleTarget rows from /api/lifestyle-targets. */
+  lifestyleTargets: LifestyleTargetRow[];
   onConfirm: () => void;
   onPickAnother: () => void;
   onBack: () => void;
@@ -556,8 +577,12 @@ export function Step4Preview({
         <div className="flex-1 mt-4 flex flex-col gap-3">
           <BlockCalendar blueprint={blueprint} />
           <SampleWeek blueprint={blueprint} />
-          <NutritionCard blueprint={blueprint} plan={plan} />
-          <LifestylePicksCard plan={plan} />
+          <NutritionCard
+            blueprint={blueprint}
+            plan={plan}
+            maintenanceCalories={maintenanceCalories}
+          />
+          <LifestylePicksCard plan={plan} lifestyleTargets={lifestyleTargets} />
           <GoalsToGenerateCard blueprint={blueprint} plan={plan} />
           {blueprint.warnings && blueprint.warnings.length > 0 && (
             <div className="border border-dashed border-ft-warn/60 bg-ft-warn/5 p-3">
@@ -590,22 +615,25 @@ export function Step4Preview({
  * Renders the calorie scale with a delta-vs-maintenance estimate
  * derived from the engine blueprint.
  *
- * Stub strategy (flagged in schema-gap): live engine returns absolute
- * `nutritionTargets.calories`, not a delta-vs-maintenance. We compute
- * delta against a typical maintenance baseline (2400 kcal). When user
- * profile.maintenanceCalories lands in **R6**, swap the baseline.
+ * Reads `User.maintenanceCalories` from `/api/profile` (R6 schema
+ * landing) when set; falls back to a 2400 kcal generic baseline when
+ * the user hasn't entered their TDEE yet. The baseline-fallback
+ * bypass is acceptable because the picker's own goal flow doesn't
+ * yet collect TDEE — that's a Settings entry point.
  */
 function NutritionCard({
   blueprint,
   plan,
+  maintenanceCalories,
 }: {
   blueprint: PreviewBlueprint;
   plan: PickerPlan;
+  /** R6 — user's stored TDEE; null when Settings hasn't been filled in. */
+  maintenanceCalories: number | null;
 }) {
   const cals = blueprint.nutritionTargets?.calories;
   if (!cals) return null;
-  // Flagged for R6: replace 2400 with the user's actual TDEE.
-  const baseline = 2400;
+  const baseline = maintenanceCalories ?? 2400;
   const delta = Math.round(cals - baseline);
   // Range estimate: ±100 around the projected delta to show the band.
   const range: [number, number] = [delta - 100, delta + 100];
@@ -630,23 +658,47 @@ function NutritionCard({
 /**
  * LIFESTYLE PICKS card — port of Step4 lines 947–955.
  *
- * Stub strategy (flagged for R6): the prototype shows 3 hand-picked
- * Tags (SLEEP / STRESS / PROTEIN). Live derives them from the
- * template's tag set since persistent lifestyle-target schema doesn't
- * exist yet. Cuts → PROTEIN · 1g/lb. Recovery/longevity → SLEEP · 7+ H.
- * Powerlifting/strength → STRESS · ≤3.
+ * Renders the user's stored `LifestyleTarget` rows (R6 schema
+ * landing). Falls back to template-tag-derived picks when the user
+ * hasn't set targets yet — keeps the card useful for first-time
+ * picker users before they've configured Settings. Once a user has
+ * any LifestyleTarget rows, those override the tag-derived picks.
  */
-function LifestylePicksCard({ plan }: { plan: PickerPlan }) {
-  const tags = plan.raw.tags;
+function LifestylePicksCard({
+  plan,
+  lifestyleTargets,
+}: {
+  plan: PickerPlan;
+  /** R6 — user's stored lifestyle targets; empty when not yet set. */
+  lifestyleTargets: LifestyleTargetRow[];
+}) {
   const picks: { kind: "push" | "pull" | "legs" | "core" | "accent"; label: string }[] = [];
-  if (tags.some((t) => ["recovery", "longevity", "any-level"].includes(t))) {
-    picks.push({ kind: "pull", label: "SLEEP · 7+ H" });
+
+  // Prefer user's stored targets when present.
+  for (const t of lifestyleTargets) {
+    if (t.key === "sleep_hours_min") {
+      picks.push({ kind: "pull", label: `SLEEP · ${formatComparator(t.comparator)} ${t.value}h` });
+    } else if (t.key === "stress_max") {
+      picks.push({ kind: "push", label: `STRESS · ${formatComparator(t.comparator)} ${t.value}` });
+    } else if (t.key === "protein_g") {
+      picks.push({ kind: "core", label: `PROTEIN · ${formatComparator(t.comparator)} ${Math.round(t.value)}g` });
+    } else if (t.key === "protein_g_per_lb") {
+      picks.push({ kind: "core", label: `PROTEIN · ${formatComparator(t.comparator)} ${t.value}g/lb` });
+    }
   }
-  if (tags.some((t) => ["strength", "powerlifting", "advanced"].includes(t))) {
-    picks.push({ kind: "push", label: "STRESS · ≤3" });
-  }
-  if (tags.some((t) => ["cut", "fat-loss", "physique", "bikini", "hypertrophy"].includes(t))) {
-    picks.push({ kind: "core", label: "PROTEIN · 1g/lb" });
+
+  // Fallback to tag-derived picks when no user targets are set.
+  if (picks.length === 0) {
+    const tags = plan.raw.tags;
+    if (tags.some((t) => ["recovery", "longevity", "any-level"].includes(t))) {
+      picks.push({ kind: "pull", label: "SLEEP · 7+ H" });
+    }
+    if (tags.some((t) => ["strength", "powerlifting", "advanced"].includes(t))) {
+      picks.push({ kind: "push", label: "STRESS · ≤3" });
+    }
+    if (tags.some((t) => ["cut", "fat-loss", "physique", "bikini", "hypertrophy"].includes(t))) {
+      picks.push({ kind: "core", label: "PROTEIN · 1g/lb" });
+    }
   }
   if (picks.length === 0) {
     picks.push({ kind: "accent", label: "BALANCED" });

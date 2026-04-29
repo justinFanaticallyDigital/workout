@@ -26,6 +26,9 @@ import type {
   CheckIn,
   TabId,
   ScheduleOverride,
+  DailyMetricLite,
+  LifestyleTargetLite,
+  DailyProteinPoint,
 } from "./_components/types";
 
 export const dynamic = "force-dynamic";
@@ -73,6 +76,9 @@ export default function GameplanPage() {
   const [goals, setGoals] = useState<RawGoal[]>([]);
   const [weekWorkouts, setWeekWorkouts] = useState<RawWorkout[]>([]);
   const [overrides, setOverrides] = useState<ScheduleOverride[]>([]);
+  const [dailyMetrics, setDailyMetrics] = useState<DailyMetricLite[]>([]);
+  const [lifestyleTargets, setLifestyleTargets] = useState<LifestyleTargetLite[]>([]);
+  const [dailyProtein, setDailyProtein] = useState<DailyProteinPoint[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [tab, setTab] = useState<TabId>(() => readHashTab());
@@ -119,18 +125,41 @@ export default function GameplanPage() {
         const toIso = sunday.toISOString().slice(0, 10);
 
         const programId = homeData.activeProgram?.id;
-        const [programRes, mealsRes, targetRes, checkInsRes, goalsRes, weekWorkoutsRes, overridesRes] =
-          await Promise.all([
-            programId ? fetch(`/api/programs/${programId}`) : Promise.resolve(null),
-            fetch(`/api/nutrition/meals?date=${today}`),
-            fetch("/api/nutrition/targets"),
-            fetch("/api/checkins?weeks=16"),
-            fetch("/api/goals"),
-            fetch(`/api/workouts?from=${fromIso}&to=${toIso}&limit=20`),
-            programId
-              ? fetch(`/api/schedule-overrides?programId=${programId}`)
-              : Promise.resolve(null),
-          ]);
+        // R6 — daily-vitals window covers the program's full duration
+        // (default 16 weeks if not set) so SleepCard/StressCard/
+        // ProteinHitCard can render the full canvas.
+        const durationWeeks = homeData.activeProgram?.durationWeeks ?? 16;
+        const days = Math.min(200, durationWeeks * 7);
+        const programStartIso = homeData.activeProgram?.startDate ?? null;
+        const proteinFrom =
+          programStartIso ?? new Date(Date.now() - days * 86400000).toISOString().slice(0, 10);
+        const proteinTo = new Date().toISOString().slice(0, 10);
+
+        const [
+          programRes,
+          mealsRes,
+          targetRes,
+          checkInsRes,
+          goalsRes,
+          weekWorkoutsRes,
+          overridesRes,
+          dailyMetricsRes,
+          lifestyleTargetsRes,
+          dailyProteinRes,
+        ] = await Promise.all([
+          programId ? fetch(`/api/programs/${programId}`) : Promise.resolve(null),
+          fetch(`/api/nutrition/meals?date=${today}`),
+          fetch("/api/nutrition/targets"),
+          fetch("/api/checkins?weeks=16"),
+          fetch("/api/goals"),
+          fetch(`/api/workouts?from=${fromIso}&to=${toIso}&limit=20`),
+          programId
+            ? fetch(`/api/schedule-overrides?programId=${programId}`)
+            : Promise.resolve(null),
+          fetch(`/api/integrations/fitbit/daily?days=${days}`),
+          fetch(programId ? `/api/lifestyle-targets?programId=${programId}` : "/api/lifestyle-targets"),
+          fetch(`/api/nutrition/meals/range?from=${proteinFrom}&to=${proteinTo}`),
+        ]);
 
         const [
           programDataRaw,
@@ -140,6 +169,9 @@ export default function GameplanPage() {
           goalsData,
           weekWorkoutsData,
           overridesData,
+          dailyMetricsData,
+          lifestyleTargetsData,
+          dailyProteinData,
         ] = await Promise.all([
           programRes?.ok ? programRes.json() : null,
           mealsRes.ok ? mealsRes.json() : null,
@@ -148,6 +180,9 @@ export default function GameplanPage() {
           goalsRes.ok ? goalsRes.json() : { goals: [] },
           weekWorkoutsRes.ok ? weekWorkoutsRes.json() : { workouts: [] },
           overridesRes?.ok ? overridesRes.json() : [],
+          dailyMetricsRes.ok ? dailyMetricsRes.json() : [],
+          lifestyleTargetsRes.ok ? lifestyleTargetsRes.json() : [],
+          dailyProteinRes.ok ? dailyProteinRes.json() : { days: [] },
         ]);
 
         if (cancelled) return;
@@ -158,6 +193,9 @@ export default function GameplanPage() {
         setGoals(Array.isArray(goalsData?.goals) ? goalsData.goals : Array.isArray(goalsData) ? goalsData : []);
         setWeekWorkouts(Array.isArray(weekWorkoutsData?.workouts) ? weekWorkoutsData.workouts : []);
         setOverrides(Array.isArray(overridesData) ? overridesData : []);
+        setDailyMetrics(normalizeDailyMetrics(dailyMetricsData));
+        setLifestyleTargets(Array.isArray(lifestyleTargetsData) ? lifestyleTargetsData : []);
+        setDailyProtein(Array.isArray(dailyProteinData?.days) ? dailyProteinData.days : []);
       } catch (e) {
         if (!cancelled) {
           setError(e instanceof Error ? e.message : "Failed to load");
@@ -318,6 +356,15 @@ export default function GameplanPage() {
             meals={meals}
             target={nutritionTarget}
             programId={home.activeProgram?.id ?? null}
+            activeBlock={
+              home.activeBlock
+                ? {
+                    startDate: program?.blocks.find((b) => b.id === home.activeBlock!.id)?.startDate
+                      ?? home.activeProgram?.startDate ?? null,
+                    refeedWeeks: home.activeBlock.refeedWeeks ?? [],
+                  }
+                : null
+            }
           />
         )}
 
@@ -328,6 +375,9 @@ export default function GameplanPage() {
             programId={home.activeProgram?.id ?? null}
             programStartDate={home.activeProgram?.startDate ?? null}
             programDurationWeeks={home.activeProgram?.durationWeeks ?? null}
+            dailyMetrics={dailyMetrics}
+            lifestyleTargets={lifestyleTargets}
+            dailyProtein={dailyProtein}
           />
         )}
       </div>
@@ -481,6 +531,8 @@ interface RawProgramBlock {
   durationWeeks: number | null;
   phase: string | null;
   status: string;
+  refeedWeeks?: number[];
+  startDate?: string | null;
 }
 interface RawProgram {
   id: string;
@@ -503,6 +555,8 @@ function normalizeProgram(raw: RawProgram): ProgramDetail {
       durationWeeks: b.durationWeeks,
       phase: b.phase,
       status: b.status,
+      refeedWeeks: b.refeedWeeks ?? [],
+      startDate: b.startDate ?? null,
     })),
   };
 }
@@ -549,6 +603,26 @@ interface RawTarget {
   protein: number | string | null;
   carbs: number | string | null;
   fat: number | string | null;
+}
+
+/**
+ * R6 — normalize `/api/integrations/fitbit/daily` response to the
+ * `DailyMetricLite` subset consumed by SleepCard / StressCard.
+ */
+interface RawDailyMetric {
+  id: string;
+  date: string;
+  sleepMinutes: number | null;
+  stress: number | null;
+}
+function normalizeDailyMetrics(raw: unknown): DailyMetricLite[] {
+  if (!Array.isArray(raw)) return [];
+  return (raw as RawDailyMetric[]).map((m) => ({
+    id: m.id,
+    date: m.date,
+    sleepMinutes: m.sleepMinutes,
+    stress: m.stress ?? null,
+  }));
 }
 
 function normalizeTarget(raw: RawTarget | null): NutritionTarget | null {

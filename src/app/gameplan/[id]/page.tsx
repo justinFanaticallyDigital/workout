@@ -15,7 +15,7 @@ export default function GameplanByIdPlaceholder() {
         <p className="text-ft-on-bg-sec font-body text-sm mt-3 leading-relaxed">
           Coming soon — a specific Gameplan view used for paused or
           historical Gameplans. Lives at <code>/gameplan/[id]</code>.
-          Lands once the Gameplan schema (R6) is in place.
+          Schema (R6) is in place; full UI lands in a follow-up route pass.
         </p>
       </div>
     </div>

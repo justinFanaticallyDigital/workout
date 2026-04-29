@@ -65,12 +65,12 @@ const MAX_SETS_PER_LANE = 6;
  * (`primaryMuscle` from the Exercise model) and falls back to the
  * pattern key. Prototype's "Lateral Delt" → live's "delts" / "push".
  *
- * VARIANT DROPDOWN OMITTED: the prototype has a per-exercise variant
- * dropdown (`VariantDropdown`, logger-app.jsx#439-500). That requires a
- * per-exercise `variants String[]` schema field that doesn't exist on
- * `BlockDayExercise` — the live model has only `altExerciseId` (single
- * alt). Replaced by the existing `Swap` button → `ExercisePicker` modal.
- * Schema field deferred to R6 (Gameplan v2 schema).
+ * VARIANT DROPDOWN — the prototype has a per-exercise variant
+ * dropdown (`VariantDropdown`, logger-app.jsx#439-500). The required
+ * `BlockDayExercise.variants String[]` schema column landed in R6 and
+ * is serialized by `/api/blocks/day/[id]`, but the UI still uses the
+ * existing `Swap` button → `ExercisePicker` flow. A future UI-only
+ * pass will wire the dropdown directly.
  */
 export default function Lane({
   name,
