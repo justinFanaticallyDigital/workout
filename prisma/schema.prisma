@@ -154,6 +154,13 @@ model Program {
   endDate       DateTime?     @map("end_date") @db.Date
   durationWeeks Int?          @map("duration_weeks")
   status        ProgramStatus @default(active)
+  // R11: canonical gameplan template tag — "lean_out" / "size_strength"
+  // / "first_90_days" / etc., per spec §3's 8 templates. Stored as
+  // String? (not enum) so future custom kinds drop in without a
+  // migration. Currently only consumed by the goal engine's
+  // refeed-due rule (Lean Out gating); UI for setting this lands in
+  // a follow-on picker R.
+  gameplanKind  String?       @map("gameplan_kind")
   createdAt     DateTime      @default(now()) @map("created_at")
 
   user              User               @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -922,6 +929,8 @@ model CheckIn {
 enum RecommendationKind {
   // R9 adds lifestyle_streak_broken + pain_flag.
   // R10 adds adherence_low_streak.
+  // R11 adds refeed_due + deload_shift — engine-complete; all 9
+  // spec §8.4 rules now have a corresponding kind.
   behind_target
   ahead_target
   adherence_low
@@ -929,6 +938,8 @@ enum RecommendationKind {
   lifestyle_streak_broken
   pain_flag
   adherence_low_streak
+  refeed_due
+  deload_shift
 }
 
 enum RecommendationStatus {

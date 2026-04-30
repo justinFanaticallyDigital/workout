@@ -7,22 +7,21 @@
 // underlying issue (drafts coming out of rules later in the array
 // break ties — order in the registry doubles as a tiebreaker).
 //
-// Launch rules:
+// Engine-complete — all 9 spec §8.4 rules ship:
 //   - behind-target          (R8)
 //   - ahead-target           (R8)
 //   - adherence-low          (R8)
 //   - plateau-detected       (R8)
-//   - lifestyle-streak-broken (R9 — needs LifestyleLog + LifestyleTarget)
+//   - lifestyle-streak-broken (R9)
 //   - pain-flag              (R9 — fires universally; spec §8.4
 //                             scopes to Comeback but the repo doesn't
 //                             differentiate gameplan templates yet)
-//   - adherence-low-streak   (R10 — reads state.recentRecommendations,
-//                             fires when adherence_low has fired this
-//                             week AND in the prior 14d)
-//
-// OMIT-WITH-COMMENT — spec §8.4 rules still deferred:
-//   - refeed-due (Lean Out template-specific; needs gameplan tag)
-//   - deload-shift (needs Block.scheduledDeloadWeek schema field)
+//   - adherence-low-streak   (R10 — cross-week, reads
+//                             state.recentRecommendations)
+//   - refeed-due             (R11 — Lean Out gameplan, calorie
+//                             deficit + ≥4 weeks since last refeed)
+//   - deload-shift           (R11 — adherence low + next block is
+//                             deload within 7 days)
 // ============================================================================
 
 import type { EngineState, RecommendationDraft, RuleFn } from "../types";
@@ -33,6 +32,8 @@ import { plateauDetected } from "./plateau-detected";
 import { lifestyleStreakBroken } from "./lifestyle-streak-broken";
 import { painFlag } from "./pain-flag";
 import { adherenceLowStreak } from "./adherence-low-streak";
+import { refeedDue } from "./refeed-due";
+import { deloadShift } from "./deload-shift";
 
 const RECOMMENDATION_CAP = 3;
 
@@ -44,6 +45,8 @@ export const RULE_REGISTRY: RuleFn[] = [
   lifestyleStreakBroken,
   painFlag,
   adherenceLowStreak,
+  refeedDue,
+  deloadShift,
 ];
 
 /**

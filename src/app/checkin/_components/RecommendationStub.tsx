@@ -26,7 +26,9 @@ interface RecRow {
     | "plateau_detected"
     | "lifestyle_streak_broken"
     | "pain_flag"
-    | "adherence_low_streak";
+    | "adherence_low_streak"
+    | "refeed_due"
+    | "deload_shift";
   status: "pending" | "applied" | "dismissed" | "expired";
   severity: "info" | "warning" | "urgent";
   title: string;
@@ -307,6 +309,10 @@ function kindLabel(kind: RecRow["kind"]): string {
       return "PAIN FLAG";
     case "adherence_low_streak":
       return "ADHERENCE STREAK";
+    case "refeed_due":
+      return "REFEED DUE";
+    case "deload_shift":
+      return "DELOAD SHIFT";
   }
 }
 

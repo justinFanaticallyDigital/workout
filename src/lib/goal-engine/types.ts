@@ -22,7 +22,8 @@ export type GoalKind =
 
 /** R8 — recommendation kinds. Mirrors Prisma RecommendationKind enum.
  *  R9 adds lifestyle_streak_broken + pain_flag.
- *  R10 adds adherence_low_streak. */
+ *  R10 adds adherence_low_streak.
+ *  R11 adds refeed_due + deload_shift — engine-complete. */
 export type RecommendationKind =
   | "behind_target"
   | "ahead_target"
@@ -30,7 +31,9 @@ export type RecommendationKind =
   | "plateau_detected"
   | "lifestyle_streak_broken"
   | "pain_flag"
-  | "adherence_low_streak";
+  | "adherence_low_streak"
+  | "refeed_due"
+  | "deload_shift";
 
 /** R8 — recommendation severity, drives card tone. */
 export type RecommendationSeverity = "info" | "warning" | "urgent";
@@ -143,13 +146,39 @@ export interface RecentRecommendation {
   createdAt: string;
 }
 
+/** R11 — slice of the next block in the program. Drives deload_shift
+ *  (fires when the next block is a deload starting within 7 days). */
+export interface NextBlockSlice {
+  /** "accumulation" / "intensification" / "peaking" / "deload" / etc. */
+  phase: string | null;
+  /** ISO YYYY-MM-DD of the block's start; null when unscheduled. */
+  startDate: string | null;
+}
+
+/** R11 — calorie-deficit context for refeed_due. The rule reads
+ *  daily calories vs maintenance and the time since the last
+ *  scheduled refeed week from Block.refeedWeeks. */
+export interface DeficitSlice {
+  /** Active NutritionTarget calories (null when no target set). */
+  caloriesPerDay: number | null;
+  /** User.maintenanceCalories — TDEE estimate (null if not entered). */
+  maintenanceCalories: number | null;
+  /** Days since the last refeed week ended; null when no refeeds
+   *  scheduled in the active block at all. */
+  daysSinceLastRefeed: number | null;
+}
+
 /** R8 — engine state. Pre-fetched at the entry-point so rules are
  *  pure functions over plain data (no Prisma in rule modules).
  *  R9 adds the lifestyle slice for streak / pain rules.
- *  R10 adds recentRecommendations for cross-week streak rules. */
+ *  R10 adds recentRecommendations for cross-week streak rules.
+ *  R11 adds gameplanKind + nextBlock + deficit slices for the
+ *  final two rules (refeed_due + deload_shift). */
 export interface EngineState {
   userId: string;
   programId: string | null;
+  /** R11 — Program.gameplanKind ("lean_out" / "size_strength" / …). */
+  gameplanKind: string | null;
   /** Per-goal snapshots. */
   goals: GoalSnapshot[];
   /** Lifting adherence over past 7 days. */
@@ -159,6 +188,10 @@ export interface EngineState {
   /** R10 — last 21 days of fired Recommendation rows (any status).
    *  Drives adherence_low_streak (and any future cross-week rule). */
   recentRecommendations: RecentRecommendation[];
+  /** R11 — phase + start of the next upcoming block, when present. */
+  nextBlock: NextBlockSlice | null;
+  /** R11 — calorie/refeed context for refeed_due. */
+  deficit: DeficitSlice;
   /** Optional triggering CheckIn id (when running from POST /api/checkins). */
   checkInId?: string | null;
   /** Today's date — passed in for determinism in tests. */

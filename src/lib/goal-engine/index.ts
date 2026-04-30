@@ -19,12 +19,14 @@
 
 import type { PrismaClient } from "@/generated/prisma/client";
 import type {
+  DeficitSlice,
   EngineState,
   GoalKind,
   GoalSnapshot,
   LifestyleLogPoint,
   LifestyleSnapshot,
   MetricPoint,
+  NextBlockSlice,
   RecentRecommendation,
   RecommendationDraft,
   RecommendationKind,
@@ -50,6 +52,8 @@ export type {
   LifestyleSnapshot,
   LifestyleLogPoint,
   RecentRecommendation,
+  NextBlockSlice,
+  DeficitSlice,
 } from "./types";
 export {
   LIFESTYLE_VARIABLES,
@@ -314,13 +318,25 @@ async function hydrateState(input: RunEngineInput, today: Date): Promise<EngineS
     today,
   );
 
+  // R11 — gameplanKind + nextBlock + deficit slices feed refeed_due
+  // and deload_shift. Skipped when no programId.
+  const { gameplanKind, nextBlock, deficit } = await hydrateGameplanContext(
+    prisma,
+    userId,
+    programId,
+    today,
+  );
+
   return {
     userId,
     programId,
+    gameplanKind,
     goals,
     adherence,
     lifestyle,
     recentRecommendations,
+    nextBlock,
+    deficit,
     checkInId: checkInId ?? null,
     today,
   };
@@ -428,4 +444,116 @@ async function hydrateLifestyle(
     });
   }
   return out;
+}
+
+/**
+ * R11 — fetch the program's gameplanKind, the next upcoming block's
+ * phase + start (for deload_shift), and the active calorie target /
+ * maintenance / last-refeed-end window (for refeed_due).
+ *
+ * Returns null/empty slices when there's no program; the rules
+ * defend against that and just don't fire.
+ */
+async function hydrateGameplanContext(
+  prisma: PrismaClient,
+  userId: string,
+  programId: string | null,
+  today: Date,
+): Promise<{
+  gameplanKind: string | null;
+  nextBlock: NextBlockSlice | null;
+  deficit: DeficitSlice;
+}> {
+  const emptyDeficit: DeficitSlice = {
+    caloriesPerDay: null,
+    maintenanceCalories: null,
+    daysSinceLastRefeed: null,
+  };
+  if (!programId) {
+    return { gameplanKind: null, nextBlock: null, deficit: emptyDeficit };
+  }
+
+  const [program, user, nutritionTarget, activeBlock, upcomingBlock] = await Promise.all([
+    prisma.program.findFirst({
+      where: { id: programId, userId },
+      select: { gameplanKind: true },
+    }),
+    prisma.user.findUnique({
+      where: { id: userId },
+      select: { maintenanceCalories: true },
+    }),
+    prisma.nutritionTarget.findFirst({
+      where: { userId, isActive: true },
+      orderBy: { createdAt: "desc" },
+      select: { calories: true },
+    }),
+    prisma.block.findFirst({
+      where: { programId, status: "active" },
+      select: {
+        id: true,
+        startDate: true,
+        durationWeeks: true,
+        refeedWeeks: true,
+      },
+    }),
+    prisma.block.findFirst({
+      where: { programId, status: "upcoming" },
+      orderBy: { blockNumber: "asc" },
+      select: { phase: true, startDate: true },
+    }),
+  ]);
+
+  const gameplanKind = program?.gameplanKind ?? null;
+
+  const nextBlock: NextBlockSlice | null = upcomingBlock
+    ? {
+        phase: upcomingBlock.phase,
+        startDate: upcomingBlock.startDate
+          ? upcomingBlock.startDate.toISOString().slice(0, 10)
+          : null,
+      }
+    : null;
+
+  const deficit: DeficitSlice = {
+    caloriesPerDay: nutritionTarget?.calories != null ? Number(nutritionTarget.calories) : null,
+    maintenanceCalories: user?.maintenanceCalories ?? null,
+    daysSinceLastRefeed: computeDaysSinceLastRefeed(activeBlock, today),
+  };
+
+  return { gameplanKind, nextBlock, deficit };
+}
+
+/**
+ * Walk the active block's refeedWeeks (1-indexed) and find the most
+ * recent week-end that's already passed. Returns days since that
+ * end-of-week, or null when no refeeds were scheduled.
+ */
+function computeDaysSinceLastRefeed(
+  activeBlock: {
+    startDate: Date | null;
+    durationWeeks: number | null;
+    refeedWeeks: number[];
+  } | null,
+  today: Date,
+): number | null {
+  if (!activeBlock || !activeBlock.startDate) return null;
+  if (!activeBlock.refeedWeeks || activeBlock.refeedWeeks.length === 0) return null;
+  const startMs = activeBlock.startDate.getTime();
+  const todayMs = today.getTime();
+  let mostRecentEndMs: number | null = null;
+  for (const w of activeBlock.refeedWeeks) {
+    // Refeed week N runs from start + (N-1)*7 days through start + N*7 days.
+    const endMs = startMs + w * 7 * 86400000;
+    if (endMs <= todayMs && (mostRecentEndMs == null || endMs > mostRecentEndMs)) {
+      mostRecentEndMs = endMs;
+    }
+  }
+  // No refeed week has ended yet — compare against block start so
+  // the rule can still fire when the user is 4+ weeks in without
+  // the schedule's first refeed having landed.
+  if (mostRecentEndMs == null) {
+    const days = Math.floor((todayMs - startMs) / 86400000);
+    return days >= 0 ? days : null;
+  }
+  return Math.floor((todayMs - mostRecentEndMs) / 86400000);
 }
