@@ -196,6 +196,9 @@ export async function GET() {
           name: activeProgram.name,
           durationWeeks: activeProgram.durationWeeks,
           startDate: activeProgram.startDate,
+          // R12 — gameplan template tag, drives the Header label.
+          // null for legacy programs created before R11.
+          gameplanKind: activeProgram.gameplanKind ?? null,
         }
       : null,
     activeBlock: activeBlock

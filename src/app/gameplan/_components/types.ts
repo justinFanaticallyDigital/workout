@@ -5,6 +5,9 @@ export interface ActiveProgram {
   name: string;
   durationWeeks: number | null;
   startDate: string | null;
+  /** R12 — Program.gameplanKind ("lean_out" / "size_strength" / …).
+   *  null for legacy programs created before R11 added the column. */
+  gameplanKind?: string | null;
 }
 
 export interface BlockExercise {

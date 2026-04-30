@@ -276,7 +276,15 @@ export default function NewProgramPage() {
       const res = await fetch("/api/programs/generate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ config }),
+        body: JSON.stringify({
+          config,
+          // R12 — pass the program-engine template id so the server
+          // can infer gameplanKind via the registry. Picker stays a
+          // 5-step engine-template flow; the gameplanKind tag rides
+          // along server-side. Step4Preview surfaces the inferred
+          // kind as a badge so users see what's tagged.
+          programEngineTemplateId: selectedPlan.raw.id,
+        }),
       });
       if (!res.ok) {
         const body = await res.json().catch(() => ({}));

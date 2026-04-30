@@ -20,6 +20,7 @@ import { CalorieScale } from "./CalorieScale";
 import { BodyWeightChart } from "./BodyWeightChart";
 import { FieldRow, NumInput } from "./FieldRow";
 import type { PickerPlan } from "./derive";
+import { gameplanTemplate, inferGameplanKindFromTemplate } from "@/lib/gameplan-templates";
 
 /* ─── Filter spec ──────────────────────────────────────────────── */
 
@@ -575,6 +576,7 @@ export function Step4Preview({
 
       {blueprint && !loading && (
         <div className="flex-1 mt-4 flex flex-col gap-3">
+          <GameplanKindBadge plan={plan} />
           <BlockCalendar blueprint={blueprint} />
           <SampleWeek blueprint={blueprint} />
           <NutritionCard
@@ -621,6 +623,37 @@ export function Step4Preview({
  * bypass is acceptable because the picker's own goal flow doesn't
  * yet collect TDEE — that's a Settings entry point.
  */
+
+/**
+ * R12 — Gameplan-kind badge on Step4Preview. Reads the picker's
+ * chosen program-engine template id, infers the matching gameplan
+ * kind via the registry (src/lib/gameplan-templates.ts), and surfaces
+ * "TAGGED AS · LEAN OUT" + a one-line note about what gets seeded
+ * server-side (lifestyle picks + Lean Out refeed cadence). Renders
+ * nothing when the template isn't mapped to any kind.
+ */
+function GameplanKindBadge({ plan }: { plan: PickerPlan }) {
+  const kind = inferGameplanKindFromTemplate(plan.raw.id);
+  const tpl = gameplanTemplate(kind);
+  if (!tpl) return null;
+  const refeedCount = tpl.defaultRefeedCadence?.length ?? 0;
+  return (
+    <div className="border border-dashed border-ft-accent/60 bg-ft-accent/5 p-3">
+      <div className="flex items-baseline justify-between gap-2">
+        <Stamp className="text-ft-accent">TAGGED AS · {tpl.displayName.toUpperCase()}</Stamp>
+        <span className="font-body text-[9px] uppercase tracking-[0.16em] text-ft-dim">
+          GAMEPLAN
+        </span>
+      </div>
+      <div className="font-body text-[12px] text-ft-light mt-1.5 leading-snug">{tpl.tagline}</div>
+      <div className="font-body text-[10px] uppercase tracking-[0.14em] text-ft-dim mt-2">
+        Seeds 3 lifestyle targets
+        {refeedCount > 0 ? ` + ${refeedCount} refeed week${refeedCount === 1 ? "" : "s"} per block` : ""}
+      </div>
+    </div>
+  );
+}
+
 function NutritionCard({
   blueprint,
   plan,
