@@ -1,29 +1,46 @@
 /**
- * 16-week trajectory series synthesizer.
+ * R8: implemented in goal-engine. This file kept for caller-API
+ * stability — MiniTrajectory / TrajectoryGraph / GoalCard import
+ * `buildSeries` and `isAheadOf` from here. The body is now a thin
+ * adapter over `goal-engine/series.buildDailySeries()` + the
+ * `goal-engine/rate-math.aheadOfPlan()` helper.
  *
- * Verbatim port of gameplan-active.jsx#buildSeries (lines 605–633) and
- * isAheadOf (lines 636–640). The prototype generates a 112-day daily
- * series (16 weeks) with a deterministic noise seed so the chart looks
- * organic without depending on real data.
+ * Empty-history behavior: when no live data has flowed yet (history
+ * empty), the underlying engine returns a populated `expected` line
+ * + empty `daily` / `rolling7` arrays. Callers handle the empty arrays
+ * gracefully — TrajectoryGraph keeps the prescribed line visible
+ * even before the first BodyMetric or Set lands.
  *
- * This util IS NOT a placeholder for live data — it's a stub strategy
- * flagged for **R8** (Goal Engine ships daily series). When the engine
- * lands a `/api/progress/{metric}/series` endpoint, callers should
- * pass the engine-provided series in directly and bypass this util.
+ * The `noise`/`seed` params stay in `SeriesInput` but are now ignored
+ * — kept for caller-API stability so dashboard components don't churn.
  */
+
+import { buildDailySeries as engineBuildDailySeries } from "@/lib/goal-engine/series";
+import { aheadOfPlan as engineAheadOfPlan } from "@/lib/goal-engine/rate-math";
 
 export interface SeriesInput {
   start: number;
   target: number;
   currentValue: number;
-  /** Noise amplitude for the deterministic jitter. */
+  /** Ignored in R8 — kept for caller-API stability (was deterministic
+   *  jitter amplitude under the old synthesis). */
   noise?: number;
-  /** Seed for the LCG so each goal gets a stable wobble. */
+  /** Ignored in R8 — kept for caller-API stability. */
   seed?: number;
   /** Display unit (passed through to GoalCard). */
   unit?: string;
   /** Decimal places for rendered values. */
   decimals?: number;
+  /** R8: optional history points fed into the engine. When omitted
+   *  (back-compat path for callers that haven't been wired yet),
+   *  we still return the expected line so the chart renders. */
+  history?: Array<{ date: string; value: number }>;
+  /** R8: ISO start/target dates. When omitted, the legacy 16-week
+   *  window from the prototype is reconstructed (start = 16 weeks
+   *  before today, target = today). Real callers pass the goal's
+   *  startDate / targetDate explicitly. */
+  startDate?: string;
+  targetDate?: string;
 }
 
 export interface Series {
@@ -34,55 +51,35 @@ export interface Series {
   totalDays: number;
 }
 
-const TOTAL_DAYS = 112; // 16 weeks
-const CURRENT_DAY = 38; // ~week 6 day 3
+const TOTAL_DAYS = 112;
 
-export function buildSeries({
-  start,
-  target,
-  currentValue,
-  noise = 0.5,
-  seed = 1,
-}: SeriesInput): Series {
-  // Deterministic noise — LCG with the same coefficients the prototype uses.
-  let s = seed * 9301 + 49297;
-  const rand = () => {
-    s = (s * 9301 + 49297) % 233280;
-    return s / 233280;
-  };
-
-  // Expected: linear from start → target over TOTAL_DAYS.
-  const expected: number[] = [];
-  for (let i = 0; i <= TOTAL_DAYS; i++) {
-    expected.push(start + (target - start) * (i / TOTAL_DAYS));
-  }
-
-  // Daily logged data up to currentDay; actual trajectory ends at currentValue.
-  // Path: start → currentValue with smooth-step interpolation + noise.
-  const daily: number[] = [];
-  for (let i = 0; i <= CURRENT_DAY; i++) {
-    const t = i / CURRENT_DAY;
-    const ease = t * t * (3 - 2 * t);
-    const base = start + (currentValue - start) * ease;
-    daily.push(base + (rand() - 0.5) * 2 * noise);
-  }
-
-  // 7-day rolling average over the daily series.
-  const rolling7 = daily.map((_, i) => {
-    const w = daily.slice(Math.max(0, i - 6), i + 1);
-    return w.reduce((a, b) => a + b, 0) / w.length;
+export function buildSeries(input: SeriesInput): Series {
+  const today = new Date();
+  // Derive a sensible start/target window when the caller didn't pass one.
+  const startDate =
+    input.startDate ?? new Date(today.getTime() - TOTAL_DAYS * 86400000).toISOString().slice(0, 10);
+  const targetDate = input.targetDate ?? today.toISOString().slice(0, 10);
+  const series = engineBuildDailySeries({
+    kind: "bodyweight",
+    startValue: input.start,
+    targetValue: input.target,
+    startDate,
+    targetDate,
+    today,
+    history: input.history ?? [],
   });
-
-  return { daily, rolling7, expected, currentDay: CURRENT_DAY, totalDays: TOTAL_DAYS };
+  return {
+    daily: series.daily,
+    rolling7: series.rolling7,
+    expected: series.expected,
+    currentDay: series.currentDay,
+    totalDays: series.totalDays,
+  };
 }
 
 /**
- * Returns true when the actual value is on the "ahead" side of the
- * expected trajectory. Direction depends on whether the goal target
- * is below the start (cutting body weight = lower is ahead) or above
- * (gaining strength = higher is ahead).
+ * R8: implemented in goal-engine — re-export for caller-API stability.
  */
 export function isAheadOf(actual: number, expected: number, target: number, start: number): boolean {
-  if (target < start) return actual <= expected;
-  return actual >= expected;
+  return engineAheadOfPlan(actual, expected, start, target);
 }

@@ -1,23 +1,30 @@
 "use client";
 
 /**
- * Pending weekly check-in card — verbatim port of gameplan-active.jsx
- * #CheckInCard (lines 549–597).
+ * Pending weekly check-in card — verbatim layout port of
+ * gameplan-active.jsx#CheckInCard (lines 549–597).
  *
- * **R8 stub (per R5 hot question 2)**: the prototype shows a
- * recommendation count ("2 RECOMMENDATIONS") and engine guidance text.
- * Live has no Goal Engine output yet — we render:
- *   - "PENDING" badge when no check-in exists this ISO week
- *   - "REVIEWED" badge when a check-in was logged this ISO week
- *   - Generic guidance text instead of an engine-specific preview
- * When R8 lands, swap the body for the engine recommendation feed.
+ * R8: implemented in goal-engine. The badge + heading + body are now
+ * driven by live `Recommendation` rows fetched from
+ * `/api/recommendations?status=pending`. When recs exist, the card
+ * shows the count + the topmost rec's title; when none, it falls back
+ * to the PENDING / REVIEWED check-in framing.
  */
 
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { GCard } from "./GCard";
 import { Marker, Archivo } from "./typography";
 import { SprayUnderline } from "./Ornaments";
 import type { CheckIn } from "./types";
+
+interface RecRow {
+  id: string;
+  kind: string;
+  severity: "info" | "warning" | "urgent";
+  title: string;
+  body: string;
+}
 
 export function CheckInCard({
   recentCheckIns,
@@ -26,20 +33,63 @@ export function CheckInCard({
   recentCheckIns: CheckIn[];
   tilt?: number;
 }) {
+  const [recs, setRecs] = useState<RecRow[]>([]);
+  const [loaded, setLoaded] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    fetch("/api/recommendations?status=pending&limit=3")
+      .then((r) => (r.ok ? r.json() : { recommendations: [] }))
+      .then((data) => {
+        if (cancelled) return;
+        setRecs(Array.isArray(data?.recommendations) ? data.recommendations : []);
+        setLoaded(true);
+      })
+      .catch(() => {
+        if (!cancelled) setLoaded(true);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   const hasThisWeek = haveCheckInThisWeek(recentCheckIns);
-  const tag = hasThisWeek ? "REVIEWED" : "PENDING";
-  const tagColor = hasThisWeek ? "rgb(var(--ft-pull))" : "rgb(var(--ft-core))";
-  const heading = hasThisWeek ? "CHECK-IN COMPLETE" : "WEEKLY CHECK-IN";
-  const body = hasThisWeek
-    ? "Latest reflection logged. Engine recommendations open up here once the Goal Engine ships."
-    : "Your weekly check-in unlocks engine recommendations. Quick — about a minute.";
-  const ctaLabel = hasThisWeek ? "VIEW CHECK-IN →" : "OPEN CHECK-IN →";
+  const hasRecs = recs.length > 0;
+  // R8 priority: live recommendations dominate when present;
+  // otherwise fall back to the prior PENDING / REVIEWED framing.
+  const tag = hasRecs ? `${recs.length} REC${recs.length === 1 ? "" : "S"}` : hasThisWeek ? "REVIEWED" : "PENDING";
+  const tagColor = hasRecs
+    ? recs[0].severity === "urgent"
+      ? "rgb(var(--ft-legs))"
+      : recs[0].severity === "warning"
+      ? "rgb(var(--ft-core))"
+      : "rgb(var(--ft-pull))"
+    : hasThisWeek
+    ? "rgb(var(--ft-pull))"
+    : "rgb(var(--ft-core))";
+  const heading = hasRecs
+    ? "ENGINE RECOMMENDATIONS"
+    : hasThisWeek
+    ? "CHECK-IN COMPLETE"
+    : "WEEKLY CHECK-IN";
+  const headline = hasRecs
+    ? recs[0].title
+    : hasThisWeek
+    ? "RECOMMENDATIONS PENDING"
+    : "GIVE ME 60 SECONDS";
+  const body = hasRecs
+    ? recs[0].body
+    : hasThisWeek
+    ? "Latest reflection logged. The Goal Engine generates recommendations on each weekly check-in."
+    : "Your weekly check-in runs the Goal Engine and unlocks recommendations. Quick — about a minute.";
+  const ctaLabel = hasRecs ? "VIEW ALL →" : hasThisWeek ? "VIEW CHECK-IN →" : "OPEN CHECK-IN →";
+  void loaded;
 
   return (
     <GCard
       tilt={tilt}
       padding={16}
-      freshTape={hasThisWeek ? undefined : "FRESH"}
+      freshTape={hasRecs ? "FRESH" : hasThisWeek ? undefined : "FRESH"}
       style={{ borderLeft: "4px solid rgb(var(--ft-accent))" }}
     >
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 8 }}>
@@ -70,7 +120,7 @@ export function CheckInCard({
               transformOrigin: "left",
             }}
           >
-            {hasThisWeek ? "RECOMMENDATIONS PENDING" : "GIVE ME 60 SECONDS"}
+            {headline}
           </Marker>
           <SprayUnderline width={170} color="rgb(var(--ft-warn-fg))" style={{ marginTop: 1, marginLeft: -3 }} />
         </div>

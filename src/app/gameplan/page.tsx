@@ -15,6 +15,9 @@ import { GoalPulse } from "./_components/GoalPulse";
 import { CheckInCard } from "./_components/CheckInCard";
 import { NextActionLogged } from "./_components/NextActionLogged";
 import { SprayDotsLayer, FreshTape } from "./_components/Ornaments";
+import { buildDailySeries as engineBuildDailySeries } from "@/lib/goal-engine/series";
+import { feasibilityBand as engineFeasibilityBand } from "@/lib/goal-engine/feasibility";
+import type { GoalKind as EngineGoalKind } from "@/lib/goal-engine/types";
 import type { GoalPlan } from "./_components/GoalCard";
 import type { LoggedSummary } from "./_components/NextActionLogged";
 import type { GoalIconKind } from "./_components/icons";
@@ -56,6 +59,7 @@ interface RawGoal {
   startValue: number | string | null;
   targetValue: number | string | null;
   targetUnit: string | null;
+  targetDate: string | null;
   programId: string | null;
 }
 
@@ -273,8 +277,11 @@ export default function GameplanPage() {
   // Map live Goal records → GoalPlan payloads for GoalPulse. Body
   // weight + strength goals get rich icons; everything else falls back
   // to the "weight" stencil so the pulse strip never crashes.
+  // R8: feed BodyMetric history (from /api/home weeklyVolume + bodyWeights8w)
+  // into goalToPlan so the trajectory series uses real rows.
+  const bodyHistory = (home?.bodyWeights ?? []).map((p) => ({ date: p.date, weight: p.weight }));
   const goalPlans: GoalPlan[] = goals
-    .map((g) => goalToPlan(g))
+    .map((g) => goalToPlan(g, bodyHistory))
     .filter((p): p is GoalPlan => p != null)
     .slice(0, 3);
 
@@ -471,19 +478,27 @@ function buildLoggedSummary(
 
 /**
  * Map a live `Goal` record → `GoalPlan` shape consumed by GoalPulse.
- * Falls back to the "weight" icon when the goal type isn't recognized.
  *
- * **R8 stub**: the trajectory series is synthesized in
- * `seriesUtil.buildSeries` since live goals don't carry daily history
- * yet.
+ * R8: implemented in goal-engine. The trajectory series + tone now
+ * derive from `goal-engine/series.buildDailySeries()` +
+ * `goal-engine/feasibility.feasibilityBand()` reading
+ * `bodyMetrics` already fetched by /api/home (when available).
+ *
+ * For body-weight goals with no live `BodyMetric` history yet, the
+ * series falls back to the prescribed expected line + empty daily/
+ * rolling7 arrays — the chart renders the prescribed line + an empty-
+ * state callout. Strength goals don't get history-from-page reads
+ * (would require an exercise-id specific fetch); the engine's
+ * server-side run inside POST /api/checkins persists Recommendation
+ * rows that the dashboard reads separately via /api/recommendations.
  */
-function goalToPlan(g: RawGoal): GoalPlan | null {
+function goalToPlan(
+  g: RawGoal,
+  bodyHistory?: { date: string; weight: number }[],
+): GoalPlan | null {
   const start = g.startValue != null ? Number(g.startValue) : null;
   const target = g.targetValue != null ? Number(g.targetValue) : null;
   if (start == null || target == null || start === target) return null;
-  // Use start as currentValue placeholder until daily series ships (R8).
-  // Halfway-between gives a visually reasonable midpoint.
-  const currentValue = start + (target - start) * 0.4;
   const icon: GoalIconKind =
     g.type === "bodyweight" || g.type === "weight"
       ? "weight"
@@ -492,10 +507,48 @@ function goalToPlan(g: RawGoal): GoalPlan | null {
       : g.type === "frequency"
       ? "bolt"
       : "weight";
-  // Tone: green when ahead, yellow when slightly behind, red for far behind.
-  // Without daily series, default to "yellow" so we don't lie.
-  const tone: "green" | "yellow" | "red" = "yellow";
   const unit = (g.targetUnit ?? "").toUpperCase() || "—";
+
+  // Today + a default 16-week window when the goal lacks a target date.
+  const today = new Date();
+  const targetIso =
+    g.targetDate ?? new Date(today.getTime() + 112 * 86400000).toISOString().slice(0, 10);
+  const startIso = today.toISOString().slice(0, 10);
+  const isBodyWeight = g.type === "bodyweight" || g.type === "weight";
+  const history = isBodyWeight
+    ? (bodyHistory ?? []).map((p) => ({ date: p.date, value: p.weight }))
+    : [];
+  const series = engineBuildDailySeries({
+    kind: g.type as EngineGoalKind,
+    startValue: start,
+    targetValue: target,
+    startDate: startIso,
+    targetDate: targetIso,
+    today,
+    history,
+  });
+  const currentValue =
+    series.daily.length > 0
+      ? series.rolling7[series.rolling7.length - 1] ?? series.daily[series.daily.length - 1]
+      : start;
+
+  // Feasibility band → tone tier. sustainable=green, aggressive=yellow,
+  // unrealistic=red. When no live history exists yet, default to
+  // sustainable rather than misleading the user.
+  const band = engineFeasibilityBand({
+    kind: g.type as EngineGoalKind,
+    startValue: start,
+    targetValue: target,
+    startDate: startIso,
+    targetDate: targetIso,
+  });
+  const tone: "green" | "yellow" | "red" =
+    band.status === "unrealistic"
+      ? "red"
+      : band.status === "aggressive"
+      ? "yellow"
+      : "green";
+
   return {
     label: g.title.toUpperCase(),
     icon,
@@ -509,8 +562,9 @@ function goalToPlan(g: RawGoal): GoalPlan | null {
       currentValue,
       unit,
       decimals: 1,
-      noise: Math.abs(target - start) * 0.02,
-      seed: g.id.charCodeAt(0) || 1,
+      // noise / seed kept for caller-API stability — ignored by R8 engine.
+      noise: 0,
+      seed: 1,
     },
   };
 }

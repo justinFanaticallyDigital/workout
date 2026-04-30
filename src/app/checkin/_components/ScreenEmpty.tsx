@@ -49,7 +49,7 @@ export default function ScreenEmpty({ onStart }: { onStart: () => void }) {
             </Mono>
             <Plex size={12} weight={400} color="rgb(var(--ft-text-secondary))" style={{ display: "block", lineHeight: 1.5 }}>
               The check-in itself works today — your ratings, adherence, and reflections save and
-              show up in history. Recommendation cards land once the Goal Engine ships (R8).
+              show up in history. Recommendation cards (R8) appear once you submit a check-in.
             </Plex>
           </div>
         </Card>

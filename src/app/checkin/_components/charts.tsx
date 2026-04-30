@@ -5,8 +5,11 @@ import { IconWeight, IconBarbell, IconFlame, IconMoon } from "./icons";
 /**
  * Tiny projection chart (current line vs target). Used inside
  * recommendation card body to make "X behind target" visible.
- * Currently renders empty-state shell — daily goal projections land
- * with the Goal Engine in R8.
+ *
+ * R8: implemented in goal-engine. Callers can pass `currentSeries`
+ * and `targetSeries` arrays produced by `goal-engine/series.
+ * buildDailySeries()`. Empty-arrays render an empty-state shell so
+ * the component is safe to drop in before history exists.
  */
 export function ProjectionMini({
   width = 100,
