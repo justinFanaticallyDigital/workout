@@ -20,7 +20,7 @@ import { CalorieScale } from "./CalorieScale";
 import { BodyWeightChart } from "./BodyWeightChart";
 import { FieldRow, NumInput } from "./FieldRow";
 import type { PickerPlan } from "./derive";
-import { gameplanTemplate, inferGameplanKindFromTemplate } from "@/lib/gameplan-templates";
+import { gameplanTemplate, inferGameplanKindFromTemplate } from "@/lib/program-templates";
 
 /* ─── Filter spec ──────────────────────────────────────────────── */
 
@@ -640,7 +640,7 @@ function GameplanKindBadge({ plan }: { plan: PickerPlan }) {
   return (
     <div className="border border-dashed border-ft-accent/60 bg-ft-accent/5 p-3">
       <div className="flex items-baseline justify-between gap-2">
-        <Stamp className="text-ft-accent">TAGGED AS · {tpl.displayName.toUpperCase()}</Stamp>
+        <Stamp className="text-ft-accent">TAGGED AS · {tpl.name.toUpperCase()}</Stamp>
         <span className="font-body text-[9px] uppercase tracking-[0.16em] text-ft-dim">
           GAMEPLAN
         </span>

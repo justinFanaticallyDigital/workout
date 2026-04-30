@@ -3,7 +3,7 @@
 import { useTheme } from "@/providers/ThemeProvider";
 import { Marker, Reenie, Archivo } from "./typography";
 import { SprayUnderline } from "./Ornaments";
-import { gameplanTemplate } from "@/lib/gameplan-templates";
+import { gameplanTemplate } from "@/lib/program-templates";
 import type { ActiveProgram, ActiveBlock } from "./types";
 
 interface Props {
@@ -90,7 +90,7 @@ export default function Header({ program, block }: Props) {
                     color="rgb(var(--ft-accent))"
                     style={{ letterSpacing: ".18em", textTransform: "uppercase" }}
                   >
-                    {tpl.displayName}
+                    {tpl.name}
                   </Archivo>
                 </span>
               </div>

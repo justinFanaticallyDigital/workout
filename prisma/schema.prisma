@@ -175,6 +175,8 @@ model Program {
   lifestyleLogs     LifestyleLog[]
   recommendations   Recommendation[]
   gameplanChanges   GameplanChange[]
+  // R13: program-scoped nutrition targets (spec §3 templates).
+  nutritionTargets  NutritionTarget[]
 
   @@index([userId])
   @@index([userId, status])
@@ -186,11 +188,18 @@ model ProgramBenchmark {
   programId   String    @map("program_id") @db.Uuid
   blockId     String?   @map("block_id") @db.Uuid
   label       String
+  // R13: spec §3 templates author benchmarks with a metric type
+  // ("weight" / "reps" / "time" / "distance" / "bodyweight" /
+  // "custom"). Optional so existing rows aren't disturbed.
+  metric      String?
   targetValue Decimal   @map("target_value")
   targetUnit  String    @map("target_unit")
   targetDate  DateTime? @map("target_date") @db.Date
   actualValue Decimal?  @map("actual_value")
   achievedAt  DateTime? @map("achieved_at")
+  // R13: qualitative target descriptions on template-authored benchmarks
+  // (e.g. "+5-10% from start") that don't fit a single Decimal value.
+  notes       String?
 
   program Program @relation(fields: [programId], references: [id], onDelete: Cascade)
   block   Block?  @relation(fields: [blockId], references: [id], onDelete: SetNull)
@@ -213,6 +222,13 @@ model Block {
   name                String
   description         String?
   blockNumber         Int         @map("block_number")
+  // R13: program-week boundaries authored by spec §3 templates. Coexist
+  // with blockNumber + durationWeeks; weekStart defaults to
+  // ((blockNumber - 1) * durationWeeks) + 1 when null. Used by
+  // apply-customizations.ts to compute startDate/endDate from the
+  // user-supplied program startDate.
+  weekStart           Int?        @map("week_start")
+  weekEnd             Int?        @map("week_end")
   startDate           DateTime?   @map("start_date") @db.Date
   endDate             DateTime?   @map("end_date") @db.Date
   durationWeeks       Int?        @map("duration_weeks")
@@ -253,6 +269,10 @@ model BlockDay {
   id        String  @id @default(uuid()) @db.Uuid
   blockId   String  @map("block_id") @db.Uuid
   dayNumber Int     @map("day_number")
+  // R13: 1-indexed weekday slot used by spec §3 templates. Coexists
+  // with dayNumber (which is the day's index *within the block*).
+  // Optional so existing rows aren't touched.
+  dayOfWeek Int?    @map("day_of_week")
   name      String
   dayType   DayType @default(lifting) @map("day_type")
   sortOrder Int     @map("sort_order")
@@ -284,6 +304,10 @@ model BlockDayExercise {
   targetSets           Int?            @map("target_sets")
   targetRepRange       String?         @map("target_rep_range")
   targetRpe            String?         @map("target_rpe")
+  // R13: reps-in-reserve target authored by spec §3 templates. Some
+  // gameplans prescribe RIR; the existing targetRpe column stays for
+  // RPE-driven schemes.
+  targetRir            Int?            @map("target_rir")
   progressionType      ProgressionType @default(none) @map("progression_type")
   progressionIncrement Decimal?        @map("progression_increment")
   notes                String?
@@ -586,15 +610,25 @@ model NutritionTarget {
   carbs     Decimal?
   fat       Decimal?
   isActive  Boolean  @default(true) @map("is_active")
+  // R13: program-level scoping for spec §3 template nutrition (in
+  // addition to the existing block / goal scopes). The clone API's
+  // applyCustomizations writes per-block targets here when a template
+  // declares them; programId stays null on user-edited rows.
+  programId String?  @map("program_id") @db.Uuid
   blockId   String?  @map("block_id") @db.Uuid
   goalId    String?  @map("goal_id") @db.Uuid
+  // R13: free-form notes — used for qualitative calorie targets like
+  // "maintenance+200" that don't fit a single Decimal.
+  notes     String?
   createdAt DateTime @default(now()) @map("created_at")
 
-  user  User   @relation(fields: [userId], references: [id], onDelete: Cascade)
-  block Block? @relation(fields: [blockId], references: [id], onDelete: SetNull)
-  goal  Goal?  @relation(fields: [goalId], references: [id], onDelete: SetNull)
+  user    User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  program Program? @relation(fields: [programId], references: [id], onDelete: SetNull)
+  block   Block?   @relation(fields: [blockId], references: [id], onDelete: SetNull)
+  goal    Goal?    @relation(fields: [goalId], references: [id], onDelete: SetNull)
 
   @@index([userId])
+  @@index([programId])
   @@index([blockId])
   @@index([goalId])
   @@map("nutrition_targets")
