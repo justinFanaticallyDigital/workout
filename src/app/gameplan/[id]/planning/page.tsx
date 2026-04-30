@@ -23,6 +23,7 @@ import { ConfirmBar } from "./_components/ConfirmBar";
 import { ApplyModal } from "./_components/ApplyModal";
 import { UndoToast } from "./_components/UndoToast";
 import { RecommendationBanner } from "./_components/RecommendationBanner";
+import { RecentChangesPanel } from "./_components/RecentChangesPanel";
 import { computeDiff } from "./_components/diff";
 import { buildApplySteps, buildInverseSteps } from "./_components/applyDiff";
 import type {
@@ -287,7 +288,6 @@ export default function PlanningPage({ params }: { params: Promise<{ id: string 
     setDraft(structuredClone(original));
   };
   const handleConfirmApply = async (note: string) => {
-    void note; // R7: note text not persisted (audit-log schema deferred)
     if (!draft) return;
     setApplying(true);
     setShowApplyModal(false);
@@ -297,6 +297,25 @@ export default function PlanningPage({ params }: { params: Promise<{ id: string 
       for (let i = 0; i < steps.length; i++) {
         lastIdx = i;
         await steps[i].fn();
+      }
+      // R10 — log a single GameplanChange audit row summarizing this
+      // apply session. Field-level audit granularity is a follow-on
+      // UI pass; for now the panel shows "Planning · N changes".
+      try {
+        await fetch("/api/gameplan-changes", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            programId,
+            source: "PLANNING_MODE",
+            field: "planning.batch",
+            oldValue: { changeCount: diff.length, fields: diff.map((d) => diffEntryLabel(d)) },
+            newValue: { changeCount: diff.length, fields: diff.map((d) => diffEntryLabel(d)) },
+            reason: note || null,
+          }),
+        });
+      } catch {
+        // Audit log is best-effort; don't fail the apply on a logging hiccup.
       }
       // Success — clear localStorage, prep undo, route home.
       clearDraft(draftKey);
@@ -528,6 +547,8 @@ export default function PlanningPage({ params }: { params: Promise<{ id: string 
         </>
       )}
 
+      <RecentChangesPanel programId={programId} />
+
       <ConfirmBar
         pending={diff.length}
         disabled={diff.length === 0 || applying}
@@ -588,6 +609,29 @@ export default function PlanningPage({ params }: { params: Promise<{ id: string 
       </div>
     </div>
   );
+}
+
+/** R10 — short label for a DiffEntry, used in the GameplanChange
+ *  audit row's snapshot fields. */
+function diffEntryLabel(d: import("./_components/types").DiffEntry): string {
+  switch (d.kind) {
+    case "program":
+      return `program.${d.field}`;
+    case "block":
+      return `block.${d.field}`;
+    case "day":
+      return `day.${d.field}`;
+    case "exercise":
+      return `exercise.${d.field}`;
+    case "goal":
+      return `goal.${d.field}`;
+    case "nutrition":
+      return `nutrition.${d.field}`;
+    case "lifestyle":
+      return `lifestyle.${d.key}.${d.field}`;
+    case "override-new":
+      return `override.${d.localId}`;
+  }
 }
 
 /* ─── Hydration helpers ───────────────────────────────────────── */

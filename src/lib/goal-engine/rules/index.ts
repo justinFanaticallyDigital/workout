@@ -16,10 +16,11 @@
 //   - pain-flag              (R9 — fires universally; spec §8.4
 //                             scopes to Comeback but the repo doesn't
 //                             differentiate gameplan templates yet)
+//   - adherence-low-streak   (R10 — reads state.recentRecommendations,
+//                             fires when adherence_low has fired this
+//                             week AND in the prior 14d)
 //
 // OMIT-WITH-COMMENT — spec §8.4 rules still deferred:
-//   - adherence-low-streak (cross-week state, needs Recommendation
-//                           history readback per spec §8.5)
 //   - refeed-due (Lean Out template-specific; needs gameplan tag)
 //   - deload-shift (needs Block.scheduledDeloadWeek schema field)
 // ============================================================================
@@ -31,6 +32,7 @@ import { adherenceLow } from "./adherence-low";
 import { plateauDetected } from "./plateau-detected";
 import { lifestyleStreakBroken } from "./lifestyle-streak-broken";
 import { painFlag } from "./pain-flag";
+import { adherenceLowStreak } from "./adherence-low-streak";
 
 const RECOMMENDATION_CAP = 3;
 
@@ -41,6 +43,7 @@ export const RULE_REGISTRY: RuleFn[] = [
   plateauDetected,
   lifestyleStreakBroken,
   painFlag,
+  adherenceLowStreak,
 ];
 
 /**

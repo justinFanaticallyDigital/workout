@@ -21,14 +21,16 @@ export type GoalKind =
   | "custom";
 
 /** R8 — recommendation kinds. Mirrors Prisma RecommendationKind enum.
- *  R9 adds lifestyle_streak_broken + pain_flag. */
+ *  R9 adds lifestyle_streak_broken + pain_flag.
+ *  R10 adds adherence_low_streak. */
 export type RecommendationKind =
   | "behind_target"
   | "ahead_target"
   | "adherence_low"
   | "plateau_detected"
   | "lifestyle_streak_broken"
-  | "pain_flag";
+  | "pain_flag"
+  | "adherence_low_streak";
 
 /** R8 — recommendation severity, drives card tone. */
 export type RecommendationSeverity = "info" | "warning" | "urgent";
@@ -134,9 +136,17 @@ export interface LifestyleSnapshot {
   cadence: "daily" | "weekly" | "as_needed";
 }
 
+/** R10 — recent recommendation row, for cross-week streak rules. */
+export interface RecentRecommendation {
+  kind: RecommendationKind;
+  /** ISO timestamp the rec was created. */
+  createdAt: string;
+}
+
 /** R8 — engine state. Pre-fetched at the entry-point so rules are
  *  pure functions over plain data (no Prisma in rule modules).
- *  R9 adds the lifestyle slice for streak / pain rules. */
+ *  R9 adds the lifestyle slice for streak / pain rules.
+ *  R10 adds recentRecommendations for cross-week streak rules. */
 export interface EngineState {
   userId: string;
   programId: string | null;
@@ -146,6 +156,9 @@ export interface EngineState {
   adherence: AdherenceSnapshot;
   /** R9 — lifestyle variable snapshots (one per tracked LifestyleTarget). */
   lifestyle: LifestyleSnapshot[];
+  /** R10 — last 21 days of fired Recommendation rows (any status).
+   *  Drives adherence_low_streak (and any future cross-week rule). */
+  recentRecommendations: RecentRecommendation[];
   /** Optional triggering CheckIn id (when running from POST /api/checkins). */
   checkInId?: string | null;
   /** Today's date — passed in for determinism in tests. */
