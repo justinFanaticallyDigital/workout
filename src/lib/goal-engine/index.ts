@@ -25,7 +25,9 @@ import type {
   LifestyleLogPoint,
   LifestyleSnapshot,
   MetricPoint,
+  RecentRecommendation,
   RecommendationDraft,
+  RecommendationKind,
 } from "./types";
 import { buildDailySeries, setsToE1RMSeries } from "./series";
 import { feasibilityBand } from "./feasibility";
@@ -47,6 +49,7 @@ export type {
   RecommendationSeverity,
   LifestyleSnapshot,
   LifestyleLogPoint,
+  RecentRecommendation,
 } from "./types";
 export {
   LIFESTYLE_VARIABLES,
@@ -302,15 +305,58 @@ async function hydrateState(input: RunEngineInput, today: Date): Promise<EngineS
   // unknown keys.
   const lifestyle = await hydrateLifestyle(prisma, userId, programId, today);
 
+  // R10 — last 21 days of fired Recommendation rows feed
+  // adherence_low_streak (and any future cross-week rule).
+  const recentRecommendations = await hydrateRecentRecommendations(
+    prisma,
+    userId,
+    programId,
+    today,
+  );
+
   return {
     userId,
     programId,
     goals,
     adherence,
     lifestyle,
+    recentRecommendations,
     checkInId: checkInId ?? null,
     today,
   };
+}
+
+/**
+ * R10 — fetch the last 21 days of Recommendation rows for the user
+ * (program-scoped when present). Returns plain `{ kind, createdAt }`
+ * objects so rules stay decoupled from Prisma.
+ */
+async function hydrateRecentRecommendations(
+  prisma: PrismaClient,
+  userId: string,
+  programId: string | null,
+  today: Date,
+): Promise<RecentRecommendation[]> {
+  const cutoff = new Date(today.getTime() - 21 * 86400000);
+  try {
+    const rows = await prisma.recommendation.findMany({
+      where: {
+        userId,
+        ...(programId ? { programId } : {}),
+        createdAt: { gte: cutoff },
+      },
+      orderBy: { createdAt: "desc" },
+      select: { kind: true, createdAt: true },
+      take: 50,
+    });
+    return rows.map((r) => ({
+      kind: r.kind as RecommendationKind,
+      createdAt: r.createdAt.toISOString(),
+    }));
+  } catch {
+    // Table may not exist yet on first deploy.
+    return [];
+  }
 }
 
 /**

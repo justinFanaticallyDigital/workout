@@ -2,25 +2,31 @@
 
 /**
  * Goal Engine recommendation feed — R8: implemented in goal-engine.
+ * R10: Apply now hits POST /api/recommendations/[id]/apply which
+ * mutates the underlying field + writes a GameplanChange audit row.
+ * Toast Undo posts to /api/gameplan-changes/[id]/undo to revert.
  *
  * File name retained for caller-API stability (`/checkin/[id]/page.tsx`
- * + `/checkin/page.tsx` import the default export). Body now renders
- * live `Recommendation` rows from `/api/recommendations` with
- * Apply / Dismiss / Open-in-Planning-Mode actions per spec §8.5.
- *
- * Empty state preserves the prior visual shell so users with no
- * recommendations yet see the same affordance.
+ * + `/checkin/page.tsx` import the default export).
  */
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useToast } from "@/components/ui/Toast";
 import { Plex, Mono, SectionH, Card } from "./primitives";
 import { IconInfo } from "./icons";
 
 interface RecRow {
   id: string;
-  kind: "behind_target" | "ahead_target" | "adherence_low" | "plateau_detected";
+  kind:
+    | "behind_target"
+    | "ahead_target"
+    | "adherence_low"
+    | "plateau_detected"
+    | "lifestyle_streak_broken"
+    | "pain_flag"
+    | "adherence_low_streak";
   status: "pending" | "applied" | "dismissed" | "expired";
   severity: "info" | "warning" | "urgent";
   title: string;
@@ -32,6 +38,7 @@ interface RecRow {
 
 export default function RecommendationStub() {
   const router = useRouter();
+  const toast = useToast();
   const [recs, setRecs] = useState<RecRow[]>([]);
   const [loaded, setLoaded] = useState(false);
   const [busyId, setBusyId] = useState<string | null>(null);
@@ -57,17 +64,75 @@ export default function RecommendationStub() {
     void reload();
   }, []);
 
-  const setStatus = async (id: string, status: "applied" | "dismissed", reason?: string) => {
+  const dismiss = async (id: string, reason?: string) => {
     setBusyId(id);
     try {
       await fetch(`/api/recommendations/${id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ status, dismissedReason: reason ?? null }),
+        body: JSON.stringify({ status: "dismissed", dismissedReason: reason ?? null }),
       });
       await reload();
     } finally {
       setBusyId(null);
+    }
+  };
+
+  /** R10 — POST /api/recommendations/[id]/apply runs the dispatcher,
+   *  writes a GameplanChange audit row, and flips the rec to applied.
+   *  On success we toast with an Undo affordance that posts to the
+   *  paired undo endpoint. */
+  const applyDirectly = async (rec: RecRow) => {
+    setBusyId(rec.id);
+    try {
+      const res = await fetch(`/api/recommendations/${rec.id}/apply`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({}),
+      });
+      if (!res.ok) {
+        const j = await res.json().catch(() => ({}));
+        // Field not in dispatcher → fall back to Planning Mode.
+        if (res.status === 400 && rec.programId) {
+          toast.info("This recommendation needs Planning Mode to apply", 3000);
+          openInPlanningMode(rec);
+          return;
+        }
+        throw new Error(j.error ?? `HTTP ${res.status}`);
+      }
+      const { change } = (await res.json()) as {
+        change: { id: string; field: string; oldValue: unknown; newValue: unknown };
+      };
+      await reload();
+      toast.success(
+        `Applied · ${change.field}: ${formatValue(change.oldValue)} → ${formatValue(change.newValue)}`,
+        6000,
+        {
+          label: "Undo",
+          onClick: () => {
+            void undoChange(change.id);
+          },
+        },
+      );
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : "Apply failed";
+      toast.error(msg);
+    } finally {
+      setBusyId(null);
+    }
+  };
+
+  const undoChange = async (changeId: string) => {
+    try {
+      const res = await fetch(`/api/gameplan-changes/${changeId}/undo`, { method: "POST" });
+      if (!res.ok) {
+        const j = await res.json().catch(() => ({}));
+        throw new Error(j.error ?? `HTTP ${res.status}`);
+      }
+      await reload();
+      toast.info("Reverted");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Undo failed");
     }
   };
 
@@ -173,6 +238,16 @@ export default function RecommendationStub() {
                     flexWrap: "wrap",
                   }}
                 >
+                  {rec.suggestedField && rec.suggestedValue && (
+                    <button
+                      onClick={() => applyDirectly(rec)}
+                      disabled={busy}
+                      className="font-body"
+                      style={pillBtnStyle("apply")}
+                    >
+                      Apply
+                    </button>
+                  )}
                   {rec.programId ? (
                     <button
                       onClick={() => openInPlanningMode(rec)}
@@ -183,18 +258,8 @@ export default function RecommendationStub() {
                       Open in Planning Mode
                     </button>
                   ) : null}
-                  {rec.suggestedField && rec.suggestedValue && (
-                    <button
-                      onClick={() => setStatus(rec.id, "applied")}
-                      disabled={busy}
-                      className="font-body"
-                      style={pillBtnStyle("apply")}
-                    >
-                      Apply
-                    </button>
-                  )}
                   <button
-                    onClick={() => setStatus(rec.id, "dismissed")}
+                    onClick={() => dismiss(rec.id)}
                     disabled={busy}
                     className="font-body"
                     style={pillBtnStyle("dismiss")}
@@ -236,7 +301,24 @@ function kindLabel(kind: RecRow["kind"]): string {
       return "ADHERENCE LOW";
     case "plateau_detected":
       return "PLATEAU DETECTED";
+    case "lifestyle_streak_broken":
+      return "LIFESTYLE STREAK";
+    case "pain_flag":
+      return "PAIN FLAG";
+    case "adherence_low_streak":
+      return "ADHERENCE STREAK";
   }
+}
+
+function formatValue(v: unknown): string {
+  if (v == null) return "—";
+  if (typeof v === "number") return Number.isInteger(v) ? String(v) : v.toFixed(1);
+  if (typeof v === "string") return v;
+  if (typeof v === "object") {
+    const o = v as Record<string, unknown>;
+    if ("value" in o) return formatValue(o.value);
+  }
+  return JSON.stringify(v);
 }
 
 function pillBtnStyle(variant: "primary" | "apply" | "dismiss"): React.CSSProperties {

@@ -87,6 +87,7 @@ model User {
   lifestyleTargets  LifestyleTarget[]
   lifestyleLogs     LifestyleLog[]
   recommendations   Recommendation[]
+  gameplanChanges   GameplanChange[]
 
   @@map("users")
 }
@@ -166,6 +167,7 @@ model Program {
   lifestyleTargets  LifestyleTarget[]
   lifestyleLogs     LifestyleLog[]
   recommendations   Recommendation[]
+  gameplanChanges   GameplanChange[]
 
   @@index([userId])
   @@index([userId, status])
@@ -919,12 +921,14 @@ model CheckIn {
 
 enum RecommendationKind {
   // R9 adds lifestyle_streak_broken + pain_flag.
+  // R10 adds adherence_low_streak.
   behind_target
   ahead_target
   adherence_low
   plateau_detected
   lifestyle_streak_broken
   pain_flag
+  adherence_low_streak
 }
 
 enum RecommendationStatus {
@@ -973,8 +977,63 @@ model Recommendation {
   goal    Goal?    @relation(fields: [goalId], references: [id], onDelete: SetNull)
   checkIn CheckIn? @relation(fields: [checkInId], references: [id], onDelete: SetNull)
 
+  // R10: GameplanChange rows that were written when this rec was applied.
+  changes GameplanChange[]
+
   @@index([userId, status])
   @@index([programId])
   @@index([checkInId])
   @@map("recommendations")
+}
+
+// ─── Gameplan Changes (R10) ──────────────────────────────
+//
+// Audit trail of every plan mutation, regardless of source. Spec
+// §4.3 motivates this as the substrate for "undo" + "applied
+// recommendations" history. Each row captures field path, old/new
+// values (Json so the engine and UI can stash any shape), and the
+// trigger source (CHECK_IN_APPLY when a recommendation Apply wrote
+// it; PLANNING_MODE when Planning Mode's diff-apply did; MANUAL_EDIT
+// for direct edits not yet ported to the audit pipeline).
+//
+// The R10 adherence-low-streak rule reads `kind='adherence_low'`
+// Recommendation history rather than this table — the streak rule
+// fires on rule-fired-twice, not user-applied-twice. GameplanChange
+// is purely about plan deltas.
+
+enum GameplanChangeSource {
+  CHECK_IN_APPLY
+  PLANNING_MODE
+  MANUAL_EDIT
+}
+
+model GameplanChange {
+  id               String               @id @default(uuid()) @db.Uuid
+  userId           String               @map("user_id") @db.Uuid
+  programId        String?              @map("program_id") @db.Uuid
+  // R10: source of this change. CHECK_IN_APPLY rows always have a
+  // recommendationId; PLANNING_MODE rows usually don't.
+  source           GameplanChangeSource
+  // R10: dotted field path. "nutrition.calories" / "lifestyle.{key}.target"
+  // / "goal.targetDate". The Apply dispatcher in
+  // /api/recommendations/[id]/apply enumerates the full set.
+  field            String
+  // R10: previous value (Json so a number, string, or object all fit).
+  oldValue         Json?                @map("old_value")
+  // R10: applied value.
+  newValue         Json?                @map("new_value")
+  // R10: optional human-entered reason (Planning Mode "note" field).
+  reason           String?
+  // R10: optional link back to the Recommendation that drove the apply.
+  recommendationId String?              @map("recommendation_id") @db.Uuid
+  createdAt        DateTime             @default(now()) @map("created_at")
+
+  user           User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  program        Program?        @relation(fields: [programId], references: [id], onDelete: SetNull)
+  recommendation Recommendation? @relation(fields: [recommendationId], references: [id], onDelete: SetNull)
+
+  @@index([userId, createdAt])
+  @@index([programId, createdAt])
+  @@index([recommendationId])
+  @@map("gameplan_changes")
 }
