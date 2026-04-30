@@ -24,6 +24,7 @@ import { ApplyModal } from "./_components/ApplyModal";
 import { UndoToast } from "./_components/UndoToast";
 import { RecommendationBanner } from "./_components/RecommendationBanner";
 import { RecentChangesPanel } from "./_components/RecentChangesPanel";
+import { GameplanKindEditor } from "./_components/GameplanKindEditor";
 import { computeDiff } from "./_components/diff";
 import { buildApplySteps, buildInverseSteps } from "./_components/applyDiff";
 import type {
@@ -423,6 +424,12 @@ export default function PlanningPage({ params }: { params: Promise<{ id: string 
           <div style={{ padding: "8px 12px 0" }}>
             <SecHead num="01" title="goals" sub={`${draft.goals.length} goals · all editable`} />
           </div>
+          <div style={{ padding: "0 12px" }}>
+            <GameplanKindEditor
+              value={draft.program.gameplanKind ?? null}
+              onChange={(next) => setProgram({ gameplanKind: next })}
+            />
+          </div>
           {draft.goals.length === 0 ? (
             <div style={{ padding: "10px 12px" }}>
               <Archivo size={10} color="rgb(var(--ft-text-tertiary))">
@@ -641,6 +648,8 @@ interface RawProgramResponse {
   name: string;
   durationWeeks: number | null;
   startDate: string | null;
+  /** R15 — gameplan template tag, edited via GameplanKindEditor. */
+  gameplanKind?: string | null;
   blocks?: Array<{ id: string }>;
 }
 interface RawBlockResponse {
@@ -695,6 +704,7 @@ function buildSnapshot(
       name: program.name,
       durationWeeks: program.durationWeeks,
       startDate: program.startDate,
+      gameplanKind: program.gameplanKind ?? null,
     },
     blocks: blocks.map((b) => ({
       id: b.id,

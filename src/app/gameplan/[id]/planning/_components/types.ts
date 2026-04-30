@@ -56,6 +56,9 @@ export interface DraftProgram {
   name: string;
   durationWeeks: number | null;
   startDate: string | null;
+  /** R15 — Program.gameplanKind. Editable from Planning Mode's
+   *  GameplanKindEditor; flows through the program diff entry. */
+  gameplanKind?: string | null;
 }
 
 export interface DraftNutritionTarget {

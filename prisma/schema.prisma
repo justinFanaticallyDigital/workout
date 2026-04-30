@@ -328,19 +328,34 @@ model BlockDayExercise {
 }
 
 // ─── Workouts (Logged Sessions) ──────────────────────────
+// R15 — workout origin per spec §4.6:
+//   STANDALONE     — manual/improv log, no Gameplan link
+//   GAMEPLAN       — scheduled session from active program (default)
+//   SINGLE_LIBRARY — one-off pulled from /log/library; counts toward
+//                    neither Gameplan adherence nor STANDALONE history
+enum WorkoutSource {
+  STANDALONE
+  GAMEPLAN
+  SINGLE_LIBRARY
+}
+
 model Workout {
-  id         String    @id @default(uuid()) @db.Uuid
-  userId     String    @map("user_id") @db.Uuid
-  blockId    String?   @map("block_id") @db.Uuid
-  blockDayId String?   @map("block_day_id") @db.Uuid
-  date       DateTime  @db.Date
-  weekNumber Int?      @map("week_number")
-  startTime  DateTime? @map("start_time")
-  endTime    DateTime? @map("end_time")
+  id         String         @id @default(uuid()) @db.Uuid
+  userId     String         @map("user_id") @db.Uuid
+  blockId    String?        @map("block_id") @db.Uuid
+  blockDayId String?        @map("block_day_id") @db.Uuid
+  date       DateTime       @db.Date
+  weekNumber Int?           @map("week_number")
+  startTime  DateTime?      @map("start_time")
+  endTime    DateTime?      @map("end_time")
   notes      String?
   rating     Int?
-  bodyWeight Decimal?  @map("body_weight")
-  createdAt  DateTime  @default(now()) @map("created_at")
+  bodyWeight Decimal?       @map("body_weight")
+  // R15: origin tag. Defaults to GAMEPLAN since most workouts come
+  // from a scheduled BlockDay; STANDALONE applies to improv logs;
+  // SINGLE_LIBRARY tags one-offs from /log/library.
+  source     WorkoutSource? @default(GAMEPLAN)
+  createdAt  DateTime       @default(now()) @map("created_at")
 
   user      User              @relation(fields: [userId], references: [id], onDelete: Cascade)
   block     Block?            @relation(fields: [blockId], references: [id], onDelete: SetNull)
