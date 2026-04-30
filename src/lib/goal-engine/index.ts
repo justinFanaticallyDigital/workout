@@ -68,6 +68,17 @@ export type {
   LifestyleCadence,
   LifestyleSource,
 } from "./lifestyle-variables";
+// R12 — gameplan template registry (spec §3.1). Lives outside the
+// goal-engine folder since it's UI-shared, but re-exported here so
+// engine consumers (and engine-aware UI files) can import everything
+// from one place.
+export {
+  GAMEPLAN_TEMPLATES,
+  gameplanTemplate,
+  inferGameplanKindFromTemplate,
+  isValidGameplanKind,
+} from "@/lib/gameplan-templates";
+export type { GameplanTemplate, GameplanKind, GameplanLifestylePick } from "@/lib/gameplan-templates";
 export { buildDailySeries, setsToE1RMSeries } from "./series";
 export { feasibilityBand, warningFor } from "./feasibility";
 export {

@@ -3,6 +3,7 @@
 import { useTheme } from "@/providers/ThemeProvider";
 import { Marker, Reenie, Archivo } from "./typography";
 import { SprayUnderline } from "./Ornaments";
+import { gameplanTemplate } from "@/lib/gameplan-templates";
 import type { ActiveProgram, ActiveBlock } from "./types";
 
 interface Props {
@@ -55,6 +56,46 @@ export default function Header({ program, block }: Props) {
             {program.name}
           </Marker>
           <SprayUnderline width={170} style={{ marginTop: 2, marginLeft: -4 }} />
+          {/* R12 — Gameplan kind label below the program name. Reads
+              Program.gameplanKind via /api/home → ActiveProgram and
+              looks up the display label from the template registry.
+              Renders nothing when unset (legacy programs). */}
+          {(() => {
+            const tpl = gameplanTemplate(program.gameplanKind ?? null);
+            if (!tpl) return null;
+            return (
+              <div style={{ marginTop: 4 }}>
+                <span
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: 5,
+                    padding: "2px 7px",
+                    border: "1px solid rgb(var(--ft-accent-border))",
+                    background: "rgb(var(--ft-accent) / 0.10)",
+                  }}
+                >
+                  <span
+                    aria-hidden
+                    style={{
+                      width: 5,
+                      height: 5,
+                      borderRadius: "50%",
+                      background: "rgb(var(--ft-accent))",
+                      display: "inline-block",
+                    }}
+                  />
+                  <Archivo
+                    size={8}
+                    color="rgb(var(--ft-accent))"
+                    style={{ letterSpacing: ".18em", textTransform: "uppercase" }}
+                  >
+                    {tpl.displayName}
+                  </Archivo>
+                </span>
+              </div>
+            );
+          })()}
           <div style={{ marginTop: 6, display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
             <Archivo
               size={9}
