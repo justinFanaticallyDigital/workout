@@ -10,8 +10,10 @@
 
 import { useMemo } from "react";
 import { LifestyleShell } from "./LifestyleShell";
+import { LifestyleQuickLog } from "./LifestyleQuickLog";
 import { Reenie, Archivo } from "./typography";
-import type { DailyMetricLite, LifestyleTargetLite } from "./types";
+import { lifestyleVariable } from "@/lib/goal-engine/lifestyle-variables";
+import type { DailyMetricLite, LifestyleTargetLite, LifestyleLogLite } from "./types";
 
 const W = 348;
 const H = 86;
@@ -24,20 +26,32 @@ const TOTAL_DAYS = 112;
 export function StressCard({
   dailyMetrics,
   lifestyleTargets = [],
+  lifestyleLogs = [],
   durationWeeks = 16,
   programStartDate,
   tilt = 0.4,
+  programId = null,
+  onLogged,
 }: {
   dailyMetrics: DailyMetricLite[];
   lifestyleTargets?: LifestyleTargetLite[];
+  /** R9 — LifestyleLog rows; stress manual entries override Fitbit values. */
+  lifestyleLogs?: LifestyleLogLite[];
   durationWeeks?: number;
   programStartDate: string | null;
   tilt?: number;
+  programId?: string | null;
+  onLogged?: (log: LifestyleLogLite) => void;
 }) {
   const points = useMemo(
-    () => mapDailyMetricsToStress(dailyMetrics, programStartDate, durationWeeks),
-    [dailyMetrics, programStartDate, durationWeeks],
+    () => mergeStressPoints(dailyMetrics, lifestyleLogs, programStartDate, durationWeeks),
+    [dailyMetrics, lifestyleLogs, programStartDate, durationWeeks],
   );
+  const todaysLog = useMemo(
+    () => latestLogForKey(lifestyleLogs, "stress"),
+    [lifestyleLogs],
+  );
+  const stressVar = lifestyleVariable("stress");
   // Target: prefer a lifestyle-target row keyed "stress_max"; default 5.
   const stressTarget = lifestyleTargets.find((t) => t.key === "stress_max");
   const target = stressTarget ? Math.round(stressTarget.value) : 5;
@@ -177,6 +191,16 @@ export function StressCard({
           })}
         </svg>
       }
+      inlineLog={
+        stressVar ? (
+          <LifestyleQuickLog
+            variable={stressVar}
+            todaysLog={todaysLog}
+            programId={programId}
+            onLogged={onLogged}
+          />
+        ) : null
+      }
       footer={
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
@@ -198,24 +222,43 @@ export function StressCard({
 }
 
 /**
- * Map `DailyMetric.stress` rows to (dayIndex, value) points along
- * the program canvas. R6 — replaces the prior weekly CheckIn.stress
- * 1-5→1-10 synthesis.
+ * R9 — merge Fitbit DailyMetric stress (scale_0_10) with manual
+ * LifestyleLog stress rows (scale_1_5 per spec §7). Manual logs
+ * win on shared dates. The chart's y-axis is 0..10 and 1-5 manual
+ * values plot at the lower band, which is acceptable for the MVP
+ * data-ingestion pass; a future R may normalize the scales.
  */
-function mapDailyMetricsToStress(
+function mergeStressPoints(
   metrics: DailyMetricLite[],
+  logs: LifestyleLogLite[],
   programStart: string | null,
   durationWeeks: number,
 ): Array<{ dayIndex: number; value: number }> {
-  if (!programStart || metrics.length === 0) return [];
+  if (!programStart) return [];
   const start = new Date(programStart).getTime();
   const totalDays = durationWeeks * 7;
-  const points: Array<{ dayIndex: number; value: number }> = [];
+  const byDate = new Map<string, number>();
   for (const m of metrics) {
     if (m.stress == null) continue;
-    const day = Math.floor((new Date(m.date).getTime() - start) / 86400000);
-    if (day < 0 || day > totalDays) continue;
-    points.push({ dayIndex: day, value: m.stress });
+    byDate.set(m.date.slice(0, 10), m.stress);
   }
+  for (const l of logs) {
+    if (l.variableKey !== "stress" || l.numValue == null) continue;
+    byDate.set(l.date.slice(0, 10), l.numValue);
+  }
+  const points: Array<{ dayIndex: number; value: number }> = [];
+  byDate.forEach((value, date) => {
+    const day = Math.floor((new Date(date).getTime() - start) / 86400000);
+    if (day < 0 || day > totalDays) return;
+    points.push({ dayIndex: day, value });
+  });
   return points.sort((a, b) => a.dayIndex - b.dayIndex);
+}
+
+function latestLogForKey(logs: LifestyleLogLite[], key: string): LifestyleLogLite | null {
+  const todayIso = new Date().toISOString().slice(0, 10);
+  const todayRow = logs.find((l) => l.variableKey === key && l.date === todayIso);
+  if (todayRow) return todayRow;
+  const all = logs.filter((l) => l.variableKey === key).sort((a, b) => b.date.localeCompare(a.date));
+  return all[0] ?? null;
 }

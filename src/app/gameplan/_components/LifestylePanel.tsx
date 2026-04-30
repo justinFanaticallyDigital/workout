@@ -12,6 +12,7 @@ import type {
   StretchRoutine,
   DailyMetricLite,
   LifestyleTargetLite,
+  LifestyleLogLite,
   DailyProteinPoint,
 } from "./types";
 
@@ -26,8 +27,13 @@ interface Props {
   dailyMetrics: DailyMetricLite[];
   /** R6 — fed from /api/lifestyle-targets; SleepCard + StressCard + ProteinHitCard read. */
   lifestyleTargets: LifestyleTargetLite[];
+  /** R9 — fed from /api/lifestyle-logs; manual entries override Fitbit values per date. */
+  lifestyleLogs: LifestyleLogLite[];
   /** R6 — fed from /api/nutrition/meals/range; ProteinHitCard reads. */
   dailyProtein: DailyProteinPoint[];
+  /** R9 — called when an inline "Log today" affordance writes a row;
+   *  parent merges into local state so the chart updates without a refetch. */
+  onLogged?: (log: LifestyleLogLite) => void;
 }
 
 export default function LifestylePanel({
@@ -38,7 +44,9 @@ export default function LifestylePanel({
   programDurationWeeks,
   dailyMetrics,
   lifestyleTargets,
+  lifestyleLogs,
   dailyProtein,
+  onLogged,
 }: Props) {
   const latest = recentCheckIns[0] ?? null;
   const durationWeeks = programDurationWeeks ?? 16;
@@ -68,16 +76,22 @@ export default function LifestylePanel({
         <SleepCard
           dailyMetrics={dailyMetrics}
           lifestyleTargets={lifestyleTargets}
+          lifestyleLogs={lifestyleLogs}
           programStartDate={programStartDate}
           durationWeeks={durationWeeks}
           tilt={-0.4}
+          programId={programId}
+          onLogged={onLogged}
         />
         <StressCard
           dailyMetrics={dailyMetrics}
           lifestyleTargets={lifestyleTargets}
+          lifestyleLogs={lifestyleLogs}
           programStartDate={programStartDate}
           durationWeeks={durationWeeks}
           tilt={0.4}
+          programId={programId}
+          onLogged={onLogged}
         />
         <ProteinHitCard
           dailyProtein={dailyProtein}

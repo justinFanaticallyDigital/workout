@@ -63,29 +63,30 @@ model User {
   // /gameplan/new picker NutritionCard. Replaces 2400 hardcoded baseline.
   maintenanceCalories Int? @map("maintenance_calories")
 
-  accounts       Account[]
-  sessions       Session[]
-  goals          Goal[]
-  programs       Program[]
-  workouts       Workout[]
-  exercises      Exercise[]
-  exercisePrs    ExercisePr[]
-  bodyMetrics    BodyMetric[]
-  dailyMetrics   DailyMetric[]
-  progressPhotos ProgressPhoto[]
-  injuries       Injury[]
-  foodItems          FoodItem[]
-  meals              Meal[]
-  nutritionTargets   NutritionTarget[]
-  mealPlans          MealPlan[]
-  activityLogs       ActivityLog[]
-  integrationData    IntegrationData[]
-  userMetricTargets  UserMetricTarget[]
-  scheduleOverrides  ScheduleOverride[]
-  stretchRoutines    StretchRoutine[]
-  checkIns           CheckIn[]
-  lifestyleTargets   LifestyleTarget[]
-  recommendations    Recommendation[]
+  accounts          Account[]
+  sessions          Session[]
+  goals             Goal[]
+  programs          Program[]
+  workouts          Workout[]
+  exercises         Exercise[]
+  exercisePrs       ExercisePr[]
+  bodyMetrics       BodyMetric[]
+  dailyMetrics      DailyMetric[]
+  progressPhotos    ProgressPhoto[]
+  injuries          Injury[]
+  foodItems         FoodItem[]
+  meals             Meal[]
+  nutritionTargets  NutritionTarget[]
+  mealPlans         MealPlan[]
+  activityLogs      ActivityLog[]
+  integrationData   IntegrationData[]
+  userMetricTargets UserMetricTarget[]
+  scheduleOverrides ScheduleOverride[]
+  stretchRoutines   StretchRoutine[]
+  checkIns          CheckIn[]
+  lifestyleTargets  LifestyleTarget[]
+  lifestyleLogs     LifestyleLog[]
+  recommendations   Recommendation[]
 
   @@map("users")
 }
@@ -163,6 +164,7 @@ model Program {
   userMetricTargets UserMetricTarget[]
   scheduleOverrides ScheduleOverride[]
   lifestyleTargets  LifestyleTarget[]
+  lifestyleLogs     LifestyleLog[]
   recommendations   Recommendation[]
 
   @@index([userId])
@@ -215,7 +217,7 @@ model Block {
   // /gameplan NutritionPanel "NEXT REFEED" footer (e.g. "SUN · WK 8").
   // Forward-compatible: future per-refeed notes/protocols can migrate
   // to a BlockRefeed join table embedding these as weekNumber.
-  refeedWeeks         Int[]       @default([]) @map("refeed_weeks")
+  refeedWeeks Int[] @default([]) @map("refeed_weeks")
 
   program           Program            @relation(fields: [programId], references: [id], onDelete: Cascade)
   days              BlockDay[]
@@ -265,23 +267,23 @@ enum ProgressionType {
 }
 
 model BlockDayExercise {
-  id                    String          @id @default(uuid()) @db.Uuid
-  blockDayId            String          @map("block_day_id") @db.Uuid
-  exerciseId            String          @map("exercise_id") @db.Uuid
-  altExerciseId         String?         @map("alt_exercise_id") @db.Uuid
-  sortOrder             Int             @map("sort_order")
-  targetSets            Int?            @map("target_sets")
-  targetRepRange        String?         @map("target_rep_range")
-  targetRpe             String?         @map("target_rpe")
-  progressionType       ProgressionType @default(none) @map("progression_type")
-  progressionIncrement  Decimal?        @map("progression_increment")
-  notes                 String?
+  id                   String          @id @default(uuid()) @db.Uuid
+  blockDayId           String          @map("block_day_id") @db.Uuid
+  exerciseId           String          @map("exercise_id") @db.Uuid
+  altExerciseId        String?         @map("alt_exercise_id") @db.Uuid
+  sortOrder            Int             @map("sort_order")
+  targetSets           Int?            @map("target_sets")
+  targetRepRange       String?         @map("target_rep_range")
+  targetRpe            String?         @map("target_rpe")
+  progressionType      ProgressionType @default(none) @map("progression_type")
+  progressionIncrement Decimal?        @map("progression_increment")
+  notes                String?
 
   // R6: per-exercise variant catalogue. Drives the prototype's
   // VariantDropdown (logger-screens.jsx#VariantDropdown). Schema
   // landed in R6; UI surface still uses the existing Swap →
   // ExercisePicker path until a later UI-only PR wires VariantDropdown.
-  variants              String[]        @default([])
+  variants String[] @default([])
 
   blockDay    BlockDay  @relation(fields: [blockDayId], references: [id], onDelete: Cascade)
   exercise    Exercise  @relation("primary", fields: [exerciseId], references: [id], onDelete: Cascade)
@@ -355,22 +357,22 @@ model Set {
 
 // ─── Exercise Library ────────────────────────────────────
 model Exercise {
-  id               String  @id @default(uuid()) @db.Uuid
-  userId           String? @map("user_id") @db.Uuid
+  id               String   @id @default(uuid()) @db.Uuid
+  userId           String?  @map("user_id") @db.Uuid
   name             String
-  movementPattern  String? @map("movement_pattern")
-  primaryMuscle    String? @map("primary_muscle")
-  secondaryMuscle1 String? @map("secondary_muscle_1")
-  secondaryMuscle2 String? @map("secondary_muscle_2")
+  movementPattern  String?  @map("movement_pattern")
+  primaryMuscle    String?  @map("primary_muscle")
+  secondaryMuscle1 String?  @map("secondary_muscle_1")
+  secondaryMuscle2 String?  @map("secondary_muscle_2")
   equipment        String?
-  isCustom         Boolean @default(false) @map("is_custom")
+  isCustom         Boolean  @default(false) @map("is_custom")
   createdAt        DateTime @default(now()) @map("created_at")
 
-  user                 User?              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user                 User?                @relation(fields: [userId], references: [id], onDelete: Cascade)
   exercisePrs          ExercisePr[]
   workoutExercises     WorkoutExercise[]
-  blockDayExercises    BlockDayExercise[] @relation("primary")
-  blockDayExercisesAlt BlockDayExercise[] @relation("alternate")
+  blockDayExercises    BlockDayExercise[]   @relation("primary")
+  blockDayExercisesAlt BlockDayExercise[]   @relation("alternate")
   stretchRoutineItems  StretchRoutineItem[]
 
   @@unique([name])
@@ -399,14 +401,14 @@ model ExercisePr {
 
 // ─── Body Metrics & Progress ─────────────────────────────
 model BodyMetric {
-  id        String   @id @default(uuid()) @db.Uuid
-  userId    String   @map("user_id") @db.Uuid
-  date      DateTime @db.Date
-  weight    Decimal?
+  id         String   @id @default(uuid()) @db.Uuid
+  userId     String   @map("user_id") @db.Uuid
+  date       DateTime @db.Date
+  weight     Decimal?
   bodyFatPct Decimal? @map("body_fat_pct")
-  source    String   @default("manual") // manual, fitbit, scale
-  notes     String?
-  createdAt DateTime @default(now()) @map("created_at")
+  source     String   @default("manual") // manual, fitbit, scale
+  notes      String?
+  createdAt  DateTime @default(now()) @map("created_at")
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -417,28 +419,28 @@ model BodyMetric {
 
 // ─── Daily Metrics (Fitbit activity/sleep/HR) ───────────
 model DailyMetric {
-  id               String   @id @default(uuid()) @db.Uuid
-  userId           String   @map("user_id") @db.Uuid
-  date             DateTime @db.Date
+  id             String   @id @default(uuid()) @db.Uuid
+  userId         String   @map("user_id") @db.Uuid
+  date           DateTime @db.Date
   // Activity
-  steps            Int?
-  activeMinutes    Int?     @map("active_minutes")
-  caloriesBurned   Int?     @map("calories_burned")
+  steps          Int?
+  activeMinutes  Int?     @map("active_minutes")
+  caloriesBurned Int?     @map("calories_burned")
   // Sleep
-  sleepMinutes     Int?     @map("sleep_minutes")
-  sleepDeep        Int?     @map("sleep_deep")       // minutes
-  sleepLight       Int?     @map("sleep_light")      // minutes
-  sleepRem         Int?     @map("sleep_rem")        // minutes
-  sleepWake        Int?     @map("sleep_wake")       // minutes
+  sleepMinutes   Int?     @map("sleep_minutes")
+  sleepDeep      Int?     @map("sleep_deep") // minutes
+  sleepLight     Int?     @map("sleep_light") // minutes
+  sleepRem       Int?     @map("sleep_rem") // minutes
+  sleepWake      Int?     @map("sleep_wake") // minutes
   // Heart Rate
-  restingHr        Int?     @map("resting_hr")
+  restingHr      Int?     @map("resting_hr")
   // R6: daily 1-10 stress self-report. Drives /gameplan
   // LifestylePanel StressCard (replaces 1-5→1-10 mapping from weekly
   // CheckIn.stress). Sleep-hours read uses existing sleepMinutes / 60.
-  stress           Int?
+  stress         Int?
   // Source
-  source           String   @default("fitbit")
-  createdAt        DateTime @default(now()) @map("created_at")
+  source         String   @default("fitbit")
+  createdAt      DateTime @default(now()) @map("created_at")
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -485,11 +487,11 @@ model Injury {
 }
 
 model InjuryNote {
-  id          String    @id @default(uuid()) @db.Uuid
-  injuryId    String    @map("injury_id") @db.Uuid
-  date        DateTime  @db.Date
-  note        String
-  treatment   String?
+  id           String    @id @default(uuid()) @db.Uuid
+  injuryId     String    @map("injury_id") @db.Uuid
+  date         DateTime  @db.Date
+  note         String
+  treatment    String?
   followUpDate DateTime? @map("follow_up_date") @db.Date
 
   injury Injury @relation(fields: [injuryId], references: [id], onDelete: Cascade)
@@ -537,11 +539,11 @@ enum MealType {
 }
 
 model Meal {
-  id       String   @id @default(uuid()) @db.Uuid
-  userId   String   @map("user_id") @db.Uuid
-  date     DateTime @db.Date
-  mealType MealType @map("meal_type")
-  notes    String?
+  id        String   @id @default(uuid()) @db.Uuid
+  userId    String   @map("user_id") @db.Uuid
+  date      DateTime @db.Date
+  mealType  MealType @map("meal_type")
+  notes     String?
   createdAt DateTime @default(now()) @map("created_at")
 
   user  User       @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -591,18 +593,18 @@ model NutritionTarget {
 
 // ─── Meal Plans ──────────────────────────────────────────
 model MealPlan {
-  id              String   @id @default(uuid()) @db.Uuid
-  userId          String   @map("user_id") @db.Uuid
-  name            String
-  days            Int      @default(7)
-  calorieTarget   Decimal? @map("calorie_target")
-  proteinPct      Decimal? @map("protein_pct")
-  carbsPct        Decimal? @map("carbs_pct")
-  fatPct          Decimal? @map("fat_pct")
-  mealsPerDay     Int      @default(3) @map("meals_per_day")
-  preferences     String?
-  isActive        Boolean  @default(true) @map("is_active")
-  createdAt       DateTime @default(now()) @map("created_at")
+  id            String   @id @default(uuid()) @db.Uuid
+  userId        String   @map("user_id") @db.Uuid
+  name          String
+  days          Int      @default(7)
+  calorieTarget Decimal? @map("calorie_target")
+  proteinPct    Decimal? @map("protein_pct")
+  carbsPct      Decimal? @map("carbs_pct")
+  fatPct        Decimal? @map("fat_pct")
+  mealsPerDay   Int      @default(3) @map("meals_per_day")
+  preferences   String?
+  isActive      Boolean  @default(true) @map("is_active")
+  createdAt     DateTime @default(now()) @map("created_at")
 
   user     User          @relation(fields: [userId], references: [id], onDelete: Cascade)
   planDays MealPlanDay[]
@@ -612,10 +614,10 @@ model MealPlan {
 }
 
 model MealPlanDay {
-  id         String   @id @default(uuid()) @db.Uuid
-  planId     String   @map("plan_id") @db.Uuid
-  dayNumber  Int      @map("day_number")
-  createdAt  DateTime @default(now()) @map("created_at")
+  id        String   @id @default(uuid()) @db.Uuid
+  planId    String   @map("plan_id") @db.Uuid
+  dayNumber Int      @map("day_number")
+  createdAt DateTime @default(now()) @map("created_at")
 
   plan  MealPlan       @relation(fields: [planId], references: [id], onDelete: Cascade)
   meals MealPlanMeal[]
@@ -625,12 +627,12 @@ model MealPlanDay {
 }
 
 model MealPlanMeal {
-  id       String  @id @default(uuid()) @db.Uuid
-  dayId    String  @map("day_id") @db.Uuid
-  mealType MealType @map("meal_type")
-  sortOrder Int    @default(0) @map("sort_order")
+  id        String   @id @default(uuid()) @db.Uuid
+  dayId     String   @map("day_id") @db.Uuid
+  mealType  MealType @map("meal_type")
+  sortOrder Int      @default(0) @map("sort_order")
 
-  day   MealPlanDay      @relation(fields: [dayId], references: [id], onDelete: Cascade)
+  day   MealPlanDay    @relation(fields: [dayId], references: [id], onDelete: Cascade)
   items MealPlanItem[]
 
   @@index([dayId])
@@ -695,6 +697,12 @@ enum IntegrationSource {
   APPLE_HEALTH
   GARMIN
   MANUAL
+  // R9 — non-user, non-device origin: a value derived from another
+  // log (e.g. `protein_hits` counted from Meal/MealItem, or
+  // `sessions_completed` derived from Workout). Spec §4.5 names
+  // this `LogSource.DERIVED`; folded into IntegrationSource so we
+  // don't carry two near-identical enums.
+  DERIVED
 }
 
 model IntegrationData {
@@ -768,12 +776,12 @@ model ScheduleOverride {
 
 // ─── Stretch Routines ───────────────────────────────────
 model StretchRoutine {
-  id          String               @id @default(uuid()) @db.Uuid
-  userId      String               @map("user_id") @db.Uuid
+  id          String   @id @default(uuid()) @db.Uuid
+  userId      String   @map("user_id") @db.Uuid
   name        String
   description String?
-  createdAt   DateTime             @default(now()) @map("created_at")
-  updatedAt   DateTime             @updatedAt @map("updated_at")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
 
   user  User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
   items StretchRoutineItem[]
@@ -810,9 +818,9 @@ model StretchRoutineItem {
 // metric) because lifestyle goals carry comparator semantics — a
 // stress target reads "≤ 5" and a protein target reads "≥ 1g/lb".
 model LifestyleTarget {
-  id         String  @id @default(uuid()) @db.Uuid
-  userId     String  @map("user_id") @db.Uuid
-  programId  String? @map("program_id") @db.Uuid
+  id         String   @id @default(uuid()) @db.Uuid
+  userId     String   @map("user_id") @db.Uuid
+  programId  String?  @map("program_id") @db.Uuid
   /// Stable key: "sleep_hours_min" / "stress_max" / "protein_g_per_lb" / etc.
   key        String
   value      Float
@@ -830,13 +838,44 @@ model LifestyleTarget {
   @@map("lifestyle_targets")
 }
 
+// ─── Lifestyle Logs (R9) ────────────────────────────────
+// One row per (user, date, variableKey). Daily-cadence variables
+// fill every day; weekly-cadence variables (z2_minutes,
+// balance_minutes, sessions_completed) write to the week's last
+// day; as-needed variables (pain_check) just leave gaps. The
+// goal-engine ingests the last 7 rows per tracked key into
+// EngineState.lifestyle for the lifestyle-streak-broken and
+// pain-flag rules. Numeric variables use numValue (sleep hours,
+// steps); enum/scale variables use textValue ("GREEN" | "1"-"5").
+model LifestyleLog {
+  id          String            @id @default(uuid()) @db.Uuid
+  userId      String            @map("user_id") @db.Uuid
+  programId   String?           @map("program_id") @db.Uuid
+  date        DateTime          @db.Date
+  variableKey String            @map("variable_key")
+  numValue    Float?            @map("num_value")
+  textValue   String?           @map("text_value")
+  unit        String?
+  source      IntegrationSource @default(MANUAL)
+  createdAt   DateTime          @default(now()) @map("created_at")
+  updatedAt   DateTime          @updatedAt @map("updated_at")
+
+  user    User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  program Program? @relation(fields: [programId], references: [id], onDelete: SetNull)
+
+  @@unique([userId, date, variableKey])
+  @@index([userId, date])
+  @@index([userId, variableKey, date])
+  @@map("lifestyle_logs")
+}
+
 // ─── Weekly Check-Ins ────────────────────────────────────
 model CheckIn {
-  id         String    @id @default(uuid()) @db.Uuid
-  userId     String    @map("user_id") @db.Uuid
-  date       DateTime  @db.Date
-  weekNumber Int?      @map("week_number")
-  blockId    String?   @map("block_id") @db.Uuid
+  id         String   @id @default(uuid()) @db.Uuid
+  userId     String   @map("user_id") @db.Uuid
+  date       DateTime @db.Date
+  weekNumber Int?     @map("week_number")
+  blockId    String?  @map("block_id") @db.Uuid
 
   // Subjective ratings (1–5 scale)
   energy       Int?
@@ -879,10 +918,13 @@ model CheckIn {
 // Planning Mode draft when the user taps Apply.
 
 enum RecommendationKind {
+  // R9 adds lifestyle_streak_broken + pain_flag.
   behind_target
   ahead_target
   adherence_low
   plateau_detected
+  lifestyle_streak_broken
+  pain_flag
 }
 
 enum RecommendationStatus {
@@ -899,32 +941,32 @@ enum RecommendationSeverity {
 }
 
 model Recommendation {
-  id               String                  @id @default(uuid()) @db.Uuid
-  userId           String                  @map("user_id") @db.Uuid
+  id              String                 @id @default(uuid()) @db.Uuid
+  userId          String                 @map("user_id") @db.Uuid
   // R8: optional program scope — null for system-wide recs.
-  programId        String?                 @map("program_id") @db.Uuid
+  programId       String?                @map("program_id") @db.Uuid
   // R8: optional goal scope — null for adherence rules that aren't goal-tied.
-  goalId           String?                 @map("goal_id") @db.Uuid
+  goalId          String?                @map("goal_id") @db.Uuid
   // R8: links a recommendation back to the CheckIn that triggered it.
-  checkInId        String?                 @map("check_in_id") @db.Uuid
-  kind             RecommendationKind
-  status           RecommendationStatus    @default(pending)
+  checkInId       String?                @map("check_in_id") @db.Uuid
+  kind            RecommendationKind
+  status          RecommendationStatus   @default(pending)
   // R8: spec §8.4 severity — drives card tone (info/warning/urgent).
-  severity         RecommendationSeverity  @default(info)
+  severity        RecommendationSeverity @default(info)
   // R8: short label rendered as card heading.
-  title            String
+  title           String
   // R8: full explanation rendered in card body.
-  body             String
+  body            String
   // R8: field name to pre-stage in Planning Mode (e.g. "calories").
-  suggestedField   String?                 @map("suggested_field")
+  suggestedField  String?                @map("suggested_field")
   // R8: JSON-stringified new value for that field.
-  suggestedValue   String?                 @map("suggested_value")
+  suggestedValue  String?                @map("suggested_value")
   // R8: engine state at trigger time, for diagnostics.
-  snapshotData     Json?                   @map("snapshot_data")
+  snapshotData    Json?                  @map("snapshot_data")
   // R8: optional dismissal reason (when status=dismissed).
-  dismissedReason  String?                 @map("dismissed_reason")
-  createdAt        DateTime                @default(now()) @map("created_at")
-  resolvedAt       DateTime?               @map("resolved_at")
+  dismissedReason String?                @map("dismissed_reason")
+  createdAt       DateTime               @default(now()) @map("created_at")
+  resolvedAt      DateTime?              @map("resolved_at")
 
   user    User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   program Program? @relation(fields: [programId], references: [id], onDelete: SetNull)

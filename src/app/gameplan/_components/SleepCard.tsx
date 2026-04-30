@@ -11,8 +11,10 @@
 
 import { useMemo } from "react";
 import { LifestyleShell } from "./LifestyleShell";
+import { LifestyleQuickLog } from "./LifestyleQuickLog";
 import { Reenie, Archivo } from "./typography";
-import type { DailyMetricLite, LifestyleTargetLite } from "./types";
+import { lifestyleVariable } from "@/lib/goal-engine/lifestyle-variables";
+import type { DailyMetricLite, LifestyleTargetLite, LifestyleLogLite } from "./types";
 
 const W = 348;
 const H = 86;
@@ -25,22 +27,34 @@ const TOTAL_DAYS = 112;
 export function SleepCard({
   dailyMetrics,
   lifestyleTargets = [],
+  lifestyleLogs = [],
   durationWeeks = 16,
   programStartDate,
   tilt = -0.4,
+  programId = null,
+  onLogged,
 }: {
   /** DailyMetric rows for this user, sourced from /api/integrations/fitbit/daily. */
   dailyMetrics: DailyMetricLite[];
   /** Optional LifestyleTarget rows; "sleep_hours_min" drives the target line. */
   lifestyleTargets?: LifestyleTargetLite[];
+  /** R9 — LifestyleLog rows; sleep_duration manual entries override Fitbit values. */
+  lifestyleLogs?: LifestyleLogLite[];
   durationWeeks?: number;
   programStartDate: string | null;
   tilt?: number;
+  programId?: string | null;
+  onLogged?: (log: LifestyleLogLite) => void;
 }) {
   const points = useMemo(
-    () => mapDailyMetricsToHours(dailyMetrics, programStartDate, durationWeeks),
-    [dailyMetrics, programStartDate, durationWeeks],
+    () => mergeSleepPoints(dailyMetrics, lifestyleLogs, programStartDate, durationWeeks),
+    [dailyMetrics, lifestyleLogs, programStartDate, durationWeeks],
   );
+  const todaysLog = useMemo(
+    () => latestLogForKey(lifestyleLogs, "sleep_duration"),
+    [lifestyleLogs],
+  );
+  const sleepVar = lifestyleVariable("sleep_duration");
 
   // Target: prefer a lifestyle-target row keyed "sleep_hours_min";
   // fallback to 7.5h.
@@ -220,6 +234,16 @@ export function SleepCard({
           })}
         </svg>
       }
+      inlineLog={
+        sleepVar ? (
+          <LifestyleQuickLog
+            variable={sleepVar}
+            todaysLog={todaysLog}
+            programId={programId}
+            onLogged={onLogged}
+          />
+        ) : null
+      }
       footer={
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
@@ -249,24 +273,44 @@ export function SleepCard({
 }
 
 /**
- * Map `DailyMetric.sleepMinutes` rows to (dayIndex, hours) points
- * along the program canvas. R6 — replaces the prior weekly
- * CheckIn.sleepQuality 1-5 synthesis.
+ * R9 — merge Fitbit DailyMetric sleep with manual LifestyleLog
+ * sleep_duration rows. When both sources have a value for the same
+ * date, the manual log wins (explicit user statement beats passive
+ * device read). Fitbit-only days still appear so charts stay dense.
  */
-function mapDailyMetricsToHours(
+function mergeSleepPoints(
   metrics: DailyMetricLite[],
+  logs: LifestyleLogLite[],
   programStart: string | null,
   durationWeeks: number,
 ): Array<{ dayIndex: number; hours: number }> {
-  if (!programStart || metrics.length === 0) return [];
+  if (!programStart) return [];
   const start = new Date(programStart).getTime();
   const totalDays = durationWeeks * 7;
-  const points: Array<{ dayIndex: number; hours: number }> = [];
+  const byDate = new Map<string, number>();
   for (const m of metrics) {
     if (m.sleepMinutes == null) continue;
-    const day = Math.floor((new Date(m.date).getTime() - start) / 86400000);
-    if (day < 0 || day > totalDays) continue;
-    points.push({ dayIndex: day, hours: m.sleepMinutes / 60 });
+    byDate.set(m.date.slice(0, 10), m.sleepMinutes / 60);
   }
+  for (const l of logs) {
+    if (l.variableKey !== "sleep_duration" || l.numValue == null) continue;
+    byDate.set(l.date.slice(0, 10), l.numValue);
+  }
+  const points: Array<{ dayIndex: number; hours: number }> = [];
+  byDate.forEach((hours, date) => {
+    const day = Math.floor((new Date(date).getTime() - start) / 86400000);
+    if (day < 0 || day > totalDays) return;
+    points.push({ dayIndex: day, hours });
+  });
   return points.sort((a, b) => a.dayIndex - b.dayIndex);
+}
+
+function latestLogForKey(logs: LifestyleLogLite[], key: string): LifestyleLogLite | null {
+  const todayIso = new Date().toISOString().slice(0, 10);
+  // Prefer today's row if it exists; otherwise the most recent overall
+  // (the QuickLog form treats it as "current value to overwrite").
+  const todayRow = logs.find((l) => l.variableKey === key && l.date === todayIso);
+  if (todayRow) return todayRow;
+  const all = logs.filter((l) => l.variableKey === key).sort((a, b) => b.date.localeCompare(a.date));
+  return all[0] ?? null;
 }

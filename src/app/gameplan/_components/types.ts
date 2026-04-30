@@ -173,6 +173,23 @@ export interface DailyProteinPoint {
   totalCalories: number;
 }
 
+/**
+ * R9 — LifestyleLog row. Fed by `/api/lifestyle-logs`. Both
+ * SleepCard and StressCard prefer LifestyleLog values over
+ * DailyMetric (Fitbit) values when both exist for the same date —
+ * a manual log is an explicit user statement and overrides the
+ * passive device read.
+ */
+export interface LifestyleLogLite {
+  id: string;
+  date: string;
+  variableKey: string;
+  numValue: number | null;
+  textValue: string | null;
+  unit: string | null;
+  source: string;
+}
+
 /** ScheduleOverride — sourced from `/api/schedule-overrides`. */
 export interface ScheduleOverride {
   id: string;
