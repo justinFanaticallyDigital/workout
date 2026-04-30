@@ -388,11 +388,21 @@ export default function NewProgramPage() {
 
       {step === 1 && (
         <>
+          {/* R14 — primary CTA routes to the gameplan templates flow.
+              The 5-step engine picker (Filter → List → Preview → Setup)
+              stays accessible via the secondary "Or use the questionnaire"
+              link below + the "Advanced setup →" footer link. */}
           <Step1Welcome
-            onPick={() => setStep(2)}
+            onPick={() => router.push("/gameplan/new/templates")}
             onSkip={() => router.push("/programs")}
           />
-          <div className="absolute bottom-2 left-0 right-0 text-center">
+          <div className="absolute bottom-2 left-0 right-0 text-center flex flex-col gap-1.5">
+            <button
+              onClick={() => setStep(2)}
+              className="font-body text-[10px] uppercase tracking-[0.2em] text-ft-dim hover:text-ft-light bg-transparent border-0 cursor-pointer"
+            >
+              Or use the questionnaire →
+            </button>
             <Link
               href="/programs/new/advanced"
               className="font-body text-[10px] uppercase tracking-[0.2em] text-ft-dim hover:text-ft-light"
