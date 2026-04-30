@@ -2,7 +2,7 @@
 // ============================================================================
 // Refeed due — spec §8.4 (Lean Out gameplan).
 //
-// Trigger: Program.gameplanKind === "lean_out" AND the user is in a
+// Trigger: Program.gameplanKind === "lean-out" AND the user is in a
 // sustained calorie deficit (NutritionTarget.calories < User.maintenanceCalories
 // minus 100 kcal threshold) AND the most recent scheduled refeed
 // week ended ≥4 weeks ago (or no refeed has happened yet and the
@@ -20,7 +20,8 @@ const DEFICIT_THRESHOLD_KCAL = 100;
 const REFEED_WINDOW_DAYS = 28;
 
 export function refeedDue(state: EngineState): RecommendationDraft | null {
-  if (state.gameplanKind !== "lean_out") return null;
+  // R13: kebab-case slug to match `programTemplates` registry.
+  if (state.gameplanKind !== "lean-out") return null;
 
   const { caloriesPerDay, maintenanceCalories, daysSinceLastRefeed } = state.deficit;
   if (caloriesPerDay == null || maintenanceCalories == null) return null;

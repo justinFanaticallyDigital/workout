@@ -8,7 +8,7 @@ import {
   inferGameplanKindFromTemplate,
   isValidGameplanKind,
   type GameplanTemplate,
-} from "@/lib/gameplan-templates";
+} from "@/lib/program-templates";
 
 export const dynamic = "force-dynamic";
 
