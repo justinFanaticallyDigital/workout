@@ -19,30 +19,42 @@ FitTrack is a personal workout tracking app built with Next.js 14, Prisma, Postg
 
 ## App Architecture — 5-Tab Bottom Navigation
 
-The app is structured around a mobile-first bottom nav bar with five tabs:
+Mobile-first bottom nav, post-R0–R15 layout per spec v2 §5 (was Home/Program/Log/Nutrition/Calendar in earlier phases):
 
 | Position | Tab | Icon | Description |
 |----------|-----|------|-------------|
-| 1 | Home | House | Daily "Today" view — what to do right now |
-| 2 | Program | Bar chart | Metrics, goals, targets — editable |
-| 3 (center) | Log | Plus (raised FAB) | Start logging any activity type |
-| 4 | Nutrition | Mug/cup | Daily food tracking, macro targets |
-| 5 | Calendar | Calendar | Monthly overview of workouts + meals |
+| 1 | Gameplan | Bar chart | Active program dashboard — Today card, Week strip, sub-tabs Training / Nutrition / Lifestyle |
+| 2 | Progress | Up-trend | Charts, calendar, check-ins, photos, injuries — historical view |
+| 3 (center) | +Log | Plus (raised FAB) | Bottom sheet — Lifting / Stretch / HIIT / LISS / Class / Custom / Single workout from library |
+| 4 | Nutrition | Mug/cup | Daily food tracking, macro targets, meal plans |
+| 5 | Settings | Cog | Theme picker, units, integrations, account, advanced |
 
-The center Log button is a raised floating action button with a gradient background. Active tab uses accent color; inactive tabs use muted tertiary text. The nav bar is fixed at the bottom with a gradient fade into content above.
+The center +Log button renders `LogActivitySheet` as a bottom sheet (not a route). Active tab uses accent color; inactive uses muted tertiary. Hidden during full-screen flows (workout logger, stretch timer, gameplan picker, planning mode).
+
+Legacy `/`, `/calendar`, and `/injuries` stay reachable as routes; the latter two redirect to `/progress/calendar` and `/progress/injuries`.
 
 ## Project Structure
 ```
 src/
 ├── app/                          # Next.js App Router
-│   ├── page.tsx                  # Home / Today view (client component)
+│   ├── page.tsx                  # Legacy Home / Today view (route survives but not in BottomNav)
 │   ├── layout.tsx                # Root layout (ThemeProvider + BottomNav + SessionProvider)
 │   ├── globals.css               # Global styles + Tailwind + Google Fonts + theme-adaptive CTAs
 │   ├── signin/page.tsx           # Google OAuth sign-in
-│   ├── settings/page.tsx         # Settings (unit prefs, CSV export)
-│   ├── program/page.tsx          # Program tab — metrics dashboard (client)
-│   ├── calendar/page.tsx         # Calendar tab — monthly overview (client)
+│   ├── settings/page.tsx         # Settings (theme picker, unit prefs, CSV export)
+│   ├── calendar/page.tsx         # Legacy /calendar — redirects to /progress/calendar (R15)
+│   ├── injuries/page.tsx         # Legacy /injuries — redirects to /progress/injuries (R15)
+│   ├── program/page.tsx          # Legacy Program tab metrics dashboard (still rendered if linked)
 │   ├── stretch-timer/page.tsx    # Stretch timer flow — full-screen countdown (client)
+│   ├── gameplan/                 # R4–R15 — gameplan tab + picker + planning mode
+│   │   ├── page.tsx              # Active program dashboard (R5; sub-tabs Training/Nutrition/Lifestyle)
+│   │   ├── new/page.tsx          # Picker entry — Step1Welcome → engine 5-step OR templates flow (R4/R14)
+│   │   ├── new/templates/page.tsx              # 8-card gameplan template list (R14)
+│   │   ├── new/templates/[slug]/customize/page.tsx  # Per-template wizard (R14)
+│   │   └── [id]/planning/page.tsx              # Planning Mode sandbox (R7) with audit panel (R10)
+│   ├── checkin/                  # R2 — weekly check-in
+│   │   ├── page.tsx              # Pending / submitted / form views
+│   │   └── [id]/page.tsx         # Per-week detail
 │   ├── exercises/
 │   │   ├── page.tsx              # Exercise library (client, pill filters)
 │   │   ├── new/page.tsx          # Create exercise form (client)
@@ -50,30 +62,36 @@ src/
 │   ├── programs/
 │   │   ├── page.tsx              # Programs list (server)
 │   │   ├── new/
-│   │   │   ├── page.tsx          # Program creation hub (5 paths)
+│   │   │   ├── page.tsx          # Legacy program creation hub (5 paths)
 │   │   │   ├── goal/page.tsx     # Goal-first wizard (client)
-│   │   │   ├── templates/page.tsx # Template picker (client)
+│   │   │   ├── templates/page.tsx # Engine-template picker (legacy; gameplan templates live at /gameplan/new/templates)
 │   │   │   ├── builder/page.tsx  # Visual program builder (client)
-│   │   │   └── generate/page.tsx # Smart Generator questionnaire (client, 2 paths: Quick/Guided)
+│   │   │   └── generate/page.tsx # Smart Generator questionnaire (client, Quick/Guided)
 │   │   └── [programId]/
 │   │       ├── page.tsx          # Program detail with inline editing (server)
 │   │       └── blocks/[blockId]/
 │   │           ├── page.tsx      # Block detail (server)
 │   │           └── days/[dayId]/page.tsx  # Day template (server)
 │   ├── log/
-│   │   ├── page.tsx              # Log tab — activity type picker (client)
-│   │   └── [workoutId]/page.tsx  # Active workout logger (client)
+│   │   ├── page.tsx              # Redirects to /gameplan (FAB sheet replaces this)
+│   │   ├── [workoutId]/page.tsx  # Active workout logger (client)
+│   │   └── library/              # R15 — single-workout library
+│   │       ├── page.tsx          # 8 curated one-offs as cards
+│   │       └── [id]/page.tsx     # Detail + Start CTA → POST /api/workouts/from-library
 │   ├── history/
 │   │   ├── page.tsx              # Workout history list (client)
 │   │   └── [workoutId]/page.tsx  # Workout session replay (client)
-│   ├── progress/
+│   ├── progress/                 # R11–R15 — historical/progress consolidated under one parent
 │   │   ├── page.tsx              # Progress overview (server)
 │   │   ├── body/page.tsx         # Body metrics with charts (client)
-│   │   └── photos/page.tsx       # Progress photos gallery (client)
+│   │   ├── photos/page.tsx       # Progress photos gallery (client)
+│   │   ├── calendar/page.tsx     # Monthly grid (moved from /calendar in R15)
+│   │   ├── injuries/page.tsx     # Injury tracker (moved from /injuries in R15)
+│   │   ├── check-ins/page.tsx    # Past check-in history with rec + change correlation (R11)
+│   │   └── charts/page.tsx       # 4-chart aggregator: weight / volume / sleep / protein (R15)
 │   ├── nutrition/
 │   │   ├── page.tsx              # Nutrition tab — daily food tracking (client)
 │   │   └── plans/page.tsx        # Meal plans (client)
-│   ├── injuries/page.tsx         # Injury tracker with CRUD (client)
 │   └── api/                      # API routes (all wired to Prisma)
 │       ├── auth/[...nextauth]/   # NextAuth handler
 │       ├── auth/debug/           # GET - auth debug info
@@ -123,7 +141,18 @@ src/
 │       ├── injuries/             # GET, POST
 │       ├── injuries/[id]/notes/  # POST (injury follow-up notes)
 │       ├── integrations/         # Fitbit integration endpoints
-│       └── migrate/              # POST (one-time schema migrations, dev only)
+│       ├── migrate/              # POST (one-time schema migrations, dev only)
+│       ├── checkins/             # GET (weeks=N), POST (upsert by date — runs goal engine inline)
+│       ├── checkins/[id]/        # GET, PATCH (R2/R8)
+│       ├── recommendations/      # GET (status filter), POST (R8 — engine output)
+│       ├── recommendations/[id]/ # GET, PATCH (status transitions)
+│       ├── recommendations/[id]/apply/   # POST — R10 dispatcher writes GameplanChange + flips status
+│       ├── recommendations/refresh/      # POST — manual engine re-run, no CheckIn (R8)
+│       ├── lifestyle-targets/    # GET (?programId=), POST/upsert per spec §7 (R6)
+│       ├── lifestyle-logs/       # GET (from/to/keys), POST upsert by [userId, date, key] (R9)
+│       ├── gameplan-changes/     # GET (audit list), POST (Planning Mode session log) (R10)
+│       ├── gameplan-changes/[id]/undo/   # POST — re-runs dispatcher inverse + reverts rec status (R10)
+│       └── workouts/from-library/        # POST — creates Workout source=SINGLE_LIBRARY from registry (R15)
 ├── components/
 │   ├── SessionProvider.tsx        # NextAuth SessionProvider wrapper
 │   ├── OfflineSyncProvider.tsx    # Offline queue sync context
@@ -138,8 +167,11 @@ src/
 │   │   ├── ThemedRestTimer.tsx    # Timer (bar/radial/text) per theme config
 │   │   ├── ThemedTexture.tsx      # Background texture overlay (svg-inline/css/none)
 │   │   └── ThemePickerModal.tsx   # First-visit theme selection modal
+│   ├── templates/                  # R13 — gameplan template wizard primitives
+│   │   └── CustomizationInputRenderer.tsx  # select/multi/number/text/boolean/date dispatcher + validateAnswer
 │   └── ui/
 │       ├── BottomNav.tsx          # 5-tab bottom navigation with themed active indicators
+│       ├── LogActivitySheet.tsx   # +Log FAB bottom sheet (Lifting/Stretch/HIIT/LISS/Class/Custom/Library)
 │       ├── Nav.tsx                # Legacy top nav bar (client, no longer in layout)
 │       ├── Card.tsx               # Container with theme-aware border-radius
 │       ├── SectionHeader.tsx      # Section title + optional action
@@ -164,23 +196,58 @@ src/
 │   ├── prisma.ts                 # Singleton PrismaClient (PrismaPg adapter)
 │   ├── auth.ts                   # NextAuth config (Google, Prisma adapter)
 │   ├── auth-helpers.ts           # getAuthUserId(), requireAuth(), requireAuthUserId()
-│   ├── demo-user.ts             # Demo user fallback for dev
-│   ├── offline-queue.ts         # Offline workout queue (localStorage + sync)
-│   ├── draft-store.ts           # Workout draft localStorage manager (24h TTL)
-│   ├── progression.ts           # Progression logic (1RM calc, stall detection, suggestions)
-│   ├── theme.ts                 # Theme utilities (CSS variable helpers, chart theme)
-│   └── program-engine/          # Deterministic program generation engine
-│       ├── index.ts             # Entry point: generate(), generateQuick()
-│       ├── types.ts             # ProgramConfig, ProgramBlueprint, CategorySlot, MovementCategory, etc.
-│       ├── schedule-builder.ts  # Split suggestion + block periodization
-│       ├── category-mapper.ts   # Slot trimming, injury/limitation adjustments
-│       ├── exercise-selector.ts # Fills slots with primary + alternatives from exercise library
-│       ├── progression.ts       # Rep ranges, RPE, sets, progression type assignment
-│       ├── templates.ts         # 12 preset ProgramConfig templates (beginner → advanced)
-│       ├── splits.ts            # 6 split definitions with category slots per day
-│       ├── categories.ts        # Movement taxonomy, muscle mappings, injury rules
-│       ├── volume.ts            # Weekly volume targets, phase modifiers, recovery computation
-│       └── exercise-pools.ts    # DB exercise → engine MappedExercise enrichment
+│   ├── demo-user.ts              # Demo user fallback for dev
+│   ├── offline-queue.ts          # Offline workout queue (localStorage + sync)
+│   ├── draft-store.ts            # Workout draft localStorage manager (24h TTL)
+│   ├── progression.ts            # Progression logic (1RM calc, stall detection, suggestions)
+│   ├── theme.ts                  # Theme utilities (CSS variable helpers, chart theme)
+│   ├── workout-library.ts        # R15 — 8-entry single-workout registry
+│   ├── program-engine/           # Deterministic program generation engine (12 engine templates)
+│   │   ├── index.ts              # Entry point: generate(), generateQuick()
+│   │   ├── types.ts              # ProgramConfig, ProgramBlueprint, CategorySlot, etc.
+│   │   ├── schedule-builder.ts   # Split suggestion + block periodization
+│   │   ├── category-mapper.ts    # Slot trimming, injury/limitation adjustments
+│   │   ├── exercise-selector.ts  # Fills slots from exercise library
+│   │   ├── progression.ts        # Rep ranges, RPE, sets, progression type assignment
+│   │   ├── templates.ts          # 12 preset ProgramConfig templates
+│   │   ├── splits.ts             # 6 split definitions with category slots per day
+│   │   ├── categories.ts         # Movement taxonomy, muscle mappings, injury rules
+│   │   ├── volume.ts             # Weekly volume targets, phase modifiers
+│   │   └── exercise-pools.ts     # DB exercise → engine MappedExercise enrichment
+│   ├── goal-engine/              # R8–R11 — goal/recommendation engine
+│   │   ├── index.ts              # runEngine() orchestrator + persistRecommendations / expirePriorPending
+│   │   ├── types.ts              # EngineState, GoalSnapshot, LifestyleSnapshot, RecommendationDraft
+│   │   ├── rate-math.ts          # Rolling avg, polyfit, weeklyRate, projectedHitDate, Epley 1RM
+│   │   ├── feasibility.ts        # Per-goal-kind sustainable / aggressive / unrealistic bands (spec §8.3)
+│   │   ├── series.ts             # buildDailySeries() + setsToE1RMSeries() (LOCF + rolling7 + expected)
+│   │   ├── lifestyle-variables.ts # 15-variable registry per spec §7 (R9)
+│   │   └── rules/                # 9 spec §8.4 rule modules (engine-complete after R11)
+│   │       ├── index.ts          # RULE_REGISTRY + applyRules (severity-sorted cap of 3)
+│   │       ├── behind-target.ts          # R8
+│   │       ├── ahead-target.ts           # R8
+│   │       ├── adherence-low.ts          # R8
+│   │       ├── plateau-detected.ts       # R8
+│   │       ├── lifestyle-streak-broken.ts # R9
+│   │       ├── pain-flag.ts              # R9
+│   │       ├── adherence-low-streak.ts   # R10 (cross-week)
+│   │       ├── refeed-due.ts             # R11 (Lean Out)
+│   │       └── deload-shift.ts           # R11
+│   └── program-templates/        # R13 — 8 spec §3.1 gameplan templates
+│       ├── index.ts              # programTemplates registry + getTemplateBySlug + R12 compat surface
+│       ├── types.ts              # ProgramTemplate, BlockTemplate, DayTemplate, ExerciseSlot,
+│       │                         #   SlotParameters, NutritionTarget, BenchmarkTarget,
+│       │                         #   CustomizationInput, EngineWarning, GameplanLifestylePick
+│       ├── resolver.ts           # ExerciseResolver + buildExerciseNotes (validates names → ids)
+│       ├── apply-customizations.ts # 4-pass post-clone — start date / nutrition / 1RM scaling / injury subs
+│       ├── evaluate-warnings.ts  # Per-template warning trigger branches
+│       ├── first-90-days.ts      # 8 fully-authored templates: blocks, days, slots,
+│       ├── size-and-strength.ts  #   per-block params, nutrition, benchmarks,
+│       ├── lean-out.ts           #   customization inputs, engine warnings,
+│       ├── powerbuilder.ts       #   default lifestyle picks (3 per spec §7),
+│       ├── busy-parent.ts        #   defaultRefeedCadence (Lean Out only)
+│       ├── athletic-foundations.ts
+│       ├── comeback.ts
+│       └── longevity.ts
 ├── providers/
 │   └── ThemeProvider.tsx          # Theme context, CSS var application, first-visit picker
 ├── themes/
@@ -235,11 +302,29 @@ prisma/
 
 ### New Models (Architecture Redesign)
 - **ActivityLog** → non-lifting activities (STRETCH/HIIT/LISS/CLASS/CUSTOM), durationMin, intensity (LIGHT/MODERATE/HARD), distanceKm, avgHeartRate, caloriesBurned, instructor, studio, notes
-- **IntegrationData** → external data from FITBIT/APPLE_HEALTH/GARMIN/MANUAL, metricType, value, date, rawPayload
+- **IntegrationData** → external data from FITBIT/APPLE_HEALTH/GARMIN/MANUAL/DERIVED (R9 added DERIVED), metricType, value, date, rawPayload
 - **UserMetricTarget** → editable goal targets (metricKey like "body_weight"/"bench_1rm"/"avg_steps"), targetValue, unit, optional programId scope. Unique on [userId, metricKey, programId]
 - **ScheduleOverride** → temporary schedule modifications (scope: TODAY_ONLY/THIS_WEEK/THIS_WEEK_FORWARD), action (SKIP/SWAP/REPLACE/REDUCE_DAYS), weekNumber, dayOfWeek, JSON payload
 - **StretchRoutine** → configurable stretch sequences with name, description
 - **StretchRoutineItem** → name, durationSeconds, bilateral flag, sortOrder, optional exerciseId link
+
+### Gameplan v2 Models (R6–R15)
+- **CheckIn** (R2/R6) → weekly self-report. Fields: energy / sleepQuality / soreness / stress / motivation (1–5), liftAdherence / cardioAdherence / nutritionAdherence (% 0–100), wins / struggles / notes, optional blockId. Unique on [userId, date]. Back-relation to `Recommendation`. POSTing one runs the goal engine inline and returns `{ checkIn, recommendations }`.
+- **LifestyleTarget** (R6) → per-(user, programId, key) target row. Stable key like "sleep_hours_min" / "stress_max" / "protein_g". `value` + `unit` + `comparator` ("gte" | "lte" | "eq") drive in-band checks on dashboard cards.
+- **LifestyleLog** (R9) → daily log per spec §4.5. `[userId, date, variableKey]` uniqueness, one of `numValue` or `textValue` set, source from `IntegrationSource`. Daily-cadence variables fill every day; weekly write to the week's last day; as-needed (pain_check) leave gaps.
+- **Recommendation** (R8) → goal engine output. Kind enum (9 values: behind_target / ahead_target / adherence_low / plateau_detected / lifestyle_streak_broken / pain_flag / adherence_low_streak / refeed_due / deload_shift), status (pending/applied/dismissed/expired), severity (info/warning/urgent), title / body / suggestedField / suggestedValue / snapshotData (JSON). Indexed on [userId, status]. expirePriorPending() runs before each engine fire so only the latest run's pending rows surface.
+- **GameplanChange** (R10) → audit row per spec §4.3. source (CHECK_IN_APPLY | PLANNING_MODE | MANUAL_EDIT), field (dotted path like "nutrition.calories"), oldValue / newValue (JSON), reason, optional recommendationId. Append-only — undoing an undo walks the chain rather than mutating history.
+
+### Schema additions on existing models
+- **Program** → `gameplanKind String?` (R11) — "lean-out" / "size-and-strength" / etc. mapping into the program-templates registry. Drives engine kind-gated rules (refeed_due) and the Header badge.
+- **Program** → `maintenanceCalories Int?` (R6) — TDEE estimate driving picker NutritionCard math.
+- **Block** → `weekStart Int?`, `weekEnd Int?` (R13) — program-week boundaries authored by templates; coexist with `blockNumber` + `durationWeeks`.
+- **Block** → `refeedWeeks Int[]` (R6) — 1-indexed weeks within the block. Lean Out templates seed this with `[4, 8]` per block.
+- **BlockDay** → `dayOfWeek Int?` (R13) — 1-indexed weekday slot used by templates; coexists with `dayNumber`.
+- **BlockDayExercise** → `targetRir Int?` (R13), `variants String[]` (R6).
+- **NutritionTarget** → `programId String?`, `notes String?` (R13) — program-scoped targets + qualitative calorie descriptors ("maintenance+200").
+- **ProgramBenchmark** → `metric String?`, `notes String?` (R13).
+- **Workout** → `source WorkoutSource?` (R15) — enum STANDALONE / GAMEPLAN / SINGLE_LIBRARY. Defaults to GAMEPLAN; `/log/library` workouts tag SINGLE_LIBRARY so they don't count toward adherence.
 
 ## Design System — Multi-Theme Architecture
 
@@ -393,6 +478,22 @@ NEXTAUTH_SECRET=...                    # Session encryption
 - **PWA support** — `next-pwa` configured in `next.config.mjs`, offline fallback page at `/public/offline.html`
 - **Nutrition tracking** — Full food diary with search (text + barcode), custom food entry, daily macro totals, nutrition targets, meal plans
 
+### R0–R15 Patterns (Gameplan v2 + Goal Engine)
+- **Gameplan dashboard** (`/gameplan`) — Active program canvas (R5). Header (with R12 gameplanKind badge) + Today card + Week strip + sub-tabs Training / Nutrition / Lifestyle. Lifestyle tab renders Sleep / Stress / Protein cards driven by `LifestyleTarget` rows + `LifestyleLog` entries (R9), each card has an inline 1-tap quick-log control (`LifestyleQuickLog`).
+- **Gameplan picker** (`/gameplan/new`) — Step1Welcome's primary CTA routes to `/gameplan/new/templates` (R14); secondary "Or use the questionnaire" link re-enters the engine 5-step flow (R4) at step 2; "Advanced setup" footer link unchanged.
+- **Templates flow** (`/gameplan/new/templates`) — Lists 8 spec §3.1 gameplan templates from `programTemplates` (R13). Card → `/gameplan/new/templates/[slug]/customize` (R14). Wizard walks `template.customizationInputs`, surfaces engine warnings on review, posts to `/api/programs/clone { templateSlug, customizationAnswers }`. Draft persists per slug (24h TTL).
+- **Clone API** (`POST /api/programs/clone`) — Two paths (R13): `templateSlug` flow deep-clones the seeded template Program (under templates@fittrack.system user) onto the user, seeds 3 LifestyleTarget rows, runs `applyCustomizations` (start date / nutrition from bodyweight / 1RM scaling / injury subs). Legacy `template`-object path preserved.
+- **Planning Mode** (`/gameplan/[id]/planning`) — Sandbox over Program / Blocks / Goals / NutritionTarget / LifestyleTargets (R7). Diff vs original snapshot drives `DiffSummaryStrip` + `ApplyModal` + sequential `applyDiff` PATCH orchestration. Apply writes one `GameplanChange` row per session (R10); UndoToast posts inverse PATCHes. R15 added the `GameplanKindEditor` to the Goals tab.
+- **Recent changes panel** (`RecentChangesPanel`) — Read-only audit list above the ConfirmBar in Planning Mode (R10). Pulls last 10 `GameplanChange` rows for the program with field / delta / source / reason / timestamp.
+- **Check-in flow** (`/checkin`) — Weekly self-report (R2). On POST `/api/checkins`, the goal engine runs synchronously via `runEngine` + `expirePriorPending` + `persistRecommendations`, returning `{ checkIn, recommendations }`. Engine errors are caught — the check-in still saves. Submitted view shows `LifestyleWeekRow` + `RecommendationStub` + free-text recap.
+- **Recommendation feed** (`RecommendationStub`) — Renders pending Recommendation rows (R8/R10). Apply button hits `POST /api/recommendations/[id]/apply` (R10 dispatcher: `nutrition.calories` / `nutrition.protein` / `lifestyle.{key}.target` / `goal.targetDate`). Toast.success surfaces the field/oldValue/newValue + Undo affordance posting to `/api/gameplan-changes/[id]/undo`. Unknown fields fall back to "Open in Planning Mode."
+- **Recommendation banner** — On Planning Mode, when `?recommendationId=` is in the URL, `RecommendationBanner` fetches and surfaces the rec inline so the dashboard → Planning hand-off shows what the user clicked.
+- **Goal Engine** (`src/lib/goal-engine/`) — Pure-math modules (rate-math, feasibility, series, lifestyle-variables) are browser-safe; only `index.ts` touches Prisma. `runEngine` hydrates `EngineState` (goals + adherence + lifestyle + recentRecommendations + nextBlock + deficit + gameplanKind), runs `RULE_REGISTRY`, severity-sorts and caps at 3 drafts, returns `{ drafts, state }`. All 9 spec §8.4 rules ship.
+- **Program templates module** (`src/lib/program-templates/`) — 8 fully-authored gameplan templates (R13). Each carries blocks × days × slots × per-block params + spec §7 default lifestyle picks + (Lean Out) refeed cadence + customization inputs + warnings. Resolved against the live Exercise library at seed time (`scripts/seed-program-templates.ts`).
+- **Workout library** (`src/lib/workout-library.ts`) — 8 curated one-offs (R15). `POST /api/workouts/from-library` resolves slot names case-insensitively, creates Workout with `source=SINGLE_LIBRARY`. Skipped exercises (un-resolvable names) surface as info toasts. Reachable from `/log/library` and the `LogActivitySheet` "Single workout" tile.
+- **Progress consolidation** — Charts page (`/progress/charts`, R15) aggregates body weight / weekly volume / sleep / protein in one view. `/progress/calendar` and `/progress/injuries` host content moved from legacy `/calendar` and `/injuries`. `/progress/check-ins` history list (R11) joins CheckIn × Recommendation × GameplanChange rows client-side for full audit display.
+- **Audit trail discipline** — Every plan mutation (rec apply, Planning Mode commit, manual edit) writes a `GameplanChange` row. Recommendation apply transitions are append-only — undoing an apply writes a new `GameplanChange` of source MANUAL_EDIT and flips the original rec back to `pending`. The `/progress/check-ins` page reads this audit to show "applied 2 changes" pills per check-in.
+
 ## Build Plan
 
 ### Phase 1: Scaffold (COMPLETE)
@@ -486,16 +587,44 @@ NEXTAUTH_SECRET=...                    # Session encryption
 7. **`ThemedOverlays` component** — Fixed-position decorative overlays rendered conditionally per theme (spiral binding, title-block, HI score, SYS:// watermark, IRON • CHALK stamp, FRESH tape, specimen barcode). Rendered once in `layout.tsx`.
 8. **`data-theme` attribute** — `ThemeProvider` sets `data-theme="<id>"` on `<html>`; ornamental chrome lives in `[data-theme="X"]` blocks in `globals.css` rather than being React-conditional.
 
+### Phase 8 — Gameplan v2 Rework (R0–R15, COMPLETE)
+
+A 16-round phased rework that closed every gap in `docs/fittrack-v2-spec.md`. Each round shipped on its own branch (`R<N>-<topic>`) with strict 3-stage scope discipline and explicit hot-question confirmation before code writes.
+
+| Round | Branch | Scope |
+|-------|--------|-------|
+| R0 | `R0-theme-contract` | Theme tokens / CSS-var contract |
+| R1 | `R1-routing` | Route stub layout |
+| R2 | `R2-checkin-ui` | `/checkin` weekly self-report UI (visual stubs) |
+| R3 | `R3-logger-ui` | Workout logger refresh at `/log/[workoutId]` |
+| R4 | `R4-picker-ui` | Gameplan picker UI at `/gameplan/new` (engine-template 5-step) |
+| R5 | `R5-gameplan-dashboard` | Active program dashboard at `/gameplan` |
+| R6 | `R6-gameplan-v2-schema` | 4 schema additions + `LifestyleTarget` table + 3 endpoints, resolving R2–R5 stubs |
+| R7 | `R7-planning-mode` | Planning Mode sandbox at `/gameplan/[id]/planning` |
+| R8 | `R8-goal-engine` | Goal engine: 4 launch rules + Recommendation model + UI surfaces |
+| R9 | `R9-lifestyle-logs` | `LifestyleLog` model + 15-variable registry + 2 new rules + inline log UI |
+| R10 | `R10-apply-pipeline` | `GameplanChange` audit + Apply pipeline + `adherence_low_streak` rule |
+| R11 | `R11-engine-complete` | Final 2 rules (`refeed_due` + `deload_shift`) + check-in history view |
+| R12 | `R12-template-seeding` | Gameplan template tagging + lifestyle-pick seeding (thin registry) |
+| R13 | `R13-templates-landing` | Full 8-template module + clone API extension + slug reconciliation |
+| R14 | `R14-picker-rebuild` | `/gameplan/new/templates` + `[slug]/customize` wizard pages |
+| R15 | `R15-backlog-cleanup` | `/log/library` + `/progress/charts` + gameplan-kind editor |
+
+After R15, the spec v2 architecture loop is closed. Remaining work is content authorship (six template `*Fires()` warning branches, exercise library expansion, 5 roadmap gameplans).
+
 ### Future Work
+- Populate `evaluate-warnings.ts` `*Fires()` branches for the 6 stubbed templates (content)
+- Exercise library expansion from `ExercisesSorted_v3.xlsx` (content)
+- 5 roadmap gameplans per spec §3.2 (content)
 - Notification / reminder system
-- Mobile responsiveness pass
 - Fitbit OAuth integration completion
 - AI meal plan generation (Anthropic API)
 - Food label scanning (Claude Vision)
-- Calendar meal logging overlay
+- Save-as-library affordance (user-curated single-workout library entries)
+- Edit-gameplanKind UI ships in R15 Planning Mode; a one-shot first-launch nudge for legacy untagged programs is a future polish
 
 ## Current State
-**Phase 1 through Phase 7 are complete.** The app is functional end-to-end with the multi-theme architecture, program builder engine, and a fully differentiated per-theme design language:
+**Phase 1 through Phase 8 (R0–R15) are complete.** The app is functional end-to-end with the multi-theme architecture, program builder engine, fully-shipped goal engine + recommendation pipeline, gameplan template system with clone-and-customize wizard, and a fully differentiated per-theme design language:
 - 5-tab bottom navigation with mobile-first layout
 - 367 exercises seeded, 37+ API routes connected to real Prisma queries
 - All pages fetch from database (no hardcoded data)
@@ -532,4 +661,28 @@ NEXTAUTH_SECRET=...                    # Session encryption
 - **WCAG AA (4.5:1) text contrast on every text × surface combination across all 7 themes** (min 4.64:1); surface deltas ≥1.25:1 so containers stand off the bg
 - First-visit theme picker modal + settings page theme switcher
 
-**Important:** After schema changes, run `npx prisma db push` to create new tables in the database. The app is resilient to missing new tables (graceful degradation) but features like metric targets and stretch routines require the tables to exist.
+**Phase 8 (R0–R15) additions on top of the above:**
+- 5-tab BottomNav reshuffled to spec v2 §5: Gameplan / Progress / +Log / Nutrition / Settings (was Home / Program / Log / Nutrition / Calendar)
+- Active program dashboard at `/gameplan` with sub-tabs Training / Nutrition / Lifestyle; gameplan-kind badge in header
+- Weekly check-in flow at `/checkin` — runs the goal engine inline on submit and returns recommendations
+- Goal engine — 9 spec §8.4 rules shipped (`behind_target`, `ahead_target`, `adherence_low`, `plateau_detected`, `lifestyle_streak_broken`, `pain_flag`, `adherence_low_streak`, `refeed_due`, `deload_shift`); pure-math modules browser-safe; severity-sorted cap of 3 drafts per run
+- Recommendation system — Recommendation table + status pipeline (pending → applied / dismissed / expired); Apply dispatcher writes through to nutrition / lifestyle / goal-date fields and flips status atomically; toast Undo posts inverse change
+- Lifestyle logging — 15-variable registry (sleep, steps, HRV, stress, protein hits, etc.) + LifestyleLog table + per-variable inline 1-tap log control on `/gameplan` lifestyle cards
+- Audit trail — GameplanChange table captures every plan mutation (CHECK_IN_APPLY / PLANNING_MODE / MANUAL_EDIT); Planning Mode renders last 10 in `RecentChangesPanel`
+- Planning Mode (`/gameplan/[id]/planning`) — sandbox with diff vs original, sequential apply orchestration, undo toast, gameplan-kind editor (R15)
+- 8 fully-authored gameplan templates in `src/lib/program-templates/` — first-90-days, size-and-strength, lean-out, powerbuilder, busy-parent, athletic-foundations, comeback, longevity. Each carries blocks × days × slots × per-block parameters + spec §7 lifestyle picks + customization inputs + engine warnings
+- Template wizard at `/gameplan/new/templates` + `[slug]/customize` with draft persistence + 4-pass `applyCustomizations` (start date / nutrition from bodyweight / 1RM scaling / injury subs)
+- Single-workout library at `/log/library` — 8 curated one-offs; tagged `Workout.source=SINGLE_LIBRARY` so they don't count toward Gameplan adherence
+- Progress consolidation — `/progress/charts` (4-chart aggregator), `/progress/calendar`, `/progress/check-ins` (audit-aware history), `/progress/injuries` all under one parent
+- Gameplan-kind editor in Planning Mode Goals tab — dropdown of 8 templates + None; PATCH `/api/programs/[id]` validates against the registry
+
+**Important:** After schema changes, run `npx prisma db push` to create new tables in the database. The app is resilient to missing new tables (graceful degradation) but R6–R15 features (check-ins, recommendations, lifestyle logs, gameplan changes, gameplanKind tag) require the additions to exist. To seed the 8 gameplan templates against a fresh DB:
+
+```powershell
+$env:DATABASE_URL="postgresql://..."
+npx prisma db push
+npx tsx scripts/add-missing-template-exercises.ts
+npx tsx scripts/seed-program-templates.ts
+```
+
+The seeder validates every exercise name against the live library and fails fast with a complete missing-name list if any don't resolve. No DB writes happen until validation passes.
