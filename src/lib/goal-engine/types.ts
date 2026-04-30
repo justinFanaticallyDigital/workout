@@ -20,12 +20,15 @@ export type GoalKind =
   | "bodycomp"
   | "custom";
 
-/** R8 — recommendation kinds. Mirrors Prisma RecommendationKind enum. */
+/** R8 — recommendation kinds. Mirrors Prisma RecommendationKind enum.
+ *  R9 adds lifestyle_streak_broken + pain_flag. */
 export type RecommendationKind =
   | "behind_target"
   | "ahead_target"
   | "adherence_low"
-  | "plateau_detected";
+  | "plateau_detected"
+  | "lifestyle_streak_broken"
+  | "pain_flag";
 
 /** R8 — recommendation severity, drives card tone. */
 export type RecommendationSeverity = "info" | "warning" | "urgent";
@@ -99,8 +102,41 @@ export interface AdherenceSnapshot {
   ratio: number;
 }
 
+/** R9 — single LifestyleLog point in the engine's last-7-day window. */
+export interface LifestyleLogPoint {
+  /** ISO YYYY-MM-DD. */
+  date: string;
+  /** Numeric value, or scale_1_5 / scale_0_10 / enum_gyr derived number. */
+  value: number | null;
+  /** Original textValue when present (e.g. "GREEN"). */
+  textValue?: string | null;
+}
+
+/** R9 — per-tracked-variable snapshot. The engine populates one of
+ *  these per LifestyleTarget row in scope; rules iterate over the
+ *  set to fire lifestyle-streak-broken / pain-flag. */
+export interface LifestyleSnapshot {
+  /** Lifestyle variable key — see lifestyle-variables.ts registry. */
+  key: string;
+  /** Display label resolved from the registry. */
+  display: string;
+  /** Target value the user committed to (LifestyleTarget.value). */
+  targetValue: number;
+  /** Comparator from LifestyleTarget.comparator ("gte" / "lte" / "eq"). */
+  comparator: "gte" | "lte" | "eq";
+  /** Target unit (e.g. "hours", "min"). */
+  unit: string;
+  /** Last 7 days of logs for this variable, oldest → newest. Gaps
+   *  collapse to absent points; the rule treats absence as miss for
+   *  daily-cadence variables. */
+  points: LifestyleLogPoint[];
+  /** Cadence — daily streak rules differ from weekly. */
+  cadence: "daily" | "weekly" | "as_needed";
+}
+
 /** R8 — engine state. Pre-fetched at the entry-point so rules are
- *  pure functions over plain data (no Prisma in rule modules). */
+ *  pure functions over plain data (no Prisma in rule modules).
+ *  R9 adds the lifestyle slice for streak / pain rules. */
 export interface EngineState {
   userId: string;
   programId: string | null;
@@ -108,6 +144,8 @@ export interface EngineState {
   goals: GoalSnapshot[];
   /** Lifting adherence over past 7 days. */
   adherence: AdherenceSnapshot;
+  /** R9 — lifestyle variable snapshots (one per tracked LifestyleTarget). */
+  lifestyle: LifestyleSnapshot[];
   /** Optional triggering CheckIn id (when running from POST /api/checkins). */
   checkInId?: string | null;
   /** Today's date — passed in for determinism in tests. */

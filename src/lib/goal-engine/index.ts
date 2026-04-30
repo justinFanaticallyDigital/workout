@@ -18,10 +18,19 @@
 // ============================================================================
 
 import type { PrismaClient } from "@/generated/prisma/client";
-import type { EngineState, GoalKind, GoalSnapshot, MetricPoint, RecommendationDraft } from "./types";
+import type {
+  EngineState,
+  GoalKind,
+  GoalSnapshot,
+  LifestyleLogPoint,
+  LifestyleSnapshot,
+  MetricPoint,
+  RecommendationDraft,
+} from "./types";
 import { buildDailySeries, setsToE1RMSeries } from "./series";
 import { feasibilityBand } from "./feasibility";
 import { applyRules } from "./rules";
+import { lifestyleVariable, logValueAsNumber } from "./lifestyle-variables";
 
 // Re-exports for callers (UI files reading buildSeries-style series + feasibility):
 export type {
@@ -36,7 +45,22 @@ export type {
   MetricPoint,
   RecommendationKind,
   RecommendationSeverity,
+  LifestyleSnapshot,
+  LifestyleLogPoint,
 } from "./types";
+export {
+  LIFESTYLE_VARIABLES,
+  lifestyleVariable,
+  logValueAsNumber,
+  meetsTarget,
+} from "./lifestyle-variables";
+export type {
+  LifestyleVariable,
+  LifestyleGroup,
+  LifestyleType,
+  LifestyleCadence,
+  LifestyleSource,
+} from "./lifestyle-variables";
 export { buildDailySeries, setsToE1RMSeries } from "./series";
 export { feasibilityBand, warningFor } from "./feasibility";
 export {
@@ -271,12 +295,91 @@ async function hydrateState(input: RunEngineInput, today: Date): Promise<EngineS
     ratio: scheduled7d > 0 ? completed7d / scheduled7d : 0,
   };
 
+  // R9 — lifestyle snapshot. Build one entry per LifestyleTarget the
+  // user has set (program-scoped + user-wide), populated with the
+  // last 7 days of LifestyleLog rows. Variables not in the registry
+  // are skipped so the rule modules don't have to defend against
+  // unknown keys.
+  const lifestyle = await hydrateLifestyle(prisma, userId, programId, today);
+
   return {
     userId,
     programId,
     goals,
     adherence,
+    lifestyle,
     checkInId: checkInId ?? null,
     today,
   };
+}
+
+/**
+ * Build the engine's lifestyle slice. Reads LifestyleTarget rows
+ * (program-scoped or user-wide) + the last 7 days of LifestyleLog
+ * rows for those keys, then folds each (target, log[]) pair into a
+ * LifestyleSnapshot the rule modules can iterate over.
+ */
+async function hydrateLifestyle(
+  prisma: PrismaClient,
+  userId: string,
+  programId: string | null,
+  today: Date,
+): Promise<LifestyleSnapshot[]> {
+  const sevenDaysAgo = new Date(today.getTime() - 6 * 86400000);
+  sevenDaysAgo.setUTCHours(0, 0, 0, 0);
+  const todayMidnight = new Date(today);
+  todayMidnight.setUTCHours(23, 59, 59, 999);
+
+  const targets = await prisma.lifestyleTarget.findMany({
+    where: {
+      userId,
+      ...(programId ? { OR: [{ programId }, { programId: null }] } : {}),
+    },
+    select: { key: true, value: true, unit: true, comparator: true },
+  });
+  if (targets.length === 0) return [];
+
+  const trackedKeys = targets.map((t) => t.key);
+  const logs = await prisma.lifestyleLog.findMany({
+    where: {
+      userId,
+      variableKey: { in: trackedKeys },
+      date: { gte: sevenDaysAgo, lte: todayMidnight },
+    },
+    orderBy: { date: "asc" },
+    select: { date: true, variableKey: true, numValue: true, textValue: true },
+  });
+
+  const logsByKey = new Map<string, LifestyleLogPoint[]>();
+  for (const l of logs) {
+    const variable = lifestyleVariable(l.variableKey);
+    if (!variable) continue;
+    const value = logValueAsNumber(variable, l.numValue, l.textValue);
+    const arr = logsByKey.get(l.variableKey) ?? [];
+    arr.push({
+      date: l.date.toISOString().slice(0, 10),
+      value,
+      textValue: l.textValue,
+    });
+    logsByKey.set(l.variableKey, arr);
+  }
+
+  const out: LifestyleSnapshot[] = [];
+  for (const t of targets) {
+    const variable = lifestyleVariable(t.key);
+    if (!variable) continue;
+    const cmp = (t.comparator === "gte" || t.comparator === "lte" || t.comparator === "eq")
+      ? t.comparator
+      : variable.defaultComparator;
+    out.push({
+      key: t.key,
+      display: variable.display,
+      targetValue: t.value,
+      comparator: cmp,
+      unit: t.unit,
+      points: logsByKey.get(t.key) ?? [],
+      cadence: variable.targetCadence,
+    });
+  }
+  return out;
 }

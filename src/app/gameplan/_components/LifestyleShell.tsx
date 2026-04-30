@@ -23,6 +23,7 @@ export function LifestyleShell({
   kicker,
   hero,
   chart,
+  inlineLog,
   footer,
 }: {
   name: string;
@@ -33,6 +34,8 @@ export function LifestyleShell({
   kicker: string;
   hero: ReactNode;
   chart: ReactNode;
+  /** R9 — optional quick-log row rendered between chart and footer. */
+  inlineLog?: ReactNode;
   footer: ReactNode;
 }) {
   const { chrome } = useTheme();
@@ -129,6 +132,18 @@ export function LifestyleShell({
       <div style={{ marginTop: 8 }}>{hero}</div>
 
       <div style={{ marginTop: 8 }}>{chart}</div>
+
+      {inlineLog && (
+        <div
+          style={{
+            marginTop: 10,
+            paddingTop: 8,
+            borderTop: "1px dashed rgb(var(--ft-border-faint))",
+          }}
+        >
+          {inlineLog}
+        </div>
+      )}
 
       <div
         style={{

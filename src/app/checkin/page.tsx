@@ -5,6 +5,7 @@ import DetailHeader from "./_components/DetailHeader";
 import PendingCheckInCard from "./_components/PendingCheckInCard";
 import SnapshotSection from "./_components/SnapshotSection";
 import RecommendationStub from "./_components/RecommendationStub";
+import LifestyleWeekRow from "./_components/LifestyleWeekRow";
 import HistoryStrip, { PastCheckInRow } from "./_components/HistoryStrip";
 import CheckInForm from "./_components/CheckInForm";
 import ScreenEmpty from "./_components/ScreenEmpty";
@@ -20,15 +21,25 @@ export default function CheckInPage() {
   const [checkIns, setCheckIns] = useState<CheckIn[]>([]);
   const [view, setView] = useState<View>("loading");
   const [error, setError] = useState<string | null>(null);
+  const [activeProgramId, setActiveProgramId] = useState<string | null>(null);
 
   const load = async () => {
     setError(null);
     try {
-      const res = await fetch("/api/checkins?weeks=12");
+      // R9 — fetch active programId in parallel so the LifestyleWeekRow
+      // can scope LifestyleTarget lookup to the current program.
+      const [res, homeRes] = await Promise.all([
+        fetch("/api/checkins?weeks=12"),
+        fetch("/api/home"),
+      ]);
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data: { checkIns: CheckIn[] } = await res.json();
       const list = data.checkIns ?? [];
       setCheckIns(list);
+      if (homeRes.ok) {
+        const home = await homeRes.json();
+        setActiveProgramId(home?.activeProgram?.id ?? null);
+      }
       if (list.length === 0) {
         setView("empty");
         return;
@@ -110,6 +121,7 @@ export default function CheckInPage() {
       {view === "submitted" && thisWeek && (
         <>
           <SnapshotSection checkIn={thisWeek} priorCheckIns={past} />
+          <LifestyleWeekRow programId={activeProgramId} />
           <RecommendationStub />
           <FreeTextRecap checkIn={thisWeek} onEdit={() => setView("form")} />
         </>

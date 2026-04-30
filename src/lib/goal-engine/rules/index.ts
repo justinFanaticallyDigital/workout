@@ -7,19 +7,21 @@
 // underlying issue (drafts coming out of rules later in the array
 // break ties — order in the registry doubles as a tiebreaker).
 //
-// 4 launch rules per the R8 prompt:
-//   - behind-target
-//   - ahead-target
-//   - adherence-low
-//   - plateau-detected
+// Launch rules:
+//   - behind-target          (R8)
+//   - ahead-target           (R8)
+//   - adherence-low          (R8)
+//   - plateau-detected       (R8)
+//   - lifestyle-streak-broken (R9 — needs LifestyleLog + LifestyleTarget)
+//   - pain-flag              (R9 — fires universally; spec §8.4
+//                             scopes to Comeback but the repo doesn't
+//                             differentiate gameplan templates yet)
 //
-// OMIT-WITH-COMMENT — additional spec §8.4 rules deferred to a
-// follow-on rule pass:
-//   - adherence-low-streak (cross-week state)
-//   - refeed-due (Lean Out template-specific)
-//   - deload-shift (needs Block.scheduledDeloadWeek)
-//   - lifestyle-streak-broken (needs daily LifestyleLog rows)
-//   - pain-flag (needs explicit pain-check input)
+// OMIT-WITH-COMMENT — spec §8.4 rules still deferred:
+//   - adherence-low-streak (cross-week state, needs Recommendation
+//                           history readback per spec §8.5)
+//   - refeed-due (Lean Out template-specific; needs gameplan tag)
+//   - deload-shift (needs Block.scheduledDeloadWeek schema field)
 // ============================================================================
 
 import type { EngineState, RecommendationDraft, RuleFn } from "../types";
@@ -27,6 +29,8 @@ import { behindTarget } from "./behind-target";
 import { aheadTarget } from "./ahead-target";
 import { adherenceLow } from "./adherence-low";
 import { plateauDetected } from "./plateau-detected";
+import { lifestyleStreakBroken } from "./lifestyle-streak-broken";
+import { painFlag } from "./pain-flag";
 
 const RECOMMENDATION_CAP = 3;
 
@@ -35,6 +39,8 @@ export const RULE_REGISTRY: RuleFn[] = [
   aheadTarget,
   adherenceLow,
   plateauDetected,
+  lifestyleStreakBroken,
+  painFlag,
 ];
 
 /**

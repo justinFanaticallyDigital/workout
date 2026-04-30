@@ -32,6 +32,7 @@ import type {
   DailyMetricLite,
   LifestyleTargetLite,
   DailyProteinPoint,
+  LifestyleLogLite,
 } from "./_components/types";
 
 export const dynamic = "force-dynamic";
@@ -82,6 +83,7 @@ export default function GameplanPage() {
   const [overrides, setOverrides] = useState<ScheduleOverride[]>([]);
   const [dailyMetrics, setDailyMetrics] = useState<DailyMetricLite[]>([]);
   const [lifestyleTargets, setLifestyleTargets] = useState<LifestyleTargetLite[]>([]);
+  const [lifestyleLogs, setLifestyleLogs] = useState<LifestyleLogLite[]>([]);
   const [dailyProtein, setDailyProtein] = useState<DailyProteinPoint[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -149,6 +151,7 @@ export default function GameplanPage() {
           overridesRes,
           dailyMetricsRes,
           lifestyleTargetsRes,
+          lifestyleLogsRes,
           dailyProteinRes,
         ] = await Promise.all([
           programId ? fetch(`/api/programs/${programId}`) : Promise.resolve(null),
@@ -162,6 +165,10 @@ export default function GameplanPage() {
             : Promise.resolve(null),
           fetch(`/api/integrations/fitbit/daily?days=${days}`),
           fetch(programId ? `/api/lifestyle-targets?programId=${programId}` : "/api/lifestyle-targets"),
+          // R9 — fetch the same window the cards render so manual
+          // logs can override the Fitbit daily-metric value when both
+          // exist for a date.
+          fetch(`/api/lifestyle-logs?from=${proteinFrom}&to=${proteinTo}`),
           fetch(`/api/nutrition/meals/range?from=${proteinFrom}&to=${proteinTo}`),
         ]);
 
@@ -175,6 +182,7 @@ export default function GameplanPage() {
           overridesData,
           dailyMetricsData,
           lifestyleTargetsData,
+          lifestyleLogsData,
           dailyProteinData,
         ] = await Promise.all([
           programRes?.ok ? programRes.json() : null,
@@ -186,6 +194,7 @@ export default function GameplanPage() {
           overridesRes?.ok ? overridesRes.json() : [],
           dailyMetricsRes.ok ? dailyMetricsRes.json() : [],
           lifestyleTargetsRes.ok ? lifestyleTargetsRes.json() : [],
+          lifestyleLogsRes.ok ? lifestyleLogsRes.json() : { logs: [] },
           dailyProteinRes.ok ? dailyProteinRes.json() : { days: [] },
         ]);
 
@@ -199,6 +208,7 @@ export default function GameplanPage() {
         setOverrides(Array.isArray(overridesData) ? overridesData : []);
         setDailyMetrics(normalizeDailyMetrics(dailyMetricsData));
         setLifestyleTargets(Array.isArray(lifestyleTargetsData) ? lifestyleTargetsData : []);
+        setLifestyleLogs(Array.isArray(lifestyleLogsData?.logs) ? lifestyleLogsData.logs : []);
         setDailyProtein(Array.isArray(dailyProteinData?.days) ? dailyProteinData.days : []);
       } catch (e) {
         if (!cancelled) {
@@ -384,7 +394,16 @@ export default function GameplanPage() {
             programDurationWeeks={home.activeProgram?.durationWeeks ?? null}
             dailyMetrics={dailyMetrics}
             lifestyleTargets={lifestyleTargets}
+            lifestyleLogs={lifestyleLogs}
             dailyProtein={dailyProtein}
+            onLogged={(log) => {
+              setLifestyleLogs((prev) => {
+                const without = prev.filter(
+                  (p) => !(p.variableKey === log.variableKey && p.date === log.date),
+                );
+                return [...without, log].sort((a, b) => a.date.localeCompare(b.date));
+              });
+            }}
           />
         )}
       </div>
