@@ -30,6 +30,13 @@ export function computeDiff(snapshot: PlanningDraft, draft: PlanningDraft): Diff
     });
   if (sp.startDate !== dp.startDate)
     out.push({ kind: "program", field: "startDate", oldValue: sp.startDate, newValue: dp.startDate });
+  // R15: gameplanKind diffs flow through the existing program-PATCH
+  // pipeline; null normalizes to undefined for comparison so legacy
+  // programs that haven't been tagged don't churn the diff.
+  const skKind = sp.gameplanKind ?? null;
+  const dkKind = dp.gameplanKind ?? null;
+  if (skKind !== dkKind)
+    out.push({ kind: "program", field: "gameplanKind", oldValue: skKind, newValue: dkKind });
 
   // Block-level diffs.
   const sBlocks = new Map(snapshot.blocks.map((b) => [b.id, b]));

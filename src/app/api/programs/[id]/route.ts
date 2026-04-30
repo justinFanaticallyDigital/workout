@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireAuth } from "@/lib/auth-helpers";
 import type { ProgramStatus } from "@/generated/prisma/enums";
+import { isValidGameplanKind } from "@/lib/program-templates";
 
 export async function PATCH(
   request: NextRequest,
@@ -20,6 +21,18 @@ export async function PATCH(
     return NextResponse.json({ error: "Program not found" }, { status: 404 });
   }
 
+  // R15 — Planning Mode's GameplanKindEditor PATCHes this field. Accept
+  // null (clear the tag) or a string that maps onto the program-templates
+  // registry; reject unknown slugs so a typo doesn't silently land.
+  if (body.gameplanKind !== undefined && body.gameplanKind !== null) {
+    if (typeof body.gameplanKind !== "string" || !isValidGameplanKind(body.gameplanKind)) {
+      return NextResponse.json(
+        { error: `Unknown gameplanKind: ${String(body.gameplanKind)}` },
+        { status: 400 },
+      );
+    }
+  }
+
   // If setting to active, pause any currently active program first
   if (body.status === "active") {
     await prisma.program.updateMany({
@@ -35,6 +48,7 @@ export async function PATCH(
       ...(body.description !== undefined && { description: body.description }),
       ...(body.status !== undefined && { status: body.status as ProgramStatus }),
       ...(body.durationWeeks !== undefined && { durationWeeks: body.durationWeeks }),
+      ...(body.gameplanKind !== undefined && { gameplanKind: body.gameplanKind }),
     },
   });
 
