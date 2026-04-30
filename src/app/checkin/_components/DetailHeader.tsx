@@ -7,8 +7,9 @@ import type { CheckIn } from "../types";
 
 /**
  * Page header for /checkin (and /checkin/[id]). Per the prototype's
- * DetailHeader. Status pill defaults to "Reviewed" since recommendation-
- * driven Apply/Dismiss flows aren't wired yet (R8).
+ * DetailHeader. Status pill defaults to "Reviewed". R8: implemented
+ * in goal-engine — Apply / Dismiss / Open-in-Planning-Mode actions
+ * live in `RecommendationStub` (next sibling component on the page).
  */
 export default function DetailHeader({
   checkIn,

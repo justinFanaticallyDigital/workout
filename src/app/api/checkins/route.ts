@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireAuth } from "@/lib/auth-helpers";
+import { runEngine, persistRecommendations, expirePriorPending } from "@/lib/goal-engine";
 
 export const dynamic = "force-dynamic";
 
@@ -74,7 +75,39 @@ export async function POST(req: NextRequest) {
       create: { userId, date, ...data },
       update: data,
     });
-    return NextResponse.json({ checkIn }, { status: 201 });
+
+    // R8: run the Goal Engine synchronously so the dashboard /
+    // checkin reply has fresh recommendations inline. Failures here
+    // don't block the check-in itself — the user's reflection saved
+    // either way; a degraded engine just returns no recommendations.
+    let recommendations: unknown[] = [];
+    try {
+      const activeProgram = await prisma.program.findFirst({
+        where: { userId, status: "active" },
+        select: { id: true },
+      });
+      const programId = activeProgram?.id ?? null;
+      await expirePriorPending(prisma, userId, programId);
+      const { drafts } = await runEngine({
+        userId,
+        programId,
+        prisma,
+        checkInId: checkIn.id,
+        today: new Date(),
+      });
+      const persisted = await persistRecommendations(prisma, userId, programId, checkIn.id, drafts);
+      if (persisted.length > 0) {
+        recommendations = await prisma.recommendation.findMany({
+          where: { id: { in: persisted.map((r) => r.id) } },
+          orderBy: { createdAt: "desc" },
+        });
+      }
+    } catch {
+      // Engine failure shouldn't kill the check-in write — degrade
+      // gracefully and return an empty recommendations list.
+    }
+
+    return NextResponse.json({ checkIn, recommendations }, { status: 201 });
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);
     return NextResponse.json({ error: `failed to save check-in: ${msg}` }, { status: 500 });

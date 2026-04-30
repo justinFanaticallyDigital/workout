@@ -394,9 +394,7 @@ export default function PlanningPage({ params }: { params: Promise<{ id: string 
         </div>
       )}
 
-      {recommendationId && (
-        <RecommendationBanner message="Engine recommendation pre-staged. Review the highlighted field below and Apply when ready." />
-      )}
+      {recommendationId && <RecommendationBanner recommendationId={recommendationId} />}
 
       <DiffSummaryStrip diff={diff} />
       <SectionTabs active={activeTab} onChange={setActiveTab} />

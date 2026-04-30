@@ -12,6 +12,8 @@
 import { Reenie, Archivo, Marker } from "@/app/gameplan/_components/typography";
 import { PlanningCard } from "./PlanningCard";
 import { PlanningDashed } from "./Ornaments";
+import { feasibilityBand } from "@/lib/goal-engine/feasibility";
+import type { GoalKind } from "@/lib/goal-engine/types";
 import type { DraftGoal } from "./types";
 
 interface ChangeMap {
@@ -37,20 +39,24 @@ export function PlanningGoalCard({
   const deltaAbs = Math.abs(deltaNum).toFixed(deltaNum % 1 === 0 ? 0 : 1);
   const unit = goal.targetUnit ?? "";
 
-  // Status — derived from rate. If targetDate set, weeks = (target - now)/7d.
-  const weeks = goal.targetDate
-    ? Math.max(1, (new Date(goal.targetDate).getTime() - Date.now()) / (7 * 86400000))
-    : 1;
-  const ratePerWk = deltaNum / weeks;
-  const ratePctOfStart = start > 0 ? Math.abs(ratePerWk) / start : 0;
-  // Body-weight goals: 0.7%/wk is the spec §9.4 caution threshold.
-  // Strength: 1lb/wk on a >200lb lift is sustainable.
+  // R8: feasibility band derives from goal-engine. Replaces the prior
+  // inline `ratePctOfStart` heuristic. The engine returns the same
+  // sustainable / aggressive / unrealistic tiers but applies per-goal-
+  // kind thresholds (spec §8.3) — body-weight goals scale to %BW; strength
+  // goals scale to lift size; etc.
+  const todayIso = new Date().toISOString().slice(0, 10);
+  const startIso = todayIso;
+  const targetIso = goal.targetDate ?? new Date(Date.now() + 84 * 86400000).toISOString().slice(0, 10);
+  const band = feasibilityBand({
+    kind: goal.type as GoalKind,
+    startValue: start,
+    targetValue: target,
+    startDate: startIso,
+    targetDate: targetIso,
+  });
+  const ratePerWk = band.ratePerWeek;
   const status: "sustainable" | "aggressive" | "danger" =
-    ratePctOfStart > 0.012
-      ? "danger"
-      : ratePctOfStart > 0.007
-      ? "aggressive"
-      : "sustainable";
+    band.status === "unrealistic" ? "danger" : band.status;
   const statusColor =
     status === "aggressive"
       ? "rgb(var(--ft-core))"

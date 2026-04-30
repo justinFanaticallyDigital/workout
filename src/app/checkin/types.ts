@@ -3,9 +3,10 @@
  * GET /api/checkins?weeks=N (returns { checkIns: CheckIn[] }) and
  * GET /api/checkins/[id] (returns { checkIn: CheckIn }).
  *
- * Mirrors the Prisma CheckIn model exactly. The prototype's
- * snapshot/recommendations concepts are intentionally absent from
- * this shape; recommendation feed lands with the Goal Engine in R8.
+ * Mirrors the Prisma CheckIn model exactly. R8: implemented in
+ * goal-engine. Recommendations are surfaced via /api/recommendations
+ * and rendered by the RecommendationStub component (consumed by
+ * /checkin and /checkin/[id]).
  */
 export interface CheckIn {
   id: string;

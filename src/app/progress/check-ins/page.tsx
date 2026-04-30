@@ -13,9 +13,11 @@ export default function ProgressCheckInsPlaceholder() {
           Check-in history
         </h1>
         <p className="text-ft-on-bg-sec font-body text-sm mt-3 leading-relaxed">
-          Coming soon — list of past <code>GameplanCheckIn</code>
-          records with snapshot + recommendations + applied changes.
-          Manual off-cycle trigger lives here. Built alongside R8.
+          Coming soon — full list view of past check-ins with snapshot +
+          per-check-in Recommendation rows + applied changes. R8 ships
+          the engine + the inline recommendation feed; the dedicated
+          history list lands in a later UI pass. For now, /checkin
+          shows the most recent check-in plus its recommendations.
         </p>
       </div>
     </div>
