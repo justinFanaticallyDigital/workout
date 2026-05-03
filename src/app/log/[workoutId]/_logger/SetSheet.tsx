@@ -92,15 +92,23 @@ export default function SetSheet({
   const set = (f: Field, v: number) => {
     if (f === "weight") setWeight(v);
     else if (f === "reps") setReps(v);
-    else setRpe(Math.max(1, Math.min(10, v)));
+    else setRpe(Math.max(0, Math.min(10, v)));
   };
 
   const onPad = (k: string) => {
     if (k === "clear") return set(focus, 0);
-    if (k === "back") return set(focus, Math.floor(get(focus) / 10));
+    if (k === "back") {
+      if (focus === "rpe") return set("rpe", 0);
+      return set(focus, Math.floor(get(focus) / 10));
+    }
     const cur = get(focus);
-    const next = cur * 10 + Number(k);
-    set(focus, focus === "rpe" ? Math.min(10, next) : next);
+    if (focus === "rpe") {
+      const digit = Number(k);
+      if (cur === 1 && digit === 0) return set("rpe", 10);
+      if (digit === 0) return;
+      return set("rpe", digit);
+    }
+    set(focus, cur * 10 + Number(k));
   };
 
   const matchLast = () => {
@@ -113,7 +121,7 @@ export default function SetSheet({
     onCommit({
       weight,
       reps,
-      rir: 10 - rpe,
+      rir: rpe === 0 ? null : 10 - rpe,
     });
   };
 
