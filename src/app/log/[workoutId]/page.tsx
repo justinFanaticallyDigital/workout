@@ -416,12 +416,17 @@ export default function ActiveWorkoutPage({
   const [swapIndex, setSwapIndex] = useState<number | null>(null);
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Auto-save to localStorage (debounced 2s)
+  // Auto-save to localStorage (debounced 2s). Includes "new-blank" so
+  // improv workouts also survive a refresh — the key is stable per URL.
   const saveToLocalStorage = useCallback(() => {
-    if (!workoutId || workoutId === "new-blank") return;
+    if (!workoutId) return;
     const key = `workout-draft-${workoutId}`;
     const data = { exercises, workoutNotes, savedAt: Date.now() };
-    localStorage.setItem(key, JSON.stringify(data));
+    try {
+      localStorage.setItem(key, JSON.stringify(data));
+    } catch {
+      // Storage full or unavailable — best-effort
+    }
   }, [workoutId, exercises, workoutNotes]);
 
   useEffect(() => {
@@ -433,9 +438,53 @@ export default function ActiveWorkoutPage({
     };
   }, [exercises, workoutNotes, saveToLocalStorage, workoutId]);
 
+  // Flush pending save before the page unloads so a refresh within the
+  // 2s debounce window doesn't drop the latest set entry.
+  useEffect(() => {
+    if (!workoutId) return;
+    const flush = () => {
+      if (saveTimerRef.current) {
+        clearTimeout(saveTimerRef.current);
+        saveTimerRef.current = null;
+      }
+      saveToLocalStorage();
+    };
+    window.addEventListener("beforeunload", flush);
+    window.addEventListener("pagehide", flush);
+    return () => {
+      window.removeEventListener("beforeunload", flush);
+      window.removeEventListener("pagehide", flush);
+    };
+  }, [workoutId, saveToLocalStorage]);
+
   // Load block day exercises
   useEffect(() => {
-    if (!workoutId || workoutId === "new-blank") {
+    if (!workoutId) {
+      setLoading(false);
+      return;
+    }
+
+    // Blank/improv workouts have no template to fetch — just rehydrate
+    // any in-flight draft so a refresh doesn't wipe logged sets.
+    if (workoutId === "new-blank") {
+      const key = `workout-draft-${workoutId}`;
+      const saved = localStorage.getItem(key);
+      if (saved) {
+        try {
+          const draft = JSON.parse(saved);
+          if (draft.savedAt && Date.now() - draft.savedAt < 24 * 60 * 60 * 1000) {
+            const restoredExercises = (draft.exercises as ExerciseData[]).map((ex) => ({
+              ...ex,
+              progressionInfo: ex.progressionInfo ?? { estimated1RM: null, progressionStatus: null, stalledSessions: 0 },
+            }));
+            setExercises(restoredExercises);
+            setWorkoutNotes(draft.workoutNotes || "");
+            setRestored(true);
+          }
+        } catch {
+          // ignore parse errors
+        }
+      }
       setLoading(false);
       return;
     }
