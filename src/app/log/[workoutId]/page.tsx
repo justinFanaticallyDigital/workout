@@ -830,7 +830,10 @@ export default function ActiveWorkoutPage({
           notes: workoutNotes || null,
         }),
       });
-      if (!workoutRes.ok) throw new Error("Failed to create workout");
+      if (!workoutRes.ok) {
+        const text = await workoutRes.text().catch(() => "");
+        throw new Error(`Create workout failed (${workoutRes.status}): ${text || workoutRes.statusText}`);
+      }
       const workout = await workoutRes.json();
 
       // 2. For each exercise with completed sets, add to workout and log sets
@@ -839,6 +842,14 @@ export default function ActiveWorkoutPage({
           (s) => s.done && s.weight !== null && s.reps !== null
         );
         if (completedSets.length === 0) continue;
+
+        // A restored draft / freshly-added exercise without a backing
+        // Exercise row would 400 the next call. Skip with a console
+        // breadcrumb instead of failing the whole save.
+        if (!ex.exerciseId) {
+          console.warn(`Skipping exercise "${ex.name}" — missing exerciseId`);
+          continue;
+        }
 
         // Add exercise to workout
         const weRes = await fetch(`/api/workouts/${workout.id}/exercises`, {
@@ -849,7 +860,10 @@ export default function ActiveWorkoutPage({
             notes: ex.notes || null,
           }),
         });
-        if (!weRes.ok) throw new Error("Failed to add exercise");
+        if (!weRes.ok) {
+          const text = await weRes.text().catch(() => "");
+          throw new Error(`Add exercise "${ex.name}" failed (${weRes.status}): ${text || weRes.statusText}`);
+        }
         const workoutExercise = await weRes.json();
 
         // Log each completed set
@@ -864,17 +878,19 @@ export default function ActiveWorkoutPage({
               rir: s.rir,
             }),
           });
-          if (setRes.ok) {
-            const setData = await setRes.json();
-            if (setData.isPr) {
-              toast.success(`New PR! ${ex.name}: ${s.weight} × ${s.reps}`);
-            }
+          if (!setRes.ok) {
+            const text = await setRes.text().catch(() => "");
+            throw new Error(`Log set failed for "${ex.name}" (${setRes.status}): ${text || setRes.statusText}`);
+          }
+          const setData = await setRes.json();
+          if (setData.isPr) {
+            toast.success(`New PR! ${ex.name}: ${s.weight} × ${s.reps}`);
           }
         }
       }
 
       // 3. Finalize workout with endTime
-      await fetch(`/api/workouts/${workout.id}`, {
+      const patchRes = await fetch(`/api/workouts/${workout.id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -882,6 +898,10 @@ export default function ActiveWorkoutPage({
           notes: workoutNotes || null,
         }),
       });
+      if (!patchRes.ok) {
+        const text = await patchRes.text().catch(() => "");
+        throw new Error(`Finalize workout failed (${patchRes.status}): ${text || patchRes.statusText}`);
+      }
 
       // 4. Clear localStorage draft
       localStorage.removeItem(`workout-draft-${workoutId}`);
@@ -889,6 +909,7 @@ export default function ActiveWorkoutPage({
       // 5. Redirect to dashboard
       router.push("/");
     } catch (err) {
+      console.error("Workout save failed:", err);
       // If offline (network error), queue for later sync
       const isOffline = !navigator.onLine || (err instanceof TypeError && err.message === "Failed to fetch");
       if (isOffline) {
@@ -921,7 +942,8 @@ export default function ActiveWorkoutPage({
         return;
       }
 
-      toast.error("Failed to save workout. Please try again.");
+      const reason = err instanceof Error ? err.message : "Please try again.";
+      toast.error(`Failed to save workout. ${reason}`);
       setFinishing(false);
     }
   };
