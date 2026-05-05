@@ -60,27 +60,36 @@ export async function POST(
     return NextResponse.json({ error: "exerciseId is required" }, { status: 400 });
   }
 
-  const last = await prisma.workoutExercise.findFirst({
-    where: { workoutId },
-    orderBy: { sortOrder: "desc" },
-    select: { sortOrder: true },
-  });
-  const sortOrder = (last?.sortOrder ?? 0) + 1;
+  try {
+    const last = await prisma.workoutExercise.findFirst({
+      where: { workoutId },
+      orderBy: { sortOrder: "desc" },
+      select: { sortOrder: true },
+    });
+    const sortOrder = (last?.sortOrder ?? 0) + 1;
 
-  const workoutExercise = await prisma.workoutExercise.create({
-    data: {
-      workoutId,
-      exerciseId: body.exerciseId,
-      sortOrder,
-      notes: body.notes ?? null,
-    },
-    include: {
-      exercise: { select: { name: true, equipment: true } },
-      sets: true,
-    },
-  });
+    const workoutExercise = await prisma.workoutExercise.create({
+      data: {
+        workoutId,
+        exerciseId: body.exerciseId,
+        sortOrder,
+        notes: body.notes ?? null,
+      },
+      include: {
+        exercise: { select: { name: true, equipment: true } },
+        sets: true,
+      },
+    });
 
-  return NextResponse.json(workoutExercise, { status: 201 });
+    return NextResponse.json(workoutExercise, { status: 201 });
+  } catch (err) {
+    console.error("[POST /api/workouts/[id]/exercises] failed:", err);
+    const message = err instanceof Error ? err.message : "Unknown error";
+    return NextResponse.json(
+      { error: "Failed to add exercise", detail: message },
+      { status: 500 },
+    );
+  }
 }
 
 /**

@@ -51,21 +51,30 @@ export async function POST(request: NextRequest) {
   if (authError) return authError;
   const body = await request.json();
 
-  const workout = await prisma.workout.create({
-    data: {
-      userId,
-      date: new Date(body.date ?? new Date()),
-      blockId: body.blockId ?? null,
-      blockDayId: body.blockDayId ?? null,
-      weekNumber: body.weekNumber ?? null,
-      startTime: body.startTime ? new Date(body.startTime) : new Date(),
-      notes: body.notes ?? null,
-      bodyWeight: body.bodyWeight ?? null,
-    },
-    include: {
-      exercises: true,
-    },
-  });
+  try {
+    const workout = await prisma.workout.create({
+      data: {
+        userId,
+        date: new Date(body.date ?? new Date()),
+        blockId: body.blockId ?? null,
+        blockDayId: body.blockDayId ?? null,
+        weekNumber: body.weekNumber ?? null,
+        startTime: body.startTime ? new Date(body.startTime) : new Date(),
+        notes: body.notes ?? null,
+        bodyWeight: body.bodyWeight ?? null,
+      },
+      include: {
+        exercises: true,
+      },
+    });
 
-  return NextResponse.json(workout, { status: 201 });
+    return NextResponse.json(workout, { status: 201 });
+  } catch (err) {
+    console.error("[POST /api/workouts] failed:", err);
+    const message = err instanceof Error ? err.message : "Unknown error";
+    return NextResponse.json(
+      { error: "Failed to create workout", detail: message },
+      { status: 500 },
+    );
+  }
 }
