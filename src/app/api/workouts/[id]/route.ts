@@ -40,17 +40,26 @@ export async function PATCH(
   const { id } = await params;
   const body = await request.json();
 
-  const workout = await prisma.workout.update({
-    where: { id, userId },
-    data: {
-      ...(body.endTime && { endTime: new Date(body.endTime) }),
-      ...(body.notes !== undefined && { notes: body.notes }),
-      ...(body.rating !== undefined && { rating: body.rating }),
-      ...(body.bodyWeight !== undefined && { bodyWeight: body.bodyWeight }),
-    },
-  });
+  try {
+    const workout = await prisma.workout.update({
+      where: { id, userId },
+      data: {
+        ...(body.endTime && { endTime: new Date(body.endTime) }),
+        ...(body.notes !== undefined && { notes: body.notes }),
+        ...(body.rating !== undefined && { rating: body.rating }),
+        ...(body.bodyWeight !== undefined && { bodyWeight: body.bodyWeight }),
+      },
+    });
 
-  return NextResponse.json(workout);
+    return NextResponse.json(workout);
+  } catch (err) {
+    console.error("[PATCH /api/workouts/[id]] failed:", err);
+    const message = err instanceof Error ? err.message : "Unknown error";
+    return NextResponse.json(
+      { error: "Failed to update workout", detail: message },
+      { status: 500 },
+    );
+  }
 }
 
 export async function DELETE(
