@@ -46,62 +46,71 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  // Resolve every slot exercise. Case-insensitive on the global library
-  // first, then user-custom as a fallback.
-  const resolved: Array<{
-    exerciseId: string;
-    targetSets: number;
-    targetRepRange: string;
-    targetRpe: string | null;
-    notes: string | null;
-  }> = [];
-  const skipped: string[] = [];
+  try {
+    // Resolve every slot exercise. Case-insensitive on the global library
+    // first, then user-custom as a fallback.
+    const resolved: Array<{
+      exerciseId: string;
+      targetSets: number;
+      targetRepRange: string;
+      targetRpe: string | null;
+      notes: string | null;
+    }> = [];
+    const skipped: string[] = [];
 
-  for (const slot of entry.slots) {
-    const ex = await prisma.exercise.findFirst({
-      where: {
-        name: { equals: slot.exerciseName, mode: "insensitive" },
-        OR: [{ userId: null }, { userId }],
+    for (const slot of entry.slots) {
+      const ex = await prisma.exercise.findFirst({
+        where: {
+          name: { equals: slot.exerciseName, mode: "insensitive" },
+          OR: [{ userId: null }, { userId }],
+        },
+        select: { id: true },
+      });
+      if (!ex) {
+        skipped.push(slot.exerciseName);
+        continue;
+      }
+      resolved.push({
+        exerciseId: ex.id,
+        targetSets: slot.targetSets,
+        targetRepRange: slot.targetRepRange,
+        targetRpe: slot.targetRpe ?? null,
+        notes: slot.notes ?? null,
+      });
+    }
+
+    // Create the Workout shell + WorkoutExercise rows. source tag drives
+    // the engine's adherence math (these don't count toward Gameplan).
+    const today = new Date();
+    today.setUTCHours(0, 0, 0, 0);
+    const workout = await prisma.workout.create({
+      data: {
+        userId,
+        date: today,
+        source: "SINGLE_LIBRARY",
+        notes: `Library: ${entry.name}`,
+        exercises: {
+          create: resolved.map((r, idx) => ({
+            exerciseId: r.exerciseId,
+            sortOrder: idx,
+            notes: r.notes,
+            // Carry the library targets onto the workout exercise so the
+            // logger renders them as targets-to-beat. WorkoutExercise
+            // doesn't have its own targetSets columns; we stash them in
+            // notes for the logger to surface.
+          })),
+        },
       },
       select: { id: true },
     });
-    if (!ex) {
-      skipped.push(slot.exerciseName);
-      continue;
-    }
-    resolved.push({
-      exerciseId: ex.id,
-      targetSets: slot.targetSets,
-      targetRepRange: slot.targetRepRange,
-      targetRpe: slot.targetRpe ?? null,
-      notes: slot.notes ?? null,
-    });
+
+    return NextResponse.json({ workoutId: workout.id, skipped });
+  } catch (err) {
+    console.error("[POST /api/workouts/from-library] failed:", err);
+    const message = err instanceof Error ? err.message : "Unknown error";
+    return NextResponse.json(
+      { error: "Failed to start library workout", detail: message },
+      { status: 500 },
+    );
   }
-
-  // Create the Workout shell + WorkoutExercise rows. source tag drives
-  // the engine's adherence math (these don't count toward Gameplan).
-  const today = new Date();
-  today.setUTCHours(0, 0, 0, 0);
-  const workout = await prisma.workout.create({
-    data: {
-      userId,
-      date: today,
-      source: "SINGLE_LIBRARY",
-      notes: `Library: ${entry.name}`,
-      exercises: {
-        create: resolved.map((r, idx) => ({
-          exerciseId: r.exerciseId,
-          sortOrder: idx,
-          notes: r.notes,
-          // Carry the library targets onto the workout exercise so the
-          // logger renders them as targets-to-beat. WorkoutExercise
-          // doesn't have its own targetSets columns; we stash them in
-          // notes for the logger to surface.
-        })),
-      },
-    },
-    select: { id: true },
-  });
-
-  return NextResponse.json({ workoutId: workout.id, skipped });
 }

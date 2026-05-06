@@ -58,7 +58,8 @@ export default function LibraryEntryPage({ params }: PageProps) {
       });
       if (!res.ok) {
         const body = await res.json().catch(() => ({}));
-        throw new Error(body.error ?? `HTTP ${res.status}`);
+        const reason = [body.error, body.detail].filter(Boolean).join(": ");
+        throw new Error(reason || `HTTP ${res.status}`);
       }
       const { workoutId, skipped } = (await res.json()) as {
         workoutId: string;

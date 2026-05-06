@@ -31,7 +31,7 @@ const ACTIVITY_TILES: {
   desc: string;
   color: string;
 }[] = [
-  { type: "lifting",  label: "Lifting",          desc: "Weight training session",          color: "rgb(var(--ft-push))" },
+  { type: "lifting",  label: "Lifting",          desc: "Custom blank lifting session",     color: "rgb(var(--ft-push))" },
   { type: "stretch",  label: "Stretch",          desc: "Mobility / recovery routine",      color: "rgb(var(--ft-core))" },
   { type: "hiit",     label: "HIIT",             desc: "High-intensity intervals",         color: "rgb(var(--ft-legs))" },
   { type: "liss",     label: "LISS / Cardio",    desc: "Walk, jog, ride",                  color: "rgb(var(--ft-pull))" },
@@ -116,9 +116,10 @@ export default function LogActivitySheet({
   const handlePick = (t: ActivityType) => {
     switch (t) {
       case "lifting":
-        return scheduled
-          ? router.push(`/log/${scheduled.id}`)
-          : router.push("/log/new-blank");
+        // Always start blank from the tile — the scheduled-today banner
+        // above is the explicit deep-link to today's planned session,
+        // so this tile is reserved for custom / improv lifts.
+        return router.push("/log/new-blank");
       case "stretch":
         return router.push("/log/stretch-timer");
       case "library":
