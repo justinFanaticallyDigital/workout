@@ -131,7 +131,6 @@ export default function WeekStrip({
                 lineHeight: 1.15,
                 wordBreak: "break-word",
               }}
-              title={day?.name ?? "Rest"}
             >
               {dayName}
             </Archivo>
