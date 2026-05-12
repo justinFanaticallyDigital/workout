@@ -8,19 +8,24 @@
 // skipped so a small library-vs-library taxonomy gap doesn't break
 // the user's session — surfaced via the `skipped` response field.
 //
-// Body:  { libraryId: string }
+// Multi-option slots accept an optional `selections` array — one chosen
+// option index per slot (length should match entry.slots.length). Out-of-
+// range or missing indices fall back to option 0.
+//
+// Body:  { libraryId: string, selections?: number[] }
 // Reply: { workoutId, skipped: string[] }
 // ============================================================================
 
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireAuth } from "@/lib/auth-helpers";
-import { getLibraryEntry } from "@/lib/workout-library";
+import { getLibraryEntry, resolveSlotChoice } from "@/lib/workout-library";
 
 export const dynamic = "force-dynamic";
 
 interface PostBody {
   libraryId?: string;
+  selections?: number[];
 }
 
 export async function POST(req: NextRequest) {
@@ -58,16 +63,21 @@ export async function POST(req: NextRequest) {
     }> = [];
     const skipped: string[] = [];
 
-    for (const slot of entry.slots) {
+    const selections = Array.isArray(body.selections) ? body.selections : [];
+
+    for (let i = 0; i < entry.slots.length; i++) {
+      const slot = entry.slots[i];
+      const chosenName = resolveSlotChoice(slot, selections[i]);
+      if (!chosenName) continue;
       const ex = await prisma.exercise.findFirst({
         where: {
-          name: { equals: slot.exerciseName, mode: "insensitive" },
+          name: { equals: chosenName, mode: "insensitive" },
           OR: [{ userId: null }, { userId }],
         },
         select: { id: true },
       });
       if (!ex) {
-        skipped.push(slot.exerciseName);
+        skipped.push(chosenName);
         continue;
       }
       resolved.push({

@@ -3,7 +3,7 @@
 /**
  * R15 — `/log/library` single-workout library list.
  *
- * Surfaces the 8 curated one-offs from `@/lib/workout-library`. The
+ * Surfaces the curated single-workout registry from `@/lib/workout-library`. The
  * +Log FAB sheet's "Single workout from library" tile routes here.
  * Tapping a card lands on the per-entry detail page where the user
  * can preview the slot list and start the workout. Created sessions
