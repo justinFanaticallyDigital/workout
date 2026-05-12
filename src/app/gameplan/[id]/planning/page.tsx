@@ -1,6 +1,6 @@
 "use client";
 
-import { use, useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useToast } from "@/components/ui/Toast";
 import { saveDraft, loadDraft, clearDraft } from "@/lib/draft-store";
@@ -53,8 +53,8 @@ export const dynamic = "force-dynamic";
  *   6. Discard → clear localStorage + route to /gameplan.
  *   7. Reset → restore draft from `original` snapshot.
  */
-export default function PlanningPage({ params }: { params: Promise<{ id: string }> }) {
-  const { id: programId } = use(params);
+export default function PlanningPage({ params }: { params: { id: string } }) {
+  const { id: programId } = params;
   const router = useRouter();
   const toast = useToast();
   const searchParams = useSearchParams();

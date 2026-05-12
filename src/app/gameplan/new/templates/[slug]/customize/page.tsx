@@ -14,7 +14,7 @@
  * Restored on mount, cleared on successful submit.
  */
 
-import { use, useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { getTemplateBySlug } from "@/lib/program-templates";
@@ -39,7 +39,7 @@ export const dynamic = "force-dynamic";
 
 // Next.js 14 dynamic routes — params is a Promise.
 interface PageProps {
-  params: Promise<{ slug: string }>;
+  params: { slug: string };
 }
 
 // step indexes:
@@ -54,7 +54,7 @@ interface PersistedDraft {
 }
 
 export default function CustomizeTemplatePage({ params }: PageProps) {
-  const { slug } = use(params);
+  const { slug } = params;
   const router = useRouter();
   const toast = useToast();
   const template = getTemplateBySlug(slug);

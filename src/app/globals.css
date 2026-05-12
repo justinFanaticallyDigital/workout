@@ -1916,7 +1916,7 @@ body > * {
  * Signature: brass-knurled rib strip on every card top, brushed-plate
  * gradient, stenciled uppercase display type, chalk spray behind titles.
  * ========================================================================== */
-[data-theme="iron"] .bg-ft-surface {
+[data-theme="iron"] .ft-card.bg-ft-surface {
   position: relative;
   background-image: linear-gradient(
     180deg,
@@ -1931,7 +1931,7 @@ body > * {
   box-shadow: inset 0 -8px 14px -10px rgba(0,0,0,0.5);
 }
 /* Barbell-knurled 2px brass rib strip along the top edge of every card */
-[data-theme="iron"] .bg-ft-surface::before {
+[data-theme="iron"] .ft-card.bg-ft-surface::before {
   content: "";
   position: absolute;
   top: 0;
@@ -2079,16 +2079,16 @@ body > * {
  * ========================================================================== */
 [data-theme="blueprint"] .font-display {
   text-transform: uppercase;
-  letter-spacing: 0.18em;
-  line-height: 1.3;
+  letter-spacing: 0.04em;
+  line-height: 1.15;
 }
-[data-theme="blueprint"] .bg-ft-surface {
+[data-theme="blueprint"] .ft-card.bg-ft-surface {
   position: relative;
   box-shadow: inset 0 0 0 1px rgba(255,255,255,0.25);
 }
 /* Crosshair + marks at each corner of every card */
-[data-theme="blueprint"] .bg-ft-surface::before,
-[data-theme="blueprint"] .bg-ft-surface::after {
+[data-theme="blueprint"] .ft-card.bg-ft-surface::before,
+[data-theme="blueprint"] .ft-card.bg-ft-surface::after {
   content: "+";
   position: absolute;
   font-family: 'IBM Plex Mono', monospace;
@@ -2097,8 +2097,8 @@ body > * {
   line-height: 1;
   pointer-events: none;
 }
-[data-theme="blueprint"] .bg-ft-surface::before { top: -7px; left: -4px; }
-[data-theme="blueprint"] .bg-ft-surface::after  { bottom: -7px; right: -4px; }
+[data-theme="blueprint"] .ft-card.bg-ft-surface::before { top: -7px; left: -4px; }
+[data-theme="blueprint"] .ft-card.bg-ft-surface::after  { bottom: -7px; right: -4px; }
 [data-theme="blueprint"] .section-divider {
   border-top: 1px dashed rgba(255,255,255,0.45);
 }

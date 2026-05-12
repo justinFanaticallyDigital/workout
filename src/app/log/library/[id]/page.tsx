@@ -4,12 +4,15 @@
  * R15 — Library entry detail at `/log/library/[id]`.
  *
  * Renders the full slot list (target sets / reps / rpe / notes) plus
- * a Start CTA. Start posts to /api/workouts/from-library which creates
- * a Workout with source=SINGLE_LIBRARY and the resolved exercise rows,
- * then routes the user into the standard logger at /log/[workoutId].
+ * a Start CTA. Slots with multiple exercise options surface a chip
+ * picker so the user chooses which variation to log; the picked indices
+ * are posted alongside the libraryId. Start posts to
+ * /api/workouts/from-library which creates a Workout with
+ * source=SINGLE_LIBRARY and the resolved exercise rows, then routes
+ * the user into the standard logger at /log/[workoutId].
  */
 
-import { use, useState } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useToast } from "@/components/ui/Toast";
@@ -18,15 +21,18 @@ import { getLibraryEntry, type LibrarySlot } from "@/lib/workout-library";
 export const dynamic = "force-dynamic";
 
 interface PageProps {
-  params: Promise<{ id: string }>;
+  params: { id: string };
 }
 
 export default function LibraryEntryPage({ params }: PageProps) {
-  const { id } = use(params);
+  const { id } = params;
   const router = useRouter();
   const toast = useToast();
   const entry = getLibraryEntry(id);
   const [starting, setStarting] = useState(false);
+  const [selections, setSelections] = useState<number[]>(
+    () => (entry ? entry.slots.map(() => 0) : []),
+  );
 
   if (!entry) {
     return (
@@ -47,6 +53,13 @@ export default function LibraryEntryPage({ params }: PageProps) {
     );
   }
 
+  const setSelection = (slotIdx: number, optionIdx: number) =>
+    setSelections((prev) => {
+      const next = [...prev];
+      next[slotIdx] = optionIdx;
+      return next;
+    });
+
   const onStart = async () => {
     if (starting) return;
     setStarting(true);
@@ -54,7 +67,7 @@ export default function LibraryEntryPage({ params }: PageProps) {
       const res = await fetch("/api/workouts/from-library", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ libraryId: entry.id }),
+        body: JSON.stringify({ libraryId: entry.id, selections }),
       });
       if (!res.ok) {
         const body = await res.json().catch(() => ({}));
@@ -112,10 +125,23 @@ export default function LibraryEntryPage({ params }: PageProps) {
         ))}
       </div>
 
-      <h2 className="font-display text-lg text-ft-on-bg mt-6 mb-3">Exercises</h2>
+      <div className="mt-6 mb-3 flex items-baseline justify-between">
+        <h2 className="font-display text-lg text-ft-on-bg">Exercises</h2>
+        {entry.slots.some((s) => s.exerciseOptions.length > 1) && (
+          <span className="font-body text-[10px] uppercase tracking-[0.14em] text-ft-on-bg-ter">
+            Tap to choose
+          </span>
+        )}
+      </div>
       <div className="flex flex-col gap-2">
         {entry.slots.map((slot, i) => (
-          <SlotRow key={i} slot={slot} index={i + 1} />
+          <SlotRow
+            key={i}
+            slot={slot}
+            index={i + 1}
+            selectionIndex={selections[i] ?? 0}
+            onSelect={(optionIdx) => setSelection(i, optionIdx)}
+          />
         ))}
       </div>
 
@@ -135,7 +161,20 @@ export default function LibraryEntryPage({ params }: PageProps) {
   );
 }
 
-function SlotRow({ slot, index }: { slot: LibrarySlot; index: number }) {
+function SlotRow({
+  slot,
+  index,
+  selectionIndex,
+  onSelect,
+}: {
+  slot: LibrarySlot;
+  index: number;
+  selectionIndex: number;
+  onSelect: (optionIdx: number) => void;
+}) {
+  const hasChoice = slot.exerciseOptions.length > 1;
+  const activeName = slot.exerciseOptions[selectionIndex] ?? slot.exerciseOptions[0] ?? "";
+
   return (
     <div className="ft-card bg-ft-surface border border-ft-border-faint p-3">
       <div className="flex items-baseline justify-between gap-3">
@@ -143,7 +182,16 @@ function SlotRow({ slot, index }: { slot: LibrarySlot; index: number }) {
           <span className="font-data text-sm text-ft-on-bg-ter shrink-0">
             {String(index).padStart(2, "0")}
           </span>
-          <h3 className="font-display text-base text-ft-on-bg truncate">{slot.exerciseName}</h3>
+          <div className="min-w-0">
+            {slot.category && (
+              <div className="font-body text-[10px] uppercase tracking-[0.18em] text-ft-on-bg-ter leading-none mb-1">
+                {slot.category}
+              </div>
+            )}
+            <h3 className="font-display text-base text-ft-on-bg truncate leading-tight">
+              {activeName}
+            </h3>
+          </div>
         </div>
         <div className="flex items-baseline gap-2 shrink-0">
           <span className="font-data text-base text-ft-on-bg">{slot.targetSets}</span>
@@ -158,6 +206,31 @@ function SlotRow({ slot, index }: { slot: LibrarySlot; index: number }) {
           )}
         </div>
       </div>
+
+      {hasChoice && (
+        <div className="mt-2 flex flex-wrap gap-1.5">
+          {slot.exerciseOptions.map((name, optIdx) => {
+            const active = optIdx === selectionIndex;
+            return (
+              <button
+                key={`${name}-${optIdx}`}
+                type="button"
+                onClick={() => onSelect(optIdx)}
+                aria-pressed={active}
+                className={[
+                  "font-body text-[11px] tracking-[0.02em] px-2 py-1 border transition-colors",
+                  active
+                    ? "bg-ft-accent text-ft-on-accent border-ft-accent"
+                    : "bg-transparent text-ft-on-bg-sec border-ft-border hover:border-ft-on-bg-sec",
+                ].join(" ")}
+              >
+                {name}
+              </button>
+            );
+          })}
+        </div>
+      )}
+
       {slot.notes && (
         <p className="font-body text-xs text-ft-on-bg-sec mt-1.5 leading-relaxed">{slot.notes}</p>
       )}

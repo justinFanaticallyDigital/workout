@@ -26,13 +26,11 @@ export default function TabBar({
     <div
       style={{
         display: "flex",
-        gap: 18,
+        justifyContent: "center",
+        gap: 28,
         padding: "8px 18px 4px",
         borderBottom: "1px dashed rgb(var(--ft-border-faint))",
         background: "rgb(var(--ft-bg))",
-        position: "sticky",
-        top: 88,
-        zIndex: 9,
       }}
     >
       {TABS.map((t) => {

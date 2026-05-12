@@ -22,10 +22,10 @@ const OVERRIDE_LABEL: Record<string, string> = {
 };
 
 /**
- * 7-day strip showing this-week's schedule. Verbatim port of
- * gameplan-active.jsx#WeekSchedule (lines 1313–1366) with done/today/
- * future state derived from the parent's workouts-this-week fetch and
- * override pills sourced from `/api/schedule-overrides`.
+ * 7-day strip showing this-week's schedule with workout name + adherence
+ * status per cell. Cells render: day label · color block · workout name
+ * (up to 9 chars, never truncating mid-word when possible) · status pill
+ * (DONE / TODAY / OPEN / MISSED / REST).
  *
  * Day-of-week index is 0=Mon..6=Sun. `block.days` indexes by
  * `dayNumber − 1`; rest days fill remaining slots.
@@ -51,36 +51,50 @@ export default function WeekStrip({
         const day = block.days[i] ?? null;
         const dayType = day?.dayType ?? "rest";
         const isRest = dayType === "rest" || !day;
-        // Use the first exercise's movement pattern as the cell tint
-        // when a day has exercises; fallback to the day-type kind.
         const movementKey = day?.exercises?.[0]?.movementPattern ?? null;
         const cellColor = isRest ? "rgb(var(--ft-text-tertiary))" : moveColor(movementKey);
 
         const isToday = i === todayDayOfWeek;
-        const isDone = !!workoutsByDow?.[i] && i < todayDayOfWeek;
+        const isPast = i < todayDayOfWeek;
+        const isLogged = !!workoutsByDow?.[i];
+        // Adherence state. Past + scheduled + not logged → MISSED.
+        // Today / future + scheduled → OPEN / PLAN.
+        const status: "done" | "today" | "missed" | "open" | "plan" | "rest" = isRest
+          ? "rest"
+          : isLogged
+            ? "done"
+            : isToday
+              ? "today"
+              : isPast
+                ? "missed"
+                : "plan";
 
         const override = overrides.find((o) => o.dayOfWeek === i);
 
         const tilt = i % 2 === 0 ? -0.4 : 0.3;
+        const dayName = isRest ? "REST" : truncateWorkoutName(day?.name ?? "");
+
         return (
           <div
             key={i}
             style={{
               flex: 1,
+              minWidth: 0,
               position: "relative",
               border: isToday
                 ? `2px solid ${cellColor}`
-                : `1px solid ${isDone ? `${cellColor}` : "rgb(var(--ft-border-faint))"}`,
-              background: isToday ? `${cellColor}` : isDone ? `${cellColor}` : "transparent",
+                : `1px solid ${status === "done" ? cellColor : "rgb(var(--ft-border-faint))"}`,
               backgroundColor: isToday
                 ? "rgb(var(--ft-accent) / 0.13)"
-                : isDone
-                ? "rgb(var(--ft-pull) / 0.06)"
-                : "transparent",
-              padding: "6px 0 7px",
+                : status === "done"
+                  ? "rgb(var(--ft-success) / 0.08)"
+                  : status === "missed"
+                    ? "rgb(var(--ft-warn) / 0.06)"
+                    : "transparent",
+              padding: "6px 2px 7px",
               textAlign: "center",
               transform: graffiti ? `rotate(${tilt}deg)` : "none",
-              opacity: !day || (dayType === "rest" && !isToday) ? 0.55 : 1,
+              opacity: status === "rest" && !isToday ? 0.55 : 1,
             }}
           >
             <Archivo
@@ -93,8 +107,8 @@ export default function WeekStrip({
             <span
               aria-hidden
               style={{
-                width: 6,
-                height: 6,
+                width: "60%",
+                height: 4,
                 background: cellColor,
                 margin: "4px auto 4px",
                 opacity: isRest ? 0.4 : 1,
@@ -102,27 +116,25 @@ export default function WeekStrip({
               }}
             />
             <Archivo
-              size={8}
-              color={isToday ? cellColor : isDone ? "rgb(var(--ft-text-secondary))" : "rgb(var(--ft-text-tertiary))"}
-              style={{ display: "block", letterSpacing: ".08em", textTransform: "uppercase" }}
+              size={9}
+              color={
+                isToday
+                  ? cellColor
+                  : status === "done"
+                    ? "rgb(var(--ft-text-secondary))"
+                    : "rgb(var(--ft-text-tertiary))"
+              }
+              style={{
+                display: "block",
+                letterSpacing: ".04em",
+                textTransform: "uppercase",
+                lineHeight: 1.15,
+                wordBreak: "break-word",
+              }}
             >
-              {isRest ? "OFF" : (day!.name ?? "").split(" ")[0].slice(0, 5).toUpperCase()}
+              {dayName}
             </Archivo>
-            {isDone && (
-              <span
-                aria-hidden
-                className="font-data"
-                style={{
-                  position: "absolute",
-                  top: 2,
-                  right: 3,
-                  color: cellColor,
-                  fontSize: 9,
-                }}
-              >
-                ✓
-              </span>
-            )}
+            <StatusPill status={status} cellColor={cellColor} />
             {override && (
               <Archivo
                 size={7}
@@ -141,5 +153,50 @@ export default function WeekStrip({
         );
       })}
     </div>
+  );
+}
+
+/** Truncate the workout name to ~9 chars without breaking mid-word. */
+function truncateWorkoutName(name: string): string {
+  const cleaned = name.trim();
+  if (!cleaned) return "—";
+  const upper = cleaned.toUpperCase();
+  if (upper.length <= 9) return upper;
+  // Prefer breaking at a space; otherwise hard-cut.
+  const firstChunk = upper.split(" ")[0];
+  if (firstChunk.length <= 9) return firstChunk;
+  return upper.slice(0, 8) + "…";
+}
+
+function StatusPill({
+  status,
+  cellColor,
+}: {
+  status: "done" | "today" | "missed" | "open" | "plan" | "rest";
+  cellColor: string;
+}) {
+  const map: Record<typeof status, { label: string; color: string }> = {
+    done: { label: "✓ DONE", color: "rgb(var(--ft-success-fg))" },
+    today: { label: "TODAY", color: cellColor },
+    missed: { label: "MISSED", color: "rgb(var(--ft-warn-fg))" },
+    open: { label: "OPEN", color: "rgb(var(--ft-text-secondary))" },
+    plan: { label: "PLAN", color: "rgb(var(--ft-text-tertiary))" },
+    rest: { label: "OFF", color: "rgb(var(--ft-text-tertiary))" },
+  };
+  const { label, color } = map[status];
+  return (
+    <Archivo
+      size={7}
+      color={color}
+      style={{
+        display: "block",
+        marginTop: 4,
+        letterSpacing: ".10em",
+        textTransform: "uppercase",
+        fontWeight: 600,
+      }}
+    >
+      {label}
+    </Archivo>
   );
 }
