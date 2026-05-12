@@ -81,8 +81,8 @@ export const blueprint: ThemeConfig = {
   },
 
   fonts: {
-    display: "'Major Mono Display', monospace",
-    fontDisplay: "'Major Mono Display', monospace",
+    display: "'Oswald', 'Arial Narrow', sans-serif",
+    fontDisplay: "'Oswald', 'Arial Narrow', sans-serif",
     data: "'Space Mono', monospace",
     fontData: "'Space Mono', monospace",
     body: "'Space Mono', monospace",
