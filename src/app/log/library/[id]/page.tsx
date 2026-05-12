@@ -12,7 +12,7 @@
  * the user into the standard logger at /log/[workoutId].
  */
 
-import { use, useState } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useToast } from "@/components/ui/Toast";
@@ -21,11 +21,11 @@ import { getLibraryEntry, type LibrarySlot } from "@/lib/workout-library";
 export const dynamic = "force-dynamic";
 
 interface PageProps {
-  params: Promise<{ id: string }>;
+  params: { id: string };
 }
 
 export default function LibraryEntryPage({ params }: PageProps) {
-  const { id } = use(params);
+  const { id } = params;
   const router = useRouter();
   const toast = useToast();
   const entry = getLibraryEntry(id);

@@ -37,6 +37,11 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
+      <head>
+        {/* Standard PWA hint — Next's metadata.appleWebApp only emits the
+            apple-specific tag, which Chrome warns about as deprecated. */}
+        <meta name="mobile-web-app-capable" content="yes" />
+      </head>
       <body className="bg-ft-bg min-h-screen antialiased">
         <a
           href="#main-content"

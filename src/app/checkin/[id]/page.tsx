@@ -1,6 +1,6 @@
 "use client";
 
-import { use, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import DetailHeader from "../_components/DetailHeader";
 import SnapshotSection from "../_components/SnapshotSection";
@@ -14,8 +14,8 @@ export const dynamic = "force-dynamic";
  * Past check-in detail. Routed to from PastCheckInRow taps in the
  * /checkin history list. Read-only view of one CheckIn record.
  */
-export default function CheckInDetailPage({ params }: { params: Promise<{ id: string }> }) {
-  const { id } = use(params);
+export default function CheckInDetailPage({ params }: { params: { id: string } }) {
+  const { id } = params;
   const [checkIn, setCheckIn] = useState<CheckIn | null>(null);
   const [priorCheckIns, setPriorCheckIns] = useState<CheckIn[]>([]);
   const [error, setError] = useState<string | null>(null);
