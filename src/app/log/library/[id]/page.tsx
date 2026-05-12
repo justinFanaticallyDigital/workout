@@ -145,17 +145,15 @@ export default function LibraryEntryPage({ params }: PageProps) {
         ))}
       </div>
 
-      <div className="fixed bottom-0 left-0 right-0 z-30 pointer-events-none">
-        <div className="mx-auto max-w-xl px-4 pb-6 pt-6 bg-gradient-to-t from-ft-bg via-ft-bg/95 to-transparent pointer-events-auto">
-          <button
-            type="button"
-            onClick={onStart}
-            disabled={starting}
-            className="cta-underline w-full text-center py-3 font-display text-xl text-ft-on-bg disabled:opacity-60"
-          >
-            {starting ? "Starting…" : "Start workout →"}
-          </button>
-        </div>
+      <div className="mt-6 pt-4 border-t border-dashed border-ft-border">
+        <button
+          type="button"
+          onClick={onStart}
+          disabled={starting}
+          className="cta-underline w-full text-center py-3 font-display text-xl text-ft-on-bg disabled:opacity-60"
+        >
+          {starting ? "Starting…" : "Start workout →"}
+        </button>
       </div>
     </main>
   );
