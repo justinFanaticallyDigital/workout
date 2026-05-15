@@ -46,10 +46,15 @@ export async function GET(request: NextRequest) {
   return NextResponse.json({ workouts });
 }
 
+const VALID_SOURCES = new Set(["STANDALONE", "GAMEPLAN", "SINGLE_LIBRARY"]);
+
 export async function POST(request: NextRequest) {
   const [userId, authError] = await requireAuth();
   if (authError) return authError;
   const body = await request.json();
+
+  const sourceRaw = typeof body.source === "string" ? body.source.toUpperCase() : null;
+  const source = sourceRaw && VALID_SOURCES.has(sourceRaw) ? sourceRaw : null;
 
   try {
     const workout = await prisma.workout.create({
@@ -62,6 +67,7 @@ export async function POST(request: NextRequest) {
         startTime: body.startTime ? new Date(body.startTime) : new Date(),
         notes: body.notes ?? null,
         bodyWeight: body.bodyWeight ?? null,
+        ...(source ? { source: source as "STANDALONE" | "GAMEPLAN" | "SINGLE_LIBRARY" } : {}),
       },
       include: {
         exercises: true,

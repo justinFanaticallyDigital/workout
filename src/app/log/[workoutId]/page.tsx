@@ -410,6 +410,7 @@ export default function ActiveWorkoutPage({
   const [loading, setLoading] = useState(true);
   const [finishing, setFinishing] = useState(false);
   const [workoutNotes, setWorkoutNotes] = useState("");
+  const [workoutSource, setWorkoutSource] = useState<string | null>(null);
   const [startTime] = useState(() => Date.now());
   const [restored, setRestored] = useState(false);
   const [showPicker, setShowPicker] = useState(false);
@@ -421,13 +422,14 @@ export default function ActiveWorkoutPage({
   const saveToLocalStorage = useCallback(() => {
     if (!workoutId) return;
     const key = `workout-draft-${workoutId}`;
-    const data = { exercises, workoutNotes, savedAt: Date.now() };
+    const data: Record<string, unknown> = { exercises, workoutNotes, savedAt: Date.now() };
+    if (workoutSource) data.source = workoutSource;
     try {
       localStorage.setItem(key, JSON.stringify(data));
     } catch {
       // Storage full or unavailable — best-effort
     }
-  }, [workoutId, exercises, workoutNotes]);
+  }, [workoutId, exercises, workoutNotes, workoutSource]);
 
   useEffect(() => {
     if (!workoutId || exercises.length === 0) return;
@@ -479,6 +481,7 @@ export default function ActiveWorkoutPage({
             }));
             setExercises(restoredExercises);
             setWorkoutNotes(draft.workoutNotes || "");
+            if (typeof draft.source === "string") setWorkoutSource(draft.source);
             setRestored(true);
           }
         } catch {
@@ -828,6 +831,7 @@ export default function ActiveWorkoutPage({
           blockId: blockId || null,
           blockDayId: blockDayId || null,
           notes: workoutNotes || null,
+          source: workoutSource || undefined,
         }),
       });
       if (!workoutRes.ok) {

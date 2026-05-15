@@ -74,18 +74,69 @@ export default function LibraryEntryPage({ params }: PageProps) {
         const reason = [body.error, body.detail].filter(Boolean).join(": ");
         throw new Error(reason || `HTTP ${res.status}`);
       }
-      const { workoutId, skipped } = (await res.json()) as {
-        workoutId: string;
+      const { exercises, skipped } = (await res.json()) as {
+        exercises: Array<{
+          exerciseId: string;
+          name: string;
+          movementPattern: string | null;
+          primaryMuscle: string | null;
+          targetSets: number;
+          targetRepRange: string;
+          targetRpe: string | null;
+          notes: string | null;
+        }>;
         skipped?: string[];
       };
+
+      if (!exercises.length) {
+        throw new Error("None of the exercises in this workout resolved to your library");
+      }
+
+      // Build the same ExerciseData shape the logger uses, then stash
+      // it under the new-blank draft key. The logger's draft-restore
+      // (live within 24h TTL) picks it up on mount.
+      const draftExercises = exercises.map((slot, idx) => ({
+        id: `lib-${entry.id}-${idx}`,
+        exerciseId: slot.exerciseId,
+        name: slot.name,
+        shortName: slot.name.split(/[-·]/)[0].trim().slice(0, 12),
+        category: slot.movementPattern ?? "—",
+        primaryMuscle: slot.primaryMuscle,
+        targetSets: slot.targetSets,
+        targetRepRange: slot.targetRepRange,
+        targetRpe: slot.targetRpe,
+        progressionType: "none",
+        sets: Array.from({ length: slot.targetSets }, (_, i) => ({
+          set: i + 1,
+          weight: null,
+          reps: null,
+          rir: null,
+          done: false,
+        })),
+        notes: slot.notes ?? "",
+        lastSets: [],
+        suggestedWeight: null,
+        progressionInfo: { estimated1RM: null, progressionStatus: null, stalledSessions: 0 },
+      }));
+
+      localStorage.setItem(
+        "workout-draft-new-blank",
+        JSON.stringify({
+          savedAt: Date.now(),
+          exercises: draftExercises,
+          workoutNotes: `Library: ${entry.name}`,
+          source: "SINGLE_LIBRARY",
+        }),
+      );
+
       if (Array.isArray(skipped) && skipped.length > 0) {
         toast.info(
           `${skipped.length} exercise${skipped.length === 1 ? "" : "s"} not in your library — session continues without them`,
           5000,
         );
       }
-      toast.success("Workout started");
-      router.push(`/log/${workoutId}`);
+      toast.success("Workout loaded");
+      router.push("/log/new-blank");
     } catch (e) {
       const msg = e instanceof Error ? e.message : "Couldn't start workout";
       toast.error(msg);

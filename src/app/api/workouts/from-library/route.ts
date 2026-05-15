@@ -1,19 +1,24 @@
 // src/app/api/workouts/from-library/route.ts
 // ============================================================================
-// R15 — POST /api/workouts/from-library
+// POST /api/workouts/from-library
 //
-// Creates a Workout from a curated library entry. Resolves slot
-// exercise names against the live Exercise library (case-insensitive,
-// global rows preferred). Slots whose names don't resolve are silently
-// skipped so a small library-vs-library taxonomy gap doesn't break
-// the user's session — surfaced via the `skipped` response field.
+// Resolves library-entry slots to live Exercise rows. Returns the
+// resolved exercise data so the client can pre-populate the workout
+// logger as an improv (new-blank) session — the actual Workout row is
+// only created when the user taps Finish, matching the existing
+// improv-lift flow. This avoids the BlockDay-vs-Workout id confusion in
+// the /log/[workoutId] router.
+//
+// Resolution is case-insensitive against the global library first,
+// then user-custom. Slots that don't resolve are silently skipped and
+// surfaced via the `skipped` array so the client can toast about them.
 //
 // Multi-option slots accept an optional `selections` array — one chosen
 // option index per slot (length should match entry.slots.length). Out-of-
-// range or missing indices fall back to option 0.
+// range / missing indices fall back to option 0.
 //
 // Body:  { libraryId: string, selections?: number[] }
-// Reply: { workoutId, skipped: string[] }
+// Reply: { entry: { id, name }, exercises: ResolvedSlot[], skipped: string[] }
 // ============================================================================
 
 import { NextRequest, NextResponse } from "next/server";
@@ -26,6 +31,17 @@ export const dynamic = "force-dynamic";
 interface PostBody {
   libraryId?: string;
   selections?: number[];
+}
+
+interface ResolvedSlot {
+  exerciseId: string;
+  name: string;
+  movementPattern: string | null;
+  primaryMuscle: string | null;
+  targetSets: number;
+  targetRepRange: string;
+  targetRpe: string | null;
+  notes: string | null;
 }
 
 export async function POST(req: NextRequest) {
@@ -51,20 +67,11 @@ export async function POST(req: NextRequest) {
     );
   }
 
+  const selections = Array.isArray(body.selections) ? body.selections : [];
+  const exercises: ResolvedSlot[] = [];
+  const skipped: string[] = [];
+
   try {
-    // Resolve every slot exercise. Case-insensitive on the global library
-    // first, then user-custom as a fallback.
-    const resolved: Array<{
-      exerciseId: string;
-      targetSets: number;
-      targetRepRange: string;
-      targetRpe: string | null;
-      notes: string | null;
-    }> = [];
-    const skipped: string[] = [];
-
-    const selections = Array.isArray(body.selections) ? body.selections : [];
-
     for (let i = 0; i < entry.slots.length; i++) {
       const slot = entry.slots[i];
       const chosenName = resolveSlotChoice(slot, selections[i]);
@@ -74,14 +81,17 @@ export async function POST(req: NextRequest) {
           name: { equals: chosenName, mode: "insensitive" },
           OR: [{ userId: null }, { userId }],
         },
-        select: { id: true },
+        select: { id: true, name: true, movementPattern: true, primaryMuscle: true },
       });
       if (!ex) {
         skipped.push(chosenName);
         continue;
       }
-      resolved.push({
+      exercises.push({
         exerciseId: ex.id,
+        name: ex.name,
+        movementPattern: ex.movementPattern,
+        primaryMuscle: ex.primaryMuscle,
         targetSets: slot.targetSets,
         targetRepRange: slot.targetRepRange,
         targetRpe: slot.targetRpe ?? null,
@@ -89,37 +99,16 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    // Create the Workout shell + WorkoutExercise rows. source tag drives
-    // the engine's adherence math (these don't count toward Gameplan).
-    const today = new Date();
-    today.setUTCHours(0, 0, 0, 0);
-    const workout = await prisma.workout.create({
-      data: {
-        userId,
-        date: today,
-        source: "SINGLE_LIBRARY",
-        notes: `Library: ${entry.name}`,
-        exercises: {
-          create: resolved.map((r, idx) => ({
-            exerciseId: r.exerciseId,
-            sortOrder: idx,
-            notes: r.notes,
-            // Carry the library targets onto the workout exercise so the
-            // logger renders them as targets-to-beat. WorkoutExercise
-            // doesn't have its own targetSets columns; we stash them in
-            // notes for the logger to surface.
-          })),
-        },
-      },
-      select: { id: true },
+    return NextResponse.json({
+      entry: { id: entry.id, name: entry.name },
+      exercises,
+      skipped,
     });
-
-    return NextResponse.json({ workoutId: workout.id, skipped });
   } catch (err) {
     console.error("[POST /api/workouts/from-library] failed:", err);
     const message = err instanceof Error ? err.message : "Unknown error";
     return NextResponse.json(
-      { error: "Failed to start library workout", detail: message },
+      { error: "Failed to resolve library workout", detail: message },
       { status: 500 },
     );
   }
