@@ -363,7 +363,11 @@ export default function GameplanPage() {
               </section>
             )}
             {home.activeProgram?.id && (
-              <EditPlanBtn align="flex-end" href={`/programs/${home.activeProgram.id}`} />
+              <EditPlanBtn
+                align="flex-end"
+                href={`/programs/${home.activeProgram.id}`}
+                label="EDIT TRAINING"
+              />
             )}
           </>
         )}

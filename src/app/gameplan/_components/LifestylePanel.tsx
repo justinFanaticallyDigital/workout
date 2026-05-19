@@ -101,7 +101,13 @@ export default function LifestylePanel({
           tilt={-0.3}
         />
       </div>
-      {programId && <EditPlanBtn align="flex-end" href={`/programs/${programId}`} />}
+      {programId && (
+        <EditPlanBtn
+          align="flex-end"
+          href={`/gameplan/${programId}/planning?tab=lifestyle`}
+          label="EDIT LIFESTYLE"
+        />
+      )}
     </div>
   );
 }

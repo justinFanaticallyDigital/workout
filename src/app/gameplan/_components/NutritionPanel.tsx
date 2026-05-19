@@ -147,7 +147,13 @@ export default function NutritionPanel({ meals, target, programId, activeBlock }
             {nextRefeed}
           </Marker>
         </div>
-        {programId && <EditPlanBtn align="flex-end" href={`/programs/${programId}`} />}
+        {programId && (
+          <EditPlanBtn
+            align="flex-end"
+            href={`/gameplan/${programId}/planning?tab=nutrition`}
+            label="EDIT NUTRITION"
+          />
+        )}
       </div>
     </div>
   );
