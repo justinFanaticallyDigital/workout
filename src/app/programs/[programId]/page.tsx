@@ -742,6 +742,7 @@ export default function ProgramWorkspacePage({
                                 onReorder={(ids) => handleExerciseReorder(day.id, ids)}
                                 onAddExercise={handleAddExerciseToDay}
                                 onSetAlternative={handleSetAlternative}
+                                onSwapExercise={handleSwapExercise}
                               />
                             )}
                           </div>

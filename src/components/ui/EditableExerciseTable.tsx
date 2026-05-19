@@ -35,6 +35,10 @@ interface EditableExerciseTableProps {
     progressionIncrement: number | null;
   }) => void;
   onSetAlternative?: (exerciseId: string, altExerciseId: string | null) => void;
+  /** Replace the primary exercise on a row. When provided, a "Swap Exercise"
+   *  menu item appears that opens the same picker UI as Set Alternative,
+   *  but writes the primary exerciseId. */
+  onSwapExercise?: (blockDayExerciseId: string, newExerciseId: string) => void;
 }
 
 const PROGRESSION_TYPES = ["none", "linear", "double", "wave", "rpe_based", "percentage_based"];
@@ -65,12 +69,15 @@ export default function EditableExerciseTable({
   onReorder,
   onAddExercise,
   onSetAlternative,
+  onSwapExercise,
 }: EditableExerciseTableProps) {
   const [editingCell, setEditingCell] = useState<{ id: string; field: string } | null>(null);
   const [editValue, setEditValue] = useState("");
   const [menuOpen, setMenuOpen] = useState<string | null>(null);
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
-  const [altPickerOpen, setAltPickerOpen] = useState<string | null>(null);
+  /** Shared picker for both swap (writes primary exerciseId) and set-alternative
+   *  (writes altExerciseId). `mode` discriminates which callback to fire on select. */
+  const [pickerOpen, setPickerOpen] = useState<{ exerciseId: string; mode: "swap" | "alt" } | null>(null);
   const [altSearch, setAltSearch] = useState("");
   const [altResults, setAltResults] = useState<SearchResult[]>([]);
   const [dragIdx, setDragIdx] = useState<number | null>(null);
@@ -105,8 +112,8 @@ export default function EditableExerciseTable({
   }, [altSearch]);
 
   useEffect(() => {
-    if (altPickerOpen && altInputRef.current) altInputRef.current.focus();
-  }, [altPickerOpen]);
+    if (pickerOpen && altInputRef.current) altInputRef.current.focus();
+  }, [pickerOpen]);
 
   // Search for new exercise
   useEffect(() => {
@@ -342,11 +349,24 @@ export default function EditableExerciseTable({
                 >
                   Move Down
                 </button>
+                {onSwapExercise && (
+                  <button
+                    onClick={() => {
+                      setMenuOpen(null);
+                      setPickerOpen({ exerciseId: ex.id, mode: "swap" });
+                      setAltSearch("");
+                      setAltResults([]);
+                    }}
+                    className="w-full text-left px-3 py-1.5 text-xs font-body text-ft-light hover:bg-ft-card"
+                  >
+                    Swap Exercise
+                  </button>
+                )}
                 {onSetAlternative && (
                   <button
                     onClick={() => {
                       setMenuOpen(null);
-                      setAltPickerOpen(ex.id);
+                      setPickerOpen({ exerciseId: ex.id, mode: "alt" });
                       setAltSearch("");
                       setAltResults([]);
                     }}
@@ -392,15 +412,18 @@ export default function EditableExerciseTable({
         </div>
       ))}
 
-      {/* Alt exercise picker */}
-      {altPickerOpen && (
+      {/* Picker — shared between swap (replace primary) and set-alternative
+          (link an alt). `mode` decides which callback fires on select. */}
+      {pickerOpen && (
         <div className="my-2 p-3 bg-ft-surface border border-ft-card rounded">
           <div className="flex items-center justify-between mb-2">
             <span className="text-ft-dim text-[10px] font-body uppercase tracking-wider">
-              Set Alternative Exercise
+              {pickerOpen.mode === "swap"
+                ? "Swap exercise — replaces the primary movement"
+                : "Set alternative — links a backup option"}
             </span>
             <button
-              onClick={() => { setAltPickerOpen(null); setAltSearch(""); }}
+              onClick={() => { setPickerOpen(null); setAltSearch(""); }}
               className="text-ft-dim text-xs hover:text-ft-light"
             >
               &times;
@@ -412,7 +435,7 @@ export default function EditableExerciseTable({
               type="text"
               value={altSearch}
               onChange={(e) => setAltSearch(e.target.value)}
-              placeholder="Search for alternative..."
+              placeholder={pickerOpen.mode === "swap" ? "Search for replacement…" : "Search for alternative…"}
               className="w-full bg-ft-bg border border-ft-card rounded px-2 py-1.5 text-xs font-body text-ft-white placeholder:text-ft-muted focus:outline-none focus:border-ft-dim"
             />
             {altResults.length > 0 && (
@@ -421,8 +444,12 @@ export default function EditableExerciseTable({
                   <button
                     key={r.id}
                     onClick={() => {
-                      if (onSetAlternative) onSetAlternative(altPickerOpen, r.id);
-                      setAltPickerOpen(null);
+                      if (pickerOpen.mode === "swap" && onSwapExercise) {
+                        onSwapExercise(pickerOpen.exerciseId, r.id);
+                      } else if (pickerOpen.mode === "alt" && onSetAlternative) {
+                        onSetAlternative(pickerOpen.exerciseId, r.id);
+                      }
+                      setPickerOpen(null);
                       setAltSearch("");
                     }}
                     className="w-full text-left px-2 py-1.5 text-xs font-body text-ft-light hover:bg-ft-card"

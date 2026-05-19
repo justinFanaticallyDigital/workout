@@ -59,11 +59,19 @@ export default function PlanningPage({ params }: { params: { id: string } }) {
   const toast = useToast();
   const searchParams = useSearchParams();
   const recommendationId = searchParams.get("recommendationId");
+  /** Deep-link target — Gameplan tab CTAs pass ?tab=nutrition / ?tab=lifestyle
+   *  so the editor opens on the right section instead of always landing on Goals. */
+  const VALID_TABS: ReadonlyArray<SectionTab> = ["goals", "timeline", "nutrition", "training", "lifestyle"];
+  const initialTabRaw = searchParams.get("tab");
+  const initialTab: SectionTab =
+    initialTabRaw && (VALID_TABS as readonly string[]).includes(initialTabRaw)
+      ? (initialTabRaw as SectionTab)
+      : "goals";
 
   const [original, setOriginal] = useState<PlanningDraft | null>(null);
   const [draft, setDraft] = useState<PlanningDraft | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<SectionTab>("goals");
+  const [activeTab, setActiveTab] = useState<SectionTab>(initialTab);
   const [projectionTab, setProjectionTab] = useState<ProjectionTab>("trajectory");
   const [showApplyModal, setShowApplyModal] = useState(false);
   const [applying, setApplying] = useState(false);
