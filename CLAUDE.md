@@ -7,6 +7,12 @@
 ## Overview
 FitTrack is a personal workout tracking app built with Next.js 14, Prisma, PostgreSQL (Railway), and NextAuth (Google OAuth). Deployed on Vercel. The app uses a mobile-first 5-tab bottom navigation architecture with a multi-theme design system (7 themes).
 
+## Reference docs in this repo
+- **`CLAUDE.md`** (this file) — primary reference: architecture, schema, conventions, current state.
+- **`docs/fittrack-v2-spec.md`** — authoritative spec for the Phase 8 (R0–R15) gameplan v2 rework. Source of truth for the gameplan dashboard, check-in flow, goal engine rules (§8.4), lifestyle variable registry (§7), audit pipeline, and template module.
+- **`docs/archive/`** — superseded plan docs from earlier phases (PLAN.md, plan.md, PHASE3_PLAN.md, PHASE4_PLAN.md, IMPLEMENTATION.md, audit-revision-plan.md, navigation-redesign-plan.md). Historical context only — do not treat as current.
+- **`README.md`** — short setup/quick-start. Defers to this file for everything else.
+
 ## Tech Stack
 - **Framework:** Next.js 14.2.35 (App Router)
 - **Language:** TypeScript 5
@@ -41,13 +47,24 @@ src/
 │   ├── layout.tsx                # Root layout (ThemeProvider + BottomNav + SessionProvider)
 │   ├── globals.css               # Global styles + Tailwind + Google Fonts + theme-adaptive CTAs
 │   ├── signin/page.tsx           # Google OAuth sign-in
-│   ├── settings/page.tsx         # Settings (theme picker, unit prefs, CSV export)
+│   ├── settings/                 # Settings — hub + sub-pages per concern
+│   │   ├── page.tsx              # Hub: theme picker, unit prefs, CSV export, links to sub-pages
+│   │   ├── theme/page.tsx        # Dedicated theme switcher
+│   │   ├── units/page.tsx        # Unit preferences (kg/lb, cm/in)
+│   │   ├── integrations/page.tsx # Fitbit / Apple Health / Garmin connection status
+│   │   └── advanced/page.tsx     # Advanced / dev settings (migrations, debug)
 │   ├── calendar/page.tsx         # Legacy /calendar — redirects to /progress/calendar (R15)
 │   ├── injuries/page.tsx         # Legacy /injuries — redirects to /progress/injuries (R15)
 │   ├── program/page.tsx          # Legacy Program tab metrics dashboard (still rendered if linked)
-│   ├── stretch-timer/page.tsx    # Stretch timer flow — full-screen countdown (client)
+│   ├── stretch-timer/page.tsx    # Legacy stretch timer route (kept for back-compat)
 │   ├── gameplan/                 # R4–R15 — gameplan tab + picker + planning mode
 │   │   ├── page.tsx              # Active program dashboard (R5; sub-tabs Training/Nutrition/Lifestyle)
+│   │   ├── _components/          # Dashboard composition — Header, TodayCard, WeekStrip, TabBar,
+│   │   │                         #   GoalCard, GoalPulse, TrajectoryGraph / Modal, MiniTrajectory,
+│   │   │                         #   BlockTimeline, CheckInCard, LifestyleShell / Panel / QuickLog,
+│   │   │                         #   SleepCard, StressCard, ProteinHitCard, NutritionPanel,
+│   │   │                         #   NextActionLogged, EditPlanBtn, Ornaments, icons, seriesUtil, types
+│   │   ├── build/page.tsx        # Manual gameplan builder (post-R15) — companion to template wizard
 │   │   ├── new/page.tsx          # Picker entry — Step1Welcome → engine 5-step OR templates flow (R4/R14)
 │   │   ├── new/templates/page.tsx              # 8-card gameplan template list (R14)
 │   │   ├── new/templates/[slug]/customize/page.tsx  # Per-template wizard (R14)
@@ -75,9 +92,10 @@ src/
 │   ├── log/
 │   │   ├── page.tsx              # Redirects to /gameplan (FAB sheet replaces this)
 │   │   ├── [workoutId]/page.tsx  # Active workout logger (client)
-│   │   └── library/              # R15 — single-workout library
-│   │       ├── page.tsx          # 8 curated one-offs as cards
-│   │       └── [id]/page.tsx     # Detail + Start CTA → POST /api/workouts/from-library
+│   │   ├── stretch-timer/page.tsx # Stretch timer flow — full-screen countdown (client; canonical route)
+│   │   └── library/              # R15 — single-workout library (10 curated workouts)
+│   │       ├── page.tsx          # Curated one-offs as cards with per-slot exercise picker
+│   │       └── [id]/page.tsx     # Detail + Start CTA → pre-populates draft for the logger
 │   ├── history/
 │   │   ├── page.tsx              # Workout history list (client)
 │   │   └── [workoutId]/page.tsx  # Workout session replay (client)
@@ -104,7 +122,9 @@ src/
 │       ├── exercises/[id]/last-performance/ # GET - last logged sets
 │       ├── exercises/[id]/progression-status/ # GET - stall detection
 │       ├── exercises/recent/     # GET - recently used exercises
-│       ├── goals/                # POST (create goal, optionally with program)
+│       ├── goals/                # GET (list user goals), POST (create goal, optionally with program)
+│       ├── goals/[id]/           # GET, PATCH, DELETE
+│       ├── profile/              # GET — user profile (display name, avatar, prefs)
 │       ├── programs/             # GET (list, ?status= filter), POST (create)
 │       ├── programs/[id]/        # GET (detail with blocks)
 │       ├── programs/[id]/blocks/ # POST (add block to program)
@@ -118,6 +138,7 @@ src/
 │       ├── blocks/day/[id]/exercises/ # POST (add exercise to day template)
 │       ├── blocks/day/[id]/exercises/[exerciseId]/ # PATCH, DELETE
 │       ├── blocks/day/[id]/exercises/reorder/ # PATCH (reorder exercises)
+│       ├── blocks/day/[id]/clone/ # POST (clone a day template into the same block)
 │       ├── workouts/             # GET (list, ?from/?to date filter), POST (create)
 │       ├── workouts/[id]/        # GET, PATCH, DELETE
 │       ├── workouts/[id]/exercises/ # POST (add exercise to workout)
@@ -133,6 +154,7 @@ src/
 │       ├── progress/photos/      # GET, POST (progress photos)
 │       ├── nutrition/foods/      # GET (search foods, ?search= or ?barcode=)
 │       ├── nutrition/meals/      # GET (?date=), POST (create meal with items)
+│       ├── nutrition/meals/range/ # GET (?from=&to=) — meals across a date range
 │       ├── nutrition/meals/[id]/ # PATCH (add/remove items), DELETE
 │       ├── nutrition/targets/    # GET, POST (nutrition macro targets)
 │       ├── nutrition/plans/      # GET, POST (meal plans)
@@ -191,12 +213,15 @@ src/
 │       ├── EmptyState.tsx         # Empty state placeholder
 │       ├── RecoveryCard.tsx       # Recovery/daily metrics card
 │       ├── FitbitIcon.tsx         # Fitbit integration icon
+│       ├── PlanningSection.tsx    # Planning Mode section wrapper (collapsible field group)
 │       └── index.ts              # Barrel exports
 ├── lib/
 │   ├── prisma.ts                 # Singleton PrismaClient (PrismaPg adapter)
+│   ├── prisma-adapter.ts         # PrismaPg adapter wrapper / connection config
 │   ├── auth.ts                   # NextAuth config (Google, Prisma adapter)
 │   ├── auth-helpers.ts           # getAuthUserId(), requireAuth(), requireAuthUserId()
 │   ├── demo-user.ts              # Demo user fallback for dev
+│   ├── fetch-helpers.ts          # Shared client fetch wrappers (JSON, error normalization)
 │   ├── offline-queue.ts          # Offline workout queue (localStorage + sync)
 │   ├── draft-store.ts            # Workout draft localStorage manager (24h TTL)
 │   ├── progression.ts            # Progression logic (1RM calc, stall detection, suggestions)
@@ -268,6 +293,12 @@ src/
 prisma/
 ├── schema.prisma                 # Full database schema
 └── seed.ts                       # Seeds 367 exercises across 20+ categories
+
+scripts/
+├── audit-theme-contrast.js              # WCAG AA audit across all 7 themes (run after color changes)
+├── seed-program-templates.ts            # Seeds the 8 gameplan templates (under templates@fittrack.system user)
+├── add-missing-template-exercises.ts    # Backfills exercises required by templates that aren't in the seed
+└── wipe-user-programs.ts                # Dev utility — clears all programs for a user
 ```
 
 ## Database Schema (Key Models)
@@ -672,7 +703,8 @@ After R15, the spec v2 architecture loop is closed. Remaining work is content au
 - Planning Mode (`/gameplan/[id]/planning`) — sandbox with diff vs original, sequential apply orchestration, undo toast, gameplan-kind editor (R15)
 - 8 fully-authored gameplan templates in `src/lib/program-templates/` — first-90-days, size-and-strength, lean-out, powerbuilder, busy-parent, athletic-foundations, comeback, longevity. Each carries blocks × days × slots × per-block parameters + spec §7 lifestyle picks + customization inputs + engine warnings
 - Template wizard at `/gameplan/new/templates` + `[slug]/customize` with draft persistence + 4-pass `applyCustomizations` (start date / nutrition from bodyweight / 1RM scaling / injury subs)
-- Single-workout library at `/log/library` — 8 curated one-offs; tagged `Workout.source=SINGLE_LIBRARY` so they don't count toward Gameplan adherence
+- Single-workout library at `/log/library` — 10 curated one-offs with per-slot exercise picker; tagged `Workout.source=SINGLE_LIBRARY` so they don't count toward Gameplan adherence. Starting a library workout pre-populates the logger via the draft store rather than creating a Workout row up-front (avoids orphan rows when the user backs out).
+- Manual gameplan builder at `/gameplan/build` — companion to the template wizard for users who want to author blocks/days directly without cloning a template
 - Progress consolidation — `/progress/charts` (4-chart aggregator), `/progress/calendar`, `/progress/check-ins` (audit-aware history), `/progress/injuries` all under one parent
 - Gameplan-kind editor in Planning Mode Goals tab — dropdown of 8 templates + None; PATCH `/api/programs/[id]` validates against the registry
 
