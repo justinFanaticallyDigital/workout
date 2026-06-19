@@ -126,7 +126,7 @@ export default function BlockOverviewPage({
               {` · ${block.scheduleDaysPerWeek ?? liftingDays} days / wk`}
             </div>
           </div>
-          <Link href={`/gameplan/${programId}/planning`}>
+          <Link href={`/programs/${programId}/planning`}>
             <Button kind="secondary" size="sm">
               Edit schedule
             </Button>

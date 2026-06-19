@@ -242,7 +242,7 @@ function ProgramLayer({
       )}
 
       <div className="mt-4 flex flex-col gap-2">
-        <Link href={`/gameplan/${program.id}/planning`} className="block">
+        <Link href={`/programs/${program.id}/planning`} className="block">
           <div className="flex items-center gap-3 rounded-ft-lg border border-dashed border-ft-border-strong bg-ft-surface px-3.5 py-3">
             <span className="inline-flex h-[34px] w-[34px] flex-shrink-0 items-center justify-center rounded-ft-md bg-ft-accent-faint font-display text-[17px] font-bold text-ft-accent">
               ◇

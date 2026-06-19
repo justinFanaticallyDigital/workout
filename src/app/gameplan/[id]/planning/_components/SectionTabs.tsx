@@ -10,7 +10,7 @@
 
 import type { SectionTab } from "./types";
 
-const TABS: { id: SectionTab; label: string }[] = [
+const ALL_TABS: { id: SectionTab; label: string }[] = [
   { id: "goals", label: "Goals" },
   { id: "timeline", label: "Timeline" },
   { id: "nutrition", label: "Nutrition" },
@@ -21,10 +21,14 @@ const TABS: { id: SectionTab; label: string }[] = [
 export function SectionTabs({
   active,
   onChange,
+  /** Restrict the visible tabs (Program tier drops Lifestyle — §1.2). */
+  tabs,
 }: {
   active: SectionTab;
   onChange: (t: SectionTab) => void;
+  tabs?: SectionTab[];
 }) {
+  const TABS = tabs ? ALL_TABS.filter((t) => tabs.includes(t.id)) : ALL_TABS;
   return (
     <div
       style={{
