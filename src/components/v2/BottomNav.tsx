@@ -90,6 +90,7 @@ export default function BottomNav() {
     pathname === "/gameplan/new" ||
     pathname === "/checkin" ||
     !!pathname.match(/^\/gameplan\/[^/]+\/planning$/) ||
+    !!pathname.match(/^\/programs\/[^/]+\/blocks\//) ||
     !!pathname.match(/^\/history\/[^/]+$/) ||
     (!!pathname.match(/^\/exercises\/[^/]+$/) && pathname !== "/exercises/new") ||
     pathname.startsWith("/canary");
