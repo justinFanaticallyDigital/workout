@@ -51,6 +51,11 @@ export const blueprint: ThemeConfig = {
     accentFg: '#FAFDFF',
     accentFaint: 'rgba(255,255,255,0.10)',
     accentBorder: 'rgba(255,255,255,0.45)',
+    // FLIP: accent is white (invisible on the light page bg). On-bg accent
+    // falls back to dark navy so accent chrome on the page bg stays visible.
+    accentOnBg: '#132C52',
+    accentFaintOnBg: 'rgba(19,44,82,0.12)',
+    accentBorderOnBg: 'rgba(19,44,82,0.40)',
 
     push: '#90C8FF',
     pull: '#A0E5B0',

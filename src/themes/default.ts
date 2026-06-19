@@ -40,6 +40,9 @@ export const defaultTheme: ThemeConfig = {
     accentFg: '#E0E0E0',
     accentFaint: 'rgba(224,224,224,0.10)',
     accentBorder: 'rgba(224,224,224,0.40)',
+    accentOnBg: '#E0E0E0',
+    accentFaintOnBg: 'rgba(224,224,224,0.10)',
+    accentBorderOnBg: 'rgba(224,224,224,0.40)',
 
     push: '#3B82F6',
     pull: '#22C55E',

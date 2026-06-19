@@ -42,6 +42,9 @@ export const graffiti: ThemeConfig = {
     accentFg: '#F5DC3C',
     accentFaint: 'rgba(245,220,60,0.15)',
     accentBorder: 'rgba(245,220,60,0.5)',
+    accentOnBg: '#F5DC3C',
+    accentFaintOnBg: 'rgba(245,220,60,0.15)',
+    accentBorderOnBg: 'rgba(245,220,60,0.5)',
 
     push: '#5C9CFA',
     pull: '#7DD17D',

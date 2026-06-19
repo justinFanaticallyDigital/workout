@@ -41,6 +41,9 @@ export const iron: ThemeConfig = {
     accentFg: '#C8A96E',
     accentFaint: 'rgba(200,169,110,0.15)',
     accentBorder: 'rgba(200,169,110,0.4)',
+    accentOnBg: '#C8A96E',
+    accentFaintOnBg: 'rgba(200,169,110,0.15)',
+    accentBorderOnBg: 'rgba(200,169,110,0.4)',
 
     push: '#5BA0E0',
     pull: '#7AC97A',

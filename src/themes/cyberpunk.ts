@@ -41,6 +41,9 @@ export const cyberpunk: ThemeConfig = {
     accentFg: '#00F0FF',
     accentFaint: 'rgba(0,240,255,0.12)',
     accentBorder: 'rgba(0,240,255,0.5)',
+    accentOnBg: '#00F0FF',
+    accentFaintOnBg: 'rgba(0,240,255,0.12)',
+    accentBorderOnBg: 'rgba(0,240,255,0.5)',
 
     push: '#00F0FF',
     pull: '#7DFFB8',
