@@ -169,15 +169,17 @@ export default function GameplanPage() {
       <div className="bg-ft-bg text-ft-white min-h-screen px-6 py-10 max-w-xl mx-auto">
         <h1 className="font-display text-3xl text-ft-white mb-3">No active gameplan.</h1>
         <p className="font-body text-sm text-ft-light mb-6">
-          Pick or build a program to start training. The picker walks you through goals, schedule,
-          and equipment in five quick steps.
+          Pick how you want to train — log on your own, run a pre-built program, or get coached with
+          a Gameplan.
         </p>
-        <Link
-          href="/programs/new"
-          className="inline-block cta-underline font-display text-base text-ft-accent"
-        >
-          Pick a Gameplan →
-        </Link>
+        <div className="flex flex-col gap-2.5 max-w-[280px]">
+          <Link href="/welcome" className="inline-block cta-underline font-display text-base text-ft-accent">
+            Choose how to start →
+          </Link>
+          <Link href="/shelf" className="font-body text-sm text-ft-light">
+            Browse the shelf →
+          </Link>
+        </div>
       </div>
     );
   }
