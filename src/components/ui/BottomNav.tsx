@@ -169,7 +169,9 @@ export default function BottomNav() {
     pathname === "/log/stretch-timer" ||
     pathname === "/gameplan/new" ||
     pathname.match(/^\/gameplan\/[^/]+\/planning$/) ||
-    pathname === "/checkin";
+    pathname === "/checkin" ||
+    // v2 shell routes render their own (v2) BottomNav via PillarShell.
+    pathname.startsWith("/canary");
   if (hideNav) {
     return null;
   }

@@ -14,3 +14,16 @@ export { default as Stamp } from "./Stamp";
 export { default as SectionLabel } from "./SectionLabel";
 export { default as Header } from "./Header";
 export { default as Stepper } from "./Stepper";
+
+// Shells (ARCHITECTURE.md §2–§3)
+export { default as PillarShell } from "./PillarShell";
+export { default as BottomNav } from "./BottomNav";
+export {
+  PillarRail,
+  PillarRailChip,
+  railItemsForTier,
+  RAIL_W,
+  type Pillar,
+  type RailKey,
+  type RailItem,
+} from "./PillarRail";
