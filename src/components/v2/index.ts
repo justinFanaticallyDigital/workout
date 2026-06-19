@@ -17,6 +17,7 @@ export { default as Stepper } from "./Stepper";
 
 // Shells (ARCHITECTURE.md §2–§3)
 export { default as PillarShell } from "./PillarShell";
+export { default as HomeShell } from "./HomeShell";
 export { default as BottomNav } from "./BottomNav";
 export {
   PillarRail,
