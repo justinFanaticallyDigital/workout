@@ -170,6 +170,7 @@ export default function BottomNav() {
     pathname === "/gameplan/new" ||
     pathname.match(/^\/gameplan\/[^/]+\/planning$/) ||
     pathname === "/checkin" ||
+    pathname === "/nutrition/log" ||
     // v2 shell routes render their own (v2) BottomNav via PillarShell.
     pathname.startsWith("/canary");
   if (hideNav) {
