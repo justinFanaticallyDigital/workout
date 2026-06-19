@@ -253,6 +253,13 @@ function FilterRail({
         </div>
 
         <div className="min-h-0 flex-1 overflow-y-auto py-2">
+          <Link
+            href="/shelf/match"
+            className="mx-4 my-2 flex items-center justify-between rounded-ft-md border border-dashed border-ft-border-strong px-3.5 py-3 font-body text-[12.5px] font-semibold text-ft-light"
+          >
+            Not sure? Answer a few questions
+            <span className="text-ft-dim">›</span>
+          </Link>
           <AccordionRow
             label="Goals"
             answer={filters.goals.length ? filters.goals.map(goalLabel).join(" · ") : "Any"}

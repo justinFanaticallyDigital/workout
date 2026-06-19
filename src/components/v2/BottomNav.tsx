@@ -87,6 +87,7 @@ export default function BottomNav() {
     pathname === "/log/stretch-timer" ||
     pathname === "/nutrition/log" ||
     pathname === "/library/as-gameplan" ||
+    pathname === "/shelf/match" ||
     pathname === "/gameplan/new" ||
     pathname === "/checkin" ||
     pathname === "/signin" ||
