@@ -174,6 +174,7 @@ export default function BottomNav() {
     pathname === "/library/as-gameplan" ||
     pathname.startsWith("/log/activity/") ||
     pathname.match(/^\/history\/[^/]+$/) ||
+    (pathname.match(/^\/exercises\/[^/]+$/) && pathname !== "/exercises/new") ||
     // v2 shell routes render their own (v2) BottomNav via PillarShell.
     pathname.startsWith("/canary");
   if (hideNav) {
