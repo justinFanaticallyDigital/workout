@@ -1,0 +1,198 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>FitTrack · 1.x Entry &amp; Auth Cluster — Neutral &amp; Iron</title>
+<link rel="stylesheet" href="theme-tokens.css?v=5" />
+<style>
+  html, body { margin: 0; padding: 0; background: #ECEDF0; font-family: 'IBM Plex Sans', system-ui, sans-serif; }
+  #root { min-height: 100vh; }
+  ::-webkit-scrollbar { display: none; }
+  @keyframes ftspin { to { transform: rotate(360deg); } }
+</style>
+</head>
+<body>
+
+<div id="root"></div>
+
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+
+<script type="text/babel" src="design-canvas.jsx"></script>
+<script type="text/babel" src="tweaks-panel.jsx"></script>
+<script type="text/babel" src="phone-shell.jsx"></script>
+<script type="text/babel" src="theme-bridge.jsx"></script>
+<script type="text/babel" src="tier-homes-screens.jsx"></script>
+<script type="text/babel" src="entry-screens.jsx"></script>
+<script type="text/babel" src="cluster-scaffold.jsx"></script>
+
+<script type="text/babel">
+const { useState } = React;
+
+const TWEAK_DEFAULTS = /*EDITMODE-BEGIN*/{
+  "theme": "steampunk",
+  "emailMode": "signin"
+}/*EDITMODE-END*/;
+
+function Root() {
+  const [t, setTweak] = useTweaks(TWEAK_DEFAULTS);
+  const theme = t.theme;
+  const T = useFitTrackTheme(theme);
+
+  // 1.4 picker highlight follows the same theme tweak so the canvas reads as
+  // one continuous choice: pick a row → land in that theme on 1.5.
+  const emailMode = t.emailMode;
+
+  return (
+    <>
+      <DesignCanvas>
+
+        {/* ── 1.1 ── middleware ──────────────────────────────── */}
+        <DCSection
+          id="app-open"
+          title="1.1 · App Open / Splash"
+          subtitle="Cold-start middleware. Decides where to send the user — straight to their tier home if a valid session exists, otherwise to Sign-in. No UI of its own beyond the OS splash; nothing to design."
+        >
+          <DCArtboard id="app-open-bd" label="Middleware · no UI" width={432} height={904}>
+            <ThemedPhone theme="lab" label="1.1 App Open / Splash" width={410} height={882}>
+              <ToDesign T={getFitTrackTheme('lab')} id="1.1" name="App Open / Splash" route="(middleware)" status="middleware"
+                note="Session check on cold start → routes to tier home or Sign-in. OS splash only; no screen to design."/>
+            </ThemedPhone>
+          </DCArtboard>
+        </DCSection>
+
+        {/* ── 1.2 ─────────────────────────────────────────────── */}
+        <DCSection
+          id="signin"
+          title="1.2 · Sign-in"
+          subtitle="Pre-theme. Neutral charcoal shell, system display type, three equal-weight auth buttons. No personalization until the user is in. (Final — shipped.)"
+        >
+          <DCArtboard id="signin-canonical" label="1.2 Sign-in" width={432} height={1102}>
+            <ThemedPhone theme="lab" label="1.2 Sign-in" width={410} height={1080}>
+              <SignIn/>
+            </ThemedPhone>
+          </DCArtboard>
+        </DCSection>
+
+        {/* ── 1.3 ─────────────────────────────────────────────── */}
+        <DCSection
+          id="email"
+          title="1.3 · Email Sign-up / Sign-in"
+          subtitle="Reached from 'Continue with Email'. Still pre-theme. Magic-link only — no password anywhere. One screen, a Sign up / Sign in toggle. Five states cover the full path: form → validation → conflict → sending → link sent."
+        >
+          <DCArtboard id="email-default" label="01 Default · form" width={432} height={1102}>
+            <ThemedPhone theme="lab" label="1.3 Email · Default" width={410} height={1080}>
+              <EmailAuth mode={emailMode} state="default" onMode={(m) => setTweak('emailMode', m)}/>
+            </ThemedPhone>
+          </DCArtboard>
+
+          <DCArtboard id="email-invalid" label="02 Validation error" width={432} height={1102}>
+            <ThemedPhone theme="lab" label="1.3 Email · Invalid" width={410} height={1080}>
+              <EmailAuth mode={emailMode} state="invalid" onMode={(m) => setTweak('emailMode', m)}/>
+            </ThemedPhone>
+          </DCArtboard>
+
+          <DCArtboard id="email-conflict" label="03 Account exists" width={432} height={1102}>
+            <ThemedPhone theme="lab" label="1.3 Email · Conflict" width={410} height={1080}>
+              <EmailAuth mode="signup" state="conflict"/>
+            </ThemedPhone>
+          </DCArtboard>
+
+          <DCArtboard id="email-loading" label="04 Sending" width={432} height={1102}>
+            <ThemedPhone theme="lab" label="1.3 Email · Sending" width={410} height={1080}>
+              <EmailAuth mode={emailMode} state="loading" onMode={(m) => setTweak('emailMode', m)}/>
+            </ThemedPhone>
+          </DCArtboard>
+
+          <DCArtboard id="email-sent" label="05 Link sent" width={432} height={1102}>
+            <ThemedPhone theme="lab" label="1.3 Email · Link sent" width={410} height={1080}>
+              <EmailAuth mode={emailMode} state="sent"/>
+            </ThemedPhone>
+          </DCArtboard>
+        </DCSection>
+
+        {/* ── 1.4 ─────────────────────────────────────────────── */}
+        <DCSection
+          id="theme-picker"
+          title="1.4 · Theme Picker (first visit)"
+          subtitle="Seven rows, one screen, no scroll. Each row renders in its own theme — bg, border, display font, decorative chrome — so the choice is felt, not described. Tap any row (or use the Theme tweak) to switch; that choice carries into 1.5 below."
+        >
+          <DCArtboard id="theme-canonical" label="1.4 Theme picker" width={432} height={1102}>
+            <ThemedPhone theme="lab" label="1.4 Theme" width={410} height={1080}>
+              <ThemePicker selectedId={theme} onChange={(id) => setTweak('theme', id)}/>
+            </ThemedPhone>
+          </DCArtboard>
+        </DCSection>
+
+        {/* ── 1.5 ─────────────────────────────────────────────── */}
+        <DCSection
+          id="tier-landing"
+          title="1.5 · Tier Landing"
+          subtitle="First themed screen — renders in the theme just picked above (Iron by default). Onboarding chrome, no bottom nav. Three tier cards, copy trimmed to the value prop. Error degrades to 'Continue as Logger' so the user is never stuck. Switch theme via the tweak to preview all seven."
+        >
+          <DCArtboard id="tl-default" label="01 Default" width={432} height={1202}>
+            <ThemedPhone theme={theme} label="1.5 Tier Landing · Default" width={410} height={1180}>
+              <TierLanding T={T} state="default"/>
+            </ThemedPhone>
+          </DCArtboard>
+
+          <DCArtboard id="tl-error" label="02 Catalog error" width={432} height={1262}>
+            <ThemedPhone theme={theme} label="1.5 Tier Landing · Error" width={410} height={1240}>
+              <TierLanding T={T} state="error"/>
+            </ThemedPhone>
+          </DCArtboard>
+        </DCSection>
+
+        {/* ── 1.6 ── middleware ──────────────────────────────── */}
+        <DCSection
+          id="auto-route"
+          title="1.6 · Returning User Auto-Route"
+          subtitle="Middleware for a returning, signed-in user — skips Sign-in and the picker, restoring their saved theme and dropping them on their tier home. No visible screen."
+        >
+          <DCArtboard id="auto-route-bd" label="Middleware · no UI" width={432} height={904}>
+            <ThemedPhone theme={theme} label="1.6 Returning User Auto-Route" width={410} height={882}>
+              <ToDesign T={T} id="1.6" name="Returning User Auto-Route" route="(middleware)" status="middleware"
+                note="Returning session → restores saved theme + routes to tier home. No screen to design."/>
+            </ThemedPhone>
+          </DCArtboard>
+        </DCSection>
+
+      </DesignCanvas>
+
+      <TweaksPanel title="Tweaks">
+        <TweakSection title="Theme">
+          <ThemeCycler value={theme} onChange={(v) => setTweak('theme', v)}/>
+          <div style={{ fontSize: 11.5, color: 'rgba(60,50,40,.7)', lineHeight: 1.45, marginTop: 8 }}>
+            Drives the 1.4 picker selection and the 1.5 landing. Screens 1.2 / 1.3 stay neutral by design — the user hasn't chosen yet.
+          </div>
+        </TweakSection>
+        <TweakSection title="Email mode">
+          <TweakRadio
+            value={emailMode}
+            onChange={(v) => setTweak('emailMode', v)}
+            options={[
+              { value: 'signup', label: 'Sign up' },
+              { value: 'signin', label: 'Sign in' },
+            ]}
+          />
+          <div style={{ fontSize: 11.5, color: 'rgba(60,50,40,.7)', lineHeight: 1.45, marginTop: 8 }}>
+            Flips the toggle and CTA on 1.3's form / error / sending states. The conflict state is sign-up-only.
+          </div>
+        </TweakSection>
+        <TweakSection title="About this cluster">
+          <div style={{ fontSize: 11.5, color: 'rgba(60,50,40,.7)', lineHeight: 1.45 }}>
+            Cluster 1 · Entry &amp; Auth — the complete inventory, 1.1 → 1.6 in order. 1.2 / 1.3 / 1.4 are pre-theme neutral; 1.5 is the first themed surface (cycle the theme above to canary all seven). 1.1 and 1.6 are middleware — shown as no-UI placeholders for completeness.
+          </div>
+        </TweakSection>
+      </TweaksPanel>
+    </>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<Root/>);
+</script>
+
+</body>
+</html>

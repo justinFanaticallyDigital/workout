@@ -1,0 +1,334 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>FitTrack · Settings Cluster — Iron</title>
+<link rel="stylesheet" href="theme-tokens.css?v=5" />
+<style>
+  html, body { margin: 0; padding: 0; background: #ECEDF0; font-family: 'IBM Plex Sans', system-ui, sans-serif; }
+  #root { min-height: 100vh; }
+  ::-webkit-scrollbar { display: none; }
+</style>
+</head>
+<body>
+
+<div id="root"></div>
+
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+
+<script type="text/babel" src="design-canvas.jsx"></script>
+<script type="text/babel" src="tweaks-panel.jsx"></script>
+<script type="text/babel" src="phone-shell.jsx"></script>
+<script type="text/babel" src="theme-bridge.jsx"></script>
+<script type="text/babel" src="tier-homes-screens.jsx"></script>
+<script type="text/babel" src="settings-screens.jsx"></script>
+<script type="text/babel" src="upsell-screens.jsx"></script>
+
+<script type="text/babel">
+const { useState } = React;
+
+const TWEAK_DEFAULTS = /*EDITMODE-BEGIN*/{
+  "theme": "cyberpunk"
+}/*EDITMODE-END*/;
+
+function StagedPhone({ theme, label, height, children }) {
+  return (
+    <ThemedPhone theme={theme} label={label} width={410} height={height}>
+      {children}
+    </ThemedPhone>
+  );
+}
+
+function Root() {
+  const [t, setTweak] = useTweaks(TWEAK_DEFAULTS);
+  const theme = t.theme;
+  const T = useFitTrackTheme(theme);
+
+  return (
+    <>
+      <DesignCanvas>
+
+        {/* ── 6.1 Settings Home ─────────────────────────────────────── */}
+        <DCSection
+          id="settings-home"
+          title="01 · 6.1 Settings Home"
+          subtitle="The universal top-right surface. Profile card routes to Account; grouped rows route to every other settings screen. Right-side values show live state as data (Synced · 2 connected · Iron & Chalk · lb · mi) so the index is scannable without drilling in. Gameplan viewer is the default; Logger drops Billing detail and surfaces Upgrade options."
+        >
+          <DCArtboard id="sh-gameplan" label="01 Gameplan viewer" width={432} height={1202}>
+            <StagedPhone theme={theme} label="6.1 Settings Home · Gameplan" height={1180}>
+              <SettingsHome T={T} tier="gameplan"/>
+            </StagedPhone>
+          </DCArtboard>
+          <DCArtboard id="sh-logger" label="02 Logger viewer" width={432} height={1162}>
+            <StagedPhone theme={theme} label="6.1 Settings Home · Logger" height={1140}>
+              <SettingsHome T={T} tier="logger"/>
+            </StagedPhone>
+          </DCArtboard>
+        </DCSection>
+
+        {/* ── 6.3 Sync & Storage ────────────────────────────────────── */}
+        <DCSection
+          id="sync-storage"
+          title="02 · 6.3 Sync & Storage"
+          subtitle="Logger's differentiator screen — local-first, optional Drive backup. Status card states the truth as data (last synced N ago). Four states: Synced · Paused · Conflict (resolve per-item, keep local / keep Drive) · Offline. Sync toggles + a storage meter with a clear-cache action."
+        >
+          <DCArtboard id="ss-synced" label="01 Synced" width={432} height={862}>
+            <StagedPhone theme={theme} label="6.3 Sync · Synced" height={840}>
+              <SyncStorage T={T} state="synced"/>
+            </StagedPhone>
+          </DCArtboard>
+          <DCArtboard id="ss-paused" label="02 Paused" width={432} height={862}>
+            <StagedPhone theme={theme} label="6.3 Sync · Paused" height={840}>
+              <SyncStorage T={T} state="paused"/>
+            </StagedPhone>
+          </DCArtboard>
+          <DCArtboard id="ss-conflict" label="03 Conflict" width={432} height={1242}>
+            <StagedPhone theme={theme} label="6.3 Sync · Conflict" height={1220}>
+              <SyncStorage T={T} state="conflict"/>
+            </StagedPhone>
+          </DCArtboard>
+          <DCArtboard id="ss-offline" label="04 Offline" width={432} height={862}>
+            <StagedPhone theme={theme} label="6.3 Sync · Offline" height={840}>
+              <SyncStorage T={T} state="offline"/>
+            </StagedPhone>
+          </DCArtboard>
+        </DCSection>
+
+        {/* ── 6.4 Integrations ──────────────────────────────────────── */}
+        <DCSection
+          id="integrations"
+          title="03 · 6.4 Integrations"
+          subtitle="Wearable & health providers that feed the weekly check-in. Connected providers show what syncs + last-sync time and expand to per-metric toggles; available providers offer a single Connect action. Provider marks are placeholder glyphs — swap for real brand logos at handoff."
+        >
+          <DCArtboard id="int-default" label="01 Default · Apple expanded" width={432} height={1002}>
+            <StagedPhone theme={theme} label="6.4 Integrations" height={980}>
+              <Integrations T={T}/>
+            </StagedPhone>
+          </DCArtboard>
+        </DCSection>
+
+        {/* ── 6.7 Billing ───────────────────────────────────────────── */}
+        <DCSection
+          id="billing"
+          title="04 · 6.7 Billing"
+          subtitle="Subscription, owned programs, payment method, receipts — all in one place. Active = Gameplan sub with renew date + change/cancel. Owned-only = no sub card (Program-tier user who bought programs outright). One-time purchases are flagged permanent; receipts download per line."
+        >
+          <DCArtboard id="bill-active" label="01 Active subscription" width={432} height={1102}>
+            <StagedPhone theme={theme} label="6.7 Billing · Active" height={1080}>
+              <Billing T={T} state="active"/>
+            </StagedPhone>
+          </DCArtboard>
+          <DCArtboard id="bill-owned" label="02 Owned-only (no sub)" width={432} height={1062}>
+            <StagedPhone theme={theme} label="6.7 Billing · Owned-only" height={1040}>
+              <Billing T={T} state="owned"/>
+            </StagedPhone>
+          </DCArtboard>
+        </DCSection>
+
+        {/* ── 6.7a Cancel Subscription ──────────────────────────────── */}
+        <DCSection
+          id="cancel-flow"
+          title="05 · 6.7a Cancel Subscription"
+          subtitle="Clickable 5-step flow — each artboard is live (Continue / Back actually advance). Reason → Pause offer → Credit reveal (loyalty stats + a 30%-off retention offer) → Confirm (factual: what changes vs what you keep, no guilt framing) → Done. Per CLAUDE.md the confirm step is reversible and undramatized; the destructive button is the only red surface."
+        >
+          <DCArtboard id="cf-1" label="01 Reason" width={432} height={862}>
+            <StagedPhone theme={theme} label="6.7a Cancel · Reason" height={840}>
+              <CancelFlow T={T} initialStep={1}/>
+            </StagedPhone>
+          </DCArtboard>
+          <DCArtboard id="cf-2" label="02 Pause offer" width={432} height={862}>
+            <StagedPhone theme={theme} label="6.7a Cancel · Pause" height={840}>
+              <CancelFlow T={T} initialStep={2}/>
+            </StagedPhone>
+          </DCArtboard>
+          <DCArtboard id="cf-3" label="03 Credit reveal" width={432} height={862}>
+            <StagedPhone theme={theme} label="6.7a Cancel · Credit" height={840}>
+              <CancelFlow T={T} initialStep={3}/>
+            </StagedPhone>
+          </DCArtboard>
+          <DCArtboard id="cf-4" label="04 Confirm" width={432} height={862}>
+            <StagedPhone theme={theme} label="6.7a Cancel · Confirm" height={840}>
+              <CancelFlow T={T} initialStep={4}/>
+            </StagedPhone>
+          </DCArtboard>
+          <DCArtboard id="cf-5" label="05 Done" width={432} height={862}>
+            <StagedPhone theme={theme} label="6.7a Cancel · Done" height={840}>
+              <CancelFlow T={T} initialStep={5}/>
+            </StagedPhone>
+          </DCArtboard>
+        </DCSection>
+
+        {/* ── 6.8 Cancellation Info ─────────────────────────────────── */}
+        <DCSection
+          id="cancellation-info"
+          title="06 · 6.8 Cancellation Info"
+          subtitle="Static factual explainer reached from the cancel flow and support links. Three plain blocks — Gameplan subscription, one-time programs, your data — rendered as labeled rows with values, not prose. No persuasion; just what happens, when, and what's recoverable."
+        >
+          <DCArtboard id="ci-default" label="01 Default" width={432} height={1002}>
+            <StagedPhone theme={theme} label="6.8 Cancellation Info" height={980}>
+              <CancellationInfo T={T}/>
+            </StagedPhone>
+          </DCArtboard>
+        </DCSection>
+
+        {/* ── 6.2 Account ───────────────────────────────────────────── */}
+        <DCSection
+          id="account"
+          title="07 · 6.2 Account"
+          subtitle="Profile, sign-in methods, and a reversible-framed delete. Auth is magic-link only (matches the 1.3 sign-in design) — there is no password row; you manage linked providers (Email primary · Apple · Google) instead. Delete is a separate confirm screen, not a one-tap action: the data it erases is shown as counts, and Export-first is surfaced (never a guilt gate)."
+        >
+          <DCArtboard id="ac-default" label="01 Default" width={432} height={1142}>
+            <StagedPhone theme={theme} label="6.2 Account · Default" height={1120}>
+              <Account T={T} state="default"/>
+            </StagedPhone>
+          </DCArtboard>
+          <DCArtboard id="ac-delete" label="02 Delete account" width={432} height={942}>
+            <StagedPhone theme={theme} label="6.2 Account · Delete" height={920}>
+              <Account T={T} state="delete"/>
+            </StagedPhone>
+          </DCArtboard>
+        </DCSection>
+
+        {/* ── 6.5 Units & Preferences ───────────────────────────────── */}
+        <DCSection
+          id="units-prefs"
+          title="08 · 6.5 Units & Preferences"
+          subtitle="All controls, no prose. Units (weight / distance / body / energy), calendar (week start · time format), and training defaults (RPE vs RIR · rest timer · plate math · bar weight) as inline segmented toggles and switches — each is live, so the picked state is visible. Labels are nouns, values are data."
+        >
+          <DCArtboard id="up-default" label="01 Default" width={432} height={1042}>
+            <StagedPhone theme={theme} label="6.5 Units & Preferences" height={1020}>
+              <UnitsPreferences T={T}/>
+            </StagedPhone>
+          </DCArtboard>
+        </DCSection>
+
+        {/* ── 6.6 Data Export ───────────────────────────────────────── */}
+        <DCSection
+          id="data-export"
+          title="09 · 6.6 Data Export"
+          subtitle="Pick a format (CSV per-type / JSON single file), toggle which data sets to include (counts shown as data), and a range (All / 12 weeks / Custom date fields). Generate produces a downloadable archive; the Ready state surfaces the just-built file with size + 24h expiry, and recent exports list below. Format + range are live."
+        >
+          <DCArtboard id="de-default" label="01 Default" width={432} height={1082}>
+            <StagedPhone theme={theme} label="6.6 Data Export · Default" height={1060}>
+              <DataExport T={T} state="default"/>
+            </StagedPhone>
+          </DCArtboard>
+          <DCArtboard id="de-ready" label="02 Export ready" width={432} height={1222}>
+            <StagedPhone theme={theme} label="6.6 Data Export · Ready" height={1200}>
+              <DataExport T={T} state="ready"/>
+            </StagedPhone>
+          </DCArtboard>
+        </DCSection>
+
+        {/* ── 6.9 Theme Picker (anytime) ────────────────────────────── */}
+        <DCSection
+          id="theme-picker"
+          title="10 · 6.9 Theme Picker"
+          subtitle="The anytime switcher (shares the set with the 1.4 first-visit picker). Seven large cards, each rendering a faithful mini-preview in its OWN theme tokens — real background, surface, accent, and display font — so the swatch reads true no matter the active theme. Fully interactive: tap a card and the whole batch re-themes (wired to the theme tweak)."
+        >
+          <DCArtboard id="tp-default" label="01 Default · current selected" width={432} height={1062}>
+            <StagedPhone theme={theme} label="6.9 Theme Picker" height={1040}>
+              <ThemePickerSettings T={T} value={theme} onPick={(v) => setTweak('theme', v)}/>
+            </StagedPhone>
+          </DCArtboard>
+        </DCSection>
+
+        {/* ── 6.10 Advanced / Debug ─────────────────────────────────── */}
+        <DCSection
+          id="advanced"
+          title="11 · 6.10 Advanced"
+          subtitle="Behind the Advanced row on the home. Developer toggles (dev mode · engine logs · beta features), read-only diagnostics as data (build · device ID · sync token · copy), and reset actions — rebuild index (safe) and reset on-device data (re-downloads from Drive; logs kept, so undramatized)."
+        >
+          <DCArtboard id="adv-default" label="01 Default" width={432} height={902}>
+            <StagedPhone theme={theme} label="6.10 Advanced" height={880}>
+              <Advanced T={T}/>
+            </StagedPhone>
+          </DCArtboard>
+        </DCSection>
+
+        {/* ── 6.11 About ────────────────────────────────────────────── */}
+        <DCSection
+          id="about"
+          title="12 · 6.11 About"
+          subtitle="Standard about surface — app mark + version header, then App (version · update check · what's new), Legal (terms · privacy · licenses · acknowledgements), and Support (contact · rate) as labeled rows. Factual, no marketing copy."
+        >
+          <DCArtboard id="ab-default" label="01 Default" width={432} height={942}>
+            <StagedPhone theme={theme} label="6.11 About" height={920}>
+              <About T={T}/>
+            </StagedPhone>
+          </DCArtboard>
+        </DCSection>
+
+        {/* ── 6.12 Upgrade Options ──────────────────────────────────── */}
+        <DCSection
+          id="upgrade-options"
+          title="13 · 6.12 Upgrade Options"
+          subtitle="Reached from the Settings home Upgrade row. A funnel to the Shelf — current-tier marker, then browse cards routing to the Shelf tabs, and a Compare-tiers handoff to 6.12a. Additive per tier (never a gate): Logger sees both catalogs; Program leads with coaching (Gameplan) then more programs; Gameplan cross-sells other Gameplans only."
+        >
+          <DCArtboard id="uo-logger" label="01 Logger viewer · both catalogs" width={432} height={812}>
+            <StagedPhone theme={theme} label="6.12 Upgrade · Logger" height={790}>
+              <UpgradeOptions T={T} tier="logger"/>
+            </StagedPhone>
+          </DCArtboard>
+          <DCArtboard id="uo-program" label="02 Program viewer · coaching first" width={432} height={812}>
+            <StagedPhone theme={theme} label="6.12 Upgrade · Program" height={790}>
+              <UpgradeOptions T={T} tier="program"/>
+            </StagedPhone>
+          </DCArtboard>
+          <DCArtboard id="uo-gameplan" label="03 Gameplan viewer · cross-sell only" width={432} height={742}>
+            <StagedPhone theme={theme} label="6.12 Upgrade · Gameplan" height={720}>
+              <UpgradeOptions T={T} tier="gameplan"/>
+            </StagedPhone>
+          </DCArtboard>
+        </DCSection>
+
+        {/* ── 6.12a Tier Comparison ─────────────────────────────────── */}
+        <DCSection
+          id="tier-comparison"
+          title="14 · 6.12a Tier Comparison"
+          subtitle="The feature matrix across all three tiers, reached from 6.12's Compare link. Vertical feature groups (Training / Nutrition / Lifestyle / Cross-cutting), three tier columns; the viewer's current tier gets a Current badge + column accent. Sticky bottom CTA routes each non-current tier to its Shelf tab. Three viewer states."
+        >
+          <DCArtboard id="tc-logger" label="01 Viewer is on Logger" width={432} height={1852}>
+            <StagedPhone theme={theme} label="6.12a Tier Comparison · Logger" height={1830}>
+              <TierComparison T={T} currentTier="logger"/>
+            </StagedPhone>
+          </DCArtboard>
+          <DCArtboard id="tc-program" label="02 Viewer is on Program" width={432} height={1852}>
+            <StagedPhone theme={theme} label="6.12a Tier Comparison · Program" height={1830}>
+              <TierComparison T={T} currentTier="program"/>
+            </StagedPhone>
+          </DCArtboard>
+          <DCArtboard id="tc-gameplan" label="03 Viewer is on Gameplan" width={432} height={1852}>
+            <StagedPhone theme={theme} label="6.12a Tier Comparison · Gameplan" height={1830}>
+              <TierComparison T={T} currentTier="gameplan"/>
+            </StagedPhone>
+          </DCArtboard>
+        </DCSection>
+
+      </DesignCanvas>
+
+      <TweaksPanel title="Tweaks">
+        <TweakSection title="Theme">
+          <ThemeSwitcher value={theme} onChange={(v) => setTweak('theme', v)}/>
+        </TweakSection>
+        <TweakSection title="About this batch">
+          <div style={{ fontSize: 11.5, color: 'rgba(60,50,40,.7)', lineHeight: 1.45 }}>
+            Settings cluster — 12 screens, Iron locked, all 7 themes via the
+            bridge. Sub-pages 6.2 / 6.5 / 6.6 / 6.9 / 6.10 / 6.11 complete the
+            cluster. The 6.7a cancel flow is clickable; 6.9 Theme Picker is live
+            (tap a card to re-theme the whole batch).
+          </div>
+        </TweakSection>
+      </TweaksPanel>
+    </>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<Root/>);
+</script>
+
+</body>
+</html>

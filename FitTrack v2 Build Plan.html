@@ -1,0 +1,1358 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>FitTrack v2 · Build Plan</title>
+<style>
+  :root {
+    --bg: #ECEDF0;
+    --paper: #ffffff;
+    --ink: #121823;
+    --dim: #6E7887;
+    --muted: #828C9B;
+    --rule: #D2D6DC;
+    --accent: #2563EB;
+    --warn: #C2410C;
+    --ok: #15803D;
+    --soft: #F6F7F9;
+    --skel: #F1E9D6;
+    --skel-ink: #92400E;
+    --thm: #DCFCE7;
+    --thm-ink: #166534;
+    --exp: #DBEAFE;
+    --exp-ink: #1E40AF;
+    --lck: #E5E7EB;
+    --lck-ink: #374151;
+    --untch: transparent;
+    --untch-ink: var(--muted);
+  }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0; padding: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: 'IBM Plex Sans', -apple-system, system-ui, sans-serif;
+    font-size: 14px;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+  }
+  .mono { font-family: 'JetBrains Mono', ui-monospace, monospace; font-variant-numeric: tabular-nums; }
+  .stamp {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    letter-spacing: .18em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+
+  .page {
+    max-width: 1240px;
+    margin: 0 auto;
+    padding: 56px 56px 120px;
+  }
+
+  /* Header */
+  .doc-head {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    align-items: end;
+    gap: 24px;
+    padding-bottom: 24px;
+    border-bottom: 2px solid var(--ink);
+    margin-bottom: 40px;
+  }
+  .doc-head h1 {
+    font-weight: 600;
+    font-size: 44px;
+    letter-spacing: -0.02em;
+    margin: 0;
+    line-height: 1.05;
+  }
+  .doc-head h1 small {
+    display: block;
+    font-size: 16px;
+    font-weight: 400;
+    color: var(--dim);
+    letter-spacing: 0;
+    margin-top: 8px;
+  }
+  .doc-meta {
+    text-align: right;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--muted);
+    line-height: 1.7;
+    letter-spacing: .04em;
+  }
+  .doc-meta b { color: var(--ink); font-weight: 500; }
+
+  /* Counts strip */
+  .counts {
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    border: 1px solid var(--rule);
+    background: var(--paper);
+    margin-bottom: 40px;
+  }
+  .counts > div {
+    padding: 18px 20px;
+    border-right: 1px solid var(--rule);
+  }
+  .counts > div:last-child { border-right: none; }
+  .counts .stamp { margin-bottom: 6px; }
+  .counts .big {
+    font-weight: 600;
+    font-size: 32px;
+    line-height: 1;
+    letter-spacing: -0.02em;
+  }
+  .counts .sub {
+    color: var(--dim);
+    font-size: 12px;
+    margin-top: 4px;
+  }
+
+  /* Section heads */
+  .sec { margin-top: 56px; }
+  .sec-head {
+    display: flex;
+    align-items: baseline;
+    gap: 16px;
+    margin-bottom: 20px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--rule);
+  }
+  .sec-head .num {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    color: var(--muted);
+    letter-spacing: .12em;
+  }
+  .sec-head h2 {
+    margin: 0;
+    font-size: 22px;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+  }
+  .sec-head .lede {
+    margin-left: auto;
+    color: var(--dim);
+    font-size: 13px;
+    max-width: 560px;
+    text-align: right;
+  }
+
+  /* Status legend */
+  .legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+    padding: 14px 18px;
+    background: var(--paper);
+    border: 1px solid var(--rule);
+    margin-bottom: 24px;
+    font-size: 12px;
+  }
+  .legend .item { display: flex; align-items: center; gap: 8px; }
+  .pill {
+    display: inline-block;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    letter-spacing: .12em;
+    padding: 2px 7px;
+    text-transform: uppercase;
+    border-radius: 2px;
+    font-weight: 500;
+  }
+  .pill.untouched { background: var(--soft); color: var(--untch-ink); border: 1px dashed var(--rule); }
+  .pill.skeleton { background: var(--skel); color: var(--skel-ink); }
+  .pill.explored { background: var(--exp); color: var(--exp-ink); }
+  .pill.themed { background: var(--thm); color: var(--thm-ink); }
+  .pill.locked { background: var(--lck); color: var(--lck-ink); }
+  .pill.queued { background: #FDE9C8; color: #9A3412; border: 1px solid #F4C892; }
+  .pill.next { background: var(--ink); color: var(--paper); }
+
+  /* Now panel */
+  .now {
+    background: var(--ink);
+    color: var(--paper);
+    padding: 24px 28px;
+    margin-bottom: 32px;
+    display: grid;
+    grid-template-columns: 220px 1fr;
+    gap: 32px;
+    align-items: start;
+  }
+  .now .label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    letter-spacing: .18em;
+    text-transform: uppercase;
+    color: rgba(255,255,255,.6);
+  }
+  .now .label b {
+    display: block;
+    color: var(--paper);
+    font-size: 28px;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    margin-top: 6px;
+    text-transform: none;
+    font-family: 'IBM Plex Sans', sans-serif;
+    line-height: 1.1;
+  }
+  .now ul {
+    list-style: none;
+    padding: 0; margin: 0;
+    font-size: 13.5px;
+    line-height: 1.7;
+  }
+  .now ul li {
+    display: grid;
+    grid-template-columns: 60px 1fr auto;
+    gap: 12px;
+    padding: 8px 0;
+    border-bottom: 1px solid rgba(255,255,255,.1);
+    align-items: baseline;
+  }
+  .now ul li:last-child { border-bottom: none; }
+  .now ul code {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: rgba(255,255,255,.6);
+  }
+  .now ul b { font-weight: 500; }
+
+  /* Cluster blocks */
+  .cluster {
+    background: var(--paper);
+    border: 1px solid var(--rule);
+    margin-bottom: 20px;
+  }
+  .cluster-head {
+    display: grid;
+    grid-template-columns: 60px 1fr auto;
+    align-items: center;
+    gap: 16px;
+    padding: 18px 22px;
+    border-bottom: 1px solid var(--rule);
+    background: var(--soft);
+  }
+  .cluster-head .cn {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    letter-spacing: .14em;
+    color: var(--muted);
+  }
+  .cluster-head h3 {
+    margin: 0;
+    font-size: 17px;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+  }
+  .cluster-head h3 small {
+    color: var(--dim);
+    font-weight: 400;
+    font-size: 12.5px;
+    margin-left: 10px;
+  }
+  .cluster-head .progress {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--dim);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .pbar {
+    width: 120px;
+    height: 6px;
+    background: var(--rule);
+    position: relative;
+    border-radius: 3px;
+    overflow: hidden;
+  }
+  .pbar i {
+    position: absolute;
+    top: 0; left: 0;
+    height: 100%;
+    background: var(--ok);
+  }
+
+  /* Screen rows */
+  .rows { padding: 4px 0; }
+  .row {
+    display: grid;
+    grid-template-columns: 60px 1.4fr 1.2fr 90px 1fr;
+    gap: 16px;
+    align-items: center;
+    padding: 12px 22px;
+    border-bottom: 1px dotted var(--rule);
+    font-size: 13px;
+  }
+  .row:last-child { border-bottom: none; }
+  .row .id {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11.5px;
+    color: var(--muted);
+  }
+  .row .name b {
+    display: block;
+    font-weight: 500;
+    color: var(--ink);
+    margin-bottom: 2px;
+  }
+  .row .name .route {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--accent);
+  }
+  .row .file {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11.5px;
+    color: var(--ink);
+  }
+  .row .file.empty { color: var(--muted); font-style: italic; font-family: 'IBM Plex Sans', sans-serif; font-size: 12.5px; }
+  .row .status-cell { display: flex; }
+  .row .notes {
+    font-size: 12px;
+    color: var(--dim);
+  }
+  .row.next-up {
+    background: #FEF7E6;
+    border-left: 3px solid var(--warn);
+    padding-left: 19px;
+  }
+
+  /* Plan / Order */
+  .order {
+    background: var(--paper);
+    border: 1px solid var(--rule);
+    padding: 0;
+  }
+  .order .order-row {
+    display: grid;
+    grid-template-columns: 40px 90px 1fr 110px;
+    gap: 18px;
+    padding: 16px 22px;
+    border-bottom: 1px solid var(--rule);
+    align-items: center;
+  }
+  .order .order-row:last-child { border-bottom: none; }
+  .order .step {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 14px;
+    color: var(--ink);
+    font-weight: 600;
+  }
+  .order .est {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--muted);
+  }
+  .order .desc b {
+    display: block;
+    font-weight: 500;
+    margin-bottom: 2px;
+  }
+  .order .desc .scope {
+    color: var(--dim);
+    font-size: 12.5px;
+  }
+  .order .order-row.done {
+    background: #F0FDF4;
+  }
+  .order .order-row.active {
+    background: #FEF7E6;
+    border-left: 3px solid var(--warn);
+    padding-left: 19px;
+  }
+
+  /* Change log */
+  .log {
+    background: var(--paper);
+    border: 1px solid var(--rule);
+  }
+  .log-entry {
+    display: grid;
+    grid-template-columns: 110px 1fr;
+    gap: 18px;
+    padding: 14px 22px;
+    border-bottom: 1px solid var(--rule);
+  }
+  .log-entry:last-child { border-bottom: none; }
+  .log-entry .when {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--muted);
+    line-height: 1.6;
+  }
+  .log-entry .what {
+    font-size: 13px;
+    line-height: 1.6;
+  }
+  .log-entry .what b { font-weight: 500; }
+  .log-entry .what code {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11.5px;
+    background: var(--soft);
+    padding: 1px 5px;
+    border-radius: 2px;
+    color: var(--ink);
+  }
+  .log-entry.add .when { color: var(--ok); }
+  .log-entry.change .when { color: var(--accent); }
+  .log-entry.note .when { color: var(--warn); }
+
+  /* Rules */
+  .rules {
+    background: var(--paper);
+    border: 1px solid var(--rule);
+    padding: 22px 26px;
+  }
+  .rules h3 {
+    margin: 0 0 14px;
+    font-size: 15px;
+    font-weight: 600;
+  }
+  .rules ol {
+    margin: 0;
+    padding-left: 22px;
+    font-size: 13px;
+    line-height: 1.7;
+  }
+  .rules ol li { margin-bottom: 6px; }
+  .rules code {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11.5px;
+    background: var(--soft);
+    padding: 1px 5px;
+    border-radius: 2px;
+  }
+
+  /* Footer */
+  .doc-foot {
+    margin-top: 64px;
+    padding-top: 20px;
+    border-top: 2px solid var(--ink);
+    display: flex;
+    justify-content: space-between;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--muted);
+    letter-spacing: .04em;
+  }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <!-- HEADER -->
+  <header class="doc-head">
+    <div>
+      <div class="stamp" style="margin-bottom:14px;">BUILD PLAN · LIVING DOC</div>
+      <h1>FitTrack v2 — Build Plan
+        <small>Status across every screen in the inventory · updated as we ship.</small>
+      </h1>
+    </div>
+    <div class="doc-meta">
+      <div><b>SOURCE</b> &nbsp;fittrack-screen-inventory.md</div>
+      <div><b>UPDATED</b> &nbsp;Jun 2, 2026</div>
+      <div><b>OWNER</b> &nbsp;&nbsp;Claude Design</div>
+      <div><b>STATUS</b> &nbsp;Active</div>
+    </div>
+  </header>
+
+  <!-- COUNTS -->
+  <div class="counts">
+    <div>
+      <div class="stamp">Total screens</div>
+      <div class="big">70</div>
+      <div class="sub">7 clusters · audited May 30</div>
+    </div>
+    <div>
+      <div class="stamp">Themed / final</div>
+      <div class="big">67</div>
+      <div class="sub">visual direction locked</div>
+    </div>
+    <div>
+      <div class="stamp">Queued (unlocked)</div>
+      <div class="big">0</div>
+      <div class="sub">6.12 built + folded into Settings</div>
+    </div>
+    <div>
+      <div class="stamp">Explored / skeleton</div>
+      <div class="big">0</div>
+      <div class="sub">5.1 Shelf ported to all 7 themes</div>
+    </div>
+    <div>
+      <div class="stamp">Untouched / no-UI</div>
+      <div class="big">2</div>
+      <div class="sub">2 middleware</div>
+    </div>
+    <div>
+      <div class="stamp">% complete</div>
+      <div class="big">99<span style="font-size:18px;color:var(--dim);">%</span></div>
+      <div class="sub">68 / 70 themed · only 2 middleware (no UI) remain</div>
+    </div>
+  </div>
+
+  <!-- NOW WORKING -->
+  <div class="now">
+    <div class="label">SHIPPED · JUN 2
+      <b>Shelf ported · build complete</b>
+    </div>
+    <ul>
+      <li><code>5.1</code><b>Shelf ported onto the theme bridge — the last single-theme holdout now cycles all 7 themes. Drafting structure stays; palette + type follow the theme. <code>setShelfTheme()</code> mutates <code>window.BPS</code> in place so screens + detail re-theme untouched.</b><span class="pill next">CANARY</span></li>
+      <li><code>6.12</code><b>Upgrade Options built + folded into the Settings cluster alongside 6.12a.</b><span class="pill themed">THEMED</span></li>
+      <li><code>cleanup</code><b>Gameplan Picker archived (superseded by the Shelf funnel). 68 / 70 screens themed — only 2 middleware (no UI) remain. Inventory complete.</b><span class="pill themed">DONE</span></li>
+    </ul>
+  </div>
+
+  <!-- LEGEND -->
+  <div class="legend">
+    <div class="item"><span class="pill untouched">Untouched</span><span style="color:var(--dim);">not yet started</span></div>
+    <div class="item"><span class="pill skeleton">Skeleton</span><span style="color:var(--dim);">layout in place, no theme</span></div>
+    <div class="item"><span class="pill explored">Explored</span><span style="color:var(--dim);">options on a canvas</span></div>
+    <div class="item"><span class="pill themed">Themed</span><span style="color:var(--dim);">picked + applied a theme</span></div>
+    <div class="item"><span class="pill locked">Locked</span><span style="color:var(--dim);">in product · no UI (middleware)</span></div>
+    <div class="item"><span class="pill queued">Queued</span><span style="color:var(--dim);">unlocked · needs a design file</span></div>
+    <div class="item"><span class="pill next">Next up</span><span style="color:var(--dim);">immediate work</span></div>
+  </div>
+
+  <!-- ════════ CLUSTER 1 ════════ -->
+  <section class="sec">
+    <div class="sec-head">
+      <span class="num">CLUSTER 1</span>
+      <h2>Entry &amp; Auth</h2>
+      <div class="lede">Screens before the user reaches their tier home. Shared across all tiers.</div>
+    </div>
+    <div class="cluster">
+      <div class="cluster-head">
+        <span class="cn">1.0</span>
+        <h3>Entry &amp; Auth <small>6 screens · 4 themed / 2 middleware · consolidated</small></h3>
+        <div class="progress">100%<div class="pbar"><i style="width:100%;"></i></div></div>
+      </div>
+      <div class="rows">
+        <div class="row">
+          <span class="id">1.1</span>
+          <div class="name"><b>App Open / Splash</b><span class="route">(middleware)</span></div>
+          <span class="file">Cluster 1 - Entry &amp; Auth.html</span>
+          <span class="status-cell"><span class="pill locked">Locked</span></span>
+          <span class="notes">Middleware placeholder in the cluster file. Auto-routes on cold start; no screen to design.</span>
+        </div>
+        <div class="row">
+          <span class="id">1.2</span>
+          <div class="name"><b>Sign-in</b><span class="route">/signin</span></div>
+          <span class="file">Cluster 1 - Entry &amp; Auth.html</span>
+          <span class="status-cell"><span class="pill themed">Themed</span></span>
+          <span class="notes">In the consolidated cluster file. Neutral charcoal, pre-theme by design — final. Picker hands off to the 7 themes.</span>
+        </div>
+        <div class="row">
+          <span class="id">1.3</span>
+          <div class="name"><b>Email Sign-up / Sign-in</b><span class="route">/signin/email</span></div>
+          <span class="file">Cluster 1 - Entry &amp; Auth.html</span>
+          <span class="status-cell"><span class="pill themed">Themed</span></span>
+          <span class="notes">In the consolidated cluster file. Magic-link only, no password. Sign up / Sign in toggle. States: form · invalid · conflict · sending · link sent.</span>
+        </div>
+        <div class="row">
+          <span class="id">1.4</span>
+          <div class="name"><b>Theme Picker (first visit)</b><span class="route">/theme-picker</span></div>
+          <span class="file">Cluster 1 - Entry &amp; Auth.html</span>
+          <span class="status-cell"><span class="pill themed">Themed</span></span>
+          <span class="notes">In the consolidated cluster file. Seven rows, one screen, no scroll — each row rendered in its own theme (bg / border / display font / chrome), checkbox select. The choice carries into 1.5.</span>
+        </div>
+        <div class="row">
+          <span class="id">1.5</span>
+          <div class="name"><b>Tier Landing</b><span class="route">/welcome</span></div>
+          <span class="file">Cluster 1 - Entry &amp; Auth.html</span>
+          <span class="status-cell"><span class="pill themed">Themed</span></span>
+          <span class="notes">In the consolidated cluster file. First themed screen — inherits the picked theme. Three tier cards, copy trimmed to value prop. Error degrades to Continue as Logger. Default / Error · all 7 themes via the cycler.</span>
+        </div>
+        <div class="row">
+          <span class="id">1.6</span>
+          <div class="name"><b>Returning User Auto-Route</b><span class="route">(middleware)</span></div>
+          <span class="file">Cluster 1 - Entry &amp; Auth.html</span>
+          <span class="status-cell"><span class="pill locked">Locked</span></span>
+          <span class="notes">Middleware placeholder in the cluster file. Restores saved theme + routes to tier home; no visible screen.</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ════════ CLUSTER 2 ════════ -->
+  <section class="sec">
+    <div class="sec-head">
+      <span class="num">CLUSTER 2</span>
+      <h2>Logger Tier</h2>
+      <div class="lede">Screens visible to free-tier users.</div>
+    </div>
+    <div class="cluster">
+      <div class="cluster-head">
+        <span class="cn">2.0</span>
+        <h3>Logger Tier <small>15 screens · all themed · consolidated</small></h3>
+        <div class="progress">100%<div class="pbar"><i style="width:100%;"></i></div></div>
+      </div>
+      <div class="rows">
+        <div class="row">
+          <span class="id">2.1</span>
+          <div class="name"><b>Workouts Library (Logger home)</b><span class="route">/library</span></div>
+          <span class="file">Cluster 2 - Logger Tier.html</span>
+          <span class="status-cell"><span class="pill themed">Themed</span></span>
+          <span class="notes">In the consolidated cluster file. Default / Empty / Error · all 7 themes via the cycler.</span>
+        </div>
+        <div class="row">
+          <span class="id">2.2</span>
+          <div class="name"><b>Training Tab (Logger)</b><span class="route">/training</span></div>
+          <span class="file">Cluster 2 - Logger Tier.html</span>
+          <span class="status-cell"><span class="pill themed">Themed</span></span>
+          <span class="notes">In the consolidated cluster file. Promoted out of the neutral three-pillar exploration into the tier-homes vocabulary (Header · Card · Button · Chip · Stamp). The Logger launchpad — no program, so do-it-now not scheduled-today: resume in-progress · start a workout · repeat recent · 6 logger types (Lift/HIIT/Cardio/Class/Stretch/Custom) · saved-frame launch row · one factual locked “Train on a plan” upsell. Carries the themed side-rail (Today / Block / Program / Gameplan) with TWO modes — Rail or Chip; Hide drops rail→chip, chip restores. Program + Gameplan dimmed/locked for a Logger. States: Default / Empty / Error. Tweaks: rail/no-rail · resume · upsell.</span>
+        </div>
+        <div class="row">
+          <span class="id">2.3</span>
+          <div class="name"><b>Exercise Detail</b><span class="route">/exercises/[id]</span></div>
+          <span class="file">Cluster 2 - Logger Tier.html</span>
+          <span class="status-cell"><span class="pill themed">Themed</span></span>
+          <span class="notes">In the consolidated cluster file. e1RM trend chart (Epley, from the real weekly sets) · next-session progression suggestion · set history newest-first with top-set PR flag · alternates (tap to swap). Tier-aware — Logger sees the data, custom-exercise editor locked. Logger / Program states · all 7 via the cycler.</span>
+        </div>
+        <div class="row">
+          <span class="id">2.4</span>
+          <div class="name"><b>Active Workout Logger</b><span class="route">/log/[workoutId]</span></div>
+          <span class="file">Cluster 2 - Logger Tier.html</span>
+          <span class="status-cell"><span class="pill themed">Themed</span></span>
+          <span class="notes">In the consolidated cluster file. Direction A — Horizontal Weeks (the spreadsheet literal). Mid-session state (logged + remaining w/ last-week ghosts); tap any open cell → number-pad sheet logs it; week strip swaps W1–W4. Tweaks: last-week mode (ghost / row / hide) · category rail (rotated / stripe / chip). All 7 via the cycler.</span>
+        </div>
+        <div class="row">
+          <span class="id">2.5</span>
+          <div class="name"><b>Save as Frame</b><span class="route">(sheet on finish)</span></div>
+          <span class="file">Cluster 2 - Logger Tier.html</span>
+          <span class="status-cell"><span class="pill themed">Themed</span></span>
+          <span class="notes">In the consolidated cluster file. Just-finished session as data + editable name + keep-weights / pin toggles. Default · Name-in-use (Replace / Save as copy). All 7 via the cycler.</span>
+        </div>
+        <div class="row">
+          <span class="id">2.6</span>
+          <div class="name"><b>Workout History Detail</b><span class="route">/history/[id]</span></div>
+          <span class="file">Cluster 2 - Logger Tier.html</span>
+          <span class="status-cell"><span class="pill themed">Themed</span></span>
+          <span class="notes">In the consolidated cluster file. Read-only session replay from the real mock data — summary (duration · volume · sets · PRs) + every exercise set-by-set vs target, top set flagged, lift note. Footer Repeat seeds a new 2.4 session. All 7 via the cycler.</span>
+        </div>
+        <div class="row">
+          <span class="id">2.7</span>
+          <div class="name"><b>Nutrition Tab (Logger)</b><span class="route">/nutrition</span></div>
+          <span class="file">Cluster 2 - Logger Tier.html</span>
+          <span class="status-cell"><span class="pill themed">Themed</span></span>
+          <span class="notes">In the consolidated cluster file. Promoted out of Nutrition v2 into the Header/Card/Chip vocabulary + pillar side-rail. Logger view = manual targets + daily log (calorie/macro rollup → 2.7a editor · today's meals). Week Plan / Model Day slots locked. Default / Empty / Error · all 7 via the cycler.</span>
+        </div>
+        <div class="row">
+          <span class="id">2.7a</span>
+          <div class="name"><b>Manual Macro Target Editor</b><span class="route">(sheet)</span></div>
+          <span class="file">Cluster 2 - Logger Tier.html</span>
+          <span class="status-cell"><span class="pill themed">Themed</span></span>
+          <span class="notes">In the consolidated cluster file. Calorie + 3 macro steppers, live split bar &amp; reconcile chip (Scale-to-fit), Balanced / High-protein / Low-carb presets. Matches · Over-target states.</span>
+        </div>
+        <div class="row">
+          <span class="id">2.8</span>
+          <div class="name"><b>Meal Logger</b><span class="route">/nutrition/log</span></div>
+          <span class="file">Cluster 2 - Logger Tier.html</span>
+          <span class="status-cell"><span class="pill themed">Themed</span></span>
+          <span class="notes">In the consolidated cluster file. Food search (+ recents) → tap to set servings → log to a meal; the quantity sheet scales kcal + macros live. Split out of Nutrition v2 and themed. Search / Quantity states · all 7 via the cycler.</span>
+        </div>
+        <div class="row">
+          <span class="id">2.9</span>
+          <div class="name"><b>Lifestyle Tab (Logger preview)</b><span class="route">/lifestyle</span></div>
+          <span class="file">Cluster 2 - Logger Tier.html</span>
+          <span class="status-cell"><span class="pill themed">Themed</span></span>
+          <span class="notes">In the consolidated cluster file. Tier-locked pillar preview — every side-rail slot dimmed + lock badge, metric cards faded behind a factual Gameplan upsell (never a gate). Rail / Chip both honoured · all 7 via the cycler.</span>
+        </div>
+        <div class="row">
+          <span class="id">2.10</span>
+          <div class="name"><b>View-as-Gameplan Preview</b><span class="route">/library/preview-gameplan</span></div>
+          <span class="file">Cluster 2 - Logger Tier.html</span>
+          <span class="status-cell"><span class="pill themed">Themed</span></span>
+          <span class="notes">In the consolidated cluster file. Real logger data, inert controls, PREVIEW watermark.</span>
+        </div>
+        <div class="row">
+          <span class="id">2.11</span>
+          <div class="name"><b>+Log Bottom Sheet</b><span class="route">(sheet)</span></div>
+          <span class="file">Cluster 2 - Logger Tier.html</span>
+          <span class="status-cell"><span class="pill themed">Themed</span></span>
+          <span class="notes">In the consolidated cluster file. The universal capture sheet — tiles grouped Train (Lift · HIIT · Cardio · Class · Stretch · Custom) / Track (Meal · Lifestyle); Lifestyle locked for Logger with one factual line. Each tile routes to its logger. Rises over the dimmed home · all 7 via the cycler.</span>
+        </div>
+        <div class="row">
+          <span class="id">2.12</span>
+          <div class="name"><b>Stretch Timer</b><span class="route">/training/stretch</span></div>
+          <span class="file">Cluster 2 - Logger Tier.html</span>
+          <span class="status-cell"><span class="pill themed">Themed</span></span>
+          <span class="notes">In the consolidated cluster file. Full-screen guided flow — ring countdown for the current move, progress dots, transport controls. Running / Paused / Complete · all 7 via the cycler.</span>
+        </div>
+        <div class="row">
+          <span class="id">2.13</span>
+          <div class="name"><b>HIIT / LISS / Class / Custom loggers</b><span class="route">/log/[type]</span></div>
+          <span class="file">Cluster 2 - Logger Tier.html</span>
+          <span class="status-cell"><span class="pill themed">Themed</span></span>
+          <span class="notes">In the consolidated cluster file. One templated form covers all four — constant duration-stopwatch hero / effort scale / auto-calorie / notes / save; only the metrics card swaps per type. HIIT · Cardio · Class · Custom · all 7 via the cycler.</span>
+        </div>
+        <div class="row">
+          <span class="id">2.14</span>
+          <div class="name"><b>Single Workout Library</b><span class="route">/log/library</span></div>
+          <span class="file">Cluster 2 - Logger Tier.html</span>
+          <span class="status-cell"><span class="pill themed">Themed</span></span>
+          <span class="notes">In the consolidated cluster file. Browse-and-pick a one-off — live search + category filter over saved frames and built-in templates; reuses the Frame vocabulary from 2.1/2.2. Default / No-results · all 7 via the cycler.</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ════════ CLUSTER 3 ════════ -->
+  <section class="sec">
+    <div class="sec-head">
+      <span class="num">CLUSTER 3</span>
+      <h2>Program Tier</h2>
+      <div class="lede">Screens unlocked at Program tier on top of all Logger surfaces.</div>
+    </div>
+    <div class="cluster">
+      <div class="cluster-head">
+        <span class="cn">3.0</span>
+        <h3>Program Tier <small>10 screens · all themed · consolidated</small></h3>
+        <div class="progress">100%<div class="pbar"><i style="width:100%;"></i></div></div>
+      </div>
+      <div class="rows">
+        <div class="row">
+          <span class="id">3.1</span>
+          <div class="name"><b>My Program (Program home)</b><span class="route">/my-program</span></div>
+          <span class="file">Cluster 3 - Program Tier.html</span>
+          <span class="status-cell"><span class="pill themed">Themed</span></span>
+          <span class="notes">In the consolidated cluster file. Three-up tier homes · Default / Empty / Error. All 7 themes via the cycler.</span>
+        </div>
+        <div class="row">
+          <span class="id">3.1a</span>
+          <div class="name"><b>Switch Active Program</b><span class="route">(sheet)</span></div>
+          <span class="file">Cluster 3 - Program Tier.html</span>
+          <span class="status-cell"><span class="pill themed">Themed</span></span>
+          <span class="notes">In the consolidated cluster file. Radio list of owned programs, active chip + progress, factual pause line on switch (no warning framing).</span>
+        </div>
+        <div class="row">
+          <span class="id">3.2</span>
+          <div class="name"><b>Training Tab (Program)</b><span class="route">/training</span></div>
+          <span class="file">Cluster 3 - Program Tier.html</span>
+          <span class="status-cell"><span class="pill themed">Themed</span></span>
+          <span class="notes">In the consolidated cluster file. Built on the canonical PillarShell via ProgramPillarShell — Header → [PillarRail | scroll] → BottomNav, rail + chip modes, locked Gameplan slot dimmed (not hidden). Today / Block / Program layers + error + chip. Canary clean (Blueprint + iron).</span>
+        </div>
+        <div class="row">
+          <span class="id">3.3</span>
+          <div class="name"><b>Nutrition Tab (Program)</b><span class="route">/nutrition</span></div>
+          <span class="file">Cluster 3 - Program Tier.html</span>
+          <span class="status-cell"><span class="pill themed">Themed</span></span>
+          <span class="notes">In the consolidated cluster file. Same pillar contract as 3.2 (ProgramPillarShell). Today / This Week / Model Day + empty + chip; Week→Grocery (3.3b) and meal→Recipe (3.3a) handoffs. Canary clean.</span>
+        </div>
+        <div class="row">
+          <span class="id">3.3a</span>
+          <div class="name"><b>Recipe Detail</b><span class="route">/nutrition/recipes/[id]</span></div>
+          <span class="file">Cluster 3 - Program Tier.html</span>
+          <span class="status-cell"><span class="pill themed">Themed</span></span>
+          <span class="notes">In the consolidated cluster file. Hero · macro rollup · servings stepper that scales ingredients + grocery · have/need markers · numbered method · sticky Eat-this/Swap bar. States: Default · Scaled 4× · Swap sheet · Ingredient macros · Logger-locked. All 7 themes via the cycler.</span>
+        </div>
+        <div class="row">
+          <span class="id">3.3b</span>
+          <div class="name"><b>Grocery List</b><span class="route">/nutrition/grocery</span></div>
+          <span class="file">Cluster 3 - Program Tier.html</span>
+          <span class="status-cell"><span class="pill themed">Themed</span></span>
+          <span class="notes">In the consolidated cluster file. Aisle grouping · live check-off · tap-row to see which meals need an item · pantry-skip ("I have this") · collapse aisles · Full/Names-only · share &amp; export sheet. All 7 themes via the cycler.</span>
+        </div>
+        <div class="row">
+          <span class="id">3.4</span>
+          <div class="name"><b>Lifestyle Tab (Program)</b><span class="route">/lifestyle</span></div>
+          <span class="file">Cluster 3 - Program Tier.html</span>
+          <span class="status-cell"><span class="pill themed">Themed</span></span>
+          <span class="notes">In the consolidated cluster file. Sub-tab (3 vitals) + 3 log-sheet archetypes (numeric / G-Y-R / 1–5 scale) + 8-week history heatmap. All 7 themes via the cycler.</span>
+        </div>
+        <div class="row">
+          <span class="id">3.5</span>
+          <div class="name"><b>Planning Mode (Program)</b><span class="route">/program/[id]/planning</span></div>
+          <span class="file">Cluster 3 - Program Tier.html</span>
+          <span class="status-cell"><span class="pill themed">Themed</span></span>
+          <span class="notes">In the consolidated cluster file. Trajectory / Daily-target / Volume views + Recommendation / Entry / Apply-modal states + draft-watermark tweak. Program/Gameplan share. All 7 themes via the cycler.</span>
+        </div>
+        <div class="row">
+          <span class="id">3.6</span>
+          <div class="name"><b>Progress (Program)</b><span class="route">/progress</span></div>
+          <span class="file">Cluster 3 - Program Tier.html</span>
+          <span class="status-cell"><span class="pill themed">Themed</span></span>
+          <span class="notes">In the consolidated cluster file. <code>progress-screens.jsx</code> base — metric trend + month adherence calendar + full history. Program-tier middle band is two LOCKED preview cards (the Gameplan upsell, never a gate). Non-pillar surface: rides bottom-nav slot 1. All content on Cards; Segmented AA-pass on Blueprint. Default / Empty / Error.</span>ier=gameplan (this is the 4.6 base). All content on Cards; Segmented selector AA-pass on Blueprint. Default / Empty / Error.</span>
+        </div>
+        <div class="row">
+          <span class="id">3.7</span>
+          <div class="name"><b>Block / Day Detail Editor</b><span class="route">/blocks/[id]</span></div>
+          <span class="file">Cluster 3 - Program Tier.html</span>
+          <span class="status-cell"><span class="pill themed">Themed</span></span>
+          <span class="notes">In the consolidated cluster file. <code>block-editor.jsx</code> — the standalone day-level editor on the planning-sandbox contract: sticky PLANNING stamp, staged diff, Apply/Discard. Block overview → Day editor → Add/swap sheet. No 410 overflow (rows stack label-left / stepper-right).</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ════════ CLUSTER 4 ════════ -->
+  <section class="sec">
+    <div class="sec-head">
+      <span class="num">CLUSTER 4</span>
+      <h2>Gameplan Tier</h2>
+      <div class="lede">Screens unlocked at Gameplan tier on top of Program surfaces.</div>
+    </div>
+    <div class="cluster">
+      <div class="cluster-head">
+        <span class="cn">4.0</span>
+        <h3>Gameplan Tier <small>7 screens · all themed · consolidated</small></h3>
+        <div class="progress">100%<div class="pbar"><i style="width:100%;"></i></div></div>
+      </div>
+      <div class="rows">
+        <div class="row">
+          <span class="id">4.1</span>
+          <div class="name"><b>Gameplan Dashboard</b><span class="route">/gameplan</span></div>
+          <span class="file">Cluster 4 - Gameplan Tier.html</span>
+          <span class="status-cell"><span class="pill themed">Themed</span></span>
+          <span class="notes">In the consolidated cluster file. The flagship — Goal Pulse trajectories, Training / Nutrition / Lifestyle sub-tabs, logged + rest + empty states. Graffiti hero; all 7 themes via the cycler.</span>
+        </div>
+        <div class="row">
+          <span class="id">4.2</span>
+          <div class="name"><b>Weekly Check-in</b><span class="route">/checkin</span></div>
+          <span class="file">Cluster 4 - Gameplan Tier.html</span>
+          <span class="status-cell"><span class="pill themed">Themed</span></span>
+          <span class="notes">In the consolidated cluster file. Pending card · full detail (pending) · between-weeks empty + history · applied detail. All 7 themes via the cycler.</span>
+        </div>
+        <div class="row">
+          <span class="id">4.3</span>
+          <div class="name"><b>Recommendations Feed</b><span class="route">/recommendations</span></div>
+          <span class="file">Cluster 4 - Gameplan Tier.html</span>
+          <span class="status-cell"><span class="pill themed">Themed</span></span>
+          <span class="notes">In the consolidated cluster file. The standalone engine-rec feed — Pending / Applied / Dismissed groups, live Apply + Dismiss, per-rec Open-in-Planning handoff, plus the cleared inbox between check-ins. Lab idiom (reuses the check-in rec vocabulary). All 7 themes via the cycler.</span>
+        </div>
+        <div class="row">
+          <span class="id">4.4</span>
+          <div class="name"><b>Planning Mode (Gameplan)</b><span class="route">/gameplan/[id]/planning</span></div>
+          <span class="file">Cluster 4 - Gameplan Tier.html</span>
+          <span class="status-cell"><span class="pill themed">Themed</span></span>
+          <span class="notes">In the consolidated cluster file. Trajectory / Daily-target / Volume views + draft-watermark tweak. Same planning-screens surface as 3.5; state + confirmation variants live in the 3.1 cluster file.</span>
+        </div>
+        <div class="row">
+          <span class="id">4.5</span>
+          <div class="name"><b>Goals Editor</b><span class="route">(in Planning Mode)</span></div>
+          <span class="file">Cluster 4 - Gameplan Tier.html</span>
+          <span class="status-cell"><span class="pill themed">Themed</span></span>
+          <span class="notes">In the consolidated cluster file. Dedicated add / edit / prioritize / archive surface — drag-ranked goal rows, editable drafting fields, live add-goal type picker, reversible archive. Blueprint draft idiom (shares the Planning Mode vocabulary). Default / Add-goal / Empty · all 7 themes via the cycler.</span>
+        </div>
+        <div class="row">
+          <span class="id">4.6</span>
+          <div class="name"><b>Progress (Gameplan, full)</b><span class="route">/progress</span></div>
+          <span class="file">Cluster 4 - Gameplan Tier.html</span>
+          <span class="status-cell"><span class="pill themed">Themed</span></span>
+          <span class="notes">In the consolidated cluster file. The shared 3.6 base at <code>tier=gameplan</code> — same trend + calendar + history, but the Program upsell band is replaced by the real superset: three this-week adherence RINGS (Training / Nutrition / Lifestyle), the weekly check-in history (pending top row + applied archive → 4.7), and the recommendation ledger (applied / dismissed). Default / Empty · all 7 themes via the cycler.</span>
+        </div>
+        <div class="row">
+          <span class="id">4.7</span>
+          <div class="name"><b>Check-in Detail / History</b><span class="route">/progress/check-ins/[id]</span></div>
+          <span class="file">Cluster 4 - Gameplan Tier.html</span>
+          <span class="status-cell"><span class="pill themed">Themed</span></span>
+          <span class="notes">In the consolidated cluster file. Standalone past-check-in surface — a history index (tallies + newest-first archive) and the read-only applied detail you land on from a row. Reuses 4.2's applied detail + PastCheckInRow. All 7 themes via the cycler.</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ════════ CLUSTER 5 ════════ -->
+  <section class="sec">
+    <div class="sec-head">
+      <span class="num">CLUSTER 5</span>
+      <h2>Universal Shelf</h2>
+      <div class="lede">The marketing surface. Reached from in-screen affordances on every tier's slot-1 home. <b style="color:var(--ok,#1F8A5B);">Consolidated.</b></div>
+    </div>
+    <div class="cluster">
+      <div class="cluster-head">
+        <span class="cn">5.0</span>
+        <h3>Universal Shelf <small>7 screens · 6 themed / 1 explored · consolidated</small></h3>
+        <div class="progress">93%<div class="pbar"><i style="width:93%;"></i></div></div>
+      </div>
+      <div class="rows">
+        <div class="row">
+          <span class="id">5.1</span>
+          <div class="name"><b>Shelf</b><span class="route">/shelf</span></div>
+          <span class="file">Cluster 5 - Universal Shelf.html</span>
+          <span class="status-cell"><span class="pill themed">Themed</span></span>
+          <span class="notes">In the consolidated cluster file. Grid + filter rail · Programs / Gameplans tabs · compare banner · empty state. Ported onto the theme bridge — now re-themes through all 7 themes via the cycler (drafting structure stays; palette + type follow the theme). <code>setShelfTheme()</code> derives the BP_* palette from the active theme and mutates <code>window.BPS</code> in place, so screens + detail re-theme untouched.</span>mportant surface.</span>
+        </div>
+        <div class="row">
+          <span class="id">5.2</span>
+          <div class="name"><b>Card Detail Page</b><span class="route">/shelf/[type]/[slug]</span></div>
+          <span class="file">Cluster 5 - Universal Shelf.html</span>
+          <span class="status-cell"><span class="pill themed">Themed</span></span>
+          <span class="notes">In the consolidated cluster file. Gameplan variant · all 7 themes via the cycler. Tightened scaffold (no who-for prose, no outcome narrative — Included list does the work). Program variant + Owned state still queued.</span>
+        </div>
+        <div class="row">
+          <span class="id">5.3</span>
+          <div class="name"><b>Side-by-side Compare</b><span class="route">/shelf/compare?ids=A,B</span></div>
+          <span class="file">Cluster 5 - Universal Shelf.html</span>
+          <span class="status-cell"><span class="pill themed">Themed</span></span>
+          <span class="notes">In the consolidated cluster file. 12-row diff with auto-detected winners (price 6mo-equiv, scope, adapts, check-ins). Cross-type and same-type combos. Loading + 1-unavailable states. Sticky pick-a-side bar.</span>
+        </div>
+        <div class="row">
+          <span class="id">5.4</span>
+          <div class="name"><b>Customize Wizard</b><span class="route">/shelf/[type]/[slug]/customize</span></div>
+          <span class="file">Cluster 5 - Universal Shelf.html</span>
+          <span class="status-cell"><span class="pill themed">Themed</span></span>
+          <span class="notes">In the consolidated cluster file. Interactive 6-step flow (start date · current state · schedule · personalize · review · confirm). One component, Gameplan + Program branches. Resume-draft + engine-warning states. All 7 themes via the cycler.</span>
+        </div>
+        <div class="row">
+          <span class="id">5.5</span>
+          <div class="name"><b>Checkout</b><span class="route">/checkout</span></div>
+          <span class="file">Cluster 5 - Universal Shelf.html</span>
+          <span class="status-cell"><span class="pill themed">Themed</span></span>
+          <span class="notes">In the consolidated cluster file. One decision — start date. Program (one-time) + Gameplan (subscription) variants. All 7 themes via the cycler.</span>
+        </div>
+        <div class="row">
+          <span class="id">5.5a</span>
+          <div class="name"><b>Post-Purchase Welcome</b><span class="route">/welcome/[type]/[slug]</span></div>
+          <span class="file">Cluster 5 - Universal Shelf.html</span>
+          <span class="status-cell"><span class="pill themed">Themed</span></span>
+          <span class="notes">In the consolidated cluster file. Loading / Program / Gameplan states + post-purchase Customize. Deep-linkable.</span>
+        </div>
+        <div class="row">
+          <span class="id">5.6</span>
+          <div class="name"><b>Fallback Questionnaire</b><span class="route">(sheet from Shelf)</span></div>
+          <span class="file">Cluster 5 - Universal Shelf.html</span>
+          <span class="status-cell"><span class="pill themed">Themed</span></span>
+          <span class="notes">In the consolidated cluster file. Interactive 5-step guided flow (goals · training days · experience · equipment · commitment). Live result count narrows per answer; final CTA hands filters back to the Shelf.</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ════════ CLUSTER 6 ════════ -->
+  <section class="sec">
+    <div class="sec-head">
+      <span class="num">CLUSTER 6</span>
+      <h2>Settings</h2>
+      <div class="lede">The universal top-right surface across all tiers.</div>
+    </div>
+    <div class="cluster">
+      <div class="cluster-head">
+        <span class="cn">6.0</span>
+        <h3>Settings <small>14 screens · 13 themed / 1 skeleton · cluster file closed</small></h3>
+        <div class="progress">93%<div class="pbar"><i style="width:93%;"></i></div></div>
+      </div>
+      <div class="rows">
+        <div class="row">
+          <span class="id">6.1</span>
+          <div class="name"><b>Settings Home</b><span class="route">/settings</span></div>
+          <span class="file">Cluster 6 - Settings.html</span>
+          <span class="status-cell"><span class="pill themed">Themed</span></span>
+          <span class="notes">Iron locked. Profile card + grouped routing list; right-side values show live state as data. Logger / Gameplan viewer variants. All 7 themes via bridge.</span>
+        </div>
+        <div class="row">
+          <span class="id">6.2</span>
+          <div class="name"><b>Account</b><span class="route">/settings/account</span></div>
+          <span class="file">Cluster 6 - Settings.html</span>
+          <span class="status-cell"><span class="pill themed">Themed</span></span>
+          <span class="notes">Iron locked. Editable profile + sign-in <b>methods</b> (Email primary · Apple · Google) — <b>magic-link, no password</b> per the 1.3 auth design; reversible-framed Delete confirm shows erased counts + Export-first. Default / Delete states.</span>
+        </div>
+        <div class="row">
+          <span class="id">6.3</span>
+          <div class="name"><b>Sync &amp; Storage</b><span class="route">/settings/sync</span></div>
+          <span class="file">Cluster 6 - Settings.html</span>
+          <span class="status-cell"><span class="pill themed">Themed</span></span>
+          <span class="notes">Iron locked. Status card · sync toggles · storage meter + clear cache. States: Synced / Paused / Conflict (per-item resolve) / Offline.</span>
+        </div>
+        <div class="row">
+          <span class="id">6.4</span>
+          <div class="name"><b>Integrations</b><span class="route">/settings/integrations</span></div>
+          <span class="file">Cluster 6 - Settings.html</span>
+          <span class="status-cell"><span class="pill themed">Themed</span></span>
+          <span class="notes">Iron locked. Apple Health / Fitbit / Whoop / Garmin / Strava. Connected rows expand to per-metric toggles; placeholder marks pending real logos.</span>
+        </div>
+        <div class="row">
+          <span class="id">6.5</span>
+          <div class="name"><b>Units &amp; Preferences</b><span class="route">/settings/preferences</span></div>
+          <span class="file">Cluster 6 - Settings.html</span>
+          <span class="status-cell"><span class="pill themed">Themed</span></span>
+          <span class="notes">Iron locked. All controls, no prose — units (weight / distance / body / energy), calendar (week start · time format), training defaults (RPE/RIR · rest timer · plate math · bar weight) as live Seg toggles + switches.</span>
+        </div>
+        <div class="row">
+          <span class="id">6.6</span>
+          <div class="name"><b>Data Export</b><span class="route">/settings/data</span></div>
+          <span class="file">Cluster 6 - Settings.html</span>
+          <span class="status-cell"><span class="pill themed">Themed</span></span>
+          <span class="notes">Iron locked. Format (CSV per-type / JSON) · include-set toggles with counts · range (All / 12wk / Custom dates) · Generate. Default / Export-ready (built file + 24h expiry + recent) states.</span>
+        </div>
+        <div class="row">
+          <span class="id">6.7</span>
+          <div class="name"><b>Billing</b><span class="route">/settings/billing</span></div>
+          <span class="file">Cluster 6 - Settings.html</span>
+          <span class="status-cell"><span class="pill themed">Themed</span></span>
+          <span class="notes">Iron locked. Subscription + payment + owned programs + receipts. Active-sub vs owned-only states.</span>
+        </div>
+        <div class="row">
+          <span class="id">6.7a</span>
+          <div class="name"><b>Cancel Subscription Flow</b><span class="route">/settings/billing/cancel</span></div>
+          <span class="file">Cluster 6 - Settings.html</span>
+          <span class="status-cell"><span class="pill themed">Themed</span></span>
+          <span class="notes">Iron locked. Clickable 5-step flow: reason · pause offer · credit reveal · confirm (factual, no guilt) · done. Reversible per CLAUDE.md.</span>
+        </div>
+        <div class="row">
+          <span class="id">6.8</span>
+          <div class="name"><b>Cancellation Info</b><span class="route">/settings/billing/cancellation-info</span></div>
+          <span class="file">Cluster 6 - Settings.html</span>
+          <span class="status-cell"><span class="pill themed">Themed</span></span>
+          <span class="notes">Iron locked. Factual explainer — labeled rows, no prose. Subscription / one-time programs / data blocks.</span>
+        </div>
+        <div class="row">
+          <span class="id">6.9</span>
+          <div class="name"><b>Theme Picker (anytime)</b><span class="route">/settings/theme</span></div>
+          <span class="file">Cluster 6 - Settings.html</span>
+          <span class="status-cell"><span class="pill themed">Themed</span></span>
+          <span class="notes">Iron locked. Seven large cards, each a faithful mini-preview rendered in its <b>own</b> theme tokens (real bg / surface / accent / display font). Fully interactive — tap re-themes the whole batch. Shares the set with 1.4.</span>
+        </div>
+        <div class="row">
+          <span class="id">6.10</span>
+          <div class="name"><b>Advanced / Debug</b><span class="route">/settings/advanced</span></div>
+          <span class="file">Cluster 6 - Settings.html</span>
+          <span class="status-cell"><span class="pill themed">Themed</span></span>
+          <span class="notes">Iron locked. Developer toggles · read-only diagnostics as data (build · device ID · sync token · copy) · reset actions (rebuild index · reset on-device data, logs kept).</span>
+        </div>
+        <div class="row">
+          <span class="id">6.11</span>
+          <div class="name"><b>About</b><span class="route">/settings/about</span></div>
+          <span class="file">Cluster 6 - Settings.html</span>
+          <span class="status-cell"><span class="pill themed">Themed</span></span>
+          <span class="notes">Iron locked. App mark + version header · App / Legal / Support row groups. Factual, no marketing copy.</span>
+        </div>
+        <div class="row">
+          <span class="id">6.12</span>
+          <div class="name"><b>Upgrade Options</b><span class="route">/settings/upgrade</span></div>
+          <span class="file">Cluster 6 - Settings.html</span>
+          <span class="status-cell"><span class="pill themed">Themed</span></span>
+          <span class="notes">Built + folded into the Settings cluster. Funnel to the Shelf — current-tier marker, browse cards routing to the Shelf tabs, Compare-tiers handoff to 6.12a. Additive per tier (never a gate): Logger sees both catalogs, Program leads with coaching, Gameplan cross-sells Gameplans. Logger / Program / Gameplan viewer states.</span>
+        </div>
+        <div class="row">
+          <span class="id">6.12a</span>
+          <div class="name"><b>Tier Comparison</b><span class="route">/settings/upgrade/compare</span></div>
+          <span class="file">Cluster 6 - Settings.html</span>
+          <span class="status-cell"><span class="pill themed">Themed</span></span>
+          <span class="notes">Folded into the Settings cluster (was in the standalone Upsell file). Vertical feature groups, 3 tier columns, current-tier accent. Logger / Program / Gameplan viewer states.</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ════════ CLUSTER 7 ════════ -->
+  <section class="sec">
+    <div class="sec-head">
+      <span class="num">CLUSTER 7</span>
+      <h2>Admin</h2>
+      <div class="lede">Role-gated authoring tools. Entry only from Settings → Admin.</div>
+    </div>
+    <div class="cluster">
+      <div class="cluster-head">
+        <span class="cn">7.0</span>
+        <h3>Admin <small>11 screens · 11 themed · closed</small></h3>
+        <div class="progress">100%<div class="pbar"><i style="width:100%;"></i></div></div>
+      </div>
+      <div class="rows">
+        <div class="row">
+          <span class="id">7.1</span>
+          <div class="name"><b>Admin Dashboard</b><span class="route">/admin</span></div>
+          <span class="file">Cluster 7 - Admin.html</span>
+          <span class="status-cell"><span class="pill themed">Themed</span></span>
+          <span class="notes">Iron locked. Role eyebrow, 3 at-a-glance counts, 2-col tool grid, 7-day activity feed.</span>
+        </div>
+        <div class="row">
+          <span class="id">7.2</span>
+          <div class="name"><b>Library Management</b><span class="route">/admin/library</span></div>
+          <span class="file">Cluster 7 - Admin.html</span>
+          <span class="status-cell"><span class="pill themed">Themed</span></span>
+          <span class="notes">Iron locked. Live tabs: Programs / Gameplans / Exercises. Status-tagged rows, search + filter, dual create paths.</span>
+        </div>
+        <div class="row">
+          <span class="id">7.2a</span>
+          <div class="name"><b>Library Item Edit Detail</b><span class="route">/admin/library/[type]/[id]</span></div>
+          <span class="file">Cluster 7 - Admin.html</span>
+          <span class="status-cell"><span class="pill themed">Themed</span></span>
+          <span class="notes">Iron locked. Live tabs: Metadata (typed fields + tags) / Content (block-session structure) / Versions. Save-draft vs publish footer.</span>
+        </div>
+        <div class="row">
+          <span class="id">7.3</span>
+          <div class="name"><b>Upload Spreadsheet</b><span class="route">/admin/upload</span></div>
+          <span class="file">Cluster 7 - Admin.html</span>
+          <span class="status-cell"><span class="pill themed">Themed</span></span>
+          <span class="notes">Iron locked. Dropzone root, format-ref shortcut, recent-uploads outcomes as data.</span>
+        </div>
+        <div class="row">
+          <span class="id">7.3a–f</span>
+          <div class="name"><b>Upload sub-steps (parse / resolve / new-exercise / preview / warnings / publish)</b><span class="route">/admin/upload/*</span></div>
+          <span class="file">Cluster 7 - Admin.html</span>
+          <span class="status-cell"><span class="pill themed">Themed</span></span>
+          <span class="notes">Iron locked. Clickable 6-step flow — each artboard starts on its step, Continue / Back advance in place. Step dots, matched/fuzzy/unmatched resolve, non-blocking warnings, staging-vs-live publish.</span>
+        </div>
+        <div class="row">
+          <span class="id">7.4</span>
+          <div class="name"><b>Spreadsheet Format Reference</b><span class="route">/admin/upload/format</span></div>
+          <span class="file">Cluster 7 - Admin.html</span>
+          <span class="status-cell"><span class="pill themed">Themed</span></span>
+          <span class="notes">Iron locked. Column spec (req/opt), monospace example block, parsing rules, download-template footer.</span>
+        </div>
+        <div class="row">
+          <span class="id">7.5</span>
+          <div class="name"><b>Staging Library</b><span class="route">/admin/library?status=staging</span></div>
+          <span class="file">Cluster 7 - Admin.html</span>
+          <span class="status-cell"><span class="pill themed">Themed</span></span>
+          <span class="notes">Iron locked. Not-visible banner, checkbox rows, bulk publish / reject footer. Staging vs in-review distinguished.</span>
+        </div>
+        <div class="row">
+          <span class="id">7.6</span>
+          <div class="name"><b>Version History</b><span class="route">/admin/library/[type]/[id]/versions</span></div>
+          <span class="file">Cluster 7 - Admin.html</span>
+          <span class="status-cell"><span class="pill themed">Themed</span></span>
+          <span class="notes">Iron locked. Base→current selector, add/change/remove summary, colour-coded diff with from→to values. Restore loads a draft.</span>
+        </div>
+        <div class="row">
+          <span class="id">7.7</span>
+          <div class="name"><b>Asset Uploads</b><span class="route">/admin/assets</span></div>
+          <span class="file">Cluster 7 - Admin.html</span>
+          <span class="status-cell"><span class="pill themed">Themed</span></span>
+          <span class="notes">Iron locked. Dropzone, kind-filter chips, striped-placeholder thumbnail grid with unused markers, storage meter.</span>
+        </div>
+        <div class="row">
+          <span class="id">7.8</span>
+          <div class="name"><b>Analytics</b><span class="route">/admin/analytics</span></div>
+          <span class="file">Cluster 7 - Admin.html</span>
+          <span class="status-cell"><span class="pill themed">Themed</span></span>
+          <span class="notes">Iron locked. 4 KPI tiles w/ deltas, weekly enrollment column chart, top-programs bar ranking, completion breakdown.</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ════════ ORDER OF OPERATIONS ════════ -->
+  <section class="sec">
+    <div class="sec-head">
+      <span class="num">PLAN</span>
+      <h2>Order of operations</h2>
+      <div class="lede">Sequenced to close gaps in existing funnels before opening new ones.</div>
+    </div>
+    <div class="order">
+      <div class="order-row done">
+        <span class="step">01</span>
+        <span class="est">2–3 d</span>
+        <div class="desc"><b>Shelf middle</b><span class="scope">5.2 Card Detail · 5.3 Compare · 5.4 Customize Wizard · 5.6 Fallback Questionnaire — closes the commercial funnel from grid to checkout.</span></div>
+        <span class="pill themed">Done</span>
+      </div>
+      <div class="order-row done">
+        <span class="step">02</span>
+        <span class="est">1–2 d</span>
+        <div class="desc"><b>Promote skeletons to a theme</b><span class="scope">Sign-in (neutral, final) · Tier Homes · Checkout &amp; Welcome · Upsell — all locked to Iron. Entry/commerce funnel is presentable end-to-end.</span></div>
+        <span class="pill themed">Done</span>
+      </div>
+      <div class="order-row done">
+        <span class="step">03</span>
+        <span class="est">1–2 d</span>
+        <div class="desc"><b>Tier Landing + Email sign-in</b><span class="scope">1.3 + 1.5 — completes auth/onboarding cluster. Shipped as <code>Entry &amp; Auth.html</code> (full flow 1.2→1.5).</span></div>
+        <span class="pill themed">Done</span>
+      </div>
+      <div class="order-row done">
+        <span class="step">04</span>
+        <span class="est">2–3 d</span>
+        <div class="desc"><b>Settings cluster</b><span class="scope">6.1 home · 6.3 sync · 6.4 integrations · 6.7 billing · 6.7a cancel · 6.8 cancel info. Shipped as <code>Cluster 6 - Settings.html</code> (one file, 6 screens, Iron locked).</span></div>
+        <span class="pill themed">Done</span>
+      </div>
+      <div class="order-row done">
+        <span class="step">05</span>
+        <span class="est">1–2 d</span>
+        <div class="desc"><b>Nutrition expansion</b><span class="scope">3.3a Recipe Detail · 3.3b Grocery List. Shipped as <code>3.3a Recipe &amp; Grocery - Notebook.html</code> (Notebook locked, all 7 themes via bridge).</span></div>
+        <span class="pill themed">Done</span>
+      </div>
+      <div class="order-row done">
+        <span class="step">06</span>
+        <span class="est">1 d</span>
+        <div class="desc"><b>Small sheets pass</b><span class="scope">2.5 Save as Frame · 2.7a Macro Editor · 3.1a Switch Program. Shipped as <code>2.5 Small Sheets - Iron.html</code> (one file, three sheets, shared chrome, Iron locked).</span></div>
+        <span class="pill themed">Done</span>
+      </div>
+      <div class="order-row done">
+        <span class="step">07</span>
+        <span class="est">3–4 d</span>
+        <div class="desc"><b>Admin cluster</b><span class="scope">7.1–7.8. Functional, not glamorous. Last because internal. Shipped as <code>Cluster 7 - Admin.html</code> (one file, 11 screens, Iron locked).</span></div>
+        <span class="pill themed">Done</span>
+      </div>
+      <div class="order-row done">
+        <span class="step">08</span>
+        <span class="est">½ d</span>
+        <div class="desc"><b>Inventory unlock audit</b><span class="scope">Reviewed all 20 "locked = in product" screens. 2 stay locked (middleware). 18 moved to <code>Queued</code> — 10 with partial equivalents, 8 with no design at all. Counts + cluster bars re-baselined (77% → 60%).</span></div>
+        <span class="pill themed">Done</span>
+      </div>
+      <div class="order-row done">
+        <span class="step">09</span>
+        <span class="est">2 d</span>
+        <div class="desc"><b>Settings sub-pages</b><span class="scope">6.2 Account · 6.5 Units &amp; Preferences · 6.6 Data Export · 6.9 Theme Picker — built on the existing settings primitives, plus 6.10 Advanced + 6.11 About. Cluster 6 file closed (12 screens).</span></div>
+        <span class="pill themed">Done</span>
+      </div>
+      <div class="order-row">
+        <span class="step">10</span>
+        <span class="est">2–3 d</span>
+        <div class="desc"><b>Training surfaces</b><span class="scope">2.3 Exercise Detail · 2.6 History Detail · 2.11 +Log sheet · 2.13 activity loggers · 2.14 Single Workout Library · 2.12 Stretch Timer. Logger tier's biggest gap; Detail + History are highest-value.</span></div>
+        <span class="pill themed">Done</span>
+      </div>
+      <div class="order-row done">
+        <span class="step">11</span>
+        <span class="est">2 d</span>
+        <div class="desc"><b>Progress surfaces</b><span class="scope">3.6 Progress (Program) → 4.6 Progress (Gameplan, full). One base; Gameplan adds adherence rings + check-in/recommendation history. Built into <code>progress-screens.jsx</code> — lives in 3.1 (3.6) + 4.1 (4.6) cluster files.</span></div>
+        <span class="pill themed">Done</span>
+      </div>
+      <div class="order-row done">
+        <span class="step">12</span>
+        <span class="est">2 d</span>
+        <div class="desc"><b>Engine surfaces</b><span class="scope">4.3 Recommendations Feed · 4.5 Goals Editor · 4.7 Check-in Detail/History · 3.7 Block/Day Editor. All four already render for real in the 3.1 + 4.1 cluster files — close-out + canary; caught + fixed a Blueprint trap in 3.7's planning bar + add-exercise button.</span></div>
+        <span class="pill themed">Done</span>
+      </div>
+      <div class="order-row done">
+        <span class="step">13</span>
+        <span class="est">1 d</span>
+        <div class="desc"><b>Meal Logger + first-visit picker</b><span class="scope">2.8 Meal Logger · 1.4 Theme Picker first-visit (also covers 6.9). Both already render for real (2.1 + 1.1 cluster files) — close-out + canary; fixed a Blueprint trap in 2.8's search labels. 1.4 is intentionally pre-theme neutral.</span></div>
+        <span class="pill themed">Done</span>
+      </div>
+      <div class="order-row done">
+        <span class="step">14</span>
+        <span class="est">2–3 d</span>
+        <div class="desc"><b>Theme port</b><span class="scope">Largely satisfied by the theme-bridge architecture — every surface already re-themed except the Shelf. Ported 5.1 Shelf (shelf-bp-*) onto the bridge so it cycles all 7 themes. Gameplan Picker archived as superseded by the Shelf funnel.</span></div>
+        <span class="pill themed">Done</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ════════ UPDATE PROTOCOL ════════ -->
+  <section class="sec">
+    <div class="sec-head">
+      <span class="num">PROTOCOL</span>
+      <h2>Update rules</h2>
+      <div class="lede">How this doc stays accurate as we work.</div>
+    </div>
+    <div class="rules">
+      <h3>Updated every time we ship a screen.</h3>
+      <ol>
+        <li>When a new file lands → its row's <b>File</b> column gets the filename, and status flips from <code>Untouched</code> → <code>Skeleton</code> / <code>Explored</code>.</li>
+        <li>When a theme is picked + applied → row flips to <code>Themed</code>. Theme name goes in notes.</li>
+        <li>When a cluster fully closes → progress bar to 100%, header note set.</li>
+        <li>Every change adds a <b>Change log</b> entry below with date, screens touched, and one-line summary.</li>
+        <li>The <b>Currently working</b> banner up top reflects the active cluster. Always 1 active cluster.</li>
+        <li>Counts strip updates: total / themed / skeleton / explored / untouched / % complete.</li>
+        <li>Order of operations is re-ordered as priorities shift — don't delete completed rows, mark them <code>Done</code>.</li>
+      </ol>
+    </div>
+  </section>
+
+  <!-- ════════ CHANGE LOG ════════ -->
+  <section class="sec">
+    <div class="sec-head">
+      <span class="num">LOG</span>
+      <h2>Change log</h2>
+      <div class="lede">Newest at top.</div>
+    </div>
+    <div class="log">
+      <div class="log-entry add">
+        <div class="when">2026·06·02<br/>NEW</div>
+        <div class="what"><b>Step 14 closed — 5.1 Shelf ported to all 7 themes; build inventory complete.</b> The Shelf was the lone surface still pinned to a single theme — authored as a Blueprint drafting study (<code>shelf-bp-cards/screens/detail.jsx</code>) on a hardcoded <code>BP_*</code> palette. Rather than relitigate the drafting design per theme, ported it onto the bridge: <code>shelf-bp-cards.jsx</code> now derives the whole palette from the active theme's tokens and exposes <code>setShelfTheme(themeId)</code>, which recomputes the <code>BP_*</code> bindings (cards re-theme in-scope) <em>and</em> mutates <code>window.BPS</code> in place — so <code>shelf-bp-screens.jsx</code> / <code>shelf-bp-detail.jsx</code>, which each capture <code>window.BPS</code> once at load, re-theme with zero edits. The drafting STRUCTURE (grid paper, hairline cards, corner crosshairs, goal arc) stays; only palette + type follow the theme; activity-block colours map to each theme's push/pull/core tints. Host calls <code>setShelfTheme(theme)</code> each render and the Shelf artboards now take <code>theme={theme}</code> (were hardcoded <code>"blueprint"</code>). Verified: cycling to Notebook flips <code>window.BPS</code> to the cream palette, 0 stale Blueprint-navy fills in the DOM. <b>Also this pass:</b> built the missing <b>6.12 Upgrade Options</b> (tier-aware Shelf funnel) and folded it + 6.12a Tier Comparison into <code>6.1 Settings Cluster</code>; <b>archived the Gameplan Picker</b> (superseded by the Shelf funnel 5.1→5.4). Counts: themed 65→68, explored/skeleton + queued → 0; <b>% complete 93 → 99</b> — only the 2 middleware no-UI screens remain. Build inventory complete.</div>
+      </div>
+      <div class="log-entry add">
+        <div class="when">2026·06·02<br/>VERIFY</div>
+        <div class="what"><b>Step 13 closed — Meal Logger + first-visit picker verified (plan trailed code; both already rendered for real).</b> <b>2.8 Meal Logger</b> (<code>logger-pillars.jsx</code>, in <code>Cluster 2 - Logger Tier.html</code>) is the complete food-search → quantity-sheet → log flow (live kcal/macro scaling, recents, results); <b>1.4 Theme Picker</b> (<code>entry-screens.jsx</code>, in <code>Cluster 1 - Entry &amp; Auth.html</code>) is the seven-rows-in-their-own-theme picker — intentionally a fixed dark-neutral pre-theme surface (the user hasn't chosen yet, so it does NOT re-theme; correct by design, no Blueprint risk). The work was the canary, which caught one real page-bg trap in <b>2.8</b>: the "Recent" / "Common foods" / "{n} results" list labels sat on the page bg using <code>textSec</code> (light-on-light → invisible on Blueprint) while the sibling 2.7 Nutrition surface correctly used the on-bg <code>NPSectionLabel</code>. Moved them to <code>textOnBgSec</code> + <code>.ft-on-bg</code>. 1.4 also covers the 6.9 settings picker pattern (already themed). Counts: % complete 93 → 96. Active cluster → <code>Theme port</code> (step 14) — the last open item.</div>
+      </div>
+      <div class="log-entry add">
+        <div class="when">2026·06·02<br/>VERIFY</div>
+        <div class="what"><b>Step 12 closed — Engine surfaces verified (plan trailed code again; all four already rendered for real).</b> <b>4.3 Recommendations Feed</b>, <b>4.5 Goals Editor</b>, <b>4.7 Check-in Detail/History</b> (all in <code>Cluster 4 - Gameplan Tier.html</code>) and <b>3.7 Block/Day Editor</b> (<code>Cluster 3 - Program Tier.html</code>) were complete, interactive surfaces — no <code>ToDesign</code> placeholders. The work was the mandatory Blueprint canary, and it caught a real page-bg trap the cluster-3 close-out had missed: <b>3.7's <code>BEPlanningBar</code></b> (“Planning Mode · Sandbox”) sat directly on the page bg using <code>accent</code> / <code>accentFaint</code> / <code>accentBorder</code> — all built <em>white</em> for Blueprint's dark cards, so on its light page the whole bar went near-invisible. Moved it to the on-bg accent tokens (<code>accentFaintOnBg</code> / <code>accentBorderOnBg</code> / <code>accentOnBg</code> + <code>textOnBgSec</code>, <code>.ft-on-bg</code>); identical on every other theme, navy + legible on Blueprint. Same fix on the <b>DayEditor “+ Add exercise”</b> button (text was <code>accent</code> on the page bg → <code>accentOnBg</code>). The checkin-screens surfaces (4.3 / 4.7) were already on-bg-correct (<code>RecGroupLabel</code> / <code>SectionH</code> / footers use <code>textOnBg*</code>; <code>LabBottomNav</code> delegates to the canonical 5-slot BottomNav with non-pillar surfaces on slot 1). Also refreshed the stale <code>4.1</code> header comment + About text that still called 4.3/4.5/4.6/4.7 <code>ToDesign</code> “queued / partial.” Active cluster → <code>Meal Logger + first-visit picker</code> (step 13).</div>
+      </div>
+      <div class="log-entry add">
+        <div class="when">2026·06·02<br/>NEW</div>
+        <div class="what"><b>Step 11 closed — Progress surfaces built into <code>progress-screens.jsx</code> (in the 3.1 + 4.1 cluster files; kept organized by cluster, no standalone file).</b> The work that was actually missing: <b>4.6 was NOT a real superset.</b> The shipped base only <em>unlocked</em> the two Program teaser cards at <code>tier=gameplan</code> — the plan's promised “adherence rings + check-in/recommendation history” didn't exist. Built it: Gameplan now <em>replaces</em> the locked upsell band with three real surfaces — <b>adherence rings</b> (<code>PGRings</code>: Training / Nutrition / Lifestyle this-week completion, SVG donuts with the % centred), <b>weekly check-in history</b> (<code>PGCheckins</code>: pending top row with a Start action + applied archive, each routing to 4.7), and the <b>recommendation ledger</b> (<code>PGRecs</code>: resolved engine recs, Applied / Dismissed). Program tier is unchanged — keeps the two LOCKED preview cards (the upsell, never a gate). <b>Non-pillar fix:</b> per CLAUDE.md Progress rides the 5-slot pillar BottomNav on <em>slot 1</em> (the tier home), not its own tab — 3.6 in the Program cluster now mounts with slot-1 nav (matching 4.6 in the Gameplan cluster), and the scroll container's bottom pad was bumped 28→92 so the last history row clears the nav (artboard heights bumped to suit). <b>Layout fix:</b> the shared <code>PGHistory</code> row name wrapped to two lines and collided with the date when squeezed by the PR chip — names now hold one line (nowrap + ellipsis); same hardening on the check-in week label. Iron default; Blueprint contrast canary + a dark theme verified. Active cluster → <code>Engine surfaces</code> (step 12).</div>
+      </div>
+      <div class="log-entry add">
+        <div class="when">2026·06·02<br/>VERIFY</div>
+        <div class="what"><b>Step 10 closed — Training surfaces verified (plan was already ahead of itself; code shipped, canary hadn't run).</b> All six rows already rendered for real in <code>Cluster 2 - Logger Tier.html</code> (<b>2.3 Exercise Detail</b>, <b>2.6 History Detail</b>, <b>2.11 +Log sheet</b>, <b>2.12 Stretch Timer</b>, <b>2.13 activity loggers</b>, <b>2.14 Single Workout Library</b>) — no <code>ToDesign</code> placeholders. The work was the mandatory Blueprint canary, and it caught the recurring page-bg trap: surfaces that put chrome <em>directly on the page bg</em> (not inside a <code>Card</code>) were using <code>text/textSec/textTer/accent</code>, which go invisible on Blueprint (light page / dark cards). <b>Fixes:</b> 2.3 — three section labels (Set history · Alternates · Customize) + the <code>EDWeekRow</code> set-history label/date/e1RM/Latest-chip moved to <code>textOnBg*</code> / <code>accentOnBg</code> / <code>Chip onBg</code> + <code>.ft-on-bg</code>; 2.6/2.14 — <code>HDListLabel</code>, the <code>HDNoResults</code> heading + body, and the "{n} exercises" label moved to on-bg tokens; 2.12 — the <code>ALRing</code> countdown + "Hold" caption (rest of the StretchTimer was already on-bg-correct); 2.13 — the <code>FieldLabel</code> primitive gained an <code>onBg</code> prop (it's shared between sheets-on-surface and the logger's on-bg "Effort"/"Notes"), applied to the two page-bg uses. <b>Second-pass canary catch:</b> 2.3's <code>EDSetChip</code> "best/PR" set chips used the translucent <code>accentFaint</code> wash (<code>rgba(255,255,255,.10)</code>) — fine inside a dark Card, but on the page bg it composited to near-white on Blueprint, hiding the white lifting numbers. Fixed by keeping the chip on its <em>opaque</em> <code>surfaceAlt</code> fill (which reads in every theme) and marking "best" with an accent border + ★ instead of the wash; also bumped the <code>×</code> separator from <code>borderStrong</code> (dark-on-dark) to <code>textTer</code>. (Numbers stay <code>T.text</code> — the chip has its own dark fill, so on-bg text tokens would have <em>reversed</em> the bug.) <b>In-card and on-surface content was already correct</b> — 2.11 rides the <code>Sheet</code> body (<code>T.surface</code>), and the library's filter chips / search / rows all carry their own surface, so none needed touching. No global-name collisions; no count change (all six were already Themed). Active cluster → <code>Progress surfaces</code> (step 11).</div>
+      </div>
+      <div class="log-entry add">
+        <div class="when">2026·06·01<br/>NEW</div>
+        <div class="what"><b>Settings cluster file closed — step 09 done, 6 screens added to <code>Cluster 6 - Settings.html</code> (6 → 12).</b> The four queued stub rows are now real surfaces, plus the two untouched standards: <b>6.2 Account</b> (editable profile · sign-in <em>methods</em> · reversible Delete confirm), <b>6.5 Units &amp; Preferences</b> (units / calendar / training defaults as live Seg toggles), <b>6.6 Data Export</b> (format · include-sets · range · Generate, with an Export-ready state), <b>6.9 Theme Picker</b> (7 faithful per-theme preview cards rendered in their own tokens via <code>getFitTrackTheme</code>; tapping a card re-themes the whole batch), <b>6.10 Advanced</b> and <b>6.11 About</b>. <b>Outdated-guideline catch:</b> the plan's 6.2 note called for a <em>password</em> row, but the 1.3 auth design is magic-link only — built sign-in <em>methods</em> (Email primary · Apple · Google) with an explicit “no password” line instead. New screens live on the existing <code>settings-screens.jsx</code> primitives (Row/Group/Toggle/Tile/S6Label) plus one new local <code>Seg</code>; no new global-name collisions. Counts: themed 59→65, queued 5→1, untouched 4→2, % complete 84→93. Active cluster → <code>Training surfaces</code> (step 10).</div>
+      </div>
+      <div class="log-entry add">
+        <div class="when">2026·06·01<br/>VERIFY</div>
+        <div class="what"><b>Cluster 3 closed — Program tier 100% (plan reconciled to code).</b> Audit found the plan trailed the code: all ten Program screens already render for real in <code>Cluster 3 - Program Tier.html</code>, no <code>ToDesign</code> placeholders left. The four stale rows were already built — <b>3.2 Training</b> + <b>3.3 Nutrition</b> (was <em>Explored</em>) route through the canonical <code>PillarShell</code> via <code>ProgramPillarShell</code> (rail+chip, locked Gameplan slot dimmed not hidden); <b>3.6 Progress</b> (was <em>Queued</em>) is the tier-aware <code>progress-screens.jsx</code> base that also serves 4.6; <b>3.7 Block/Day Editor</b> (was <em>Queued</em>) is <code>block-editor.jsx</code> on the planning-sandbox contract. <b>Canary:</b> ran an automated contrast scan over every artboard in <em>both</em> Blueprint and a dark theme (iron) — <b>0 page-bg traps</b>, and the four close-out screens are clean (3.6 Segmented selector 17.8:1 / 4.6:1; rail labels fit; no 410 overflow; BottomNav is the 5-slot pillar shell with no Progress/Settings). The only low-contrast hits are <b>theme-independent</b> semantic colors in adjacent already-themed screens — 3.1 Cardio/SUN white-on-amber category chips (1.95) and 3.5 Planning's green/amber/muscle-group values on its always-light draft cards (1.38–2.48); identical in every theme, flagged separately as a legibility decision, not a Blueprint bug. Counts re-baselined: themed 55→59, explored 4→2, queued 7→5, % complete 79→84.</div>
+      </div>
+      <div class="log-entry add">
+        <div class="when">2026·06·01<br/>NEW</div>
+        <div class="what"><b>Cluster 4 closed — Gameplan tier 100%.</b> The four queued/partial screens landed in <code>Cluster 4 - Gameplan Tier.html</code>: <b>4.6 Progress</b> wired to the shared 3.6 base at <code>tier=gameplan</code> (preview cards unlocked); <b>4.7 Check-in History</b> recomposed into a standalone index + read-only detail; <b>4.3 Recommendations Feed</b> built net-new (Lab idiom — Pending/Applied/Dismissed, live Apply + Dismiss, Open-in-Planning); <b>4.5 Goals Editor</b> built net-new (Blueprint idiom — drag-ranked rows, editable fields, live add-goal picker, reversible archive). <b>Rule fix:</b> <code>checkin-screens.jsx</code> (4.2) was failing the Blueprint contrast rule — on-bg section labels used <code>textTer</code>; moved to <code>textOnBg*</code> + <code>.ft-on-bg</code>. Renamed checkin's local <code>Card</code> → <code>CICard</code> to free the global name for the shared tier-homes primitive (needed by 4.6). Archived the two pre-consolidation standalones (<code>4.1 Active Gameplan</code>, <code>4.2 Weekly Check-In</code>).</div>
+      </div>
+      <div class="log-entry add">
+        <div class="when">2026·05·31<br/>REORG</div>
+        <div class="what"><b>Cluster 5 consolidated → <code>Cluster 5 - Universal Shelf.html</code> — reorg complete; all 7 clusters now consolidated.</b> The full Shelf/commerce inventory (5.1 → 5.6) on one canvas: 5.1 Shelf (5 Blueprint states), 5.2 Card Detail, 5.3 Compare (combo + state tweaks), 5.4 Customize Wizard (interactive + 6-step filmstrip), 5.5 Checkout + 5.5a Welcome (+ post-purchase Customize), 5.6 Fallback (interactive + 5-step filmstrip). Four theming paths under one cycler (hardcoded-Blueprint shelf, two injection setters, theme-prop, T-token) — and <b>zero collisions</b>: every module is BP* / Cmp* / CW* / FQ* / GP_T-prefixed. No placeholders (all 7 surfaces designed). Per-screen tweaks preserved (5.3 combo/state · 5.4 branch/draft/warnings · 5.6 tab). Source files left as provenance. <b>Reorg summary:</b> clusters 1–5 consolidated to one file each (6 + 7 already were); the build plan's file column now resolves to live cluster files throughout.</div>
+      </div>
+      <div class="log-entry add">
+        <div class="when">2026·05·31<br/>REORG</div>
+        <div class="what"><b>Cluster 4 consolidated → <code>Cluster 4 - Gameplan Tier.html</code>.</b> The complete Gameplan tier (4.1 → 4.7) on one canvas, one theme cycler. Renders real: 4.1 Gameplan Dashboard (8 artboards), 4.2 Weekly Check-in (4), 4.4 Planning Mode (3, shared with 3.5); placeholders for 4.3 / 4.5 / 4.6 / 4.7. Reconciled <b>three</b> theme-injection libraries under one tweak (<code>setActiveGameplanTheme</code> / <code>setActiveCheckinTheme</code> / <code>setActivePlanningTheme</code>). Pre-empted five global-scope collisions from co-loading: renamed gameplan-active's <code>GoalCard</code> / <code>BlockTimeline</code> (clash w/ planning) and <code>Sparkline</code> / <code>SectionH</code> / <code>ScreenEmpty</code> (clash w/ checkin) to <code>GP*</code>. Also <b>decoupled <code>cluster-scaffold.jsx</code> from tier-homes</b> — <code>ToDesign</code> now self-contained, so any cluster can use it. Source files (4.1 Active Gameplan, 4.2 Weekly Check-In, 3.5 Planning) left as provenance.</div>
+      </div>
+      <div class="log-entry add">
+        <div class="when">2026·05·31<br/>REORG</div>
+        <div class="what"><b>Cluster 1 consolidated → <code>Cluster 1 - Entry &amp; Auth.html</code>; cluster-2 plan rows repointed.</b> The old 1.3 file already held 1.2 / 1.3 / 1.4 / 1.5 — renamed it to the cluster convention and added 1.1 App-Open + 1.6 Auto-Route as no-UI <em>middleware</em> placeholders (new <code>ToDesign</code> status) so the file is the whole 1.1–1.6 inventory. <b>Corrected a stale entry:</b> 1.4 Theme Picker was marked “no design / queued” but the <code>ThemePicker</code> (seven themed rows) already exists — now Themed. Redundant <code>1.2 Sign-in</code> file archived. Cluster 1 → 100% (4 themed + 2 middleware). Separately, repointed all 14 cluster-2 plan rows from the now-archived individual files to <code>Cluster 2 - Logger Tier.html</code> (the consolidation done earlier had left the plan stale).</div>
+      </div>
+      <div class="log-entry add">
+        <div class="when">2026·05·31<br/>REORG</div>
+        <div class="what"><b>Cluster 3 consolidated → <code>Cluster 3 - Program Tier.html</code>.</b> The complete Program tier (3.1 → 3.7) now lives in one canvas, driven by one theme cycler — mirroring the cluster-2 pattern. Locked screens render for real (My Program, Switch, Recipe, Grocery, Lifestyle, Planning); explored / queued screens (3.2, 3.3, 3.6, 3.7) show as <code>ToDesign</code> placeholders. Reconciled <b>three</b> theming mechanisms under one tweak: T-token props, plus the <code>setActiveLifestyleTheme</code> / <code>setActivePlanningTheme</code> injection paths — both setters fire each render. Pre-empted the global-scope collisions co-loading these modules creates: renamed <code>isBlueprint→isLSBlueprint</code> &amp; <code>Stepper→LSStepper</code> in lifestyle-screens, and <code>Stepper→NDStepper</code> &amp; <code>Sheet→NDSheet</code> in nutrition-detail-screens (small-sheets/planning keep the canonical names). Build-plan rows repointed; source files (3.3a, 3.4, 3.5, Nutrition v2) left in place as provenance.</div>
+      </div>
+      <div class="log-entry add">
+        <div class="when">2026·05·30<br/>AUDIT</div>
+        <div class="what"><b>Inventory unlock audit.</b> Reviewed every screen previously marked <b>Locked = "already in product · do not touch."</b> That status was hiding ~⅓ of the real design surface: "in product" meant React code existed, not that a v2 design did. Searched our design files for equivalents of each. Outcome: <b>2 stay Locked</b> — App-Open/Splash and Returning-User Auto-Route are middleware with no UI. <b>18 unlocked → Queued.</b> Of those, <b>10 have partial equivalents</b> already roughed into shipped files (Planning Mode 3.5 holds Block/Day editor + Recommendations + Goals; Settings 6.1 holds Account / Units / Data Export / Theme rows as stubs; Nutrition v2 holds Meal Logger; Check-in 4.2 holds the form behind Check-in Detail; 2.1/2.2 hold the Single-Workout vocabulary) — these need splitting out, themed, and locked. <b>8 have no design at all</b>: Exercise Detail, History Detail, Progress (Program + Gameplan), Stretch Timer, +Log sheet, HIIT/LISS/Class/Custom loggers, first-visit Theme Picker. Plan re-sequenced — steps 09–13 added for the unlocked work. Honest re-baseline: <b>% complete 77 → 60</b>, total designable screens 62 → 70 (8 were uncounted), queued 0 → 18. No pixels lost — the number dropped because the denominator got truthful.</div>
+      </div>
+      <div class="log-entry add">
+        <div class="when">2026·05·29<br/>NEW</div>
+        <div class="what"><b>2.4 Active Workout Logger locked.</b> The flagship Logger surface resolved out of its 4-skeleton exploration — <b>Direction A · Horizontal Weeks</b> picked and shipped as <code>2.4 Active Workout Logger - Iron.html</code>. The block reads as a spreadsheet on a phone: each exercise is a lane, set cells are tiles, the week strip walks W1→W4. Presented in a realistic <b>mid-session</b> state — Incline Press + Fly logged, Lateral Delt current, the rest open with last-week ghosts. Fully interactive: tap any open cell → number-pad sheet (±5/±2.5 quick-adds, match-last, RPE) logs it and the tile fills; week strip swaps the viewed week. Tweaks curated to the two real logger decisions — <b>last-week reference</b> (ghost / thin LAST row / hide) and <b>category rail</b> (rotated 44/56px / stripe / chip) — plus the theme canary. Iron locked, all 7 via bridge (Blueprint canary + Arcade verified). <code>Logger Exploration.html</code> retired as the source exploration. Counts: themed 41 → 42, explored 4 → 3, % complete → 77. Logger tier → 66%.</div>
+      </div> Step 07 done — cluster 7 closed (0% → 100%). New <code>Cluster 7 - Admin.html</code>: one file, 11 screens on a canvas. <b>7.1 Dashboard</b> (role eyebrow, counts, tool grid, activity), <b>7.2 Library</b> + <b>7.2a Item Edit</b> (live tabs — Programs/Gameplans/Exercises and Metadata/Content/Versions), <b>7.3 Upload</b> root + a fully clickable <b>6-step import flow</b> (parse → resolve → new-exercise → preview → warnings → publish, Continue/Back advance in place), <b>7.4 Format Reference</b>, <b>7.5 Staging</b>, <b>7.6 Version diff</b>, <b>7.7 Assets</b>, <b>7.8 Analytics</b>. New <code>admin-kit.jsx</code> adds TopBar / Tabs / ItemRow / StatTile / Dropzone / Field / GRow / StepDots / BarRow / ColumnChart on top of the shared kit; <code>admin-screens.jsx</code> + <code>admin-screens-2.jsx</code> hold the screens. Iron locked, all 7 via bridge (Blueprint canary + Iron verified). Counts: themed 30 → 41, untouched 31 → 20, % complete → 76. Active cluster → <code>Theme port</code> (step 08).</div>
+      </div> Step 06 done. New <code>2.5 Small Sheets - Iron.html</code> — one file, three bottom sheets sharing a single chrome (scrim · grabber · scrolling body · footer), each rising over its dimmed home screen. <b>2.5 Save as Frame</b>: just-finished session shown as data, editable name, keep-weights / pin toggles — Default + Name-in-use (Replace / Save as copy). <b>2.7a Macro Target Editor</b>: calorie + 3 macro steppers with a live split bar and reconcile chip (Scale-to-fit when grams miss the calorie target), Balanced / High-protein / Low-carb presets — Matches + Over states. <b>3.1a Switch Active Program</b>: radio list of owned programs, active chip + progress, a single factual pause line on switch (no warning framing, per CLAUDE.md). New <code>small-sheets.jsx</code> adds Sheet / Stepper / Toggle / Segmented primitives on the shared kit; Iron locked, all 7 via bridge. Logger → 58%, Program → 66%. Active cluster → <code>Admin</code> (step 07).</div>
+      </div>
+      <div class="log-entry add">
+        <div class="when">2026·05·29<br/>NEW</div>
+        <div class="what"><b>Nutrition expansion shipped.</b> Step 05 done. New <code>3.3a Recipe &amp; Grocery - Notebook.html</code> — one file, two surfaces on a canvas. <b>3.3a Recipe Detail</b>: hero, macro rollup, a servings stepper that scales every ingredient (and the grocery list), have/need markers, numbered method, sticky Eat-this/Swap bar — Default / Scaled 4× / Swap sheet / Logger-locked states. <b>3.3b Grocery List</b>: aisle grouping with live check-off, tap-row to reveal which meals need an item, pantry-skip, collapse, Full/Names-only, share &amp; export sheet. New <code>nutrition-detail-screens.jsx</code> on the shared kit; <b>Notebook</b> locked (first use of that theme), all 7 via bridge. Cluster 3 → 60%. Active cluster → <code>Small sheets pass</code> (step 06).</div>
+      </div> Step 04 done. New <code>Cluster 6 - Settings.html</code> — one file, six screens on a canvas: 6.1 Home (Logger/Gameplan), 6.3 Sync &amp; Storage (synced/paused/conflict/offline), 6.4 Integrations, 6.7 Billing (active/owned-only), 6.7a clickable 5-step Cancel flow, 6.8 Cancellation Info. New <code>settings-screens.jsx</code> adds Row/Toggle/Group/Tile/Meter primitives on top of the shared kit; Iron locked, all 7 themes via bridge. Active cluster → <code>Nutrition expansion</code> (step 05).</div>
+      </div>
+      <div class="log-entry add">
+        <div class="when">2026·05·29<br/>NEW</div>
+        <div class="what"><b>Entry &amp; Auth cluster closed.</b> Step 03 done. New <code>1.3 Entry &amp; Auth - Neutral &amp; Iron.html</code> presents the full flow 1.2→1.3→1.4→1.5 on one canvas. <b>1.3 Email</b> built fresh — neutral pre-theme, magic-link only (no password), Sign up / Sign in toggle, five states (form · invalid · account-exists conflict · sending · link sent). <b>1.5 Tier Landing</b> pulled in + refined to the funnel voice: dropped the marketing paragraph, header is a label (“Choose a tier”), blurbs trimmed to the value prop. Cluster 1 → 100%. Active cluster → <code>Settings</code> (6.1 / 6.3 / 6.4 / 6.7 / 6.7a / 6.8).</div>
+      </div>
+      <div class="log-entry note">
+        <div class="when">2026·05·29<br/>ORG</div>
+        <div class="what"><b>Themed files prefixed by cluster.</b> Every themed deliverable renamed to lead with its primary screen id so the folder sorts by cluster — e.g. <code>4.1 Active Gameplan - Graffiti.html</code>, <code>5.2 Card Detail - Gameplan.html</code>, <code>3.5 Planning Mode - Blueprint.html</code>. All references in this doc, the theme audit, and the implementation notes updated to match. Locked screens are in-product (no files); explored files left unprefixed until they're themed.</div>
+      </div>
+      <div class="log-entry change">
+        <div class="when">2026·05·28<br/>THEME</div>
+        <div class="what"><b>Entry/commerce funnel promoted to Iron.</b> Step 02 closed. Four skeletons locked to a theme: <code>2.1 Tier Homes - Iron.html</code> (2.1 / 3.1), <code>5.5 Checkout &amp; Welcome - Iron.html</code> (5.5 / 5.5a), <code>2.10 Upsell Surfaces - Iron.html</code> (2.10 / 6.12a). Sign-in finalized as <code>1.2 Sign-in - Neutral.html</code> — stays pre-theme by design. All keep the theme switcher to preview the other six. Active cluster → <code>Tier Landing + Email sign-in</code> (1.3 / 1.5).</div>
+      </div>
+      <div class="log-entry add">
+        <div class="when">2026·05·28<br/>NEW</div>
+        <div class="what"><b>5.6 Fallback Questionnaire shipped.</b> Interactive 5-step guided flow in <code>5.6 Fallback Questionnaire.html</code> — goals · training days · experience · equipment · commitment. Maps one question per screen to the filter-rail answers; live result count narrows as answers get specific; final CTA hands the populated filters back to the Shelf. All 7 themes via bridge. Closes the Shelf-middle cluster (5.2 / 5.3 / 5.4 / 5.6).</div>
+      </div>
+      <div class="log-entry add">
+        <div class="when">2026·05·28<br/>NEW</div>
+        <div class="what"><b>5.4 Customize Wizard shipped.</b> Interactive 6-step flow in <code>5.4 Customize Wizard - Gameplan.html</code> — start date · current state · schedule · personalize · review · confirm → checkout. One component branched Gameplan / Program; resume-draft + engine-warning states; all 7 themes via bridge. Framed as the opt-in “Customize first” path (purchase stays start-date-only). Shelf cluster → 45%.</div>
+      </div>
+      <div class="log-entry add">
+        <div class="when">2026·05·28<br/>NEW</div>
+        <div class="what"><b>Build Plan doc created.</b> Inventory mapped across 7 clusters; 9 themed, 4 skeleton, 4 explored, 45 untouched. Active cluster set to <code>Shelf middle</code> (5.2 / 5.3 / 5.4 / 5.6).</div>
+      </div>
+      <div class="log-entry note">
+        <div class="when">2026·05·28<br/>NOTE</div>
+        <div class="what"><b>Scope source change.</b> Disregarding <code>FitTrack v2 Scope.html</code>. Authoritative source is now <code>fittrack-screen-inventory.md</code>.</div>
+      </div>
+    </div>
+  </section>
+
+  <div class="doc-foot">
+    <span>FitTrack v2 — Build Plan · living document</span>
+    <span>Last updated · Jun 1, 2026</span>
+  </div>
+
+</div>
+</body>
+</html>

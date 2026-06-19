@@ -1,0 +1,369 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>FitTrack · 4.x Gameplan Cluster — Graffiti</title>
+<link rel="stylesheet" href="theme-tokens.css?v=5" />
+<style>
+  html, body { margin: 0; padding: 0; background: #f0eee9; font-family: 'IBM Plex Sans', system-ui, sans-serif; }
+  #root { min-height: 100vh; }
+  ::-webkit-scrollbar { display: none; }
+
+  /* Planning watermark (cross-theme) — used by the 4.4 Planning artboards. */
+  .planning-watermark {
+    position: absolute; inset: 0;
+    pointer-events: none;
+    overflow: hidden;
+    z-index: 0;
+  }
+  .planning-watermark::before {
+    content: 'PLANNING · DRAFT · NOT APPLIED · PLANNING · DRAFT · NOT APPLIED · ';
+    position: absolute;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%) rotate(-32deg);
+    font-family: var(--ft-font-display, 'Major Mono Display', monospace);
+    font-size: 56px;
+    color: rgba(var(--ft-white), .045);
+    letter-spacing: .25em;
+    white-space: nowrap;
+    width: 200%;
+    text-align: center;
+  }
+</style>
+</head>
+<body>
+
+<div id="root"></div>
+
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+
+<!-- shared kit -->
+<script type="text/babel" src="design-canvas.jsx"></script>
+<script type="text/babel" src="tweaks-panel.jsx"></script>
+<script type="text/babel" src="phone-shell.jsx"></script>
+<script type="text/babel" src="theme-bridge.jsx"></script>
+<script type="text/babel" src="theme-typography.jsx"></script>
+<!-- cluster-4 screen modules -->
+<!-- tier-homes kit + progress (4.6) load FIRST so gameplan-active's BottomNav
+     wins the global name, and checkin-screens uses its renamed CICard. -->
+<script type="text/babel" src="tier-homes-screens.jsx"></script>
+<script type="text/babel" src="small-sheets.jsx"></script>
+<script type="text/babel" src="pillar-rail.jsx"></script>
+<script type="text/babel" src="progress-screens.jsx"></script>
+<script type="text/babel" src="checkin-icons.jsx"></script>
+<script type="text/babel" src="gameplan-active.jsx"></script>
+<script type="text/babel" src="checkin-screens.jsx"></script>
+<script type="text/babel" src="planning-screens.jsx"></script>
+<script type="text/babel" src="cluster-scaffold.jsx"></script>
+
+<script type="text/babel">
+const { useState } = React;
+
+/* ──────────────────────────────────────────────────────────────
+   Cluster 4 · Gameplan Tier — the COMPLETE cluster on one canvas.
+   Every screen 4.1 → 4.7 in order, driven by ONE theme cycler.
+   Three theme-injection libraries reconciled under one tweak:
+     • setActiveGameplanTheme → 4.1 Gameplan Dashboard (gameplan-active)
+     • setActiveCheckinTheme  → 4.2 Weekly Check-in · 4.3 Recommendations · 4.7 Check-in History (checkin-screens)
+     • setActivePlanningTheme → 4.4 Planning Mode · 4.5 Goals Editor (planning-screens, shared with 3.5)
+     • T-token props          → 4.6 Progress (progress-screens, shared with 3.6)
+   Every screen 4.1 → 4.7 renders for real — no <ToDesign/> placeholders left.
+   Graffiti default; cycle the theme in Tweaks to canary all seven
+   (Blueprint is the mandatory contrast canary).
+   Note: gameplan-active's GoalCard / BlockTimeline / Sparkline /
+   SectionH / ScreenEmpty were renamed GP* to avoid colliding with
+   planning + checkin when co-loaded here.
+   ────────────────────────────────────────────────────────────── */
+
+const TWEAK_DEFAULTS = /*EDITMODE-BEGIN*/{
+  "theme": "lab",
+  "showWatermark": false,
+  "progressMetric": "e1rm",
+  "railMode": "rail",
+  "headerMode": "auto"
+}/*EDITMODE-END*/;
+
+// Placeholder for an as-yet-undesigned (or partial) cluster-4 surface.
+function Todo({ theme, screenId, name, route, status = 'queued', note, step, height = 880 }) {
+  return (
+    <ThemedPhone theme={theme} label={name} width={410} height={height}>
+      <ToDesign T={getFitTrackTheme(theme)} id={screenId} name={name} route={route} status={status} note={note} step={step}/>
+    </ThemedPhone>
+  );
+}
+
+// The ONE canonical bottom shell (tier-homes BottomNav), gameplan tier.
+// Slots: 1 Gameplan · 2 Training · 3 +Log · 4 Nutrition · 5 Lifestyle.
+function GPNav({ theme, slot = 1 }) {
+  return <BottomNav T={getFitTrackTheme(theme)} tier="gameplan" activeSlot={slot}/>;
+}
+
+function Root() {
+  const [t, setTweak] = useTweaks(TWEAK_DEFAULTS);
+  const theme = t.theme;
+  const T = getFitTrackTheme(theme); // token bag for prop-driven screens (4.6 Progress)
+
+  // Push the active theme into every screen library that reads a module-level
+  // reference, before render.
+  if (window.setActiveGameplanTheme) window.setActiveGameplanTheme(theme);
+  if (window.setActiveCheckinTheme)  window.setActiveCheckinTheme(theme);
+  if (window.setActivePlanningTheme) window.setActivePlanningTheme(theme);
+
+  // Pillar-shell rail mode — drives the 4.1 dashboard's side rail (the canonical
+  // PillarShell, shared with logger + program). The rail's own Hide/Show buttons
+  // flip the same tweak via window.__gpSetRailMode.
+  const railMode = t.railMode === 'chip' ? 'chip' : 'rail';
+  if (window.setActiveGameplanRailMode) window.setActiveGameplanRailMode(railMode);
+  window.__gpSetRailMode = (m) => setTweak('railMode', m);
+
+  // Header collapse mode — 'auto' (scroll-driven), 'collapsed', 'expanded'.
+  // Drives every PillarShell-routed header (gameplan StatusStrip + pillar Headers).
+  if (window.setPillarHeaderCollapse) window.setPillarHeaderCollapse(t.headerMode || 'auto');
+  const watermark = (_t) => t.showWatermark ? <div className="planning-watermark"/> : null;
+
+  // 4.1 Gameplan Dashboard — gameplan-active screen list (slot = bottom-nav pillar)
+  const gameplanMain = [
+    { id: 'main',       label: '01 Main · Training tab',           slot: 2, render: () => <ScreenMain/> },
+    { id: 'traj-bw',    label: '02 Trajectory · Body Weight',      slot: 1, render: () => <ScreenTrajectory/> },
+    { id: 'traj-bench', label: '03 Trajectory · Bench (on track)', slot: 1, render: () => <ScreenTrajectoryBench/> },
+    { id: 'logged',     label: '04 Variant · Workout logged',      slot: 2, render: () => <ScreenLogged/> },
+    { id: 'nutrition',  label: '05 Sub-tab · Nutrition',           slot: 4, render: () => <ScreenNutrition/> },
+    { id: 'lifestyle',  label: '06 Sub-tab · Lifestyle',           slot: 5, render: () => <ScreenLifestyle/> },
+  ];
+  const gameplanStates = [
+    { id: 'empty', label: 'A · No active Gameplan', slot: 1, render: () => <GPScreenEmpty/> },
+    { id: 'rest',  label: 'B · Rest day',           slot: 2, render: () => <ScreenRest/> },
+  ];
+
+  // 4.2 Weekly Check-in — checkin-screens
+  const checkin = [
+    { id: 'card',    label: '01 Pending Check-in card (on Gameplan tab)', render: () => <ScreenPendingCard/> },
+    { id: 'detail',  label: '02 Full check-in detail · pending review',   render: () => <ScreenCheckInDetail status="pending"/> },
+    { id: 'empty',   label: '03 Empty · between weeks (+ history list)',   render: () => <ScreenEmptyV2/> },
+    { id: 'applied', label: '04 Already reviewed · fully applied',         render: () => <ScreenCheckInDetail status="applied"/> },
+  ];
+
+  // 4.4 Planning Mode (Gameplan) — shares planning-screens with 3.5
+  const planning = [
+    { id: 'pm-main',   label: 'Main · Trajectory view',    render: () => <PlanningMain/> },
+    { id: 'pm-daily',  label: 'Main · Daily target view',  render: () => <DailyTargetView/> },
+    { id: 'pm-volume', label: 'Main · Volume / Structure', render: () => <VolumeView/> },
+  ];
+
+  return (
+    <>
+      <DesignCanvas>
+
+        {/* ═══════════ 4.1 Gameplan Dashboard ═══════════ */}
+        <DCSection
+          id="gameplan-dashboard"
+          title="4.1 · Gameplan Dashboard"
+          subtitle="The daily landing surface for a user with an active Gameplan. Tap any Goal Pulse card to expand its 16-week trajectory (7-day rolling actual vs expected dashed line, hatched variance band, target line). Training tab active by default; Nutrition + Lifestyle are sub-tabs. The flagship surface — Graffiti is its hero theme."
+        >
+          {gameplanMain.map(s => (
+            <DCArtboard key={s.id} id={`gp-${s.id}`} label={s.label} width={432} height={892}>
+              <ThemedPhone theme={theme} label={`4.1 Gameplan · ${s.label}`} navSlot={<GPNav theme={theme} slot={s.slot}/>}>
+                {s.render()}
+              </ThemedPhone>
+            </DCArtboard>
+          ))}
+        </DCSection>
+
+        <DCSection
+          id="gameplan-states"
+          title="4.1 · Gameplan — states"
+          subtitle="Edge states: no active Gameplan (empty), and a scheduled rest day."
+        >
+          {gameplanStates.map(s => (
+            <DCArtboard key={s.id} id={`gp-${s.id}`} label={s.label} width={432} height={892}>
+              <ThemedPhone theme={theme} label={`4.1 Gameplan · ${s.label}`} navSlot={<GPNav theme={theme} slot={s.slot}/>}>
+                {s.render()}
+              </ThemedPhone>
+            </DCArtboard>
+          ))}
+        </DCSection>
+
+        {/* ═══════════ 4.2 Weekly Check-in ═══════════ */}
+        <DCSection
+          id="weekly-checkin"
+          title="4.2 · Weekly Check-in"
+          subtitle="The weekly review surface. A pending card surfaces on the Gameplan tab; tapping it opens the full detail — snapshot tiles, recommendation cards (accept/dismiss), week breakdown, history strip. Two flow states: between-weeks empty (with the past-check-in history list) and an already-reviewed/applied detail. Lab Report is its hero theme."
+        >
+          {checkin.map(s => (
+            <DCArtboard key={s.id} id={`ci-${s.id}`} label={s.label} width={432} height={892}>
+              <ThemedPhone theme={theme} label={`4.2 Check-in · ${s.label}`}>
+                {s.render()}
+              </ThemedPhone>
+            </DCArtboard>
+          ))}
+        </DCSection>
+
+        {/* ═══════════ 4.3 Recommendations Feed ═══════════ */}
+        <DCSection
+          id="recommendations-feed"
+          title="4.3 · Recommendations Feed"
+          subtitle="The engine's running list of recs — the standalone home for what otherwise only appears as a single staged rec inline in a check-in detail or Planning Mode. Grouped Pending / Applied / Dismissed. Apply + Dismiss are live (tap them), each pending rec can hand off to Planning Mode. The second artboard is the cleared inbox between check-ins."
+        >
+          <DCArtboard id="rec-feed-default" label="01 Default · pending + applied + dismissed (interactive)" width={432} height={1180}>
+            <ThemedPhone theme={theme} label="4.3 Recommendations · Feed" height={1160}>
+              <ScreenRecommendationsFeed/>
+            </ThemedPhone>
+          </DCArtboard>
+          <DCArtboard id="rec-feed-empty" label="02 Cleared · nothing pending" width={432} height={900}>
+            <ThemedPhone theme={theme} label="4.3 Recommendations · Cleared">
+              <ScreenRecommendationsFeed initialEmpty/>
+            </ThemedPhone>
+          </DCArtboard>
+        </DCSection>
+
+        {/* ═══════════ 4.4 Planning Mode (Gameplan) ═══════════ */}
+        <DCSection
+          id="planning-gameplan"
+          title="4.4 · Planning Mode (Gameplan)"
+          subtitle="The same sandbox editor as 3.5, instanced for a Gameplan. Three artboards show the Live Projection sub-tabs — Trajectory, Daily Target, Volume / Structure. Toggle the draft watermark in Tweaks. (State + confirmation variants live in the 3.1 Program cluster file.)"
+        >
+          {planning.map(s => (
+            <DCArtboard key={s.id} id={`pm4-${s.id}`} label={s.label} width={430} height={860}>
+              <ThemedPhone theme={theme} label={`4.4 Planning · ${s.label}`} chromeOverlay={watermark}>
+                {s.render()}
+              </ThemedPhone>
+            </DCArtboard>
+          ))}
+        </DCSection>
+
+        {/* ═══════════ 4.5 Goals Editor ═══════════ */}
+        <DCSection
+          id="goals-editor"
+          title="4.5 · Goals Editor"
+          subtitle="The dedicated surface to add / edit / prioritize / archive goals — pulling together the goal handles that otherwise only live inline in the Planning 'Goals' tab and the customize-wizard goal step. Priority is drag-ordered (tap ▲▼), every field reads as an editable drafting input, archive is reversible (no warning framing). The Blueprint draft idiom — shares the Planning Mode vocabulary. Tap '+ Add a goal' to open the type picker live."
+        >
+          <DCArtboard id="goals-default" label="01 Default · ranked goals + archived" width={430} height={1180}>
+            <ThemedPhone theme={theme} label="4.5 Goals Editor · Default" width={410} height={1160}>
+              <ScreenGoalsEditor/>
+            </ThemedPhone>
+          </DCArtboard>
+          <DCArtboard id="goals-add" label="02 Add-a-goal · type picker open" width={430} height={1180}>
+            <ThemedPhone theme={theme} label="4.5 Goals Editor · Add goal" width={410} height={1160}>
+              <ScreenGoalsEditor state="add"/>
+            </ThemedPhone>
+          </DCArtboard>
+          <DCArtboard id="goals-empty" label="03 Empty · no goals set" width={430} height={620}>
+            <ThemedPhone theme={theme} label="4.5 Goals Editor · Empty" width={410} height={600}>
+              <ScreenGoalsEditor state="empty"/>
+            </ThemedPhone>
+          </DCArtboard>
+        </DCSection>
+
+        {/* ═══════════ 4.6 Progress (Gameplan, full) ═══════════ */}
+        <DCSection
+          id="progress-gameplan"
+          title="4.6 · Progress (Gameplan, full)"
+          subtitle="The full Progress surface — metric trend (e1RM / volume / bodyweight, swap via the segmented control or the Tweak), a month adherence calendar, and full workout history. The two preview cards (weekly check-in · recommendations) render UNLOCKED here — that's the only Gameplan superset over Program Progress (3.6). Built on the shared 3.6 base via tier=gameplan, so it stays in lockstep with 3.6."
+        >
+          <DCArtboard id="prog-gp-default" label="01 Default · trend + rings + calendar + check-ins + recs + history" width={432} height={1860}>
+            <ThemedPhone theme={theme} label="4.6 Progress · Default" width={410} height={1822} navSlot={<GPNav theme={theme} slot={1}/>}>
+              <ProgressScreen T={T} tier="gameplan" metric={t.progressMetric} onSetMetric={(v) => setTweak('progressMetric', v)}/>
+            </ThemedPhone>
+          </DCArtboard>
+          <DCArtboard id="prog-gp-empty" label="02 Empty · not enough data yet" width={432} height={1062}>
+            <ThemedPhone theme={theme} label="4.6 Progress · Empty" width={410} height={1040} navSlot={<GPNav theme={theme} slot={1}/>}>
+              <ProgressScreen T={T} tier="gameplan" state="empty"/>
+            </ThemedPhone>
+          </DCArtboard>
+        </DCSection>
+
+        {/* ═══════════ 4.7 Check-in Detail / History ═══════════ */}
+        <DCSection
+          id="checkin-history"
+          title="4.7 · Check-in Detail / History"
+          subtitle="The dedicated past-check-in surface reached from Progress: a history index (tallies + newest-first archive list), and the read-only applied detail you land on when you tap a row. The applied detail is the same artboard as 4.2's reviewed state — 4.7 is the standalone entry point that 4.2 only hinted at in its empty state."
+        >
+          <DCArtboard id="ci-hist-index" label="01 History index · tallies + archive list" width={432} height={952}>
+            <ThemedPhone theme={theme} label="4.7 Check-in History · Index">
+              <ScreenCheckInHistory/>
+            </ThemedPhone>
+          </DCArtboard>
+          <DCArtboard id="ci-hist-detail" label="02 Read-only detail · a past applied check-in" width={432} height={1640}>
+            <ThemedPhone theme={theme} label="4.7 Check-in History · Detail" height={1620}>
+              <ScreenCheckInDetail status="applied"/>
+            </ThemedPhone>
+          </DCArtboard>
+        </DCSection>
+
+      </DesignCanvas>
+
+      <TweaksPanel title="Tweaks">
+        <TweakSection title="Theme">
+          <ThemeCycler value={theme} onChange={(v) => setTweak('theme', v)}/>
+        </TweakSection>
+
+        <TweakSection title="4.1 · Dashboard rail">
+          <TweakRadio
+            value={t.railMode}
+            onChange={(v) => setTweak('railMode', v)}
+            options={[
+              { value: 'rail', label: 'Rail' },
+              { value: 'chip', label: 'No rail' },
+            ]}/>
+        </TweakSection>
+
+        <TweakSection title="Header">
+          <TweakRadio
+            value={t.headerMode || 'auto'}
+            onChange={(v) => setTweak('headerMode', v)}
+            options={[
+              { value: 'auto', label: 'Auto' },
+              { value: 'expanded', label: 'Full' },
+              { value: 'collapsed', label: 'Compact' },
+            ]}/>
+          <div style={{ fontSize: 11, color: 'rgba(60,50,40,.6)', lineHeight: 1.4, marginTop: 4 }}>
+            Auto = collapses to a compact bar once content scrolls. Drives every pillar header (incl. the Gameplan status strip).
+          </div>
+        </TweakSection>
+
+        <TweakSection title="4.4 · Planning chrome">
+          <TweakToggle label="Draft watermark" value={t.showWatermark} onChange={(v) => setTweak('showWatermark', v)}/>
+        </TweakSection>
+
+        <TweakSection title="4.6 · Progress metric">
+          <TweakRadio
+            value={t.progressMetric}
+            onChange={(v) => setTweak('progressMetric', v)}
+            options={[
+              { value: 'e1rm', label: 'e1RM' },
+              { value: 'volume', label: 'Volume' },
+              { value: 'weight', label: 'Weight' },
+            ]}/>
+        </TweakSection>
+
+        <TweakSection title="About this cluster">
+          <div style={{ fontSize: 11.5, color: 'rgba(60,50,40,.7)', lineHeight: 1.45 }}>
+            Cluster 4 · Gameplan Tier — the complete inventory, 4.1 → 4.7 in order, every screen rendering for real (no placeholders left). One theme cycler drives all the theming paths at once. Graffiti default — cycle above to canary all seven; Blueprint is the contrast canary.
+          </div>
+        </TweakSection>
+      </TweaksPanel>
+    </>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<Root/>);
+</script>
+
+<template id="__bundler_thumbnail">
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200">
+    <rect width="200" height="200" fill="#1a1a1a"/>
+    <g transform="translate(34,40)">
+      <rect x="0" y="0" width="132" height="26" rx="2" fill="#e8482a" transform="rotate(-2 66 13)"/>
+      <rect x="6" y="40" width="120" height="34" rx="3" fill="#262626" stroke="#e8482a" stroke-width="1.5" transform="rotate(0.6 66 57)"/>
+      <circle cx="24" cy="57" r="9" fill="none" stroke="#3ddc84" stroke-width="2.5"/>
+      <rect x="6" y="84" width="120" height="34" rx="3" fill="#262626" stroke="#5a5550" stroke-width="1" transform="rotate(-0.6 66 101)"/>
+      <polyline points="14,108 36,96 58,102 80,88 102,92 118,82" fill="none" stroke="#f5b301" stroke-width="2.5"/>
+    </g>
+  </svg>
+</template>
+
+</body>
+</html>

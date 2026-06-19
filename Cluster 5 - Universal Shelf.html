@@ -1,0 +1,331 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>FitTrack · 5.x Universal Shelf Cluster</title>
+<link rel="stylesheet" href="theme-tokens.css?v=5" />
+<style>
+  html, body { margin: 0; padding: 0; background: #ECEDF0; font-family: 'IBM Plex Sans', system-ui, sans-serif; }
+  #root { min-height: 100vh; }
+  ::-webkit-scrollbar { display: none; }
+</style>
+</head>
+<body>
+
+<div id="root"></div>
+
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+
+<!-- shared kit -->
+<script type="text/babel" src="design-canvas.jsx"></script>
+<script type="text/babel" src="tweaks-panel.jsx"></script>
+<script type="text/babel" src="phone-shell.jsx"></script>
+<script type="text/babel" src="theme-bridge.jsx"></script>
+<script type="text/babel" src="theme-typography.jsx"></script>
+<script type="text/babel" src="tier-homes-screens.jsx"></script>
+<!-- cluster-5 screen modules -->
+<script type="text/babel" src="shelf-bp-cards.jsx"></script>
+<script type="text/babel" src="shelf-bp-screens.jsx"></script>
+<script type="text/babel" src="shelf-bp-detail.jsx"></script>
+<script type="text/babel" src="shelf-detail-gp.jsx"></script>
+<script type="text/babel" src="shelf-compare.jsx"></script>
+<script type="text/babel" src="customize-wizard.jsx"></script>
+<script type="text/babel" src="checkout-screens.jsx"></script>
+<script type="text/babel" src="fallback-questionnaire.jsx"></script>
+
+<script type="text/babel">
+const { useState } = React;
+
+/* ──────────────────────────────────────────────────────────────
+   Cluster 5 · Universal Shelf — the COMPLETE cluster on one canvas.
+   Every screen 5.1 → 5.6 in order. All seven surfaces are designed
+   (no placeholders). Four theming paths under one cycler:
+     • hardcoded Blueprint → 5.1 Shelf (shelf-bp-*, an explored study —
+                              does NOT re-theme; it IS the Blueprint look)
+     • injection setters   → 5.2 Card Detail (setCardDetailGPTheme),
+                             5.3 Compare      (setCompareTheme)
+     • theme prop          → 5.4 Customize Wizard, 5.6 Fallback Questionnaire
+     • T-token prop        → 5.5 Checkout / 5.5a Welcome
+   No cross-module collisions — every module is BP* / Cmp* / CW* / FQ* /
+   GP_T-prefixed, so they co-load cleanly.
+   ────────────────────────────────────────────────────────────── */
+
+const TWEAK_DEFAULTS = /*EDITMODE-BEGIN*/{
+  "theme": "graffiti",
+  "combo": "cross",
+  "cmpState": "normal",
+  "cwFlow": "gameplan",
+  "showDraft": false,
+  "showWarnings": true,
+  "fqTab": "programs"
+}/*EDITMODE-END*/;
+
+const SHELF_W = 410, SHELF_H = 870;
+
+const CMP_COMBOS = {
+  cross:     { a: 'size-strength', b: '100-bench',        label: 'Program × Gameplan' },
+  programs:  { a: 'size-strength', b: 'starter-strength', label: 'Program × Program' },
+  gameplans: { a: '100-bench',     b: 'cut-10',           label: 'Gameplan × Gameplan' },
+};
+
+const CW_STEPS = ['01 · Start date', '02 · Current state', '03 · Schedule', '04 · Personalize', '05 · Review', '06 · Confirm'];
+const FQ_STEPS = ['01 · Goals', '02 · Training days', '03 · Experience', '04 · Equipment', '05 · Commitment'];
+
+function StagedPhone({ theme, label, height = 1102, children }) {
+  return (
+    <ThemedPhone theme={theme} label={label} width={410} height={height}>
+      {children}
+    </ThemedPhone>
+  );
+}
+
+function Root() {
+  const [t, setTweak] = useTweaks(TWEAK_DEFAULTS);
+  const theme = t.theme;
+  const T = useFitTrackTheme(theme);
+
+  // Injection-based screen libraries — push the active theme before render.
+  if (window.setCardDetailGPTheme) window.setCardDetailGPTheme(theme);
+  if (window.setCompareTheme)      window.setCompareTheme(theme);
+  if (window.setShelfTheme)        window.setShelfTheme(theme);
+
+  // 5.3 Compare wiring
+  const combo = CMP_COMBOS[t.combo] || CMP_COMBOS.cross;
+  const cmpState = t.cmpState || 'normal';
+
+  // 5.4 Customize Wizard wiring
+  const cwFlow = t.cwFlow || 'gameplan';
+  const cwFlowName = cwFlow === 'program' ? 'Program' : 'Gameplan';
+  const showDraft = !!t.showDraft;
+  const showWarnings = t.showWarnings !== false;
+  const cwKey = `${theme}-${cwFlow}-${showDraft}-${showWarnings}`;
+
+  // 5.6 Fallback wiring
+  const fqTab = t.fqTab || 'programs';
+  const fqTabName = fqTab === 'gameplans' ? 'Gameplans' : 'Programs';
+  const fqKey = `${theme}-${fqTab}`;
+
+  return (
+    <>
+      <DesignCanvas>
+
+        {/* ═══════════ 5.1 Shelf ═══════════ */}
+        <DCSection
+          id="shelf"
+          title="5.1 · Shelf"
+          subtitle="The marketing surface — reached from every tier's slot-1 home. Two tabs on grid paper: Programs (3:4, static, week-strip dominant) and Gameplans (4:3, breathing, goal-arc dominant). Pin two cards to surface the compare banner; the filter rail narrows results live; empty state cross-sells the other tab. Authored as a Blueprint drafting study, now re-themes through all 7 themes via the cycler — the drafting structure (grid, hairline cards, crosshairs) stays; palette + type follow the theme."
+        >
+          <DCArtboard id="bp-shelf-programs" label="01 Programs tab" width={SHELF_W} height={SHELF_H}>
+            <ThemedPhone theme={theme} label="5.1 Shelf · Programs" width={SHELF_W} height={SHELF_H}>
+              <BPShelf tab="programs"/>
+            </ThemedPhone>
+          </DCArtboard>
+          <DCArtboard id="bp-shelf-gameplans" label="02 Gameplans tab" width={SHELF_W} height={SHELF_H}>
+            <ThemedPhone theme={theme} label="5.1 Shelf · Gameplans" width={SHELF_W} height={SHELF_H}>
+              <BPShelf tab="gameplans"/>
+            </ThemedPhone>
+          </DCArtboard>
+          <DCArtboard id="bp-shelf-filter" label="03 Filter rail open" width={SHELF_W} height={SHELF_H}>
+            <ThemedPhone theme={theme} label="5.1 Shelf · Filter" width={SHELF_W} height={SHELF_H}>
+              <BPShelf tab="programs" filtersOpen/>
+            </ThemedPhone>
+          </DCArtboard>
+          <DCArtboard id="bp-shelf-compare" label="04 Two pinned · compare banner" width={SHELF_W} height={SHELF_H}>
+            <ThemedPhone theme={theme} label="5.1 Shelf · Compare" width={SHELF_W} height={SHELF_H}>
+              <BPShelf tab="programs" comparePinned={2}/>
+            </ThemedPhone>
+          </DCArtboard>
+          <DCArtboard id="bp-shelf-empty" label="05 Empty state" width={SHELF_W} height={SHELF_H}>
+            <ThemedPhone theme={theme} label="5.1 Shelf · Empty" width={SHELF_W} height={SHELF_H}>
+              <BPShelf tab="programs" emptyState/>
+            </ThemedPhone>
+          </DCArtboard>
+        </DCSection>
+
+        {/* ═══════════ 5.2 Card Detail ═══════════ */}
+        <DCSection
+          id="card-detail"
+          title="5.2 · Card Detail Page"
+          subtitle="The conversion page for a Gameplan. The goal arc, the included list, and the sample day do the persuading — no who-this-is-for prose, no outcome narrative. Sticky CTA: Start now is primary; pre-purchase Customize is a quiet text button. Re-themes via the cycler."
+        >
+          <DCArtboard id="detail-gameplan" label="Gameplan Detail" width={432} height={892}>
+            <ThemedPhone theme={theme} label="5.2 · Gameplan Detail">
+              <GameplanDetail/>
+            </ThemedPhone>
+          </DCArtboard>
+        </DCSection>
+
+        {/* ═══════════ 5.3 Side-by-side Compare ═══════════ */}
+        <DCSection
+          id="compare"
+          title="5.3 · Side-by-side Compare"
+          subtitle="A two-column diff with auto-detected winners. Each row asks: is one objectively more capable on this axis? If so, the value gets an accent underline + BETTER chip (price wins on lower 6-mo-equivalent; scope / adapts / check-ins win on more capable; weeks / days / level / method stay neutral). Sticky pick-a-side bar. Tweaks pivot the combo and state."
+        >
+          <DCArtboard id="compare-board" label={`${combo.label} · ${cmpState}`} width={432} height={892}>
+            <ThemedPhone theme={theme} label={`5.3 · ${combo.label}`}>
+              <CompareView aId={combo.a} bId={combo.b} state={cmpState}/>
+            </ThemedPhone>
+          </DCArtboard>
+        </DCSection>
+
+        {/* ═══════════ 5.4 Customize Wizard ═══════════ */}
+        <DCSection
+          id="customize-wizard"
+          title="5.4 · Customize Wizard"
+          subtitle="The opt-in 'Customize first' path off the Card Detail / Compare CTA. Live and clickable — tap Next / Back, the step bar, the day grid, injury and accessory chips, the start-date picker. Tweaks switch the branch (Gameplan ↔ Program), the 24h resume-draft banner, and engine warnings."
+        >
+          <DCArtboard id="cw-interactive" label={`${cwFlowName} · interactive`} width={432} height={892}>
+            <ThemedPhone key={cwKey} theme={theme} label={`5.4 · Customize — ${cwFlowName}`}>
+              <CustomizeWizard theme={theme} flow={cwFlow} showDraft={showDraft} showWarnings={showWarnings} startStep={1}/>
+            </ThemedPhone>
+          </DCArtboard>
+        </DCSection>
+
+        <DCSection
+          id="customize-steps"
+          title="5.4 · Customize — all six steps"
+          subtitle="Each frame pinned to one step (and still live). Start date defaults to next Monday; current state, schedule, and personalize carry sensible defaults so the flow is never an empty form; review reads everything back before checkout."
+        >
+          {CW_STEPS.map((lbl, i) => (
+            <DCArtboard key={i} id={`cw-step-${i + 1}`} label={`${cwFlowName} · ${lbl}`} width={432} height={892}>
+              <ThemedPhone key={`${cwKey}-${i}`} theme={theme} label={`5.4 · ${lbl}`}>
+                <CustomizeWizard theme={theme} flow={cwFlow} showDraft={showDraft} showWarnings={showWarnings} startStep={i + 1}/>
+              </ThemedPhone>
+            </DCArtboard>
+          ))}
+        </DCSection>
+
+        {/* ═══════════ 5.5 Checkout ═══════════ */}
+        <DCSection
+          id="checkout"
+          title="5.5 · Checkout"
+          subtitle="One decision: start date. Default is the next Monday. Everything else moves to post-purchase Customize so users never feel locked in before paying. Program is one-time; Gameplan is a subscription."
+        >
+          <DCArtboard id="co-program" label="Program · one-time" width={432} height={1102}>
+            <StagedPhone theme={theme} label="5.5 Checkout · Program" height={1080}>
+              <CheckoutProgram T={T}/>
+            </StagedPhone>
+          </DCArtboard>
+          <DCArtboard id="co-gameplan" label="Gameplan · subscription" width={432} height={1302}>
+            <StagedPhone theme={theme} label="5.5 Checkout · Gameplan" height={1280}>
+              <CheckoutGameplan T={T}/>
+            </StagedPhone>
+          </DCArtboard>
+        </DCSection>
+
+        {/* ═══════════ 5.5a Post-Purchase Welcome ═══════════ */}
+        <DCSection
+          id="welcome"
+          title="5.5a · Post-Purchase Welcome"
+          subtitle="Tier-aware 'Next up' rows with the actual first workout. Setup tips dismiss + persist. Deep-linkable from Settings → Billing. The loading state covers the clone window. The post-purchase Customize screen (reachable anytime from Tier Home / Planning Mode) is shown last."
+        >
+          <DCArtboard id="we-loading" label="Loading · clone in progress" width={432} height={1102}>
+            <StagedPhone theme={theme} label="5.5a Welcome · Loading" height={1080}>
+              <WelcomeLoading T={T}/>
+            </StagedPhone>
+          </DCArtboard>
+          <DCArtboard id="we-program" label="Program · success" width={432} height={1102}>
+            <StagedPhone theme={theme} label="5.5a Welcome · Program" height={1080}>
+              <WelcomeProgram T={T}/>
+            </StagedPhone>
+          </DCArtboard>
+          <DCArtboard id="we-gameplan" label="Gameplan · trial day 1" width={432} height={1102}>
+            <StagedPhone theme={theme} label="5.5a Welcome · Gameplan" height={1080}>
+              <WelcomeGameplan T={T}/>
+            </StagedPhone>
+          </DCArtboard>
+          <DCArtboard id="cu-program" label="Post-purchase Customize · Program" width={432} height={1502}>
+            <StagedPhone theme={theme} label="5.4 Customize (post-purchase) · Program" height={1480}>
+              <CustomizeProgram T={T}/>
+            </StagedPhone>
+          </DCArtboard>
+        </DCSection>
+
+        {/* ═══════════ 5.6 Fallback Questionnaire ═══════════ */}
+        <DCSection
+          id="fallback"
+          title="5.6 · Fallback Questionnaire"
+          subtitle="The 'Not sure? Answer a few questions' path off the Shelf filter rail. Live and clickable — tap through five steps, the goal checkboxes, day and commitment chips. The result count in the header narrows as answers get more specific; the final CTA hands the filters back to the Shelf. Tweak switches the active tab."
+        >
+          <DCArtboard id="fq-interactive" label={`${fqTabName} · interactive`} width={432} height={892}>
+            <ThemedPhone key={fqKey} theme={theme} label={`5.6 · Questionnaire — ${fqTabName}`}>
+              <FallbackQuestionnaire theme={theme} tab={fqTab} startStep={1}/>
+            </ThemedPhone>
+          </DCArtboard>
+        </DCSection>
+
+        <DCSection
+          id="fallback-steps"
+          title="5.6 · Questionnaire — all five steps"
+          subtitle="Each frame pinned to one step (and still live). Goals is multi-select; days, experience, and equipment are single hard filters; commitment is a soft 1–5 signal that reorders rather than hides. Sensible defaults carry through."
+        >
+          {FQ_STEPS.map((lbl, i) => (
+            <DCArtboard key={i} id={`fq-step-${i + 1}`} label={`${fqTabName} · ${lbl}`} width={432} height={892}>
+              <ThemedPhone key={`${fqKey}-${i}`} theme={theme} label={`5.6 · ${lbl}`}>
+                <FallbackQuestionnaire theme={theme} tab={fqTab} startStep={i + 1}/>
+              </ThemedPhone>
+            </DCArtboard>
+          ))}
+        </DCSection>
+
+      </DesignCanvas>
+
+      <TweaksPanel title="Tweaks">
+        <TweakSection title="Theme">
+          <ThemeCycler value={theme} onChange={(v) => setTweak('theme', v)}/>
+          <div style={{ fontSize: 11, color: 'rgba(60,50,40,.6)', lineHeight: 1.4, marginTop: 6 }}>
+            Drives 5.2 → 5.6. The 5.1 Shelf is a locked Blueprint study and does not re-theme.
+          </div>
+        </TweakSection>
+
+        <TweakSection title="5.3 · Compare">
+          <TweakRadio label="Combo" value={t.combo} onChange={(v) => setTweak('combo', v)}
+            options={[{ value: 'cross', label: 'P × GP' }, { value: 'programs', label: 'P × P' }, { value: 'gameplans', label: 'GP × GP' }]}/>
+          <TweakRadio label="State" value={t.cmpState} onChange={(v) => setTweak('cmpState', v)}
+            options={[{ value: 'normal', label: 'Normal' }, { value: 'loading', label: 'Loading' }, { value: 'error', label: '1 missing' }]}/>
+        </TweakSection>
+
+        <TweakSection title="5.4 · Customize Wizard">
+          <TweakRadio label="Branch" value={cwFlow} onChange={(v) => setTweak('cwFlow', v)}
+            options={[{ value: 'gameplan', label: 'Gameplan' }, { value: 'program', label: 'Program' }]}/>
+          <TweakToggle label="Resume-draft banner" value={showDraft} onChange={(v) => setTweak('showDraft', v)}/>
+          <TweakToggle label="Engine warnings (Review)" value={showWarnings} onChange={(v) => setTweak('showWarnings', v)}/>
+        </TweakSection>
+
+        <TweakSection title="5.6 · Fallback">
+          <TweakRadio label="Active tab" value={fqTab} onChange={(v) => setTweak('fqTab', v)}
+            options={[{ value: 'programs', label: 'Programs' }, { value: 'gameplans', label: 'Gameplans' }]}/>
+        </TweakSection>
+
+        <TweakSection title="About this cluster">
+          <div style={{ fontSize: 11.5, color: 'rgba(60,50,40,.7)', lineHeight: 1.45 }}>
+            Cluster 5 · Universal Shelf — the complete inventory, 5.1 → 5.6 in order. All seven surfaces are designed (no placeholders). One theme cycler drives the four theming paths at once; the 5.1 Shelf is the locked Blueprint study. Default Lab — cycle above to canary all seven; Blueprint is the contrast canary.
+          </div>
+        </TweakSection>
+      </TweaksPanel>
+    </>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<Root/>);
+</script>
+
+<template id="__bundler_thumbnail">
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200">
+    <rect width="200" height="200" fill="#132C52"/>
+    <g transform="translate(34,34)">
+      <rect x="0" y="0" width="60" height="80" rx="3" fill="#FAFDFF" opacity=".9"/>
+      <rect x="72" y="0" width="60" height="80" rx="3" fill="#FAFDFF" opacity=".55"/>
+      <path d="M 6 128 C 40 128, 70 92, 126 86" stroke="#4A9EFF" stroke-width="3" fill="none" stroke-linecap="round"/>
+      <circle cx="6" cy="128" r="5" fill="none" stroke="#4A9EFF" stroke-width="2"/>
+      <circle cx="126" cy="86" r="6" fill="#4A9EFF"/>
+      <rect x="0" y="144" width="132" height="3" fill="#FAFDFF" opacity=".4"/>
+    </g>
+  </svg>
+</template>
+
+</body>
+</html>

@@ -1,0 +1,720 @@
+/* theme-tokens.css
+   Four FitTrack themes as CSS custom properties, scoped via data-theme.
+   Mirrors the real ft-* token system from the codebase so the logger
+   markup stays theme-agnostic and chrome lives in per-theme blocks. */
+
+@import url('https://fonts.googleapis.com/css2?family=Stardos+Stencil:wght@400;700&family=Teko:wght@400;500;600;700&family=Oswald:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&family=Caveat:wght@400;500;600;700&family=Patrick+Hand&family=Press+Start+2P&family=VT323&family=DotGothic16&family=Pixelify+Sans:wght@400;500;600;700&family=Major+Mono+Display&family=Space+Mono:wght@400;700&family=Orbitron:wght@400;500;600;700&family=Share+Tech+Mono&family=Permanent+Marker&family=Bungee&family=Audiowide&family=Jost:wght@400;500;600;700&family=Oxanium:wght@400;500;600;700&family=Cinzel:wght@400;500;600;700&family=EB+Garamond:ital,wght@0,400;0,500;0,600;1,400&family=Cutive+Mono&family=Poiret+One&family=Josefin+Sans:wght@300;400;500;600;700&family=DM+Mono:wght@300;400;500&display=swap');
+
+/* ───────────── Shared base ───────────── */
+.ft {
+  /* Muscle group base tints — themes can override for tonal harmony */
+  --ft-push:   74 144 217;   /* #4A90D9 */
+  --ft-pull:   92 184 92;    /* #5CB85C */
+  --ft-legs:  217  83  79;   /* #D9534F */
+  --ft-core:  240 173  78;   /* #F0AD4E */
+
+  /* Semantic state colors — fg = text/icon, bg = subtle fill, br = border.
+     Defaults aim at the Lab Report (light) palette; dark themes override below. */
+  --ft-success:    21 128  61;  /* #15803D */
+  --ft-success-fg: 21 128  61;
+  --ft-success-bg: 236 253 243; /* #ECFDF3 */
+  --ft-success-br: 167 224 188;
+  --ft-warn:      199 116   5;  /* #C77405 */
+  --ft-warn-fg:   199 116   5;
+  --ft-warn-bg:   255 246 229; /* #FFF6E5 */
+  --ft-warn-br:   244 214 154;
+  --ft-danger:    180  35  24;  /* #B42318 */
+  --ft-danger-fg: 180  35  24;
+  --ft-danger-bg: 254 241 240; /* #FEF1F0 */
+  --ft-danger-br: 245 181 174;
+  --ft-info-fg:    37  99 235;
+  --ft-info-bg:   239 244 254;
+  --ft-info-br:   199 215 251;
+
+  font-family: var(--ft-font-body);
+  color: rgb(var(--ft-white));
+  background: rgb(var(--ft-bg));
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+.ft * { box-sizing: border-box; }
+.ft input, .ft button, .ft select, .ft textarea {
+  font-family: inherit; color: inherit;
+}
+
+/* Utility colors */
+.ft-col-push { color: rgb(var(--ft-push)); }
+.ft-col-pull { color: rgb(var(--ft-pull)); }
+.ft-col-legs { color: rgb(var(--ft-legs)); }
+.ft-col-core { color: rgb(var(--ft-core)); }
+.ft-bg-push  { background: rgb(var(--ft-push)); }
+.ft-bg-pull  { background: rgb(var(--ft-pull)); }
+.ft-bg-legs  { background: rgb(var(--ft-legs)); }
+.ft-bg-core  { background: rgb(var(--ft-core)); }
+
+/* ═════════════════════════════════════════════════════════════
+   IRON & CHALK — warm dark, brass accent, knurled rib, stencil
+   ═════════════════════════════════════════════════════════════ */
+.ft[data-theme="iron"] {
+  --ft-bg:         22  21  20;    /* #161514 */
+  --ft-surface:    46  45  43;    /* #2E2D2B — bgCard */
+  --ft-card:       60  58  55;    /* bgElevated */
+  --ft-border:     85  80  72;
+  --ft-muted:     140 130 115;
+  --ft-dim:       165 155 140;
+  --ft-light:     215 205 190;
+  --ft-pale:      240 232 220;
+  --ft-white:     245 240 230;
+  --ft-accent:    200 169 110;    /* #C8A96E brass */
+
+  --ft-font-display: 'Stardos Stencil', serif;
+  --ft-font-data: 'Teko', sans-serif;
+  --ft-font-body: 'Oswald', sans-serif;
+
+  --ft-radius: 0px;
+  --ft-card-border: 1px solid rgba(200,169,110,.25);
+
+  /* Dark theme state overrides — bg becomes a subtle wash on the dark surface */
+  --ft-success: 110 200 130;
+  --ft-success-fg: 130 215 145;
+  --ft-success-bg:  18  46  28;
+  --ft-success-br:  40  90  55;
+  --ft-warn:    240 190  90;
+  --ft-warn-fg: 240 200 110;
+  --ft-warn-bg:  60  46  20;
+  --ft-warn-br: 110  85  35;
+  --ft-danger:  240  95  85;
+  --ft-danger-fg: 245 130 120;
+  --ft-danger-bg:  60  22  20;
+  --ft-danger-br: 110  45  40;
+  --ft-info-fg: 200 169 110;
+  --ft-info-bg:  46  38  22;
+  --ft-info-br:  90  72  35;
+}
+/* brass knurled strip on every card top */
+.ft[data-theme="iron"] .ft-card::before {
+  content: '';
+  position: absolute; top: 0; left: 0; right: 0; height: 4px;
+  background:
+    repeating-linear-gradient(
+      90deg,
+      rgba(200,169,110,.9) 0 2px,
+      rgba(140,108, 58,.9) 2px 4px
+    ),
+    linear-gradient(90deg, #c8a96e, #a98855 50%, #c8a96e);
+  background-blend-mode: multiply;
+  box-shadow: 0 1px 0 rgba(0,0,0,.4) inset;
+}
+.ft[data-theme="iron"] h1,
+.ft[data-theme="iron"] h2,
+.ft[data-theme="iron"] .ft-display {
+  font-family: var(--ft-font-display);
+  letter-spacing: .05em;
+  font-weight: 400;
+}
+.ft[data-theme="iron"] .ft-data {
+  font-family: var(--ft-font-data);
+  font-weight: 500;
+  letter-spacing: .02em;
+}
+.ft[data-theme="iron"] .ft-stamp {
+  border: 1px solid rgba(200,169,110,.6);
+  padding: 4px 10px;
+  letter-spacing: .35em;
+  font-size: 10px;
+  color: rgb(var(--ft-accent));
+}
+
+/* ═════════════════════════════════════════════════════════════
+   LAB REPORT — clean white, clinical blue, barcode, plex
+   ═════════════════════════════════════════════════════════════ */
+.ft[data-theme="lab"] {
+  --ft-bg:        236 237 240;
+  --ft-surface:   255 255 255;
+  --ft-card:      248 249 250;
+  --ft-border:    210 214 220;
+  --ft-muted:     130 140 155;
+  --ft-dim:       110 120 135;
+  --ft-light:      70  80  95;
+  --ft-pale:       30  38  52;
+  --ft-white:      18  24  35;
+  --ft-accent:     37  99 235;
+
+  --ft-font-display: 'IBM Plex Sans', sans-serif;
+  --ft-font-data: 'JetBrains Mono', monospace;
+  --ft-font-body: 'IBM Plex Sans', sans-serif;
+
+  --ft-radius: 6px;
+  --ft-card-border: 1px solid rgb(var(--ft-border));
+}
+.ft[data-theme="lab"] h1,
+.ft[data-theme="lab"] h2,
+.ft[data-theme="lab"] .ft-display {
+  font-family: var(--ft-font-display);
+  font-weight: 600;
+  letter-spacing: -.01em;
+}
+.ft[data-theme="lab"] .ft-data {
+  font-family: var(--ft-font-data);
+  font-variant-numeric: tabular-nums;
+}
+.ft[data-theme="lab"] .ft-stamp {
+  font-family: var(--ft-font-data);
+  font-size: 9px;
+  color: rgb(var(--ft-muted));
+  letter-spacing: .15em;
+}
+.ft[data-theme="lab"] .ft-barcode {
+  height: 16px;
+  background: repeating-linear-gradient(
+    90deg,
+    #000 0 2px, transparent 2px 4px,
+    #000 4px 5px, transparent 5px 8px,
+    #000 8px 11px, transparent 11px 13px,
+    #000 13px 14px, transparent 14px 17px
+  );
+  opacity: .9;
+}
+
+/* ═════════════════════════════════════════════════════════════
+   NOTEBOOK — cream, spiral binding, red margin, caveat
+   ═════════════════════════════════════════════════════════════ */
+.ft[data-theme="notebook"] {
+  --ft-bg:        226 217 201;   /* aged cream */
+  --ft-surface:   250 246 237;   /* page */
+  --ft-card:      255 252 244;
+  --ft-border:    210 198 178;
+  --ft-muted:     140 125 105;
+  --ft-dim:       110  95  80;
+  --ft-light:      80  68  58;
+  --ft-pale:       55  45  38;
+  --ft-white:      38  30  25;
+  --ft-accent:    181  49  42;   /* red #B5312A */
+
+  --ft-font-display: 'Caveat', cursive;
+  --ft-font-data: 'Caveat', cursive;
+  --ft-font-body: 'Patrick Hand', cursive;
+
+  --ft-radius: 2px;
+  --ft-card-border: none;
+
+  /* Notebook state palette — warm/aged versions of the base */
+  --ft-success-fg:  64 122  60;
+  --ft-success-bg: 230 240 215;
+  --ft-success-br: 180 205 145;
+  --ft-warn-fg:   170  95  20;
+  --ft-warn-bg:   246 232 200;
+  --ft-warn-br:   210 175 110;
+  --ft-danger-fg: 181  49  42;
+  --ft-danger-bg: 245 220 213;
+  --ft-danger-br: 210 145 130;
+  --ft-info-fg:    50  85 130;
+  --ft-info-bg:   220 230 240;
+  --ft-info-br:   170 190 210;
+}
+.ft[data-theme="notebook"] .ft-card {
+  box-shadow: 0 1px 2px rgba(0,0,0,.08), 0 4px 10px rgba(0,0,0,.06);
+}
+.ft[data-theme="notebook"] h1,
+.ft[data-theme="notebook"] h2,
+.ft[data-theme="notebook"] .ft-display {
+  font-family: var(--ft-font-display);
+  font-weight: 700;
+  letter-spacing: 0;
+}
+/* spiral binding + margin line */
+.ft[data-theme="notebook"] .ft-page-chrome {
+  position: absolute; inset: 0; pointer-events: none;
+}
+.ft[data-theme="notebook"] .ft-page-chrome::before {
+  /* red margin line */
+  content: ''; position: absolute; left: 32px; top: 0; bottom: 0; width: 1px;
+  background: rgba(181,49,42,.45);
+}
+.ft[data-theme="notebook"] .ft-page-chrome::after {
+  /* spiral holes column */
+  content: ''; position: absolute; left: 8px; top: 30px; bottom: 30px; width: 12px;
+  background-image:
+    radial-gradient(circle at 6px 6px, rgba(0,0,0,.35) 0 2px, transparent 2.5px),
+    radial-gradient(circle at 6px 6px, rgba(255,255,255,.5) 0 1px, transparent 1.5px);
+  background-size: 12px 28px;
+  background-repeat: repeat-y;
+}
+
+/* ═════════════════════════════════════════════════════════════
+   ARCADE — deep black, pink/cyan triple bezel, pixel, CRT
+   ═════════════════════════════════════════════════════════════ */
+.ft[data-theme="arcade"] {
+  --ft-bg:          7   7  15;   /* #07070F */
+  --ft-surface:    34  34  58;
+  --ft-card:       42  42  68;
+  --ft-border:    255  80 200;   /* pink frame */
+  --ft-muted:     140 130 180;
+  --ft-dim:       170 160 210;
+  --ft-light:     220 215 240;
+  --ft-pale:      255 255 255;
+  --ft-white:     255 255 255;
+  --ft-accent:    255  80 200;   /* hot pink */
+  --ft-cyan:        0 240 255;
+
+  --ft-font-display: 'Press Start 2P', monospace;
+  --ft-font-data: 'VT323', monospace;
+  --ft-font-body: 'Pixelify Sans', sans-serif;
+  --ft-font-number: 'VT323', monospace;
+
+  --ft-radius: 0px;
+  --ft-card-border: 1px solid rgb(var(--ft-border));
+
+  /* Arcade state palette — saturated neon */
+  --ft-success:    50 240 130;
+  --ft-success-fg: 80 255 140;
+  --ft-success-bg: 10  50  25;
+  --ft-success-br: 50 240 130;
+  --ft-warn:      255 220  60;
+  --ft-warn-fg:   255 235  90;
+  --ft-warn-bg:   50  40  10;
+  --ft-warn-br:  255 220  60;
+  --ft-danger:   255  80 140;
+  --ft-danger-fg:255 110 160;
+  --ft-danger-bg: 50  10  30;
+  --ft-danger-br:255  80 140;
+  --ft-info-fg:   0 240 255;
+  --ft-info-bg:  10  35  50;
+  --ft-info-br:   0 240 255;
+}
+.ft[data-theme="arcade"] h1,
+.ft[data-theme="arcade"] h2,
+.ft[data-theme="arcade"] .ft-display {
+  font-family: var(--ft-font-display);
+  font-size: .7em;
+  line-height: 1.4;
+  letter-spacing: .05em;
+  text-shadow: 2px 2px 0 rgba(0,240,255,.55);
+}
+.ft[data-theme="arcade"] .ft-data {
+  font-family: var(--ft-font-data);
+  font-size: 1.25em;
+  letter-spacing: .02em;
+}
+/* triple bezel: pink outer + cyan inner on cards */
+.ft[data-theme="arcade"] .ft-card {
+  box-shadow:
+    0 0 0 1px rgb(var(--ft-border)),
+    0 0 0 3px rgb(var(--ft-bg)),
+    0 0 0 4px rgba(0,240,255,.9),
+    4px 4px 0 0 rgba(255,80,200,.35);
+}
+.ft[data-theme="arcade"] .ft-stamp {
+  font-family: var(--ft-font-display);
+  font-size: 8px;
+  color: rgb(var(--ft-cyan));
+  letter-spacing: .1em;
+}
+/* CRT scanlines overlay */
+.ft[data-theme="arcade"] .ft-crt {
+  position: absolute; inset: 0; pointer-events: none;
+  background:
+    repeating-linear-gradient(
+      0deg,
+      rgba(0,0,0,.10) 0 1px,
+      transparent 1px 4px
+    ),
+    radial-gradient(ellipse at center, transparent 65%, rgba(0,0,0,.35) 100%);
+  mix-blend-mode: multiply;
+  opacity: .55;
+  z-index: 1;
+}
+
+
+/* ═════════════════════════════════════════════════════════════
+   BLUEPRINT — inverted (cards darker than bg), grid paper, mono
+   ═════════════════════════════════════════════════════════════ */
+.ft[data-theme="blueprint"] {
+  --ft-bg:         222 233 244;
+  --ft-surface:     19  44  82;
+  --ft-card:        30  60 105;
+  --ft-border:      19  44  82;
+  --ft-muted:      210 225 240;
+  --ft-dim:        225 235 248;
+  --ft-light:      235 245 252;
+  --ft-pale:       245 250 255;
+  --ft-white:      250 253 255;
+  --ft-accent:     250 253 255;
+
+  --ft-font-display: 'Major Mono Display', monospace;
+  --ft-font-data: 'Space Mono', monospace;
+  --ft-font-body: 'Space Mono', monospace;
+
+  --ft-radius: 0px;
+  --ft-card-border: 1px solid rgba(245,250,255,.4);
+}
+.ft[data-theme="blueprint"] {
+  background-image:
+    linear-gradient(rgba(19,44,82,.10) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(19,44,82,.10) 1px, transparent 1px);
+  background-size: 20px 20px;
+  color: rgb(19, 44, 82);
+}
+/* Cards on Blueprint are dark navy — tokens (set bright above) work fine inside.
+   But chrome OUTSIDE cards (header, week tabs) sits on the light grid paper, so
+   we redefine the foreground tokens to navy in those scopes. */
+.ft[data-theme="blueprint"] .ft-on-bg {
+  --ft-white:      19  44  82;
+  --ft-pale:       19  44  82;
+  --ft-light:      40  70 110;
+  --ft-dim:        70 100 140;
+  --ft-muted:     105 135 170;
+  --ft-border:     19  44  82;
+  --ft-accent:     19  44  82;
+}
+/* Cards inside on-bg regions reset back to bright (white text on dark navy) */
+.ft[data-theme="blueprint"] .ft-card {
+  --ft-white:     250 253 255;
+  --ft-pale:      245 250 255;
+  --ft-light:     235 245 252;
+  --ft-dim:       225 235 248;
+  --ft-muted:     210 225 240;
+  --ft-border:     19  44  82;
+  --ft-accent:    250 253 255;
+  background: rgb(var(--ft-surface));
+  color: rgb(245, 250, 255);
+}
+.ft[data-theme="blueprint"] h1,
+.ft[data-theme="blueprint"] h2,
+.ft[data-theme="blueprint"] .ft-display {
+  font-family: var(--ft-font-display);
+  letter-spacing: .04em; font-weight: 400;
+}
+.ft[data-theme="blueprint"] .ft-data {
+  font-family: var(--ft-font-data);
+  font-variant-numeric: tabular-nums;
+}
+.ft[data-theme="blueprint"] .ft-stamp {
+  font-family: var(--ft-font-data);
+  border: 1px solid rgba(245,250,255,.5);
+  padding: 3px 8px; font-size: 9px;
+  letter-spacing: .15em;
+  color: rgb(var(--ft-pale));
+}
+
+/* ═════════════════════════════════════════════════════════════
+   CYBERPUNK — deep navy, cyan glow, scanlines, orbitron
+   ═════════════════════════════════════════════════════════════ */
+.ft[data-theme="cyberpunk"] {
+  --ft-bg:           5  10  22;
+  --ft-surface:     12  20  38;
+  --ft-card:        18  30  52;
+  --ft-border:       0 240 255;
+  --ft-muted:      100 140 175;
+  --ft-dim:        140 180 210;
+  --ft-light:      200 230 245;
+  --ft-pale:       235 250 255;
+  --ft-white:      245 252 255;
+  --ft-accent:       0 240 255;
+
+  --ft-font-display: 'Orbitron', sans-serif;
+  --ft-font-data: 'Share Tech Mono', monospace;
+  --ft-font-body: 'Share Tech Mono', monospace;
+
+  --ft-radius: 0px;
+  --ft-card-border: 1px solid rgba(0,240,255,.35);
+}
+.ft[data-theme="cyberpunk"] h1,
+.ft[data-theme="cyberpunk"] h2,
+.ft[data-theme="cyberpunk"] .ft-display {
+  font-family: var(--ft-font-display);
+  font-weight: 600; letter-spacing: .08em;
+  text-shadow: 0 0 6px rgba(0,240,255,.55), 0 0 14px rgba(0,240,255,.25);
+}
+.ft[data-theme="cyberpunk"] .ft-data {
+  font-family: var(--ft-font-data);
+  letter-spacing: .03em;
+}
+.ft[data-theme="cyberpunk"] .ft-card {
+  position: relative;
+  box-shadow: 0 0 0 1px rgba(0,240,255,.15), 0 0 20px rgba(0,240,255,.08) inset;
+}
+.ft[data-theme="cyberpunk"] .ft-stamp {
+  font-family: var(--ft-font-data);
+  font-size: 9px; letter-spacing: .2em;
+  color: rgb(var(--ft-accent));
+  border: 1px solid rgba(0,240,255,.5);
+  padding: 3px 8px;
+}
+
+/* ═════════════════════════════════════════════════════════════
+   GRAFFITI — concrete bg, marker, neon yellow tape
+   ═════════════════════════════════════════════════════════════ */
+.ft[data-theme="graffiti"] {
+  --ft-bg:          28  28  30;
+  --ft-surface:     45  45  48;
+  --ft-card:        58  58  62;
+  --ft-border:      90  90  95;
+  --ft-muted:      150 150 155;
+  --ft-dim:        180 180 185;
+  --ft-light:      215 215 220;
+  --ft-pale:       240 240 240;
+  --ft-white:      250 250 248;
+  --ft-accent:     245 220  60;   /* tape yellow */
+
+  --ft-font-display: 'Permanent Marker', cursive;
+  --ft-font-data: 'Bungee', sans-serif;
+  --ft-font-body: 'Permanent Marker', cursive;
+
+  --ft-radius: 0px;
+  --ft-card-border: 1px solid rgba(245,220,60,.35);
+}
+.ft[data-theme="graffiti"] {
+  background-image:
+    radial-gradient(circle at 18% 22%, rgba(245,220,60,.05), transparent 40%),
+    radial-gradient(circle at 80% 70%, rgba(255,80,140,.04), transparent 40%);
+}
+.ft[data-theme="graffiti"] h1,
+.ft[data-theme="graffiti"] h2,
+.ft[data-theme="graffiti"] .ft-display {
+  font-family: var(--ft-font-display);
+  font-weight: 400; letter-spacing: .01em;
+}
+.ft[data-theme="graffiti"] .ft-data {
+  font-family: var(--ft-font-data);
+  font-weight: 400; letter-spacing: .04em;
+}
+.ft[data-theme="graffiti"] .ft-card {
+  transform: rotate(-.2deg);
+}
+.ft[data-theme="graffiti"] .ft-card:nth-of-type(2n) {
+  transform: rotate(.25deg);
+}
+.ft[data-theme="graffiti"] .ft-stamp {
+  font-family: var(--ft-font-data);
+  background: rgb(var(--ft-accent));
+  color: #1c1c1e;
+  padding: 3px 9px;
+  font-size: 9px; letter-spacing: .12em;
+  transform: rotate(-2deg);
+  display: inline-block;
+}
+
+/* ═════════════════════════════════════════════════════════════
+   ATOMPUNK — Populuxe / Jet-Age. Mint-cream ground, atomic teal,
+   coral + harvest-gold accents, geometric space-age type, soft
+   chrome trim + faint starburst field. The only light teal-led theme.
+   ═════════════════════════════════════════════════════════════ */
+.ft[data-theme="atompunk"] {
+  --ft-bg:        220 230 224;   /* #DCE6E0 pale mint */
+  --ft-surface:   252 251 245;   /* #FCFBF5 warm porcelain */
+  --ft-card:      255 255 255;
+  --ft-border:    201 210 204;
+  --ft-muted:     122 135 130;
+  --ft-dim:        90 104  99;
+  --ft-light:      70  84  79;
+  --ft-pale:       40  52  49;
+  --ft-white:      31  42  40;   /* #1F2A28 charcoal-teal text */
+  --ft-accent:     14 140 124;   /* #0E8C7C atomic teal */
+  --ft-coral:     214  73  46;   /* #D6492E */
+
+  --ft-font-display: 'Audiowide', sans-serif;
+  --ft-font-data: 'Oxanium', sans-serif;
+  --ft-font-body: 'Jost', sans-serif;
+  --ft-font-number: 'Oxanium', sans-serif;
+
+  --ft-radius: 14px;
+  --ft-card-border: 1px solid rgb(var(--ft-border));
+
+  /* Light-theme state palette — Populuxe coral / harvest-gold / verdigris */
+  --ft-success:    63 143  92;
+  --ft-success-fg: 47 122  74;
+  --ft-success-bg:225 238 228;
+  --ft-success-br:173 209 183;
+  --ft-warn:     201 137  42;
+  --ft-warn-fg:  176 116  28;
+  --ft-warn-bg:  247 235 214;
+  --ft-warn-br:  224 197 142;
+  --ft-danger:   214  73  46;
+  --ft-danger-fg:190  58  34;
+  --ft-danger-bg:250 230 224;
+  --ft-danger-br:230 169 152;
+  --ft-info-fg:   14 140 124;
+  --ft-info-bg:  219 238 234;
+  --ft-info-br:  158 206 197;
+
+  --ft-push:  42 157 143;
+  --ft-pull:  91 165 114;
+  --ft-legs: 214  73  46;
+  --ft-core: 201 137  42;
+}
+/* faint atomic starburst / orbit field on the page */
+.ft[data-theme="atompunk"] {
+  background-image:
+    radial-gradient(circle at 16% 12%, rgba(14,140,124,.07), transparent 36%),
+    radial-gradient(circle at 84% 82%, rgba(214,73,46,.05), transparent 40%),
+    radial-gradient(circle at 50% 50%, rgba(201,137,42,.035), transparent 55%);
+}
+.ft[data-theme="atompunk"] h1,
+.ft[data-theme="atompunk"] h2,
+.ft[data-theme="atompunk"] .ft-display {
+  font-family: var(--ft-font-display);
+  font-weight: 400;
+  letter-spacing: .03em;
+}
+.ft[data-theme="atompunk"] .ft-data {
+  font-family: var(--ft-font-data);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: .01em;
+}
+/* chrome accent band on cards — teal→coral atomic inlay, inset so it sits
+   cleanly inside rounded corners (no overflow clipping of card content) */
+.ft[data-theme="atompunk"] .ft-card {
+  position: relative;
+}
+.ft[data-theme="atompunk"] .ft-card::before {
+  content: '';
+  position: absolute; top: 0; left: 16px; right: 16px; height: 3px;
+  border-radius: 0 0 3px 3px;
+  background: linear-gradient(90deg,
+    rgb(var(--ft-accent)) 0 62%,
+    rgb(var(--ft-coral)) 62% 82%,
+    rgb(var(--ft-core)) 82% 100%);
+  opacity: .9;
+}
+.ft[data-theme="atompunk"] .ft-stamp {
+  font-family: var(--ft-font-data);
+  border: 1px solid rgba(14,140,124,.55);
+  border-radius: 999px;
+  padding: 3px 10px;
+  font-size: 9px; letter-spacing: .18em;
+  text-transform: uppercase;
+  color: rgb(var(--ft-accent));
+}
+
+/* ═════════════════════════════════════════════════════════════
+   STEAMPUNK — walnut/leather ground, copper lead, verdigris + oxblood,
+   engraved-serif type, riveted brass-plate cards, brushed-grain field.
+   ═════════════════════════════════════════════════════════════ */
+.ft[data-theme="steampunk"] {
+  --ft-bg:         35  23  17;   /* #231711 walnut */
+  --ft-surface:    52  37  26;   /* #34251A leather */
+  --ft-card:       63  45  32;   /* #3F2D20 */
+  --ft-border:     92  64  40;
+  --ft-muted:     156 133 104;   /* #9C8568 */
+  --ft-dim:       178 152 116;
+  --ft-light:     203 181 145;   /* #CBB591 */
+  --ft-pale:      230 215 185;
+  --ft-white:     240 226 200;   /* #F0E2C8 parchment */
+  --ft-accent:    200 122  65;   /* #C87A41 copper */
+  --ft-brass:     217 169  92;   /* #D9A95C */
+  --ft-verdigris:  78 158 140;   /* #4E9E8C */
+
+  --ft-font-display: 'Cinzel', serif;
+  --ft-font-data: 'Cutive Mono', monospace;
+  --ft-font-body: 'EB Garamond', serif;
+  --ft-font-number: 'Cutive Mono', monospace;
+
+  --ft-radius: 8px;
+  --ft-card-border: 1px solid rgba(200,122,65,.3);
+
+  --ft-success: 94 158 106; --ft-success-fg: 121 184 132; --ft-success-bg: 24 44 28; --ft-success-br: 52 86 60;
+  --ft-warn:   217 169  92; --ft-warn-fg:   228 188 117; --ft-warn-bg:   52 40 18; --ft-warn-br:  100 78 38;
+  --ft-danger: 181  70  47; --ft-danger-fg: 213 108 82;  --ft-danger-bg: 54 24 18; --ft-danger-br:102 48 36;
+  --ft-info-fg: 105 179 162; --ft-info-bg: 20 44 40; --ft-info-br: 44 86 78;
+  --ft-push:  78 158 140; --ft-pull: 123 164 106; --ft-legs: 192 87 63; --ft-core: 217 169 92;
+}
+/* warm brass-glow + verdigris pool + faint brushed grain, as an overlay layer
+   so it survives the phone shell's inline background shorthand */
+.ft[data-theme="steampunk"]::before {
+  content: ''; position: absolute; inset: 0; pointer-events: none; z-index: 0;
+  background:
+    radial-gradient(circle at 50% -8%, rgba(200,122,65,.12), transparent 46%),
+    radial-gradient(circle at 86% 92%, rgba(78,158,140,.07), transparent 42%),
+    repeating-linear-gradient(45deg, rgba(0,0,0,.05) 0 2px, transparent 2px 6px);
+}
+.ft[data-theme="steampunk"] h1,
+.ft[data-theme="steampunk"] h2,
+.ft[data-theme="steampunk"] .ft-display {
+  font-family: var(--ft-font-display);
+  font-weight: 600; letter-spacing: .06em;
+}
+.ft[data-theme="steampunk"] .ft-data {
+  font-family: var(--ft-font-data); letter-spacing: 0;
+}
+/* riveted brass-plate corners on cards */
+.ft[data-theme="steampunk"] .ft-card { position: relative; }
+.ft[data-theme="steampunk"] .ft-card::before {
+  content: ''; position: absolute; inset: 5px; pointer-events: none; border-radius: inherit;
+  background:
+    radial-gradient(circle at 0 0,       rgba(217,169,92,.85) 0 2px, transparent 2.6px),
+    radial-gradient(circle at 100% 0,    rgba(217,169,92,.85) 0 2px, transparent 2.6px),
+    radial-gradient(circle at 0 100%,    rgba(217,169,92,.85) 0 2px, transparent 2.6px),
+    radial-gradient(circle at 100% 100%, rgba(217,169,92,.85) 0 2px, transparent 2.6px);
+}
+.ft[data-theme="steampunk"] .ft-stamp {
+  font-family: var(--ft-font-display);
+  border: 1px solid rgba(200,122,65,.6);
+  padding: 3px 10px; font-size: 9px; letter-spacing: .22em;
+  text-transform: uppercase; color: rgb(var(--ft-accent));
+}
+
+/* ═════════════════════════════════════════════════════════════
+   ART DECO — ink-black ground, luxe gold, jade/peacock jewels,
+   champagne text, geometric-deco type, gold sunburst + framed cards.
+   ═════════════════════════════════════════════════════════════ */
+.ft[data-theme="artdeco"] {
+  --ft-bg:         17  19  23;   /* #111317 ink */
+  --ft-surface:    27  31  38;   /* #1B1F26 */
+  --ft-card:       34  39  50;   /* #222732 */
+  --ft-border:     96  82  46;
+  --ft-muted:     139 134 118;   /* #8B8676 */
+  --ft-dim:       170 162 140;
+  --ft-light:     200 194 178;   /* #C8C2B2 */
+  --ft-pale:      228 220 200;
+  --ft-white:     243 234 211;   /* #F3EAD3 champagne */
+  --ft-accent:    201 162  74;   /* #C9A24A gold */
+  --ft-jade:       61 165 137;   /* #3DA589 */
+
+  --ft-font-display: 'Poiret One', sans-serif;
+  --ft-font-data: 'DM Mono', monospace;
+  --ft-font-body: 'Josefin Sans', sans-serif;
+  --ft-font-number: 'DM Mono', monospace;
+
+  --ft-radius: 2px;
+  --ft-card-border: 1px solid rgba(201,162,74,.28);
+
+  --ft-success: 61 165 137; --ft-success-fg: 95 192 164; --ft-success-bg: 16 40 34; --ft-success-br: 36 82 70;
+  --ft-warn:   216 180  90; --ft-warn-fg:   230 198 116; --ft-warn-bg: 46 38 16; --ft-warn-br: 92 76 36;
+  --ft-danger: 199  91  74; --ft-danger-fg: 220 120 103; --ft-danger-bg: 48 22 18; --ft-danger-br: 96 46 38;
+  --ft-info-fg: 79 169 185; --ft-info-bg: 14 38 44; --ft-info-br: 34 78 88;
+  --ft-push:  46 143 160; --ft-pull: 61 165 137; --ft-legs: 199 91 74; --ft-core: 216 180 90;
+}
+/* faint gold sunburst from the top edge, as an overlay layer */
+.ft[data-theme="artdeco"]::before {
+  content: ''; position: absolute; inset: 0; pointer-events: none; z-index: 0;
+  background:
+    repeating-conic-gradient(from 90deg at 50% 0%, rgba(201,162,74,.05) 0deg 3deg, transparent 3deg 11deg),
+    radial-gradient(circle at 50% 118%, rgba(201,162,74,.07), transparent 50%);
+}
+.ft[data-theme="artdeco"] h1,
+.ft[data-theme="artdeco"] h2,
+.ft[data-theme="artdeco"] .ft-display {
+  font-family: var(--ft-font-display);
+  font-weight: 400; letter-spacing: .14em; text-transform: uppercase;
+}
+.ft[data-theme="artdeco"] .ft-data {
+  font-family: var(--ft-font-data); font-variant-numeric: tabular-nums; letter-spacing: .02em;
+}
+/* gold inline frame + top fan-tab on cards */
+.ft[data-theme="artdeco"] .ft-card { position: relative; }
+.ft[data-theme="artdeco"] .ft-card::before {
+  content: ''; position: absolute; inset: 4px; pointer-events: none;
+  border: 1px solid rgba(201,162,74,.22);
+}
+.ft[data-theme="artdeco"] .ft-card::after {
+  content: ''; position: absolute; top: 0; left: 50%; transform: translateX(-50%);
+  width: 40px; height: 3px; pointer-events: none;
+  background: rgb(var(--ft-accent));
+}
+.ft[data-theme="artdeco"] .ft-stamp {
+  font-family: var(--ft-font-data);
+  border: 1px solid rgba(201,162,74,.6);
+  padding: 3px 10px; font-size: 9px; letter-spacing: .24em;
+  text-transform: uppercase; color: rgb(var(--ft-accent));
+}

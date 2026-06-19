@@ -1,0 +1,497 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>FitTrack · 3.x Program Cluster — Iron</title>
+<link rel="stylesheet" href="theme-tokens.css?v=5" />
+<style>
+  html, body { margin: 0; padding: 0; background: #ECEDF0; font-family: 'IBM Plex Sans', system-ui, sans-serif; }
+  #root { min-height: 100vh; }
+  ::-webkit-scrollbar { display: none; }
+
+  /* Planning watermark (cross-theme) — fades into the active theme's foreground colour. */
+  .planning-watermark {
+    position: absolute; inset: 0;
+    pointer-events: none;
+    overflow: hidden;
+    z-index: 0;
+  }
+  .planning-watermark::before {
+    content: 'PLANNING · DRAFT · NOT APPLIED · PLANNING · DRAFT · NOT APPLIED · ';
+    position: absolute;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%) rotate(-32deg);
+    font-family: var(--ft-font-display, 'Major Mono Display', monospace);
+    font-size: 56px;
+    color: rgba(var(--ft-white), .045);
+    letter-spacing: .25em;
+    white-space: nowrap;
+    width: 200%;
+    text-align: center;
+  }
+</style>
+</head>
+<body>
+
+<div id="root"></div>
+
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+
+<!-- shared kit -->
+<script type="text/babel" src="design-canvas.jsx"></script>
+<script type="text/babel" src="tweaks-panel.jsx"></script>
+<script type="text/babel" src="phone-shell.jsx"></script>
+<script type="text/babel" src="theme-bridge.jsx"></script>
+<script type="text/babel" src="theme-typography.jsx"></script>
+<!-- cluster-3 screen modules -->
+<script type="text/babel" src="tier-homes-screens.jsx"></script>
+<script type="text/babel" src="small-sheets.jsx"></script>
+<script type="text/babel" src="nutrition-detail-screens.jsx"></script>
+<script type="text/babel" src="lifestyle-screens.jsx"></script>
+<script type="text/babel" src="planning-screens.jsx"></script>
+<script type="text/babel" src="pillar-rail.jsx"></script>
+<script type="text/babel" src="training-program.jsx"></script>
+<script type="text/babel" src="nutrition-program.jsx"></script>
+<script type="text/babel" src="progress-screens.jsx"></script>
+<script type="text/babel" src="block-editor.jsx"></script>
+<script type="text/babel" src="cluster-scaffold.jsx"></script>
+
+<script type="text/babel">
+const { useState } = React;
+
+/* ──────────────────────────────────────────────────────────────
+   Cluster 3 · Program Tier — the COMPLETE cluster on one canvas.
+   Every screen 3.1 → 3.7 in order, driven by ONE theme cycler.
+   Three theming mechanisms reconciled under one tweak:
+     • T-token props  → 3.1 My Program, 3.1a Switch, 3.3a Recipe, 3.3b Grocery
+     • theme injection → 3.4 Lifestyle (setActiveLifestyleTheme),
+                          3.5 Planning  (setActivePlanningTheme)
+     • <ToDesign/>     → 3.2, 3.3 (explored elsewhere) · 3.6, 3.7 (queued)
+   Iron default; cycle the theme in Tweaks to canary all seven
+   (Blueprint is the mandatory contrast canary).
+   ────────────────────────────────────────────────────────────── */
+
+const TWEAK_DEFAULTS = /*EDITMODE-BEGIN*/{
+  "theme": "arcade",
+  "showWatermark": false,
+  "railMode": "rail",
+  "headerMode": "auto",
+  "progressMetric": "e1rm"
+}/*EDITMODE-END*/;
+
+// A pillar tab in its own railMode state — used by the dedicated Chip-mode
+// artboards so they always demo chip without fighting the global railMode tweak.
+function PillarChipDemo({ Comp, T, activeKey }) {
+  const [rm, setRm] = useState('chip');
+  return <Comp T={T} activeKey={activeKey} railMode={rm} onSetRailMode={setRm}/>;
+}
+
+function NavSlot({ T, tier = 'program', active = 1 }) {
+  return <BottomNav T={T} tier={tier} activeSlot={active}/>;
+}
+function StagedPhone({ theme, label, withNav = true, navTier = 'program', navActive = 1, height = 1180, width = 410, chromeOverlay, navSlot, children }) {
+  return (
+    <ThemedPhone theme={theme} label={label} width={width} height={height}
+      chromeOverlay={chromeOverlay}
+      navSlot={navSlot !== undefined ? navSlot : (withNav ? <NavSlot T={getFitTrackTheme(theme)} tier={navTier} active={navActive}/> : null)}>
+      {children}
+    </ThemedPhone>
+  );
+}
+
+// Placeholder for an as-yet-undesigned (or explored-elsewhere) cluster-3 surface.
+function Todo({ theme, screenId, name, route, status = 'queued', note, step, height = 880 }) {
+  return (
+    <StagedPhone theme={theme} label={name} withNav={false} height={height}>
+      <ToDesign T={getFitTrackTheme(theme)} id={screenId} name={name} route={route} status={status} note={note} step={step}/>
+    </StagedPhone>
+  );
+}
+
+function Root() {
+  const [t, setTweak] = useTweaks(TWEAK_DEFAULTS);
+  const theme = t.theme;
+  const T = useFitTrackTheme(theme);
+  // Header collapse — 'auto' (scroll-driven) / 'expanded' / 'collapsed'.
+  if (window.setPillarHeaderCollapse) window.setPillarHeaderCollapse(t.headerMode || 'auto');
+
+  // Inject the active theme into the screen libraries that read a module-level
+  // reference (rather than taking T as a prop).
+  if (window.setActiveLifestyleTheme) window.setActiveLifestyleTheme(theme);
+  if (window.setActivePlanningTheme)  window.setActivePlanningTheme(theme);
+  const watermark = (_t) => t.showWatermark ? <div className="planning-watermark"/> : null;
+
+  return (
+    <>
+      <DesignCanvas>
+
+        {/* ═══════════ 3.1 My Program ═══════════ */}
+        <DCSection
+          id="my-program"
+          title="3.1 · My Program"
+          subtitle="Program tier home. Shelf row splits into 'Browse more' and 'Add coaching' (the Gameplan upsell). Active program header + Today card + Week strip + Tools (Planning Mode, Switch). Empty: user owns programs but none active — Activate surfaces the library inline. Error: program load failure; saved progress is safe."
+        >
+          <DCArtboard id="mp-default" label="01 Default · active program" width={432} height={1202}>
+            <StagedPhone theme={theme} label="3.1 My Program · Default" navActive={1}>
+              <MyProgram T={T} state="default"/>
+            </StagedPhone>
+          </DCArtboard>
+          <DCArtboard id="mp-empty" label="02 Empty · none active" width={432} height={1202}>
+            <StagedPhone theme={theme} label="3.1 My Program · Empty" navActive={1}>
+              <MyProgram T={T} state="empty"/>
+            </StagedPhone>
+          </DCArtboard>
+          <DCArtboard id="mp-error" label="03 Error · load failed" width={432} height={1202}>
+            <StagedPhone theme={theme} label="3.1 My Program · Error" navActive={1}>
+              <MyProgram T={T} state="error"/>
+            </StagedPhone>
+          </DCArtboard>
+        </DCSection>
+
+        {/* ═══════════ 3.1a Switch Active Program ═══════════ */}
+        <DCSection
+          id="switch-program"
+          title="3.1a · Switch Active Program"
+          subtitle="Sheet from My Program. Radio list of owned programs; the current one carries an Active chip + progress bar. Selecting a different program enables Switch and surfaces a single factual line — current pauses at its week, progress saved (no warning framing, per CLAUDE.md). Live selection; renders over the dimmed My Program home."
+        >
+          <DCArtboard id="sp-default" label="01 Current selected" width={432} height={892}>
+            <StagedPhone theme={theme} label="3.1a Switch Program · Current" withNav={false} height={870}>
+              <SheetStage T={T} behind={<MyProgram T={T}/>}>
+                <SwitchProgram T={T} initial="ppl"/>
+              </SheetStage>
+            </StagedPhone>
+          </DCArtboard>
+          <DCArtboard id="sp-changed" label="02 New selected" width={432} height={892}>
+            <StagedPhone theme={theme} label="3.1a Switch Program · New" withNav={false} height={870}>
+              <SheetStage T={T} behind={<MyProgram T={T}/>}>
+                <SwitchProgram T={T} initial="fullbody"/>
+              </SheetStage>
+            </StagedPhone>
+          </DCArtboard>
+        </DCSection>
+
+        {/* ═══════════ 3.2 Training Tab (Program) ═══════════ */}
+        <DCSection
+          id="training-program"
+          title="3.2 · Training Tab (Program)"
+          subtitle="Bottom-nav slot 2. The Program /training surface on the in-pillar side-rail — Today / Block / Program / Gameplan. First three unlocked; Gameplan dimmed + locked (the next-tier upsell, never a gate). Rail + Chip modes share one railMode tweak. Each layer is a separate artboard; the last shows Chip mode."
+        >
+          <DCArtboard id="train-today" label="01 Today · session launchpad" width={432} height={912}>
+            <StagedPhone theme={theme} label="3.2 Training · Today" navActive={2} height={892}>
+              <TrainingProgramTab T={T} activeKey="today" railMode={t.railMode} onSetRailMode={(v) => setTweak('railMode', v)}/>
+            </StagedPhone>
+          </DCArtboard>
+          <DCArtboard id="train-block" label="02 This Block · shuffle & lock" width={432} height={912}>
+            <StagedPhone theme={theme} label="3.2 Training · Block" navActive={2} height={892}>
+              <TrainingProgramTab T={T} activeKey="block" railMode={t.railMode} onSetRailMode={(v) => setTweak('railMode', v)}/>
+            </StagedPhone>
+          </DCArtboard>
+          <DCArtboard id="train-model" label="03 Program · template & blocks" width={432} height={912}>
+            <StagedPhone theme={theme} label="3.2 Training · Program" navActive={2} height={892}>
+              <TrainingProgramTab T={T} activeKey="model" railMode={t.railMode} onSetRailMode={(v) => setTweak('railMode', v)}/>
+            </StagedPhone>
+          </DCArtboard>
+          <DCArtboard id="train-gameplan" label="04 Gameplan slot · locked" width={432} height={912}>
+            <StagedPhone theme={theme} label="3.2 Training · Gameplan locked" navActive={2} height={892}>
+              <TrainingProgramTab T={T} activeKey="gameplan" railMode={t.railMode} onSetRailMode={(v) => setTweak('railMode', v)}/>
+            </StagedPhone>
+          </DCArtboard>
+          <DCArtboard id="train-chip" label="05 Chip mode · rail collapsed" width={432} height={912}>
+            <StagedPhone theme={theme} label="3.2 Training · Chip mode" navActive={2} height={892}>
+              <PillarChipDemo Comp={TrainingProgramTab} T={T} activeKey="today"/>
+            </StagedPhone>
+          </DCArtboard>
+          <DCArtboard id="train-error" label="06 Error · plan didn't sync" width={432} height={912}>
+            <StagedPhone theme={theme} label="3.2 Training · Error" navActive={2} height={892}>
+              <TrainingProgramTab T={T} activeKey="today" state="error" railMode={t.railMode} onSetRailMode={(v) => setTweak('railMode', v)}/>
+            </StagedPhone>
+          </DCArtboard>
+        </DCSection>
+
+        {/* ═══════════ 3.3 Nutrition Tab (Program) ═══════════ */}
+        <DCSection
+          id="nutrition-program"
+          title="3.3 · Nutrition Tab (Program)"
+          subtitle="Bottom-nav slot 4. Same pillar contract as Training — Today / This Week / Model Day / Gameplan on the side-rail. Today logs from the week plan; This Week is the shuffle/lock plan + grocery entry (3.3b); Model Day is the eating-shape template. Recipe Detail (3.3a) and Grocery (3.3b) below are the locked pieces of this surface."
+        >
+          <DCArtboard id="nutri-today" label="01 Today · macro rollup + meals" width={432} height={912}>
+            <StagedPhone theme={theme} label="3.3 Nutrition · Today" navActive={4} height={892}>
+              <NutritionProgramTab T={T} activeKey="today" railMode={t.railMode} onSetRailMode={(v) => setTweak('railMode', v)}/>
+            </StagedPhone>
+          </DCArtboard>
+          <DCArtboard id="nutri-week" label="02 This Week · plan + grocery" width={432} height={912}>
+            <StagedPhone theme={theme} label="3.3 Nutrition · This Week" navActive={4} height={892}>
+              <NutritionProgramTab T={T} activeKey="block" railMode={t.railMode} onSetRailMode={(v) => setTweak('railMode', v)}/>
+            </StagedPhone>
+          </DCArtboard>
+          <DCArtboard id="nutri-model" label="03 Model Day · eating shape" width={432} height={912}>
+            <StagedPhone theme={theme} label="3.3 Nutrition · Model Day" navActive={4} height={892}>
+              <NutritionProgramTab T={T} activeKey="model" railMode={t.railMode} onSetRailMode={(v) => setTweak('railMode', v)}/>
+            </StagedPhone>
+          </DCArtboard>
+          <DCArtboard id="nutri-gameplan" label="04 Gameplan slot · locked" width={432} height={912}>
+            <StagedPhone theme={theme} label="3.3 Nutrition · Gameplan locked" navActive={4} height={892}>
+              <NutritionProgramTab T={T} activeKey="gameplan" railMode={t.railMode} onSetRailMode={(v) => setTweak('railMode', v)}/>
+            </StagedPhone>
+          </DCArtboard>
+          <DCArtboard id="nutri-chip" label="05 Chip mode · rail collapsed" width={432} height={912}>
+            <StagedPhone theme={theme} label="3.3 Nutrition · Chip mode" navActive={4} height={892}>
+              <PillarChipDemo Comp={NutritionProgramTab} T={T} activeKey="today"/>
+            </StagedPhone>
+          </DCArtboard>
+          <DCArtboard id="nutri-empty" label="06 Empty · nothing logged" width={432} height={912}>
+            <StagedPhone theme={theme} label="3.3 Nutrition · Empty" navActive={4} height={892}>
+              <NutritionProgramTab T={T} activeKey="today" state="empty" railMode={t.railMode} onSetRailMode={(v) => setTweak('railMode', v)}/>
+            </StagedPhone>
+          </DCArtboard>
+        </DCSection>
+
+        {/* ═══════════ 3.3a Recipe Detail ═══════════ */}
+        <DCSection
+          id="recipe-detail"
+          title="3.3a · Recipe Detail"
+          subtitle="Reached from a planned meal, the Recipe library, or the Week Plan. Hero photo, macro rollup, a servings stepper that scales every ingredient (and the grocery list), ingredients with have/need markers, a numbered method, and a sticky Eat-this / Swap bar. Tap an ingredient for its macros. Logger sees a locked preview."
+        >
+          <DCArtboard id="rd-default" label="01 Default · 2 servings" width={432} height={1322}>
+            <StagedPhone theme={theme} label="3.3a Recipe · Default" withNav={false} height={1300}>
+              <RecipeDetail T={T} initialServings={2}/>
+            </StagedPhone>
+          </DCArtboard>
+          <DCArtboard id="rd-scaled" label="02 Scaled · 4 servings" width={432} height={1322}>
+            <StagedPhone theme={theme} label="3.3a Recipe · Scaled 4×" withNav={false} height={1300}>
+              <RecipeDetail T={T} initialServings={4}/>
+            </StagedPhone>
+          </DCArtboard>
+          <DCArtboard id="rd-swap" label="03 Swap-recipe sheet" width={432} height={1322}>
+            <StagedPhone theme={theme} label="3.3a Recipe · Swap sheet" withNav={false} height={1300}>
+              <RecipeDetail T={T} initialServings={2} openSwap/>
+            </StagedPhone>
+          </DCArtboard>
+          <DCArtboard id="rd-ingredient" label="04 Ingredient macros (tap)" width={432} height={1322}>
+            <StagedPhone theme={theme} label="3.3a Recipe · Ingredient macros" withNav={false} height={1300}>
+              <RecipeDetail T={T} initialServings={2} initialExpandedIng={0}/>
+            </StagedPhone>
+          </DCArtboard>
+          <DCArtboard id="rd-locked" label="05 Logger preview (locked)" width={432} height={1042}>
+            <StagedPhone theme={theme} label="3.3a Recipe · Logger locked" withNav={false} height={1020}>
+              <RecipeDetail T={T} initialServings={2} locked/>
+            </StagedPhone>
+          </DCArtboard>
+        </DCSection>
+
+        {/* ═══════════ 3.3b Grocery List ═══════════ */}
+        <DCSection
+          id="grocery-list"
+          title="3.3b · Grocery List"
+          subtitle="Generated from the locked Week Plan, grouped by store aisle. Live: tick items off, tap a row to see which meals need it, pantry-skip with 'I have this', collapse aisles. Full / Names-only modes; a share & export sheet."
+        >
+          <DCArtboard id="gl-default" label="01 Full · interactive" width={432} height={1182}>
+            <StagedPhone theme={theme} label="3.3b Grocery · Full" withNav={false} height={1160}>
+              <GroceryList T={T}/>
+            </StagedPhone>
+          </DCArtboard>
+          <DCArtboard id="gl-names" label="02 Names-only mode" width={432} height={1182}>
+            <StagedPhone theme={theme} label="3.3b Grocery · Names only" withNav={false} height={1160}>
+              <GroceryList T={T} namesOnlyDefault/>
+            </StagedPhone>
+          </DCArtboard>
+          <DCArtboard id="gl-share" label="03 Share / export sheet" width={432} height={1182}>
+            <StagedPhone theme={theme} label="3.3b Grocery · Share" withNav={false} height={1160}>
+              <GroceryList T={T} openShare/>
+            </StagedPhone>
+          </DCArtboard>
+        </DCSection>
+
+        {/* ═══════════ 3.4 Lifestyle Tab (Program) ═══════════ */}
+        <DCSection
+          id="lifestyle-program"
+          title="3.4 · Lifestyle Tab (Program)"
+          subtitle="Bottom-nav slot 4. The Lifestyle sub-tab (three vital cards) plus the three log-sheet archetypes users tap into per vital — a numeric stepper for continuous metrics (sleep, water), a Green/Yellow/Red triad for daily state calls (recovery), and a 1–5 scale for subjective feelings (stress) — and an 8-week history heatmap. Layout is constant; only the input archetype changes."
+        >
+          <DCArtboard id="ls-tab" label="01 Lifestyle sub-tab · 3 vitals" width={432} height={892}>
+            <ThemedPhone theme={theme} label="3.4 Lifestyle · Sub-tab" navSlot={<LifestyleBottomNav/>}>
+              <ScreenLifestyleTab/>
+            </ThemedPhone>
+          </DCArtboard>
+          <DCArtboard id="ls-numeric" label="02 Log sheet · NUMERIC (Sleep)" width={432} height={892}>
+            <ThemedPhone theme={theme} label="3.4 Lifestyle · Numeric" navSlot={<LifestyleBottomNav/>}>
+              <ScreenSheetNumeric/>
+            </ThemedPhone>
+          </DCArtboard>
+          <DCArtboard id="ls-gyr" label="03 Log sheet · GREEN / YELLOW / RED" width={432} height={892}>
+            <ThemedPhone theme={theme} label="3.4 Lifestyle · G/Y/R" navSlot={<LifestyleBottomNav/>}>
+              <ScreenSheetGYR/>
+            </ThemedPhone>
+          </DCArtboard>
+          <DCArtboard id="ls-scale" label="04 Log sheet · 1–5 SCALE (Stress)" width={432} height={892}>
+            <ThemedPhone theme={theme} label="3.4 Lifestyle · Scale" navSlot={<LifestyleBottomNav/>}>
+              <ScreenSheetScale/>
+            </ThemedPhone>
+          </DCArtboard>
+          <DCArtboard id="ls-history" label="05 History · 8-week heatmap" width={432} height={892}>
+            <ThemedPhone theme={theme} label="3.4 Lifestyle · History" navSlot={<LifestyleBottomNav/>}>
+              <ScreenHistory/>
+            </ThemedPhone>
+          </DCArtboard>
+        </DCSection>
+
+        {/* ═══════════ 3.5 Planning Mode (Program) ═══════════ */}
+        <DCSection
+          id="planning-main"
+          title="3.5 · Planning Mode (Program)"
+          subtitle="Sandbox editor for the active program (shared with Gameplan 4.4). Three artboards show the same screen scrolled to each Live Projection sub-tab — Trajectory, Daily Target, Volume / Structure. A PLANNING MODE stamp is sticky in the header; toggle the draft watermark in Tweaks."
+        >
+          <DCArtboard id="pm-main" label="Main · Trajectory view" width={430} height={860}>
+            <ThemedPhone theme={theme} label="3.5 Planning · Trajectory" chromeOverlay={watermark}>
+              <PlanningMain/>
+            </ThemedPhone>
+          </DCArtboard>
+          <DCArtboard id="pm-daily" label="Main · Daily target view" width={430} height={860}>
+            <ThemedPhone theme={theme} label="3.5 Planning · Daily target" chromeOverlay={watermark}>
+              <DailyTargetView/>
+            </ThemedPhone>
+          </DCArtboard>
+          <DCArtboard id="pm-volume" label="Main · Volume / Structure" width={430} height={860}>
+            <ThemedPhone theme={theme} label="3.5 Planning · Volume" chromeOverlay={watermark}>
+              <VolumeView/>
+            </ThemedPhone>
+          </DCArtboard>
+        </DCSection>
+
+        <DCSection
+          id="planning-states"
+          title="3.5 · Planning — states & confirmation"
+          subtitle="Edge & flow states: arriving from a check-in recommendation with the calorie field pre-staged and ringed; the clean entry state with 0 changes pending and Apply disabled; and the Apply confirmation modal listing every diff with an optional note field."
+        >
+          <DCArtboard id="pm-rec" label="State · Recommendation pre-staged" width={430} height={860}>
+            <ThemedPhone theme={theme} label="3.5 Planning · Recommendation" chromeOverlay={watermark}>
+              <RecommendationView/>
+            </ThemedPhone>
+          </DCArtboard>
+          <DCArtboard id="pm-empty" label="State · No changes yet (entry)" width={430} height={860}>
+            <ThemedPhone theme={theme} label="3.5 Planning · Entry" chromeOverlay={watermark}>
+              <EmptyView/>
+            </ThemedPhone>
+          </DCArtboard>
+          <DCArtboard id="pm-apply" label="Modal · Apply confirmation" width={430} height={860}>
+            <ThemedPhone theme={theme} label="3.5 Planning · Apply modal" chromeOverlay={watermark}>
+              <ApplyModal/>
+            </ThemedPhone>
+          </DCArtboard>
+        </DCSection>
+
+        {/* ═══════════ 3.6 Progress (Program) ═══════════ */}
+        <DCSection
+          id="progress-program"
+          title="3.6 · Progress (Program)"
+          subtitle="Reached from My Program. Metric trend (e1RM / volume / bodyweight, swap via the segmented control or the Tweak), a month adherence calendar, and full workout history. The two preview cards — weekly check-in + recommendations — are LOCKED here (the Gameplan upsell, never a gate). Pass tier=gameplan and they unlock — that's the only delta, so the full Gameplan Progress (4.6) is this same module at gameplan tier."
+        >
+          <DCArtboard id="prog-default" label="01 Default · trend + calendar + locked upsell + history" width={432} height={1620}>
+            <StagedPhone theme={theme} label="3.6 Progress · Default" navActive={1} height={1582}>
+              <ProgressScreen T={T} tier="program" metric={t.progressMetric} onSetMetric={(v) => setTweak('progressMetric', v)}/>
+            </StagedPhone>
+          </DCArtboard>
+          <DCArtboard id="prog-gameplan" label="02 Gameplan tier · rings + check-in/rec history (4.6 base)" width={432} height={1860}>
+            <StagedPhone theme={theme} label="3.6 Progress · Gameplan (4.6)" navTier="gameplan" navActive={1} height={1822}>
+              <ProgressScreen T={T} tier="gameplan" metric={t.progressMetric} onSetMetric={(v) => setTweak('progressMetric', v)}/>
+            </StagedPhone>
+          </DCArtboard>
+          <DCArtboard id="prog-empty" label="03 Empty · not enough data" width={432} height={940}>
+            <StagedPhone theme={theme} label="3.6 Progress · Empty" navActive={1} height={902}>
+              <ProgressScreen T={T} tier="program" state="empty"/>
+            </StagedPhone>
+          </DCArtboard>
+          <DCArtboard id="prog-error" label="04 Error · charts failed" width={432} height={1700}>
+            <StagedPhone theme={theme} label="3.6 Progress · Error" navActive={1} height={1662}>
+              <ProgressScreen T={T} tier="program" state="error" metric={t.progressMetric} onSetMetric={(v) => setTweak('progressMetric', v)}/>
+            </StagedPhone>
+          </DCArtboard>
+        </DCSection>
+
+        {/* ═══════════ 3.7 Block / Day Detail Editor ═══════════ */}
+        <DCSection
+          id="block-editor"
+          title="3.7 · Block / Day Detail Editor"
+          subtitle="Block duration + schedule editing lives in Planning Mode (3.5); this is the missing day-level exercise editor. On the Planning sandbox contract — a sticky PLANNING stamp, edits stage as a pending diff, Apply / Discard footer (not live until applied). Block overview → tap a day → edit its exercises (expand a row for sets/reps/load steppers, swap, remove) → add/swap sheet."
+        >
+          <DCArtboard id="block-overview" label="01 Block overview · the days" width={432} height={912}>
+            <StagedPhone theme={theme} label="3.7 Block overview" withNav={false} height={892}>
+              <BlockDayEditor T={T} view="block"/>
+            </StagedPhone>
+          </DCArtboard>
+          <DCArtboard id="block-day" label="02 Day editor · pending diff" width={432} height={912}>
+            <StagedPhone theme={theme} label="3.7 Day editor" withNav={false} height={892}>
+              <BlockDayEditor T={T} view="day"/>
+            </StagedPhone>
+          </DCArtboard>
+          <DCArtboard id="block-add" label="03 Add / swap exercise sheet" width={432} height={912}>
+            <StagedPhone theme={theme} label="3.7 Add exercise sheet" withNav={false} height={892}>
+              <BlockDayEditor T={T} view="add"/>
+            </StagedPhone>
+          </DCArtboard>
+        </DCSection>
+
+      </DesignCanvas>
+
+      <TweaksPanel title="Tweaks">
+        <TweakSection title="Theme">
+          <ThemeCycler value={theme} onChange={(v) => setTweak('theme', v)}/>
+        </TweakSection>
+
+        <TweakSection title="3.2 / 3.3 · Pillar rail">
+          <TweakRadio label="Rail mode" value={t.railMode}
+            options={[{ value: 'rail', label: 'Rail' }, { value: 'chip', label: 'Chip' }]}
+            onChange={(v) => setTweak('railMode', v)}/>
+        </TweakSection>
+
+        <TweakSection title="Header">
+          <TweakRadio label="Collapse" value={t.headerMode || 'auto'}
+            options={[{ value: 'auto', label: 'Auto' }, { value: 'expanded', label: 'Full' }, { value: 'collapsed', label: 'Compact' }]}
+            onChange={(v) => setTweak('headerMode', v)}/>
+        </TweakSection>
+
+        <TweakSection title="3.6 · Progress">
+          <TweakRadio label="Trend metric" value={t.progressMetric}
+            options={[{ value: 'e1rm', label: 'e1RM' }, { value: 'volume', label: 'Volume' }, { value: 'weight', label: 'Weight' }]}
+            onChange={(v) => setTweak('progressMetric', v)}/>
+        </TweakSection>
+
+        <TweakSection title="3.5 · Planning chrome">
+          <TweakToggle label="Draft watermark" value={t.showWatermark} onChange={(v) => setTweak('showWatermark', v)}/>
+        </TweakSection>
+
+        <TweakSection title="About this cluster">
+          <div style={{ fontSize: 11.5, color: 'rgba(60,50,40,.7)', lineHeight: 1.45 }}>
+            Cluster 3 · Program Tier — the complete inventory, screens 3.1 → 3.7 in order, all rendering for real. One theme cycler drives every theming path at once. Iron default — cycle above to canary all seven; Blueprint is the contrast canary.
+          </div>
+        </TweakSection>
+      </TweaksPanel>
+    </>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<Root/>);
+</script>
+
+<template id="__bundler_thumbnail">
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200">
+    <rect width="200" height="200" fill="#161514"/>
+    <g transform="translate(40,40)">
+      <rect x="0" y="0" width="120" height="22" rx="3" fill="#c8a96e" opacity=".9"/>
+      <rect x="0" y="32" width="56" height="40" rx="3" fill="#262523" stroke="#c8a96e" stroke-width="1"/>
+      <rect x="64" y="32" width="56" height="40" rx="3" fill="#262523" stroke="#5a5550" stroke-width="1"/>
+      <rect x="0" y="82" width="56" height="40" rx="3" fill="#262523" stroke="#5a5550" stroke-width="1"/>
+      <rect x="64" y="82" width="56" height="40" rx="3" fill="rgba(200,169,110,.18)" stroke="#c8a96e" stroke-width="1" stroke-dasharray="3 2"/>
+      <rect x="0" y="106" width="120" height="3" fill="none"/>
+      <rect x="10" y="48" width="30" height="3" fill="#c8a96e"/>
+      <rect x="74" y="48" width="30" height="3" fill="#6b665f"/>
+      <rect x="10" y="98" width="30" height="3" fill="#6b665f"/>
+    </g>
+  </svg>
+</template>
+
+</body>
+</html>

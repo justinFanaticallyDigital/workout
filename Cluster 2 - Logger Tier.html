@@ -1,0 +1,552 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>FitTrack · 2.x Logger Cluster — Iron</title>
+<link rel="stylesheet" href="theme-tokens.css?v=5" />
+<style>
+  html, body { margin: 0; padding: 0; background: #ECEDF0; font-family: 'IBM Plex Sans', system-ui, sans-serif; }
+  #root { min-height: 100vh; }
+  ::-webkit-scrollbar { display: none; }
+</style>
+</head>
+<body>
+
+<div id="root"></div>
+
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+
+<!-- shared kit -->
+<script type="text/babel" src="design-canvas.jsx"></script>
+<script type="text/babel" src="tweaks-panel.jsx"></script>
+<script type="text/babel" src="phone-shell.jsx"></script>
+<script type="text/babel" src="theme-bridge.jsx"></script>
+<script type="text/babel" src="theme-typography.jsx"></script>
+<!-- cluster-2 screen modules -->
+<script type="text/babel" src="tier-homes-screens.jsx"></script>
+<script type="text/babel" src="pillar-rail.jsx"></script>
+<script type="text/babel" src="training-logger-screen.jsx"></script>
+<script type="text/babel" src="logger-data.jsx"></script>
+<script type="text/babel" src="logger-app.jsx"></script>
+<script type="text/babel" src="small-sheets.jsx"></script>
+<script type="text/babel" src="upsell-screens.jsx"></script>
+<script type="text/babel" src="log-sheet.jsx"></script>
+<script type="text/babel" src="activity-logger-screen.jsx"></script>
+<script type="text/babel" src="history-detail-screen.jsx"></script>
+<script type="text/babel" src="exercise-detail-screen.jsx"></script>
+<script type="text/babel" src="logger-pillars.jsx"></script>
+<script type="text/babel" src="cluster-scaffold.jsx"></script>
+
+<script type="text/babel">
+const { useState, useMemo } = React;
+
+/* ──────────────────────────────────────────────────────────────
+   Cluster 2 · Logger Tier — the COMPLETE cluster on one canvas.
+   Every screen 2.1 → 2.14 in order, driven by ONE theme switcher +
+   ONE tweak panel. Designed screens render for real; not-yet-designed
+   screens render as <ToDesign/> placeholders carrying their spec, so
+   the file is the whole cluster inventory — gaps included.
+     2.1  Workouts Library      ✓  tier-homes-screens.jsx
+     2.2  Training Tab (Logger) ✓  training-logger-screen.jsx + pillar-rail.jsx
+     2.3  Exercise Detail       ✓  exercise-detail-screen.jsx
+     2.4  Active Workout Logger ✓  logger-app.jsx + logger-data.jsx
+     2.5  Save as Frame         ✓  small-sheets.jsx
+     2.6  Workout History Detail✓  history-detail-screen.jsx
+     2.7  Nutrition Tab (Logger)✓  logger-pillars.jsx
+     2.7a Macro Target Editor   ✓  small-sheets.jsx
+     2.8  Meal Logger           ✓  logger-pillars.jsx
+     2.9  Lifestyle Tab preview ✓  logger-pillars.jsx
+     2.10 View-as-Gameplan      ✓  upsell-screens.jsx
+     2.11 +Log Bottom Sheet     ✓  log-sheet.jsx
+     2.12 Stretch Timer         ✓  activity-logger-screen.jsx
+     2.13 HIIT/LISS/Class/Custom✓  activity-logger-screen.jsx
+     2.14 Single Workout Library✓  history-detail-screen.jsx
+   Iron locked; cycle theme in Tweaks to canary the other six
+   (Blueprint is the mandatory contrast canary). Cluster complete — all 15
+   surfaces designed + themed.
+   ────────────────────────────────────────────────────────────── */
+
+// ── 2.4 mid-session snapshot (from logger-data.jsx's window.SESSION) ──
+// The shared data ships W4 fully logged; derive a realistic mid-session
+// state — first two lanes done, the rest open with last-week ghosts.
+function makeMidSession(base) {
+  const wi = base.currentWeekIdx;
+  const COMPLETE = { l1: true, l2: true };
+  const lanes = base.lanes.map((lane) => {
+    const target = lane.targetSets;
+    const w3 = lane.sets[wi - 1] || [];
+    const w4 = lane.sets[wi] || [];
+    const done = !!COMPLETE[lane.id];
+    const today = Array.from({ length: target }, (_, i) => {
+      const src = w4[i] || w3[i];
+      if (done && src && src.w != null) {
+        return { w: src.w, r: src.r, rpe: src.rpe, done: true, warmup: false };
+      }
+      return { w: null, r: null, rpe: null, done: false, warmup: false };
+    });
+    return { ...lane, sets: lane.sets.map((arr, i) => (i === wi ? today : arr)) };
+  });
+  return { ...base, lanes, elapsedMin: 19, restRemaining: 72 };
+}
+const MID_SESSION = makeMidSession(window.SESSION);
+
+const TWEAK_DEFAULTS = /*EDITMODE-BEGIN*/{
+  "theme": "atompunk",
+  "railMode": "rail",
+  "headerMode": "auto",
+  "showResume": true,
+  "showUpsell": true,
+  "lastWeekMode": "ghost",
+  "railStyle": "rotated-52"
+}/*EDITMODE-END*/;
+
+// ── Shared staged-phone wrapper (covers every cluster-2 home/sheet) ──
+// withNav=false → onboarding/sheets/upsell (no bottom nav).
+function NavSlot({ T, tier = 'logger', active }) {
+  return <BottomNav T={T} tier={tier} activeSlot={active}/>;
+}
+function StagedPhone({ theme, label, withNav = true, navTier = 'logger', navActive = 1, height = 1180, children }) {
+  return (
+    <ThemedPhone theme={theme} label={label} width={410} height={height}
+      navSlot={withNav ? <NavSlot T={getFitTrackTheme(theme)} tier={navTier} active={navActive}/> : null}>
+      {children}
+    </ThemedPhone>
+  );
+}
+
+// Placeholder screen for an as-yet-undesigned cluster-2 surface. Staged in the
+// phone (no nav — chrome arrives with the real design) wrapping <ToDesign/>.
+function Todo({ theme, screenId, name, route, status = 'queued', note, step, height = 880 }) {
+  return (
+    <StagedPhone theme={theme} label={name} withNav={false} height={height}>
+      <ToDesign T={getFitTrackTheme(theme)} id={screenId} name={name} route={route} status={status} note={note} step={step}/>
+    </StagedPhone>
+  );
+}
+
+function Root() {
+  const [t, setTweak] = useTweaks(TWEAK_DEFAULTS);
+  const theme = t.theme;
+  const T = useFitTrackTheme(theme);
+
+  // 2.2 Training Tab wiring
+  const trainTweaks = { showResume: t.showResume, showUpsell: t.showUpsell };
+  const railMode = t.railMode === 'chip' ? 'chip' : 'rail';
+  const setRailMode = (m) => setTweak('railMode', m);
+  // Header collapse — 'auto' (scroll-driven) / 'expanded' / 'collapsed'.
+  if (window.setPillarHeaderCollapse) window.setPillarHeaderCollapse(t.headerMode || 'auto');
+  const trainProps = { tweaks: trainTweaks, railMode, onSetRailMode: setRailMode };
+
+  // 2.4 Active Logger wiring
+  const loggerTweaks = { railStyle: t.railStyle, lastWeekMode: t.lastWeekMode };
+
+  return (
+    <>
+      <DesignCanvas>
+
+        {/* ═══════════ 2.1 Workouts Library ═══════════ */}
+        <DCSection
+          id="workouts-library"
+          title="2.1 · Workouts Library"
+          subtitle="Logger tier home. Shelf affordance at the top; View-as-Gameplan card surfaces at ≥5 logged workouts; Recent (horizontal) and Saved Frames (grid) below. Empty state replaces both sections with a single primary CTA. Error state stacks a sync banner above the content (data is never lost — local-first)."
+        >
+          <DCArtboard id="wl-default" label="01 Default · 14 workouts" width={432} height={1202}>
+            <StagedPhone theme={theme} label="2.1 Workouts Library · Default" navTier="logger" navActive={1}>
+              <WorkoutsLibrary T={T} state="default"/>
+            </StagedPhone>
+          </DCArtboard>
+
+          <DCArtboard id="wl-empty" label="02 Empty · first-time" width={432} height={1202}>
+            <StagedPhone theme={theme} label="2.1 Workouts Library · Empty" navTier="logger" navActive={1}>
+              <WorkoutsLibrary T={T} state="empty"/>
+            </StagedPhone>
+          </DCArtboard>
+
+          <DCArtboard id="wl-error" label="03 Error · sync paused" width={432} height={1202}>
+            <StagedPhone theme={theme} label="2.1 Workouts Library · Error" navTier="logger" navActive={1}>
+              <WorkoutsLibrary T={T} state="error"/>
+            </StagedPhone>
+          </DCArtboard>
+        </DCSection>
+
+        {/* ═══════════ 2.2 Training Tab (Logger) ═══════════ */}
+        <DCSection
+          id="training-logger"
+          title="2.2 · Training Tab (Logger)"
+          subtitle="The Logger /training surface — bottom-nav slot 2. A Logger has no program, so this is the launchpad (do-it-now), not a scheduled today screen: resume an in-progress session, start an empty freestyle session, repeat a recent one, pick a logger type, or launch a saved frame. The 2.1 Library is the collection; this is the act of training. A single locked 'Train on a plan' card carries the Program/Gameplan upsell — factual, never a gate (CLAUDE.md)."
+        >
+          <DCArtboard id="trn-default" label="01 Default · history + in-progress" width={432} height={1320}>
+            <StagedPhone theme={theme} label="2.2 Training Tab (Logger) · Default" navActive={2} height={1298}>
+              <TrainingLoggerScreen T={T} state="default" {...trainProps}/>
+            </StagedPhone>
+          </DCArtboard>
+
+          <DCArtboard id="trn-empty" label="02 Empty · brand-new Logger" width={432} height={1060}>
+            <StagedPhone theme={theme} label="2.2 Training Tab (Logger) · Empty" navActive={2} height={1038}>
+              <TrainingLoggerScreen T={T} state="empty" {...trainProps}/>
+            </StagedPhone>
+          </DCArtboard>
+
+          <DCArtboard id="trn-error" label="03 Error · sync paused" width={432} height={1380}>
+            <StagedPhone theme={theme} label="2.2 Training Tab (Logger) · Error" navActive={2} height={1358}>
+              <TrainingLoggerScreen T={T} state="error" {...trainProps}/>
+            </StagedPhone>
+          </DCArtboard>
+        </DCSection>
+
+        <DCSection
+          id="rail-modes"
+          title="2.2 · Side-rail — rail or no rail"
+          subtitle="Two modes only. Rail = a single labelled column (icon over an auto-fit label — the font shrinks for slots longer than 'Gameplan', e.g. Nutrition's 'Model Day'). Chip = no rail; a sticky chip names the active slot and opens the rail, content runs full-width beneath. The Hide button at the bottom of the rail drops to the chip; tapping the chip brings the rail back. Same primitive ships to Nutrition + Lifestyle. Shown in the Default state."
+        >
+          <DCArtboard id="rm-rail" label="A Rail · labelled column" width={432} height={1340}>
+            <StagedPhone theme={theme} label="2.2 · Rail" navActive={2} height={1318}>
+              <TrainingLoggerScreen T={T} state="default" tweaks={trainTweaks} railMode="rail" onSetRailMode={setRailMode}/>
+            </StagedPhone>
+          </DCArtboard>
+
+          <DCArtboard id="rm-chip" label="B Chip · no rail, sticky top" width={432} height={1340}>
+            <StagedPhone theme={theme} label="2.2 · Chip" navActive={2} height={1318}>
+              <TrainingLoggerScreen T={T} state="default" tweaks={trainTweaks} railMode="chip" onSetRailMode={setRailMode}/>
+            </StagedPhone>
+          </DCArtboard>
+        </DCSection>
+
+        {/* ═══════════ 2.3 Exercise Detail ═══════════ */}
+        <DCSection
+          id="exercise-detail"
+          title="2.3 · Exercise Detail"
+          subtitle="Tapped from any lane in the logger or the Library. Ordered by how often it's checked: an e1RM trend chart (Epley, computed from the real weekly sets), one factual next-session progression suggestion, full set history newest-first with the top set flagged, and the lane's alternates (tap to swap). Tier-aware — a Logger sees every number but the custom-exercise editor is locked, never a gate (CLAUDE.md)."
+        >
+          <DCArtboard id="ex-detail-logger" label="01 Logger · editor locked" width={432} height={1320}>
+            <StagedPhone theme={theme} label="2.3 Exercise Detail · Logger" withNav={false} height={1298}>
+              <ExerciseDetail T={T} tier="logger"/>
+            </StagedPhone>
+          </DCArtboard>
+          <DCArtboard id="ex-detail-program" label="02 Program · editor unlocked" width={432} height={1320}>
+            <StagedPhone theme={theme} label="2.3 Exercise Detail · Program" withNav={false} height={1298}>
+              <ExerciseDetail T={T} tier="program"/>
+            </StagedPhone>
+          </DCArtboard>
+        </DCSection>
+
+        {/* ═══════════ 2.4 Active Workout Logger ═══════════ */}
+        <DCSection
+          id="active-logger"
+          title="2.4 · Active Workout Logger"
+          subtitle="Direction A — Horizontal Weeks. The block as a spreadsheet on a phone: each exercise is a lane, set cells are tiles you fill, the week strip walks W1→W4. Mid-session snapshot — Incline Press + Fly logged, Lateral Delt is current, the rest wait with last-week ghosts. Tap any open cell to log it; switch weeks up top. Iron locked; switch theme in Tweaks to canary the rest."
+        >
+          <DCArtboard id="live" label="01 Mid-session · live (tap a cell)" width={432} height={880}>
+            <ThemedPhone theme={theme} label="2.4 Active Workout Logger · Mid-session" width={410} height={836}>
+              <LoggerScreen theme={theme} session={MID_SESSION} tweaks={loggerTweaks} />
+            </ThemedPhone>
+          </DCArtboard>
+
+          <DCArtboard id="entry" label="02 Set entry · number pad" width={432} height={880}>
+            <ThemedPhone theme={theme} label="2.4 Active Workout Logger · Set entry" width={410} height={836}>
+              <LoggerScreen theme={theme} session={MID_SESSION} tweaks={{ ...loggerTweaks, showSheet: true }} />
+            </ThemedPhone>
+          </DCArtboard>
+        </DCSection>
+
+        {/* ═══════════ 2.5 Save as Frame ═══════════ */}
+        <DCSection
+          id="save-frame"
+          title="2.5 · Save as Frame"
+          subtitle="Sheet that rises when a Logger finishes a workout. The just-finished session is shown as data (5 exercises · 52 min, with each lift's set target); name is pre-filled and editable. Two functional toggles — keep target weights, pin to top. Conflict state appears when the name collides with an existing frame: footer swaps to Replace / Save as copy. Editable + clickable; renders over the dimmed Workouts Library."
+        >
+          <DCArtboard id="sf-default" label="01 Default" width={432} height={892}>
+            <StagedPhone theme={theme} label="2.5 Save as Frame · Default" withNav={false} height={870}>
+              <SheetStage T={T} behind={<WorkoutsLibrary T={T}/>}>
+                <SaveAsFrame T={T}/>
+              </SheetStage>
+            </StagedPhone>
+          </DCArtboard>
+          <DCArtboard id="sf-conflict" label="02 Name in use" width={432} height={892}>
+            <StagedPhone theme={theme} label="2.5 Save as Frame · Conflict" withNav={false} height={870}>
+              <SheetStage T={T} behind={<WorkoutsLibrary T={T}/>}>
+                <SaveAsFrame T={T} conflict/>
+              </SheetStage>
+            </StagedPhone>
+          </DCArtboard>
+        </DCSection>
+
+        {/* ═══════════ 2.6 Workout History Detail ═══════════ */}
+        <DCSection
+          id="history-detail"
+          title="2.6 · Workout History Detail"
+          subtitle="A past session replayed read-only, straight from the real mock session data — summary (duration · volume · sets · PRs), then every exercise set-by-set vs. its target, with the top set flagged when it beat last week (PR). Carries the lift note. This is the surface the recent-workout cards in 2.1 / 2.2 open into; the footer Repeat seeds a fresh 2.4 session."
+        >
+          <DCArtboard id="hist-detail" label="01 Logged session · Upper · Push" width={432} height={1180}>
+            <StagedPhone theme={theme} label="2.6 History Detail" withNav={false} height={1158}>
+              <WorkoutHistoryDetail T={T}/>
+            </StagedPhone>
+          </DCArtboard>
+        </DCSection>
+
+        {/* ═══════════ 2.7 Nutrition Tab (Logger) ═══════════ */}
+        <DCSection
+          id="nutrition-logger"
+          title="2.7 · Nutrition Tab (Logger)"
+          subtitle="Bottom-nav slot 4, promoted out of the neutral Nutrition v2 study into the themed Header/Card/Chip vocabulary + the pillar side-rail. The Logger surface is manual-targets + daily-log only — calorie + macro rollup against a target you set (links to the 2.7a editor), then today's meals. No meal-plan engine or Week Plan (Program-tier — those rail slots sit locked). Rail/Chip both honoured via the side-rail tweak. States: Default / Empty (no targets) / Error."
+        >
+          <DCArtboard id="nutri-default" label="01 Default · logged" width={432} height={1240}>
+            <StagedPhone theme={theme} label="2.7 Nutrition (Logger) · Default" navActive={4} height={1218}>
+              <NutritionLogger T={T} state="default" railMode={railMode} onSetRailMode={setRailMode}/>
+            </StagedPhone>
+          </DCArtboard>
+          <DCArtboard id="nutri-empty" label="02 Empty · no targets" width={432} height={1020}>
+            <StagedPhone theme={theme} label="2.7 Nutrition (Logger) · Empty" navActive={4} height={998}>
+              <NutritionLogger T={T} state="empty" railMode={railMode} onSetRailMode={setRailMode}/>
+            </StagedPhone>
+          </DCArtboard>
+          <DCArtboard id="nutri-error" label="03 Error · sync paused" width={432} height={1300}>
+            <StagedPhone theme={theme} label="2.7 Nutrition (Logger) · Error" navActive={4} height={1278}>
+              <NutritionLogger T={T} state="error" railMode={railMode} onSetRailMode={setRailMode}/>
+            </StagedPhone>
+          </DCArtboard>
+        </DCSection>
+
+        {/* ═══════════ 2.7a Manual Macro Target Editor ═══════════ */}
+        <DCSection
+          id="macro-editor"
+          title="2.7a · Manual Macro Target Editor"
+          subtitle="Sheet from the Nutrition tab. Calorie target + three macro steppers; the split bar and percentages recompute live, and a reconcile chip states whether the grams add up to the calorie target (Scale-to-fit action when they don't). Presets (Balanced / High-protein / Low-carb) rewrite the grams from the current calories. Live — adjust any stepper. Over-target state shown in artboard 02."
+        >
+          <DCArtboard id="me-default" label="01 Matches target" width={432} height={892}>
+            <StagedPhone theme={theme} label="2.7a Macro Targets · Matches" withNav={false} height={870}>
+              <SheetStage T={T} behind={<NutritionBackdrop T={T}/>}>
+                <MacroEditor T={T}/>
+              </SheetStage>
+            </StagedPhone>
+          </DCArtboard>
+          <DCArtboard id="me-over" label="02 Over target" width={432} height={892}>
+            <StagedPhone theme={theme} label="2.7a Macro Targets · Over" withNav={false} height={870}>
+              <SheetStage T={T} behind={<NutritionBackdrop T={T}/>}>
+                <MacroEditor T={T} over/>
+              </SheetStage>
+            </StagedPhone>
+          </DCArtboard>
+        </DCSection>
+
+        {/* ═══════════ 2.8 Meal Logger ═══════════ */}
+        <DCSection
+          id="meal-logger"
+          title="2.8 · Meal Logger"
+          subtitle="Reached from any meal's Add or the Nutrition + button. Search foods (or recents), tap one to set servings, log it to a meal. The quantity sheet scales kcal + macros live off the serving stepper. Split out of the Nutrition v2 exploration and themed. States: Search results / Quantity sheet."
+        >
+          <DCArtboard id="meal-search" label="01 Search · results" width={432} height={1000}>
+            <StagedPhone theme={theme} label="2.8 Meal Logger · Search" withNav={false} height={978}>
+              <MealLogger T={T} meal="Lunch" mode="search"/>
+            </StagedPhone>
+          </DCArtboard>
+          <DCArtboard id="meal-qty" label="02 Quantity · live macros" width={432} height={1000}>
+            <StagedPhone theme={theme} label="2.8 Meal Logger · Quantity" withNav={false} height={978}>
+              <MealLogger T={T} meal="Lunch" mode="quantity"/>
+            </StagedPhone>
+          </DCArtboard>
+        </DCSection>
+
+        {/* ═══════════ 2.9 Lifestyle Tab (Logger preview) ═══════════ */}
+        <DCSection
+          id="lifestyle-preview"
+          title="2.9 · Lifestyle Tab (Logger preview)"
+          subtitle="Bottom-nav slot 5. Lifestyle is a Gameplan-tier pillar, so for a Logger this is a preview: every side-rail slot renders dimmed with a lock badge, the metric cards show faded behind, and the body is a factual Gameplan upsell — never a gate (CLAUDE.md). Rail/Chip both honoured."
+        >
+          <DCArtboard id="lifestyle-prev" label="01 Locked preview" width={432} height={1000}>
+            <StagedPhone theme={theme} label="2.9 Lifestyle (Logger preview)" navActive={5} height={978}>
+              <LifestylePreview T={T} railMode={railMode} onSetRailMode={setRailMode}/>
+            </StagedPhone>
+          </DCArtboard>
+        </DCSection>
+
+        {/* ═══════════ 2.10 View-as-Gameplan Preview ═══════════ */}
+        <DCSection
+          id="view-as-gameplan"
+          title="2.10 · View-as-Gameplan Preview"
+          subtitle="Logger ≥5 workouts. The user's real data, rendered as a Gameplan dashboard with inert controls and a soft 'PREVIEW' watermark. Spec calls this 'highest-conversion potential' — the illusion is 'you're already doing this, just make it official.' No empty/error states (gated by threshold)."
+        >
+          <DCArtboard id="vg-default" label="01 Default · 14 workouts" width={432} height={1202}>
+            <StagedPhone theme={theme} label="2.10 View-as-Gameplan · Default" withNav={false}>
+              <ViewAsGameplan T={T}/>
+            </StagedPhone>
+          </DCArtboard>
+        </DCSection>
+
+        {/* ═══════════ 2.11 +Log Bottom Sheet ═══════════ */}
+        <DCSection
+          id="log-sheet"
+          title="2.11 · +Log Bottom Sheet"
+          subtitle="The universal capture sheet from the center + in the bottom nav. Tiles grouped Train (Lift · HIIT · Cardio · Class · Stretch · Custom) and Track (Meal · Lifestyle). Each tile opens its logger — Lift → 2.4, the four activity types → 2.13, Stretch → 2.12, Meal → 2.8. For a Logger the Lifestyle tile is locked (dimmed + lock dot + one factual line), never a gate (CLAUDE.md). Rises over the dimmed home; reuses the small-sheets chrome from 2.5 / 2.7a."
+        >
+          <DCArtboard id="log-sheet-bd" label="01 Logger · Lifestyle locked" width={432} height={892}>
+            <StagedPhone theme={theme} label="2.11 +Log Sheet · Logger" withNav={false} height={870}>
+              <SheetStage T={T} behind={<WorkoutsLibrary T={T}/>}>
+                <LogSheet T={T} tier="logger"/>
+              </SheetStage>
+            </StagedPhone>
+          </DCArtboard>
+        </DCSection>
+
+        {/* ═══════════ 2.12 Stretch Timer ═══════════ */}
+        <DCSection
+          id="stretch-timer"
+          title="2.12 · Stretch Timer"
+          subtitle="Full-screen guided flow — a ring countdown for the current move, the move queue as progress dots, transport controls (prev · pause · skip). Running advances move-to-move; Complete sums the session and offers Repeat. Self-contained surface (no bottom nav), theme-adaptive across all seven."
+        >
+          <DCArtboard id="stretch-run" label="01 Running · move 3 of 9" width={432} height={858}>
+            <ThemedPhone theme={theme} label="2.12 Stretch Timer · Running" width={410} height={836}>
+              <StretchTimer T={T} mode="running"/>
+            </ThemedPhone>
+          </DCArtboard>
+          <DCArtboard id="stretch-pause" label="02 Paused" width={432} height={858}>
+            <ThemedPhone theme={theme} label="2.12 Stretch Timer · Paused" width={410} height={836}>
+              <StretchTimer T={T} mode="paused"/>
+            </ThemedPhone>
+          </DCArtboard>
+          <DCArtboard id="stretch-done" label="03 Complete" width={432} height={858}>
+            <ThemedPhone theme={theme} label="2.12 Stretch Timer · Complete" width={410} height={836}>
+              <StretchTimer T={T} mode="complete"/>
+            </ThemedPhone>
+          </DCArtboard>
+        </DCSection>
+
+        {/* ═══════════ 2.13 Activity loggers ═══════════ */}
+        <DCSection
+          id="activity-loggers"
+          title="2.13 · HIIT / Cardio / Class / Custom loggers"
+          subtitle="One templated form covers all four. The frame is constant — a duration stopwatch hero, a universal effort scale, an auto calorie estimate with manual override, notes, save — and only the middle metrics card swaps its field set per type (HIIT rounds + work/rest, Cardio mode + distance + HR, Class name + studio, Custom free label). Opened from the +Log sheet (2.11) or the Training launchpad (2.2). The stopwatch ticks live; tap Resume on the HIIT board."
+        >
+          <DCArtboard id="act-hiit" label="01 HIIT · running" width={432} height={858}>
+            <ThemedPhone theme={theme} label="2.13 Activity Logger · HIIT" width={410} height={836}>
+              <ActivityLogger T={T} type="hiit" running/>
+            </ThemedPhone>
+          </DCArtboard>
+          <DCArtboard id="act-cardio" label="02 Cardio · distance + HR" width={432} height={858}>
+            <ThemedPhone theme={theme} label="2.13 Activity Logger · Cardio" width={410} height={836}>
+              <ActivityLogger T={T} type="liss"/>
+            </ThemedPhone>
+          </DCArtboard>
+          <DCArtboard id="act-class" label="03 Class · name + studio" width={432} height={858}>
+            <ThemedPhone theme={theme} label="2.13 Activity Logger · Class" width={410} height={836}>
+              <ActivityLogger T={T} type="class"/>
+            </ThemedPhone>
+          </DCArtboard>
+          <DCArtboard id="act-custom" label="04 Custom · free label" width={432} height={858}>
+            <ThemedPhone theme={theme} label="2.13 Activity Logger · Custom" width={410} height={836}>
+              <ActivityLogger T={T} type="custom"/>
+            </ThemedPhone>
+          </DCArtboard>
+        </DCSection>
+
+        {/* ═══════════ 2.14 Single Workout Library ═══════════ */}
+        <DCSection
+          id="single-workout-library"
+          title="2.14 · Single Workout Library"
+          subtitle="Browse-and-pick a one-off workout to run now — search + category filter over saved frames and built-in templates. The browse variant of the Saved-frames grid in 2.1 and the launch row in 2.2; reuses the same Frame vocabulary. Search and filters are live; No-results shown in artboard 02."
+        >
+          <DCArtboard id="swl-default" label="01 Default · frames + templates" width={432} height={1100}>
+            <StagedPhone theme={theme} label="2.14 Single Workout Library" withNav={false} height={1078}>
+              <SingleWorkoutLibrary T={T}/>
+            </StagedPhone>
+          </DCArtboard>
+          <DCArtboard id="swl-empty" label="02 No results" width={432} height={760}>
+            <StagedPhone theme={theme} label="2.14 Single Workout Library · No results" withNav={false} height={738}>
+              <SingleWorkoutLibrary T={T} initialQ="zercher"/>
+            </StagedPhone>
+          </DCArtboard>
+        </DCSection>
+
+      </DesignCanvas>
+
+      <TweaksPanel title="Tweaks">
+        <TweakSection title="Theme">
+          <ThemeCycler value={theme} onChange={(v) => setTweak('theme', v)}/>
+        </TweakSection>
+
+        <TweakSection title="2.2 · Side rail">
+          <TweakRadio
+            label="Side rail"
+            value={railMode}
+            options={[{ value: 'rail', label: 'Rail' }, { value: 'chip', label: 'No rail' }]}
+            onChange={(v) => setTweak('railMode', v)}/>
+          <div style={{ fontSize: 11, color: 'rgba(60,50,40,.6)', lineHeight: 1.4, marginTop: 4 }}>
+            Rail = labelled icon column. No rail = a sticky chip opens the nav, content full-width. Locked slots (Program · Gameplan) stay visible for a Logger.
+          </div>
+        </TweakSection>
+
+        <TweakSection title="Header">
+          <TweakRadio
+            value={t.headerMode || 'auto'}
+            options={[{ value: 'auto', label: 'Auto' }, { value: 'expanded', label: 'Full' }, { value: 'collapsed', label: 'Compact' }]}
+            onChange={(v) => setTweak('headerMode', v)}/>
+          <div style={{ fontSize: 11, color: 'rgba(60,50,40,.6)', lineHeight: 1.4, marginTop: 4 }}>
+            Auto = the header collapses to a compact bar once content scrolls.
+          </div>
+        </TweakSection>
+
+        <TweakSection title="2.2 · Surfaces">
+          <TweakToggle label="Resume card" value={t.showResume} onChange={(v) => setTweak('showResume', v)}/>
+          <TweakToggle label="Structure upsell" value={t.showUpsell} onChange={(v) => setTweak('showUpsell', v)}/>
+        </TweakSection>
+
+        <TweakSection title="2.4 · Last week's numbers">
+          <TweakRadio
+            value={t.lastWeekMode}
+            onChange={(v) => setTweak('lastWeekMode', v)}
+            options={[
+              { value: 'ghost', label: 'Ghost inside empty cells' },
+              { value: 'row',   label: 'Thin LAST row below today' },
+              { value: 'none',  label: 'Hide entirely' },
+            ]}
+          />
+        </TweakSection>
+
+        <TweakSection title="2.4 · Category rail">
+          <TweakRadio
+            value={t.railStyle}
+            onChange={(v) => setTweak('railStyle', v)}
+            options={[
+              { value: 'rotated-52', label: 'Rotated text · 44px' },
+              { value: 'rotated-64', label: 'Rotated text · 56px' },
+              { value: 'stripe',     label: 'Thin stripe · 5px' },
+              { value: 'chip',       label: 'Chip only · no rail' },
+            ]}
+          />
+        </TweakSection>
+
+        <TweakSection title="About this cluster">
+          <div style={{ fontSize: 11.5, color: 'rgba(60,50,40,.7)', lineHeight: 1.45 }}>
+            Cluster 2 · Logger Tier — the complete inventory, screens 2.1 → 2.14, all designed + themed. Iron locked (Stardos stencil, brass, Teko). Cycle the theme above to canary the structure across all seven — Blueprint is the contrast canary.
+          </div>
+        </TweakSection>
+      </TweaksPanel>
+    </>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<Root/>);
+</script>
+
+<template id="__bundler_thumbnail">
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200">
+    <rect width="200" height="200" fill="#161514"/>
+    <g transform="translate(48,46)">
+      <rect x="0" y="0" width="14" height="108" fill="#c8a96e"/>
+      <rect x="22" y="6" width="82" height="14" fill="#c8a96e" opacity=".85"/>
+      <rect x="22" y="30" width="24" height="24" fill="#262523" stroke="#c8a96e" stroke-width="1"/>
+      <rect x="50" y="30" width="24" height="24" fill="#262523" stroke="#c8a96e" stroke-width="1"/>
+      <rect x="78" y="30" width="24" height="24" fill="rgba(200,169,110,.18)" stroke="#c8a96e" stroke-width="1"/>
+      <rect x="22" y="60" width="24" height="24" fill="#262523" stroke="#5a5550" stroke-width="1" stroke-dasharray="3 2"/>
+      <rect x="50" y="60" width="24" height="24" fill="#262523" stroke="#5a5550" stroke-width="1" stroke-dasharray="3 2"/>
+      <rect x="78" y="60" width="24" height="24" fill="#262523" stroke="#5a5550" stroke-width="1" stroke-dasharray="3 2"/>
+      <rect x="22" y="96" width="80" height="3" fill="#c8a96e"/>
+    </g>
+  </svg>
+</template>
+
+</body>
+</html>

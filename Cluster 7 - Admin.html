@@ -1,0 +1,249 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>FitTrack · Admin Cluster — Iron</title>
+<link rel="stylesheet" href="theme-tokens.css?v=5" />
+<style>
+  html, body { margin: 0; padding: 0; background: #ECEDF0; font-family: 'IBM Plex Sans', system-ui, sans-serif; }
+  #root { min-height: 100vh; }
+  ::-webkit-scrollbar { display: none; }
+</style>
+</head>
+<body>
+
+<div id="root"></div>
+
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+
+<script type="text/babel" src="design-canvas.jsx"></script>
+<script type="text/babel" src="tweaks-panel.jsx"></script>
+<script type="text/babel" src="phone-shell.jsx"></script>
+<script type="text/babel" src="theme-bridge.jsx"></script>
+<script type="text/babel" src="tier-homes-screens.jsx"></script>
+<script type="text/babel" src="admin-kit.jsx"></script>
+<script type="text/babel" src="admin-screens.jsx"></script>
+<script type="text/babel" src="admin-screens-2.jsx"></script>
+
+<script type="text/babel">
+const { useState } = React;
+
+const TWEAK_DEFAULTS = /*EDITMODE-BEGIN*/{
+  "theme": "iron"
+}/*EDITMODE-END*/;
+
+function StagedPhone({ theme, label, height, children }) {
+  return (
+    <ThemedPhone theme={theme} label={label} width={410} height={height}>
+      {children}
+    </ThemedPhone>
+  );
+}
+
+function Root() {
+  const [t, setTweak] = useTweaks(TWEAK_DEFAULTS);
+  const theme = t.theme;
+  const T = useFitTrackTheme(theme);
+
+  return (
+    <>
+      <DesignCanvas>
+
+        {/* ── 7.1 Admin Dashboard ───────────────────────────────────── */}
+        <DCSection
+          id="dashboard"
+          title="01 · 7.1 Admin Dashboard"
+          subtitle="Role-gated entry, reached only from Settings → Admin. Eyebrow states the role; the avatar replaces the back arrow since this is the cluster root. Three at-a-glance counts (live / staging / drafts), a 2-col tool grid routing to every other admin surface, and a 7-day activity feed rendered as data rows."
+        >
+          <DCArtboard id="dash" label="01 Editor role" width={432} height={1062}>
+            <StagedPhone theme={theme} label="7.1 Admin Dashboard" height={1040}>
+              <AdminDashboard T={T}/>
+            </StagedPhone>
+          </DCArtboard>
+        </DCSection>
+
+        {/* ── 7.2 Library Management ────────────────────────────────── */}
+        <DCSection
+          id="library"
+          title="02 · 7.2 Library Management"
+          subtitle="The authoring index. Three segmented tabs (Programs / Gameplans / Exercises) over one search + filter row and a status-tagged item list (Live · Staging · Draft · Archived). Sticky footer carries the two creation paths — manual New and spreadsheet Upload. Tabs are live; switch them on any artboard."
+        >
+          <DCArtboard id="lib-programs" label="01 Programs tab" width={432} height={1042}>
+            <StagedPhone theme={theme} label="7.2 Library · Programs" height={1020}>
+              <LibraryManagement T={T} initialTab="programs"/>
+            </StagedPhone>
+          </DCArtboard>
+          <DCArtboard id="lib-exercises" label="02 Exercises tab" width={432} height={1042}>
+            <StagedPhone theme={theme} label="7.2 Library · Exercises" height={1020}>
+              <LibraryManagement T={T} initialTab="exercises"/>
+            </StagedPhone>
+          </DCArtboard>
+        </DCSection>
+
+        {/* ── 7.2a Library Item Edit ────────────────────────────────── */}
+        <DCSection
+          id="item-edit"
+          title="03 · 7.2a Library Item Edit"
+          subtitle="One item open for editing. Three tabs — Metadata (typed form fields with units + tags), Content (block / session structure, drillable, with a re-upload escape hatch), Versions (history with per-version restore). Status chip in the header; Save draft vs Publish split in the footer. Tabs are live."
+        >
+          <DCArtboard id="edit-meta" label="01 Metadata" width={432} height={1102}>
+            <StagedPhone theme={theme} label="7.2a Item Edit · Metadata" height={1080}>
+              <ItemEditDetail T={T} initialTab="metadata"/>
+            </StagedPhone>
+          </DCArtboard>
+          <DCArtboard id="edit-content" label="02 Content" width={432} height={1002}>
+            <StagedPhone theme={theme} label="7.2a Item Edit · Content" height={980}>
+              <ItemEditDetail T={T} initialTab="content"/>
+            </StagedPhone>
+          </DCArtboard>
+          <DCArtboard id="edit-versions" label="03 Versions" width={432} height={902}>
+            <StagedPhone theme={theme} label="7.2a Item Edit · Versions" height={880}>
+              <ItemEditDetail T={T} initialTab="versions"/>
+            </StagedPhone>
+          </DCArtboard>
+        </DCSection>
+
+        {/* ── 7.3 Upload Spreadsheet ────────────────────────────────── */}
+        <DCSection
+          id="upload-root"
+          title="04 · 7.3 Upload Spreadsheet"
+          subtitle="Flow root. A dropzone for .xlsx / .csv that turns each file into a parse job, a shortcut to the format reference, and a recent-uploads list that surfaces job outcomes as data (published / warnings / failed)."
+        >
+          <DCArtboard id="upl-root" label="01 Default" width={432} height={832}>
+            <StagedPhone theme={theme} label="7.3 Upload" height={810}>
+              <UploadRoot T={T}/>
+            </StagedPhone>
+          </DCArtboard>
+        </DCSection>
+
+        {/* ── 7.3a–f Upload Flow ────────────────────────────────────── */}
+        <DCSection
+          id="upload-flow"
+          title="05 · 7.3a–f Upload Flow"
+          subtitle="The six-step import after a file is chosen — Parse → Resolve exercises → New exercise → Preview → Warnings → Publish. Each artboard starts on its own step and Continue / Back advance it in place (fully clickable). Resolve surfaces matched / fuzzy / unmatched counts; Warnings are non-blocking; Publish chooses staging vs live."
+        >
+          <DCArtboard id="uf-1" label="01 Parse" width={432} height={832}>
+            <StagedPhone theme={theme} label="7.3a Upload · Parse" height={810}>
+              <UploadFlow T={T} initialStep={1}/>
+            </StagedPhone>
+          </DCArtboard>
+          <DCArtboard id="uf-2" label="02 Resolve" width={432} height={902}>
+            <StagedPhone theme={theme} label="7.3b Upload · Resolve" height={880}>
+              <UploadFlow T={T} initialStep={2}/>
+            </StagedPhone>
+          </DCArtboard>
+          <DCArtboard id="uf-3" label="03 New exercise" width={432} height={902}>
+            <StagedPhone theme={theme} label="7.3c Upload · New exercise" height={880}>
+              <UploadFlow T={T} initialStep={3}/>
+            </StagedPhone>
+          </DCArtboard>
+          <DCArtboard id="uf-4" label="04 Preview" width={432} height={902}>
+            <StagedPhone theme={theme} label="7.3d Upload · Preview" height={880}>
+              <UploadFlow T={T} initialStep={4}/>
+            </StagedPhone>
+          </DCArtboard>
+          <DCArtboard id="uf-5" label="05 Warnings" width={432} height={862}>
+            <StagedPhone theme={theme} label="7.3e Upload · Warnings" height={840}>
+              <UploadFlow T={T} initialStep={5}/>
+            </StagedPhone>
+          </DCArtboard>
+          <DCArtboard id="uf-6" label="06 Publish" width={432} height={832}>
+            <StagedPhone theme={theme} label="7.3f Upload · Publish" height={810}>
+              <UploadFlow T={T} initialStep={6}/>
+            </StagedPhone>
+          </DCArtboard>
+        </DCSection>
+
+        {/* ── 7.4 Format Reference ──────────────────────────────────── */}
+        <DCSection
+          id="format-ref"
+          title="06 · 7.4 Spreadsheet Format Reference"
+          subtitle="Static doc reached from the upload root. Column spec table (required vs optional), a monospace example block, the parsing rules, and a download-template footer. No prose — labeled rows do the work."
+        >
+          <DCArtboard id="fmt" label="01 Default" width={432} height={1062}>
+            <StagedPhone theme={theme} label="7.4 Format Reference" height={1040}>
+              <FormatReference T={T}/>
+            </StagedPhone>
+          </DCArtboard>
+        </DCSection>
+
+        {/* ── 7.5 Staging Library ───────────────────────────────────── */}
+        <DCSection
+          id="staging"
+          title="07 · 7.5 Staging Library"
+          subtitle="A filtered view of 7.2 — everything awaiting publish. Banner states the truth (not visible to users); checkbox rows enable bulk publish / reject from the footer. In-review items are distinguished from plain staging."
+        >
+          <DCArtboard id="stg" label="01 Default" width={432} height={812}>
+            <StagedPhone theme={theme} label="7.5 Staging Library" height={790}>
+              <StagingLibrary T={T}/>
+            </StagedPhone>
+          </DCArtboard>
+        </DCSection>
+
+        {/* ── 7.6 Version History ───────────────────────────────────── */}
+        <DCSection
+          id="versions"
+          title="08 · 7.6 Version History"
+          subtitle="Diff + rollback between two versions. Base → current selector, an added / changed / removed count summary, and a colour-coded diff (green add, amber change, red remove with from → to values). Restore loads the older version as a draft — live is untouched until publish."
+        >
+          <DCArtboard id="ver" label="01 v3 → v4 diff" width={432} height={1042}>
+            <StagedPhone theme={theme} label="7.6 Version History" height={1020}>
+              <VersionHistory T={T}/>
+            </StagedPhone>
+          </DCArtboard>
+        </DCSection>
+
+        {/* ── 7.7 Asset Uploads ─────────────────────────────────────── */}
+        <DCSection
+          id="assets"
+          title="09 · 7.7 Asset Uploads"
+          subtitle="Media library + drop-zone. Kind filter chips (covers / demos / icons), a thumbnail grid with unused-asset markers, and a storage meter. Thumbnails are striped placeholders — real cover art and exercise demos drop in at handoff."
+        >
+          <DCArtboard id="ast" label="01 Default" width={432} height={912}>
+            <StagedPhone theme={theme} label="7.7 Asset Uploads" height={890}>
+              <AssetUploads T={T}/>
+            </StagedPhone>
+          </DCArtboard>
+        </DCSection>
+
+        {/* ── 7.8 Analytics ─────────────────────────────────────────── */}
+        <DCSection
+          id="analytics"
+          title="10 · 7.8 Analytics"
+          subtitle="Catalog performance, last 30 days. Four KPI tiles with deltas, a weekly enrollment column chart, a top-programs bar ranking (muscle-group tints), and a plain completion breakdown. The internal-facing tail of the cluster."
+        >
+          <DCArtboard id="anl" label="01 Default" width={432} height={1102}>
+            <StagedPhone theme={theme} label="7.8 Analytics" height={1080}>
+              <AnalyticsScreen T={T}/>
+            </StagedPhone>
+          </DCArtboard>
+        </DCSection>
+
+      </DesignCanvas>
+
+      <TweaksPanel title="Tweaks">
+        <TweakSection title="Theme">
+          <ThemeSwitcher value={theme} onChange={(v) => setTweak('theme', v)}/>
+        </TweakSection>
+        <TweakSection title="About this batch">
+          <div style={{ fontSize: 11.5, color: 'rgba(60,50,40,.7)', lineHeight: 1.45 }}>
+            Admin cluster (build-plan step 07) — 11 screens locked to Iron;
+            switch above to preview the other six themes via the bridge. Library
+            and Item-Edit tabs are live, and the 7.3 upload flow is fully
+            clickable: each artboard starts on a different step and Continue /
+            Back advance it in place.
+          </div>
+        </TweakSection>
+      </TweaksPanel>
+    </>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<Root/>);
+</script>
+
+</body>
+</html>
