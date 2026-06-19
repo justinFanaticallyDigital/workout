@@ -14,6 +14,9 @@ export { default as Stamp } from "./Stamp";
 export { default as SectionLabel } from "./SectionLabel";
 export { default as Header } from "./Header";
 export { default as Stepper } from "./Stepper";
+export { default as Segmented } from "./Segmented";
+export { default as TextField } from "./TextField";
+export { default as FieldLabel } from "./FieldLabel";
 
 // Shells (ARCHITECTURE.md §2–§3)
 export { default as PillarShell } from "./PillarShell";

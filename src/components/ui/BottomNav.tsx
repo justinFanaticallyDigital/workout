@@ -172,6 +172,7 @@ export default function BottomNav() {
     pathname === "/checkin" ||
     pathname === "/nutrition/log" ||
     pathname === "/library/as-gameplan" ||
+    pathname.startsWith("/log/activity/") ||
     // v2 shell routes render their own (v2) BottomNav via PillarShell.
     pathname.startsWith("/canary");
   if (hideNav) {

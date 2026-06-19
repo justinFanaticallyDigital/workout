@@ -120,13 +120,11 @@ export function StartHero({ lastLine, href = "/log/new-blank" }: { lastLine: str
 }
 
 const TYPE_HREF: Record<LogKind, string> = {
-  // TODO(2.13): dedicated /log/* loggers for hiit/liss/class. Until then,
-  // start a blank local session and let the user tag the type.
   lift: "/log/new-blank",
-  custom: "/log/new-blank",
-  hiit: "/log/new-blank",
-  liss: "/log/new-blank",
-  class: "/log/new-blank",
+  hiit: "/log/activity/hiit",
+  liss: "/log/activity/liss",
+  class: "/log/activity/class",
+  custom: "/log/activity/custom",
   stretch: "/log/stretch-timer",
 };
 
