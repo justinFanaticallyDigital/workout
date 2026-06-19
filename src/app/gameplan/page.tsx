@@ -3,12 +3,9 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import Header from "./_components/Header";
-import TabBar from "./_components/TabBar";
 import TodayCard from "./_components/TodayCard";
 import WeekStrip from "./_components/WeekStrip";
 import BlockTimeline from "./_components/BlockTimeline";
-import NutritionPanel from "./_components/NutritionPanel";
-import LifestylePanel from "./_components/LifestylePanel";
 import { SectionH } from "./_components/SectionH";
 import { EditPlanBtn } from "./_components/EditPlanBtn";
 import { GoalPulse } from "./_components/GoalPulse";
@@ -24,15 +21,8 @@ import type { GoalIconKind } from "./_components/icons";
 import type {
   HomeData,
   ProgramDetail,
-  MealsData,
-  NutritionTarget,
   CheckIn,
-  TabId,
   ScheduleOverride,
-  DailyMetricLite,
-  LifestyleTargetLite,
-  DailyProteinPoint,
-  LifestyleLogLite,
 } from "./_components/types";
 
 export const dynamic = "force-dynamic";
@@ -75,32 +65,12 @@ interface RawWorkout {
 export default function GameplanPage() {
   const [home, setHome] = useState<HomeData | null>(null);
   const [program, setProgram] = useState<ProgramDetail | null>(null);
-  const [meals, setMeals] = useState<MealsData | null>(null);
-  const [nutritionTarget, setNutritionTarget] = useState<NutritionTarget | null>(null);
   const [checkIns, setCheckIns] = useState<CheckIn[]>([]);
   const [goals, setGoals] = useState<RawGoal[]>([]);
   const [weekWorkouts, setWeekWorkouts] = useState<RawWorkout[]>([]);
   const [overrides, setOverrides] = useState<ScheduleOverride[]>([]);
-  const [dailyMetrics, setDailyMetrics] = useState<DailyMetricLite[]>([]);
-  const [lifestyleTargets, setLifestyleTargets] = useState<LifestyleTargetLite[]>([]);
-  const [lifestyleLogs, setLifestyleLogs] = useState<LifestyleLogLite[]>([]);
-  const [dailyProtein, setDailyProtein] = useState<DailyProteinPoint[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [tab, setTab] = useState<TabId>(() => readHashTab());
-
-  /* Hash sync — keep tab state in URL for shareable deep links. */
-  useEffect(() => {
-    const onHash = () => setTab(readHashTab());
-    window.addEventListener("hashchange", onHash);
-    return () => window.removeEventListener("hashchange", onHash);
-  }, []);
-  const updateTab = (t: TabId) => {
-    if (typeof window !== "undefined") {
-      window.history.replaceState(null, "", `#${t}`);
-    }
-    setTab(t);
-  };
 
   /* Initial data fetch. */
   useEffect(() => {
@@ -119,7 +89,6 @@ export default function GameplanPage() {
         if (cancelled) return;
         setHome(homeData);
 
-        const today = new Date().toISOString().split("T")[0];
         // Compute Mon..Sun range for this week's workouts fetch.
         const todayDow = (new Date().getDay() + 6) % 7;
         const monday = new Date();
@@ -131,85 +100,33 @@ export default function GameplanPage() {
         const toIso = sunday.toISOString().slice(0, 10);
 
         const programId = homeData.activeProgram?.id;
-        // R6 — daily-vitals window covers the program's full duration
-        // (default 16 weeks if not set) so SleepCard/StressCard/
-        // ProteinHitCard can render the full canvas.
-        const durationWeeks = homeData.activeProgram?.durationWeeks ?? 16;
-        const days = Math.min(200, durationWeeks * 7);
-        const programStartIso = homeData.activeProgram?.startDate ?? null;
-        const proteinFrom =
-          programStartIso ?? new Date(Date.now() - days * 86400000).toISOString().slice(0, 10);
-        const proteinTo = new Date().toISOString().slice(0, 10);
 
-        const [
-          programRes,
-          mealsRes,
-          targetRes,
-          checkInsRes,
-          goalsRes,
-          weekWorkoutsRes,
-          overridesRes,
-          dailyMetricsRes,
-          lifestyleTargetsRes,
-          lifestyleLogsRes,
-          dailyProteinRes,
-        ] = await Promise.all([
+        // Dashboard is a summary now (Training/Nutrition/Lifestyle live in the
+        // universal pillars — ARCHITECTURE §2). It only needs the overview
+        // sources: program structure, check-ins, goals, this week's workouts,
+        // and schedule overrides.
+        const [programRes, checkInsRes, goalsRes, weekWorkoutsRes, overridesRes] = await Promise.all([
           programId ? fetch(`/api/programs/${programId}`) : Promise.resolve(null),
-          fetch(`/api/nutrition/meals?date=${today}`),
-          fetch("/api/nutrition/targets"),
           fetch("/api/checkins?weeks=16"),
           fetch("/api/goals"),
           fetch(`/api/workouts?from=${fromIso}&to=${toIso}&limit=20`),
-          programId
-            ? fetch(`/api/schedule-overrides?programId=${programId}`)
-            : Promise.resolve(null),
-          fetch(`/api/integrations/fitbit/daily?days=${days}`),
-          fetch(programId ? `/api/lifestyle-targets?programId=${programId}` : "/api/lifestyle-targets"),
-          // R9 — fetch the same window the cards render so manual
-          // logs can override the Fitbit daily-metric value when both
-          // exist for a date.
-          fetch(`/api/lifestyle-logs?from=${proteinFrom}&to=${proteinTo}`),
-          fetch(`/api/nutrition/meals/range?from=${proteinFrom}&to=${proteinTo}`),
+          programId ? fetch(`/api/schedule-overrides?programId=${programId}`) : Promise.resolve(null),
         ]);
 
-        const [
-          programDataRaw,
-          mealsData,
-          targetData,
-          checkInsData,
-          goalsData,
-          weekWorkoutsData,
-          overridesData,
-          dailyMetricsData,
-          lifestyleTargetsData,
-          lifestyleLogsData,
-          dailyProteinData,
-        ] = await Promise.all([
+        const [programDataRaw, checkInsData, goalsData, weekWorkoutsData, overridesData] = await Promise.all([
           programRes?.ok ? programRes.json() : null,
-          mealsRes.ok ? mealsRes.json() : null,
-          targetRes.ok ? targetRes.json() : null,
           checkInsRes.ok ? checkInsRes.json() : { checkIns: [] },
           goalsRes.ok ? goalsRes.json() : { goals: [] },
           weekWorkoutsRes.ok ? weekWorkoutsRes.json() : { workouts: [] },
           overridesRes?.ok ? overridesRes.json() : [],
-          dailyMetricsRes.ok ? dailyMetricsRes.json() : [],
-          lifestyleTargetsRes.ok ? lifestyleTargetsRes.json() : [],
-          lifestyleLogsRes.ok ? lifestyleLogsRes.json() : { logs: [] },
-          dailyProteinRes.ok ? dailyProteinRes.json() : { days: [] },
         ]);
 
         if (cancelled) return;
         setProgram(programDataRaw ? normalizeProgram(programDataRaw) : null);
-        setMeals(mealsData ? normalizeMeals(mealsData) : null);
-        setNutritionTarget(targetData ? normalizeTarget(targetData) : null);
         setCheckIns(checkInsData?.checkIns ?? []);
         setGoals(Array.isArray(goalsData?.goals) ? goalsData.goals : Array.isArray(goalsData) ? goalsData : []);
         setWeekWorkouts(Array.isArray(weekWorkoutsData?.workouts) ? weekWorkoutsData.workouts : []);
         setOverrides(Array.isArray(overridesData) ? overridesData : []);
-        setDailyMetrics(normalizeDailyMetrics(dailyMetricsData));
-        setLifestyleTargets(Array.isArray(lifestyleTargetsData) ? lifestyleTargetsData : []);
-        setLifestyleLogs(Array.isArray(lifestyleLogsData?.logs) ? lifestyleLogsData.logs : []);
-        setDailyProtein(Array.isArray(dailyProteinData?.days) ? dailyProteinData.days : []);
       } catch (e) {
         if (!cancelled) {
           setError(e instanceof Error ? e.message : "Failed to load");
@@ -309,106 +226,89 @@ export default function GameplanPage() {
       </div>
 
       <Header program={home.activeProgram} block={home.activeBlock} />
-      <TabBar active={tab} onChange={updateTab} />
 
+      {/* Dashboard is a summary. Training / Nutrition / Lifestyle are universal
+          pillars reached from the BottomNav (ARCHITECTURE §2 — no in-content
+          pillar switch). This canvas shows the overview only. */}
       <div className="px-5 py-5 space-y-5">
-        {tab === "training" && (
-          <>
-            <SectionH kicker="UP NEXT" sprayWidth={120}>
-              {home.todayCompleted ? "DONE TODAY" : "NEXT ACTION"}
-            </SectionH>
+        <SectionH kicker="UP NEXT" sprayWidth={120}>
+          {home.todayCompleted ? "DONE TODAY" : "NEXT ACTION"}
+        </SectionH>
 
-            {home.todayCompleted && loggedSummary ? (
-              <NextActionLogged summary={loggedSummary} tilt={-0.3} />
-            ) : (
-              <TodayCard
-                scheduledDay={home.scheduledDay}
-                todayCompleted={home.todayCompleted}
-                todaysWorkoutId={home.todaysWorkout?.id ?? null}
-              />
-            )}
-
-            <CheckInCard recentCheckIns={checkIns} tilt={0.3} />
-
-            <SectionH kicker="TARGETS" sprayWidth={130}>
-              GOAL PULSE
-            </SectionH>
-            <GoalPulse goals={goalPlans} />
-
-            {home.activeBlock && (
-              <section>
-                <SectionH kicker="THIS WEEK" sprayWidth={140}>
-                  SCHEDULE
-                </SectionH>
-                <WeekStrip
-                  block={home.activeBlock}
-                  todayDayOfWeek={todayDow}
-                  workoutsByDow={workoutsByDow}
-                  overrides={overrides.filter(
-                    (o) => o.weekNumber == null || o.weekNumber === weekOfProgram(home.activeProgram?.startDate ?? null),
-                  )}
-                />
-              </section>
-            )}
-            {program && (
-              <section>
-                <SectionH kicker="STRUCTURE" sprayWidth={130}>
-                  PROGRAM MAP
-                </SectionH>
-                <BlockTimeline
-                  blocks={program.blocks}
-                  activeBlockId={home.activeBlock?.id ?? null}
-                  currentWeekInActiveBlock={currentWeekInActiveBlock}
-                />
-              </section>
-            )}
-            {home.activeProgram?.id && (
-              <EditPlanBtn
-                align="flex-end"
-                href={`/programs/${home.activeProgram.id}`}
-                label="EDIT TRAINING"
-              />
-            )}
-          </>
-        )}
-
-        {tab === "nutrition" && (
-          <NutritionPanel
-            meals={meals}
-            target={nutritionTarget}
-            programId={home.activeProgram?.id ?? null}
-            activeBlock={
-              home.activeBlock
-                ? {
-                    startDate: program?.blocks.find((b) => b.id === home.activeBlock!.id)?.startDate
-                      ?? home.activeProgram?.startDate ?? null,
-                    refeedWeeks: home.activeBlock.refeedWeeks ?? [],
-                  }
-                : null
-            }
+        {home.todayCompleted && loggedSummary ? (
+          <NextActionLogged summary={loggedSummary} tilt={-0.3} />
+        ) : (
+          <TodayCard
+            scheduledDay={home.scheduledDay}
+            todayCompleted={home.todayCompleted}
+            todaysWorkoutId={home.todaysWorkout?.id ?? null}
           />
         )}
 
-        {tab === "lifestyle" && (
-          <LifestylePanel
-            stretchRoutine={home.stretchRoutine}
-            recentCheckIns={checkIns}
-            programId={home.activeProgram?.id ?? null}
-            programStartDate={home.activeProgram?.startDate ?? null}
-            programDurationWeeks={home.activeProgram?.durationWeeks ?? null}
-            dailyMetrics={dailyMetrics}
-            lifestyleTargets={lifestyleTargets}
-            lifestyleLogs={lifestyleLogs}
-            dailyProtein={dailyProtein}
-            onLogged={(log) => {
-              setLifestyleLogs((prev) => {
-                const without = prev.filter(
-                  (p) => !(p.variableKey === log.variableKey && p.date === log.date),
-                );
-                return [...without, log].sort((a, b) => a.date.localeCompare(b.date));
-              });
-            }}
-          />
+        <CheckInCard recentCheckIns={checkIns} tilt={0.3} />
+
+        <SectionH kicker="TARGETS" sprayWidth={130}>
+          GOAL PULSE
+        </SectionH>
+        <GoalPulse goals={goalPlans} />
+
+        {home.activeBlock && (
+          <section>
+            <SectionH kicker="THIS WEEK" sprayWidth={140}>
+              SCHEDULE
+            </SectionH>
+            <WeekStrip
+              block={home.activeBlock}
+              todayDayOfWeek={todayDow}
+              workoutsByDow={workoutsByDow}
+              overrides={overrides.filter(
+                (o) => o.weekNumber == null || o.weekNumber === weekOfProgram(home.activeProgram?.startDate ?? null),
+              )}
+            />
+          </section>
+        )}
+        {program && (
+          <section>
+            <SectionH kicker="STRUCTURE" sprayWidth={130}>
+              PROGRAM MAP
+            </SectionH>
+            <BlockTimeline
+              blocks={program.blocks}
+              activeBlockId={home.activeBlock?.id ?? null}
+              currentWeekInActiveBlock={currentWeekInActiveBlock}
+            />
+          </section>
+        )}
+
+        {/* Jump-offs to the pillars + the recommendation feed. */}
+        <SectionH kicker="PILLARS" sprayWidth={120}>
+          OPEN A PILLAR
+        </SectionH>
+        <div className="grid grid-cols-3 gap-2">
+          {[
+            { href: "/training", label: "Training" },
+            { href: "/nutrition", label: "Nutrition" },
+            { href: "/lifestyle", label: "Lifestyle" },
+          ].map((p) => (
+            <Link
+              key={p.href}
+              href={p.href}
+              className="border border-ft-border bg-ft-surface px-2 py-3 text-center font-body text-[12px] font-bold uppercase tracking-[0.06em] text-ft-light"
+            >
+              {p.label}
+            </Link>
+          ))}
+        </div>
+        <Link
+          href="/recommendations"
+          className="flex items-center justify-between border border-ft-border bg-ft-surface px-4 py-3"
+        >
+          <span className="font-body text-[13px] font-semibold text-ft-white">Recommendations feed</span>
+          <span className="font-body text-base text-ft-dim">›</span>
+        </Link>
+
+        {home.activeProgram?.id && (
+          <EditPlanBtn align="flex-end" href={`/programs/${home.activeProgram.id}`} label="EDIT PLAN" />
         )}
       </div>
     </div>
@@ -592,13 +492,6 @@ function goalToPlan(
   };
 }
 
-function readHashTab(): TabId {
-  if (typeof window === "undefined") return "training";
-  const h = window.location.hash.replace("#", "");
-  if (h === "nutrition" || h === "lifestyle") return h;
-  return "training";
-}
-
 /* ─── Normalization helpers (API responses → component types) ──── */
 
 interface RawProgramBlock {
@@ -638,79 +531,3 @@ function normalizeProgram(raw: RawProgram): ProgramDetail {
   };
 }
 
-interface RawMealItem {
-  quantity: number | string;
-  foodItem: { name: string; calories: number | string; protein: number | string; carbs: number | string; fat: number | string };
-}
-interface RawMeals {
-  meals: { id: string; mealType: string; items: RawMealItem[] }[];
-  totalCalories?: number;
-  totalProtein?: number;
-  totalCarbs?: number;
-  totalFat?: number;
-}
-
-function normalizeMeals(raw: RawMeals): MealsData {
-  return {
-    meals: (raw.meals ?? []).map((m) => ({
-      id: m.id,
-      mealType: m.mealType,
-      items: (m.items ?? []).map((it) => ({
-        quantity: Number(it.quantity),
-        foodItem: {
-          name: it.foodItem.name,
-          calories: Number(it.foodItem.calories),
-          protein: Number(it.foodItem.protein),
-          carbs: Number(it.foodItem.carbs),
-          fat: Number(it.foodItem.fat),
-        },
-      })),
-    })),
-    totals: {
-      calories: Number(raw.totalCalories ?? 0),
-      protein: Number(raw.totalProtein ?? 0),
-      carbs: Number(raw.totalCarbs ?? 0),
-      fat: Number(raw.totalFat ?? 0),
-    },
-  };
-}
-
-interface RawTarget {
-  calories: number | string | null;
-  protein: number | string | null;
-  carbs: number | string | null;
-  fat: number | string | null;
-}
-
-/**
- * R6 — normalize `/api/integrations/fitbit/daily` response to the
- * `DailyMetricLite` subset consumed by SleepCard / StressCard.
- */
-interface RawDailyMetric {
-  id: string;
-  date: string;
-  sleepMinutes: number | null;
-  stress: number | null;
-}
-function normalizeDailyMetrics(raw: unknown): DailyMetricLite[] {
-  if (!Array.isArray(raw)) return [];
-  return (raw as RawDailyMetric[]).map((m) => ({
-    id: m.id,
-    date: m.date,
-    sleepMinutes: m.sleepMinutes,
-    stress: m.stress ?? null,
-  }));
-}
-
-function normalizeTarget(raw: RawTarget | null): NutritionTarget | null {
-  if (!raw) return null;
-  const has =
-    raw.calories != null || raw.protein != null || raw.carbs != null || raw.fat != null;
-  if (!has) return null;
-  return {
-    calories: raw.calories != null ? Number(raw.calories) : null,
-    protein: raw.protein != null ? Number(raw.protein) : null,
-    carbs: raw.carbs != null ? Number(raw.carbs) : null,
-    fat: raw.fat != null ? Number(raw.fat) : null,
-  };
-}
