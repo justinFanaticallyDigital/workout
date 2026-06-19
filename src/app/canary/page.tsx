@@ -14,11 +14,14 @@
  * Delete once the foundation is locked and screens are landing.
  */
 
+import { useState } from "react";
 import { useTheme } from "@/providers/ThemeProvider";
 import { themes, themeList } from "@/themes";
+import { Card, Button, Chip, Stamp, SectionLabel, Header, Stepper } from "@/components/v2";
 
 export default function CanaryPage() {
   const { themeId, setTheme } = useTheme();
+  const [qty, setQty] = useState(120);
 
   return (
     <div className="min-h-screen bg-ft-bg px-4 py-6">
@@ -132,6 +135,62 @@ export default function CanaryPage() {
             </button>
           </div>
         </section>
+      </div>
+
+      {/* ── v2 primitive vocabulary (ARCHITECTURE §5) ── */}
+      <div className="mt-8">
+        <SectionLabel right="v2 components">Primitives</SectionLabel>
+
+        {/* Header in all three kinds — on the page bg, collapse-aware */}
+        <div className="rounded-ft-lg border border-ft-border-faint">
+          <Header kind="home" title="Workouts" subtitle="Logger" right="gear" />
+          <Header kind="sub" title="Exercise detail" right="skip" />
+          <Header kind="home" title="Collapsed bar" subtitle="hidden" collapsed right="gear" />
+        </div>
+
+        <SectionLabel>Buttons</SectionLabel>
+        <div className="flex flex-wrap items-center gap-2 px-4">
+          <Button kind="primary">Primary</Button>
+          <Button kind="secondary">Secondary</Button>
+          <Button kind="ghost">Ghost</Button>
+          {/* on-bg variants — must stay visible on Blueprint */}
+          <Button kind="ghost" onBg>
+            Ghost on-bg
+          </Button>
+          <Button kind="secondary" onBg>
+            Secondary on-bg
+          </Button>
+        </div>
+
+        <SectionLabel>Card + chips + stamp + stepper</SectionLabel>
+        <div className="px-4">
+          <Card className="p-4">
+            <div className="mb-2 flex items-center justify-between">
+              <span className="font-display text-base text-ft-white">Bench Press</span>
+              <Stamp>PR</Stamp>
+            </div>
+            <div className="flex flex-wrap items-center gap-2">
+              <Chip tone="accent">accent</Chip>
+              <Chip tone="success">success</Chip>
+              <Chip tone="warn">warn</Chip>
+              <Chip tone="danger">danger</Chip>
+              <Chip tone="neutral">neutral</Chip>
+            </div>
+            <div className="mt-4 flex items-center gap-3">
+              <span className="font-body text-sm text-ft-light">Protein</span>
+              <Stepper value={qty} onChange={setQty} step={5} fmt={(v) => `${v} g`} />
+            </div>
+          </Card>
+        </div>
+
+        {/* On-bg chips — must stay visible on Blueprint */}
+        <SectionLabel>Chips on page bg (on-bg accent)</SectionLabel>
+        <div className="flex flex-wrap items-center gap-2 px-4 pb-8">
+          <Chip tone="accent" onBg>
+            accent on-bg
+          </Chip>
+          <Stamp>on-bg stamp</Stamp>
+        </div>
       </div>
     </div>
   );
