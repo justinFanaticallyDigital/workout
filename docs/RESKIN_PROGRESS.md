@@ -110,6 +110,35 @@ targets checked), nav hidden on every full-screen step.
 4. **`/welcome` is overloaded** — index = tier landing (pre); `[type]/[id]` =
    post-purchase. Distinct routes, no collision.
 
+## Live-testing fixes
+
+- **Bottom nav clearance.** The nav is `position: fixed; bottom: 0` (verified in
+  compiled CSS; no transform/filter ancestor traps it) — it is NOT in-flow.
+  The real bug: the legacy `/gameplan` dashboard cancelled `<main>`'s `pb-24`
+  with `-mb-24`, so its last content sat *behind* the fixed nav ("scroll to the
+  bottom to see it"). Fixed: dashboard root is now `-mx-4 -mt-4` (edge-to-edge
+  top/sides, keeps the bottom clearance). HomeShell/PillarShell pages were
+  always fine (own `fixed inset-0` + internal scroll padding).
+- **Root `/` is tier-aware.** Was a hard server redirect to `/gameplan`. Now a
+  client redirect to `tierHome(tier)` (Logger→/library · Program→/my-program ·
+  Gameplan→/gameplan), reading the persisted tier from localStorage directly so
+  it doesn't race TierProvider hydration.
+
+## Full access + "no programs loaded" — how to handle
+
+- **Tier:** Gameplan is the TierProvider default = full access. Confirm/switch
+  in **Settings → Tier**.
+- **Content:** programs/gameplans exist only after **activating** one
+  (Shelf → Get this plan → Activate = clone a template). Activation needs the 8
+  gameplan templates seeded in the DB. If activate errors *"Template … hasn't
+  been seeded yet"*, run against your `DATABASE_URL` (per CLAUDE.md):
+  ```
+  npx prisma db push
+  npx tsx scripts/add-missing-template-exercises.ts
+  npx tsx scripts/seed-program-templates.ts
+  ```
+  (Requires DB access — cannot be run from this environment.)
+
 ## Deferred / backend-gated (NOT built — would be dead stubs)
 
 - **5.5 real checkout (payment)** — needs billing/Stripe.

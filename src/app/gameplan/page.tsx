@@ -215,7 +215,7 @@ export default function GameplanPage() {
     .slice(0, 3);
 
   return (
-    <div className="bg-ft-bg text-ft-white -mx-4 -my-4 -mb-24 min-h-screen relative">
+    <div className="bg-ft-bg text-ft-white -mx-4 -mt-4 min-h-screen relative">
       {/* SprayDotsLayer — graffiti-only decorative dot field. No-op
           on every other chrome via internal gating. */}
       <SprayDotsLayer seed={3} />
