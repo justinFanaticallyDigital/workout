@@ -1,6 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
-import BottomNav from "@/components/ui/BottomNav";
+import BottomNav from "@/components/v2/BottomNav";
 import { ToastProvider } from "@/components/ui/Toast";
 import SessionProvider from "@/components/SessionProvider";
 import OfflineSyncProvider from "@/components/OfflineSyncProvider";

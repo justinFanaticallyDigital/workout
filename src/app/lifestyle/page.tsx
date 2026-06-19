@@ -13,6 +13,7 @@ import { useTier } from "@/providers/TierProvider";
 import { PillarShell, Header, Card, Chip, Stamp, Button } from "@/components/v2";
 import { railItemsForTier } from "@/components/v2";
 import Link from "next/link";
+import ProgramLifestyleTab from "./_program";
 
 const PREVIEW = [
   { label: "Sleep", value: "7h 20m", color: "bg-ft-push" },
@@ -30,30 +31,9 @@ const FEATURES = [
 export default function LifestylePillarPage() {
   const { tier } = useTier();
 
+  // Program/Gameplan tiers get the real Lifestyle pillar (rail layers + logs).
   if (tier !== "logger") {
-    // Program/Gameplan: real pillar is Cluster 3–4. Honest placeholder for now.
-    return (
-      <PillarShell
-        pillar="lifestyle"
-        activeKey="today"
-        header={<Header kind="home" title="Lifestyle" subtitle={tier} right="gear" />}
-      >
-        <div className="px-4 pt-3">
-          <Card className="px-4 py-4">
-            <Stamp>Lifestyle pillar</Stamp>
-            <div className="mt-1.5 font-display text-base font-bold text-ft-white">Coming together</div>
-            <p className="mt-1 font-body text-xs leading-relaxed text-ft-light">
-              The full Lifestyle pillar (routines, week, today) lands with the Program &
-              Gameplan clusters. Your existing Gameplan lifestyle cards still live under{" "}
-              <Link href="/gameplan" className="text-ft-accent">
-                Gameplan
-              </Link>
-              .
-            </p>
-          </Card>
-        </div>
-      </PillarShell>
-    );
+    return <ProgramLifestyleTab />;
   }
 
   // Logger tier — whole pillar locked; preview + upsell.

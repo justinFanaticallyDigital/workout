@@ -78,6 +78,23 @@ export default function BottomNav() {
     },
   ];
 
+  // Hidden on full-screen flows (own footer / takeover UI) — the single nav
+  // for the whole app (ARCHITECTURE §3). Mounted once, globally, in layout.
+  const hidden =
+    (pathname.match(/^\/log\/[^/]+$/) && pathname !== "/log/library") ||
+    pathname.startsWith("/log/activity/") ||
+    pathname.startsWith("/log/frame/") ||
+    pathname === "/log/stretch-timer" ||
+    pathname === "/nutrition/log" ||
+    pathname === "/library/as-gameplan" ||
+    pathname === "/gameplan/new" ||
+    pathname === "/checkin" ||
+    !!pathname.match(/^\/gameplan\/[^/]+\/planning$/) ||
+    !!pathname.match(/^\/history\/[^/]+$/) ||
+    (!!pathname.match(/^\/exercises\/[^/]+$/) && pathname !== "/exercises/new") ||
+    pathname.startsWith("/canary");
+  if (hidden) return null;
+
   const isActive = (href: string) => pathname === href || pathname.startsWith(href + "/");
 
   const left = slots.slice(0, 2);
@@ -86,7 +103,7 @@ export default function BottomNav() {
   return (
     <>
       <nav
-        className="flex flex-shrink-0 items-stretch border-t border-ft-border-faint bg-ft-surface"
+        className="fixed inset-x-0 bottom-0 z-50 mx-auto flex max-w-[600px] items-stretch border-t border-ft-border-faint bg-ft-surface"
         style={{ paddingBottom: "max(0.5rem, env(safe-area-inset-bottom))" }}
       >
         {left.map((s) => (
