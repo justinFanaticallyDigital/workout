@@ -11,6 +11,8 @@ import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { PillarShell, Header, Card, Button, Chip, Stamp, SectionLabel, Stepper } from "@/components/v2";
 import type { RailKey } from "@/components/v2";
+import { useTier } from "@/providers/TierProvider";
+import PillarGameplanLayer from "@/components/PillarGameplanLayer";
 import { LIFESTYLE_VARIABLES } from "@/lib/goal-engine/lifestyle-variables";
 
 interface Target {
@@ -51,6 +53,7 @@ export default function ProgramLifestyleTab() {
   const [logs, setLogs] = useState<LogRow[]>([]);
   const [activeKey, setActiveKey] = useState<RailKey>("today");
   const [loading, setLoading] = useState(true);
+  const { tier } = useTier();
 
   useEffect(() => {
     let live = true;
@@ -103,7 +106,7 @@ export default function ProgramLifestyleTab() {
   ) : activeKey === "model" ? (
     <RoutineLayer targets={targets} programId={programId} />
   ) : activeKey === "gameplan" ? (
-    <GameplanLocked />
+    tier === "gameplan" ? <PillarGameplanLayer pillar="lifestyle" /> : <GameplanLocked />
   ) : (
     <TodayLayer targets={targets} todayVal={todayVal} onLog={logValue} />
   );
@@ -113,7 +116,7 @@ export default function ProgramLifestyleTab() {
       pillar="lifestyle"
       activeKey={activeKey}
       onSelectRail={setActiveKey}
-      header={<Header kind="home" title="Lifestyle" subtitle="Program" right="gear" />}
+      header={<Header kind="home" title="Lifestyle" subtitle={tier === "gameplan" ? "Gameplan" : "Program"} right="gear" />}
     >
       {layer}
     </PillarShell>

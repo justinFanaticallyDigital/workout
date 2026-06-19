@@ -184,7 +184,9 @@ function CustomizeWizard({
       if (Array.isArray(data.warnings)) {
         for (const w of data.warnings) toast.info(w, 6000);
       }
-      router.push(`/gameplan/${data.programId}`);
+      // Land on the post-purchase welcome so the customize path and the
+      // checkout/activate path converge on one flow (sets tier + first actions).
+      router.push(`/welcome/gameplan/${data.programId}`);
     } catch (err) {
       console.error(err);
       toast.error("Network error");

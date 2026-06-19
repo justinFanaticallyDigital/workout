@@ -105,7 +105,7 @@ export default function MyProgramPage() {
               glyph="◇"
               title="Planning Mode"
               sub="Edit your program · sandbox · diff · undo"
-              href={`/gameplan/${program.id}/planning`}
+              href={`/programs/${program.id}/planning`}
             />
             <ProgramToolRow glyph="⇄" title="Switch active program" sub="Your owned programs" href="/programs" />
           </div>

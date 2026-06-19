@@ -5,15 +5,25 @@
  *
  * Full-screen search → quantity → log flow. Food search reads the shared
  * food catalog (/api/nutrition/foods, a read-only catalog) with a static
- * common-foods fallback so it works even unauthed/offline. The logged meal
- * is written to the LOCAL logger-store (kind:"meal") — never the DB. The
- * Nutrition pillar groups these by section for the day.
+ * common-foods fallback so it works even unauthed/offline.
+ *
+ * Tier-aware write target (§1.4, mirroring the workout logger): the Logger
+ * tier writes the meal to the LOCAL logger-store (kind:"meal"); the Program /
+ * Gameplan tiers POST it to the DB (/api/nutrition/meals, which creates the
+ * FoodItem inline). The Nutrition pillar groups today's meals by section.
  */
 import { Suspense, useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Header, Card, Button, Stamp, Stepper } from "@/components/v2";
 import { useToast } from "@/components/ui/Toast";
+import { useTier } from "@/providers/TierProvider";
 import { saveSession } from "@/lib/logger-store";
+
+/** Map the sheet's meal label (Breakfast/Lunch/Dinner/Snacks) → the DB MealType enum. */
+function mealTypeEnum(label: string): string {
+  const l = label.toLowerCase();
+  return l === "snacks" ? "snack" : l;
+}
 
 export const dynamic = "force-dynamic";
 
@@ -40,6 +50,7 @@ const COMMON_FOODS: Food[] = [
 function MealLoggerInner() {
   const router = useRouter();
   const toast = useToast();
+  const { tier } = useTier();
   const params = useSearchParams();
   const meal = params.get("meal") || "Snacks";
 
@@ -121,26 +132,62 @@ function MealLoggerInner() {
           onClose={() => setPicked(null)}
           onAdd={async (servings) => {
             const kcal = Math.round(picked.calories * servings);
-            await saveSession({
-              kind: "meal",
-              startedAt: Date.now(),
-              finishedAt: Date.now(),
-              data: {
-                mealType: meal,
-                kcal,
-                items: [
-                  {
-                    name: picked.name,
-                    detail: `${servings % 1 === 0 ? servings : servings.toFixed(1)} × ${picked.servingSize}${picked.servingUnit}`,
+            if (tier === "logger") {
+              // Logger tier — local only (§1.4).
+              await saveSession({
+                kind: "meal",
+                startedAt: Date.now(),
+                finishedAt: Date.now(),
+                data: {
+                  mealType: meal,
+                  kcal,
+                  items: [
+                    {
+                      name: picked.name,
+                      detail: `${servings % 1 === 0 ? servings : servings.toFixed(1)} × ${picked.servingSize}${picked.servingUnit}`,
+                    },
+                  ],
+                  macros: {
+                    p: Math.round(picked.protein * servings),
+                    c: Math.round(picked.carbs * servings),
+                    f: Math.round(picked.fat * servings),
                   },
-                ],
-                macros: {
-                  p: Math.round(picked.protein * servings),
-                  c: Math.round(picked.carbs * servings),
-                  f: Math.round(picked.fat * servings),
                 },
-              },
-            });
+              });
+            } else {
+              // Program / Gameplan tier — persist to the DB. The meals API
+              // creates the FoodItem inline from the picked food's macros.
+              try {
+                const res = await fetch("/api/nutrition/meals", {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({
+                    date: new Date().toISOString().slice(0, 10),
+                    mealType: mealTypeEnum(meal),
+                    items: [
+                      {
+                        quantity: servings,
+                        food: {
+                          name: picked.name,
+                          brand: picked.brand ?? null,
+                          servingSize: picked.servingSize,
+                          servingUnit: picked.servingUnit,
+                          calories: picked.calories,
+                          protein: picked.protein,
+                          carbs: picked.carbs,
+                          fat: picked.fat,
+                          source: "custom",
+                        },
+                      },
+                    ],
+                  }),
+                });
+                if (!res.ok) throw new Error(`HTTP ${res.status}`);
+              } catch {
+                toast.error("Couldn't save the meal.");
+                return;
+              }
+            }
             toast.success(`Added to ${meal}`);
             router.push("/nutrition");
           }}

@@ -87,9 +87,16 @@ export default function BottomNav() {
     pathname === "/log/stretch-timer" ||
     pathname === "/nutrition/log" ||
     pathname === "/library/as-gameplan" ||
+    pathname === "/shelf/match" ||
     pathname === "/gameplan/new" ||
     pathname === "/checkin" ||
+    pathname === "/signin" ||
+    pathname === "/welcome" ||
+    pathname === "/checkout" ||
+    !!pathname.match(/^\/welcome\/[^/]+\/[^/]+$/) ||
     !!pathname.match(/^\/gameplan\/[^/]+\/planning$/) ||
+    !!pathname.match(/^\/programs\/[^/]+\/planning$/) ||
+    !!pathname.match(/^\/programs\/[^/]+\/blocks\//) ||
     !!pathname.match(/^\/history\/[^/]+$/) ||
     (!!pathname.match(/^\/exercises\/[^/]+$/) && pathname !== "/exercises/new") ||
     pathname.startsWith("/canary");

@@ -11,6 +11,8 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { PillarShell, Header, Card, Button, Chip, Stamp, SectionLabel } from "@/components/v2";
 import type { RailKey } from "@/components/v2";
+import { useTier } from "@/providers/TierProvider";
+import PillarGameplanLayer from "@/components/PillarGameplanLayer";
 
 interface Target {
   calories: number | null;
@@ -47,6 +49,7 @@ export default function ProgramNutritionTab() {
   const [week, setWeek] = useState<RangeDay[]>([]);
   const [activeKey, setActiveKey] = useState<RailKey>("today");
   const [loading, setLoading] = useState(true);
+  const { tier } = useTier();
 
   useEffect(() => {
     let live = true;
@@ -78,7 +81,7 @@ export default function ProgramNutritionTab() {
   ) : activeKey === "model" ? (
     <ModelLayer target={target} />
   ) : activeKey === "gameplan" ? (
-    <GameplanLocked />
+    tier === "gameplan" ? <PillarGameplanLayer pillar="nutrition" /> : <GameplanLocked />
   ) : (
     <TodayLayer target={target} totals={totals} meals={meals} />
   );
@@ -88,7 +91,7 @@ export default function ProgramNutritionTab() {
       pillar="nutrition"
       activeKey={activeKey}
       onSelectRail={setActiveKey}
-      header={<Header kind="home" title="Nutrition" subtitle="Program" right="gear" />}
+      header={<Header kind="home" title="Nutrition" subtitle={tier === "gameplan" ? "Gameplan" : "Program"} right="gear" />}
     >
       {layer}
     </PillarShell>
@@ -184,7 +187,10 @@ function TodayLayer({ target, totals, meals }: { target: Target | null; totals: 
                 {logged ? (
                   <span className="font-number text-[12.5px] text-ft-light">{items.length} item{items.length === 1 ? "" : "s"}</span>
                 ) : (
-                  <Link href={`/nutrition/diary`} className="font-body text-xs font-bold text-ft-accent">
+                  <Link
+                    href={`/nutrition/log?meal=${type[0].toUpperCase()}${type.slice(1)}`}
+                    className="font-body text-xs font-bold text-ft-accent"
+                  >
                     + Add food
                   </Link>
                 )}
@@ -204,7 +210,7 @@ function TodayLayer({ target, totals, meals }: { target: Target | null; totals: 
       </div>
 
       <div className="px-0 pt-4">
-        <Link href="/nutrition/diary" className="block">
+        <Link href="/nutrition/log" className="block">
           <Button kind="primary" size="lg" fullWidth>
             + Log meal
           </Button>

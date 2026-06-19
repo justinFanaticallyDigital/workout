@@ -10,6 +10,8 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { PillarShell, Header, Card, Button, Chip, Stamp, SectionLabel } from "@/components/v2";
 import type { RailKey } from "@/components/v2";
+import { useTier } from "@/providers/TierProvider";
+import PillarGameplanLayer from "@/components/PillarGameplanLayer";
 import { WeekStrip, setLine, weekOf, type HomeData, type HomeExercise } from "../my-program/_components";
 
 interface ProgramBlock {
@@ -26,6 +28,7 @@ export default function ProgramTrainingTab() {
   const [blocks, setBlocks] = useState<ProgramBlock[]>([]);
   const [activeKey, setActiveKey] = useState<RailKey>("today");
   const [loading, setLoading] = useState(true);
+  const { tier } = useTier();
 
   useEffect(() => {
     let live = true;
@@ -57,7 +60,7 @@ export default function ProgramTrainingTab() {
   ) : activeKey === "model" ? (
     <ProgramLayer program={program} blocks={blocks} block={block} />
   ) : activeKey === "gameplan" ? (
-    <GameplanLocked />
+    tier === "gameplan" ? <PillarGameplanLayer pillar="training" /> : <GameplanLocked />
   ) : (
     <TodayLayer today={today} program={program} block={block} completed={!!home?.todayCompleted} />
   );
@@ -67,7 +70,7 @@ export default function ProgramTrainingTab() {
       pillar="training"
       activeKey={activeKey}
       onSelectRail={setActiveKey}
-      header={<Header kind="home" title="Training" subtitle="Program" right="gear" />}
+      header={<Header kind="home" title="Training" subtitle={tier === "gameplan" ? "Gameplan" : "Program"} right="gear" />}
     >
       {layer}
     </PillarShell>
@@ -242,7 +245,7 @@ function ProgramLayer({
       )}
 
       <div className="mt-4 flex flex-col gap-2">
-        <Link href={`/gameplan/${program.id}/planning`} className="block">
+        <Link href={`/programs/${program.id}/planning`} className="block">
           <div className="flex items-center gap-3 rounded-ft-lg border border-dashed border-ft-border-strong bg-ft-surface px-3.5 py-3">
             <span className="inline-flex h-[34px] w-[34px] flex-shrink-0 items-center justify-center rounded-ft-md bg-ft-accent-faint font-display text-[17px] font-bold text-ft-accent">
               ◇
