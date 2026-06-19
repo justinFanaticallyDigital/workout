@@ -19,7 +19,6 @@ import {
   type ReactNode,
   type UIEvent,
 } from "react";
-import BottomNav from "./BottomNav";
 
 type HeaderCollapse = "auto" | "expanded" | "collapsed";
 
@@ -66,7 +65,8 @@ export default function HomeShell({
       >
         {children}
       </div>
-      {nav ?? <BottomNav />}
+      {/* The single BottomNav is mounted globally in the layout. */}
+      {nav}
     </div>
   );
 }

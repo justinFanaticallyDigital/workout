@@ -29,7 +29,6 @@ import {
 } from "react";
 import { useTier } from "@/providers/TierProvider";
 import type { Tier } from "@/lib/tier";
-import BottomNav from "./BottomNav";
 import {
   PillarRail,
   PillarRailChip,
@@ -115,7 +114,9 @@ export default function PillarShell({
         </div>
       </div>
 
-      {nav ?? <BottomNav />}
+      {/* The single BottomNav is mounted globally in the layout (fixed, z-50),
+          so the shell doesn't render its own. `nav` can still override. */}
+      {nav}
     </div>
   );
 }
