@@ -1052,6 +1052,17 @@ input::placeholder, textarea::placeholder {
   background: linear-gradient(to top, rgb(var(--ft-bg)) 80%, transparent);
 }
 
+/* Safety net: the fixed bottom nav must NEVER receive a `transform`. A
+   transform on a position:fixed element re-bases it to a new containing block
+   (and outright breaks fixed positioning on mobile Chrome), which drops the
+   nav out of the viewport-pinned layer. Theme decorations that tilt surfaces
+   (e.g. graffiti's poster rotation) are scoped to .ft-card, but this guards
+   against any future leak onto the nav regardless of theme. */
+nav.fixed.bottom-0 {
+  transform: none !important;
+}
+
+
 /* Tab transition animation */
 .tab-enter {
   animation: tabFadeIn 200ms ease forwards;
@@ -2029,20 +2040,20 @@ body > * {
   border-top: 3px dashed rgba(255,255,255,0.22);
 }
 /* Alternating poster/sticker rotations — cards feel slapped up on a wall */
-[data-theme="graffiti"] .bg-ft-surface {
+[data-theme="graffiti"] .ft-card {
   box-shadow: 3px 4px 0 rgba(0,0,0,0.4), 5px 6px 12px rgba(0,0,0,0.25);
 }
-[data-theme="graffiti"] .bg-ft-surface:nth-of-type(odd) {
+[data-theme="graffiti"] .ft-card:nth-of-type(odd) {
   transform: rotate(-0.6deg);
 }
-[data-theme="graffiti"] .bg-ft-surface:nth-of-type(even) {
+[data-theme="graffiti"] .ft-card:nth-of-type(even) {
   transform: rotate(0.4deg);
 }
 /* Yellow tape stamp on the top-left of elevated cards (first of type) */
-[data-theme="graffiti"] .bg-ft-surface:first-of-type {
+[data-theme="graffiti"] .ft-card:first-of-type {
   position: relative;
 }
-[data-theme="graffiti"] .bg-ft-surface:first-of-type::before {
+[data-theme="graffiti"] .ft-card:first-of-type::before {
   content: "";
   position: absolute;
   top: -5px;

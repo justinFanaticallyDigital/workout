@@ -161,30 +161,9 @@ export default function ThemedOverlays() {
   }
 
   if (themeId === 'graffiti') {
-    return (
-      <>
-        {/* Tape/sticker tag in top-right corner */}
-        <div
-          aria-hidden="true"
-          style={{
-            position: 'fixed',
-            top: 12,
-            right: 12,
-            zIndex: 4,
-            pointerEvents: 'none',
-            padding: '3px 8px',
-            background: 'rgba(253,202,64,0.85)',
-            color: '#1A1A1A',
-            fontFamily: "'Permanent Marker', cursive",
-            fontSize: 11,
-            transform: 'rotate(8deg)',
-            boxShadow: '2px 2px 0 rgba(0,0,0,0.35)',
-          }}
-        >
-          FRESH
-        </div>
-      </>
-    );
+    // FRESH corner sticker removed — it overlapped header chrome and got in
+    // the way. Graffiti's identity carries through the card tilt + tape stamps.
+    return null;
   }
 
   if (themeId === 'lab') {

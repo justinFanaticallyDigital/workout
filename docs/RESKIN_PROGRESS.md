@@ -112,17 +112,29 @@ targets checked), nav hidden on every full-screen step.
 
 ## Live-testing fixes
 
-- **Bottom nav clearance.** The nav is `position: fixed; bottom: 0` (verified in
-  compiled CSS; no transform/filter ancestor traps it) — it is NOT in-flow.
-  The real bug: the legacy `/gameplan` dashboard cancelled `<main>`'s `pb-24`
-  with `-mb-24`, so its last content sat *behind* the fixed nav ("scroll to the
-  bottom to see it"). Fixed: dashboard root is now `-mx-4 -mt-4` (edge-to-edge
-  top/sides, keeps the bottom clearance). HomeShell/PillarShell pages were
-  always fine (own `fixed inset-0` + internal scroll padding).
-- **Root `/` is tier-aware.** Was a hard server redirect to `/gameplan`. Now a
-  client redirect to `tierHome(tier)` (Logger→/library · Program→/my-program ·
-  Gameplan→/gameplan), reading the persisted tier from localStorage directly so
-  it doesn't race TierProvider hydration.
+- **Bottom nav was breaking on the graffiti theme (root cause of "floating /
+  no nav until end of page").** Graffiti's "poster tilt" decoration applied
+  `transform: rotate()` to every `.bg-ft-surface` element — including the global
+  `BottomNav` (and bottom sheets), which use `bg-ft-surface`. A `transform` on a
+  `position: fixed` element re-bases it to a new containing block and outright
+  **breaks fixed positioning on mobile Chrome**, dropping the nav out of the
+  viewport-pinned layer (anchors under the header on PillarShell pages, at the
+  end of content on the legacy dashboard). Fix: scoped graffiti's poster
+  rotation / shadow / tape rules from `.bg-ft-surface` → `.ft-card` (the actual
+  card hook, matching their intent), and added a safety net
+  `nav.fixed.bottom-0 { transform: none !important }` so no theme decoration can
+  ever break the fixed nav again. This also un-breaks bottom sheets + the rail
+  on graffiti.
+- **Dashboard content clearance.** The legacy `/gameplan` dashboard cancelled
+  `<main>`'s `pb-24` with `-mb-24`; changed to `-mx-4 -mt-4` so its last content
+  clears the nav.
+- **Root `/` is tier-aware.** Client redirect to `tierHome(tier)` (read from
+  localStorage to avoid racing TierProvider hydration) instead of hard-coded
+  `/gameplan`.
+
+> Lesson / invariant: **never put a `transform` on the fixed `BottomNav` or any
+> `position: fixed` sheet.** Theme decorations that tilt/scale must target
+> `.ft-card`, never the broad `.bg-ft-surface`.
 
 ## Full access + "no programs loaded" — how to handle
 
