@@ -42,6 +42,9 @@ export const notebook: ThemeConfig = {
     accentFg: '#B5312A',
     accentFaint: 'rgba(181,49,42,0.10)',
     accentBorder: 'rgba(181,49,42,0.35)',
+    accentOnBg: '#B5312A',
+    accentFaintOnBg: 'rgba(181,49,42,0.10)',
+    accentBorderOnBg: 'rgba(181,49,42,0.35)',
 
     push: '#5A85C7',
     pull: '#6BAA64',

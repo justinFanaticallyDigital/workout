@@ -58,6 +58,15 @@ export interface ThemeConfig {
     accentFaint: string;      // accent as background tint
     accentBorder: string;     // accent as border color
 
+    // On-bg accent family — accent rendered DIRECTLY on the page bg.
+    // Identical to accent/accentFaint/accentBorder for every theme EXCEPT
+    // blueprint (inverted): there the normal accent is white → invisible on
+    // the light page bg, so these flip to a dark, visible navy. Mandatory per
+    // ARCHITECTURE.md §1 ("Never put bare accent-colored chrome on the page bg").
+    accentOnBg: string;
+    accentFaintOnBg: string;
+    accentBorderOnBg: string;
+
     // Movement (constant across themes — but stored per theme for completeness)
     push: string;
     pull: string;

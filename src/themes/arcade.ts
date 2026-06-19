@@ -41,6 +41,9 @@ export const arcade: ThemeConfig = {
     accentFg: '#FF50C8',
     accentFaint: 'rgba(255,80,200,0.15)',
     accentBorder: 'rgba(255,80,200,0.55)',
+    accentOnBg: '#FF50C8',
+    accentFaintOnBg: 'rgba(255,80,200,0.15)',
+    accentBorderOnBg: 'rgba(255,80,200,0.55)',
 
     push: '#00F0FF',
     pull: '#50FF8C',

@@ -42,6 +42,9 @@ export const lab: ThemeConfig = {
     accentFg: '#2563EB',
     accentFaint: '#EFF4FE',
     accentBorder: '#C7D7FB',
+    accentOnBg: '#2563EB',
+    accentFaintOnBg: '#EFF4FE',
+    accentBorderOnBg: '#C7D7FB',
 
     push: '#4A90D9',
     pull: '#5CB85C',

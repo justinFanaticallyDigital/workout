@@ -94,6 +94,10 @@ function writeRuntimeCssVars(theme: ThemeConfig) {
   setRgb('--ft-accent-fg', c.accentFg);
   setRgb('--ft-accent-faint', c.accentFaint);
   setRgb('--ft-accent-border', c.accentBorder);
+  // On-bg accent family (Blueprint-safe — see ARCHITECTURE.md §1)
+  setRgb('--ft-accent-on-bg', c.accentOnBg);
+  setRgb('--ft-accent-faint-on-bg', c.accentFaintOnBg);
+  setRgb('--ft-accent-border-on-bg', c.accentBorderOnBg);
 
   // Movement
   setRgb('--ft-push', c.push);

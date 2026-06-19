@@ -45,6 +45,10 @@ const config: Config = {
           "accent-fg": ftColor("accent-fg"),
           "accent-faint": ftColor("accent-faint"),
           "accent-border": ftColor("accent-border"),
+          // On-bg accent family (Blueprint-safe — see ARCHITECTURE.md §1)
+          "accent-on-bg": ftColor("accent-on-bg"),
+          "accent-faint-on-bg": ftColor("accent-faint-on-bg"),
+          "accent-border-on-bg": ftColor("accent-border-on-bg"),
 
           // Movement
           push: ftColor("push"),

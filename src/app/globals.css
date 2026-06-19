@@ -45,6 +45,13 @@
     --ft-accent-fg: 245 220 60;
     --ft-accent-faint: 245 220 60;
     --ft-accent-border: 245 220 60;
+    /* On-bg accent family — aliases the active theme's accent. Blueprint
+       overrides these to navy (its accent is white → invisible on the light
+       page bg). See ARCHITECTURE.md §1. Runtime ThemeProvider keeps these
+       exact post-hydration; this is the anti-FOUC fallback. */
+    --ft-accent-on-bg: var(--ft-accent);
+    --ft-accent-faint-on-bg: var(--ft-accent-faint);
+    --ft-accent-border-on-bg: var(--ft-accent-border);
     --ft-success: 92 184 92;
     --ft-warn: 240 173 78;
     --ft-danger: 255 80 140;
@@ -460,6 +467,11 @@
     --ft-accent-fg: 250 253 255;
     --ft-accent-faint: 250 253 255;
     --ft-accent-border: 250 253 255;
+    /* FLIP: accent is white → invisible on the light page bg. On-bg accent
+       falls back to navy so accent chrome on the page bg stays visible. */
+    --ft-accent-on-bg: 19 44 82;
+    --ft-accent-faint-on-bg: 19 44 82;
+    --ft-accent-border-on-bg: 19 44 82;
     --ft-text-primary: 250 253 255;
     --ft-text-secondary: 210 225 240;
     --ft-text-tertiary: 144 176 204;
@@ -1014,6 +1026,24 @@ input::placeholder, textarea::placeholder {
   .touch-target {
     min-height: 44px;
     min-width: 44px;
+  }
+
+  /* ── On-bg foreground helper (Blueprint inversion rule, ARCHITECTURE.md §1) ──
+     Any chrome rendered DIRECTLY on the page bg (titles, labels, footnotes,
+     step text — anything NOT inside a Card) carries `ft-on-bg`. Its default
+     text color flips to navy on Blueprint (where `--ft-text-primary` is white
+     and would vanish on the light page). Inside a Card, do NOT use this —
+     normal text-ft-white / text-ft-light tokens are correct there. Pair with
+     the `text-ft-on-bg*` / `*-ft-accent-on-bg` Tailwind utilities for explicit
+     tiers. */
+  .ft-on-bg {
+    color: rgb(var(--ft-text-on-bg));
+  }
+  .ft-on-bg-sec {
+    color: rgb(var(--ft-text-on-bg-sec));
+  }
+  .ft-on-bg-ter {
+    color: rgb(var(--ft-text-on-bg-ter));
   }
 }
 

@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { authCheck } from "@/lib/fetch-helpers";
+import { useTier } from "@/providers/TierProvider";
 
 /**
  * +Log activity-picker bottom sheet. Triggered from the BottomNav
@@ -52,6 +53,7 @@ export default function LogActivitySheet({
   onClose: () => void;
 }) {
   const router = useRouter();
+  const { tier } = useTier();
   const [scheduled, setScheduled] = useState<ScheduledDay | null>(null);
   const [formType, setFormType] = useState<ActivityType | null>(null);
   const [formData, setFormData] = useState({
@@ -128,6 +130,13 @@ export default function LogActivitySheet({
       case "liss":
       case "class":
       case "custom":
+        // §1.4 — on the Logger tier, route to the local full-screen activity
+        // logger (writes to logger-store). Program/Gameplan keep the inline
+        // form that POSTs to the DB (/api/activity-logs).
+        if (tier === "logger") {
+          onClose();
+          return router.push(`/log/activity/${t}`);
+        }
         setFormType(t);
         return;
     }
