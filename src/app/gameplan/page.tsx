@@ -11,7 +11,7 @@ import { EditPlanBtn } from "./_components/EditPlanBtn";
 import { GoalPulse } from "./_components/GoalPulse";
 import { CheckInCard } from "./_components/CheckInCard";
 import { NextActionLogged } from "./_components/NextActionLogged";
-import { SprayDotsLayer, FreshTape } from "./_components/Ornaments";
+import { SprayDotsLayer } from "./_components/Ornaments";
 import { buildDailySeries as engineBuildDailySeries } from "@/lib/goal-engine/series";
 import { feasibilityBand as engineFeasibilityBand } from "@/lib/goal-engine/feasibility";
 import type { GoalKind as EngineGoalKind } from "@/lib/goal-engine/types";
@@ -219,13 +219,6 @@ export default function GameplanPage() {
       {/* SprayDotsLayer — graffiti-only decorative dot field. No-op
           on every other chrome via internal gating. */}
       <SprayDotsLayer seed={3} />
-
-      {/* Floating FRESH stamp — verbatim port of gameplan-active.jsx
-          ScreenMain (lines 2040–2042). Pinned top-right of the
-          training-content strip. */}
-      <div style={{ position: "absolute", top: 102, right: 14, zIndex: 5 }}>
-        <FreshTape rotate={8} size="sm" />
-      </div>
 
       <Header program={home.activeProgram} block={home.activeBlock} />
 
