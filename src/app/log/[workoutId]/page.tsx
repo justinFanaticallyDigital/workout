@@ -5,6 +5,8 @@ import { useRouter } from "next/navigation";
 import { Card, SectionHeader } from "@/components/ui";
 import { useToast } from "@/components/ui/Toast";
 import { addToQueue } from "@/lib/offline-queue";
+import { useTier } from "@/providers/TierProvider";
+import { saveSession, saveFrame } from "@/lib/logger-store";
 import ThemedIcon from "@/components/themed/ThemedIcon";
 import Lane from "./_logger/Lane";
 import SetSheet from "./_logger/SetSheet";
@@ -402,6 +404,7 @@ export default function ActiveWorkoutPage({
 }) {
   const router = useRouter();
   const toast = useToast();
+  const { tier } = useTier();
   const { workoutId } = params;
   const [blockDayId, setBlockDayId] = useState<string>("");
   const [blockId, setBlockId] = useState<string>("");
@@ -816,6 +819,61 @@ export default function ActiveWorkoutPage({
     );
     if (!hasCompletedSets) {
       toast.warn("Complete at least one set before finishing.");
+      return;
+    }
+
+    // §1.4 — Logger (free) tier writes LOCALLY, never the DB. Save the session
+    // to the local logger-store and (optionally) save the shell as a Frame.
+    // Program/Gameplan tiers fall through to the DB path below unchanged.
+    if (tier === "logger") {
+      setFinishing(true);
+      try {
+        const loggedExercises = exercises
+          .filter((ex) => ex.sets.some((s) => s.done && s.weight !== null && s.reps !== null))
+          .map((ex) => ({
+            name: ex.name,
+            exerciseId: ex.exerciseId || undefined,
+            sets: ex.sets
+              .filter((s) => s.done && s.weight !== null && s.reps !== null)
+              .map((s) => ({ weight: s.weight!, reps: s.reps!, rir: s.rir })),
+          }));
+        const name =
+          dayInfo?.name ||
+          workoutNotes.split("\n")[0]?.trim() ||
+          loggedExercises[0]?.name ||
+          "Workout";
+
+        await saveSession({
+          kind: "workout",
+          startedAt: startTime,
+          finishedAt: Date.now(),
+          data: { name, exercises: loggedExercises, notes: workoutNotes || undefined },
+        });
+
+        // 2.5 Save-as-Frame — TODO: replace this confirm/prompt with the
+        // designed finish sheet. Functional today; matches the logger's
+        // existing window.confirm usage.
+        if (typeof window !== "undefined" && window.confirm("Save this workout as a reusable frame?")) {
+          const frameName = window.prompt("Frame name", name)?.trim() || name;
+          await saveFrame({
+            name: frameName,
+            exercises: loggedExercises.map((e) => ({
+              name: e.name,
+              exerciseId: e.exerciseId,
+              targetSets: e.sets.length,
+            })),
+          });
+          toast.success("Saved as frame");
+        }
+
+        localStorage.removeItem(`workout-draft-${workoutId}`);
+        toast.success("Workout saved on this device");
+        router.push("/library");
+      } catch (err) {
+        console.error("Local workout save failed:", err);
+        toast.error("Couldn't save this workout on your device.");
+        setFinishing(false);
+      }
       return;
     }
 

@@ -91,7 +91,7 @@ export default function WorkoutsLibraryPage() {
                   sets={`${f.exercises.length} lift${f.exercises.length === 1 ? "" : "s"}`}
                   equip={relativeDay(f.updatedAt)}
                   count={sessions.filter((s) => s.frameId === f.id).length}
-                  href={`/log/frame-${f.id}`}
+                  href={`/log/frame/${f.id}`}
                 />
               ))}
             </div>

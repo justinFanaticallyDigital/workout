@@ -100,7 +100,7 @@ export default function TrainingPillarPage() {
                     key={f.id}
                     label={f.name}
                     meta={`${f.exercises.length} lift${f.exercises.length === 1 ? "" : "s"} · used ${all.filter((s) => s.frameId === f.id).length}×`}
-                    href={`/log/frame-${f.id}`}
+                    href={`/log/frame/${f.id}`}
                   />
                 ))}
               </div>
