@@ -159,12 +159,11 @@ function PillarRailItem({ item, onSelect }: { item: RailItem; onSelect?: (k: Rai
     <button
       type="button"
       title={item.label}
-      disabled={locked}
-      onClick={() => !locked && onSelect?.(item.key)}
+      onClick={() => onSelect?.(item.key)}
       className={[
-        "relative flex w-full flex-col items-center gap-[5px] px-1 py-3",
+        "relative flex w-full cursor-pointer flex-col items-center gap-[5px] px-1 py-3",
         active ? "bg-ft-accent-faint" : "bg-transparent",
-        locked ? "cursor-default opacity-[0.62]" : "cursor-pointer",
+        locked ? "opacity-[0.62]" : "",
       ].join(" ")}
     >
       {active && (
