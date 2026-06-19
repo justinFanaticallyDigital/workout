@@ -166,9 +166,9 @@ export default async function ShelfDetailPage({
             Compare
           </Button>
         </Link>
-        <Link href={`/gameplan/new/templates/${t.slug}/customize`} className="flex-1">
+        <Link href={`/checkout?type=${type}&slug=${t.slug}`} className="flex-1">
           <Button kind="primary" size="lg" fullWidth>
-            Customize →
+            Get this plan →
           </Button>
         </Link>
       </div>

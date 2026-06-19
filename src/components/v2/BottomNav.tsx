@@ -92,6 +92,8 @@ export default function BottomNav() {
     pathname === "/checkin" ||
     pathname === "/signin" ||
     pathname === "/welcome" ||
+    pathname === "/checkout" ||
+    !!pathname.match(/^\/welcome\/[^/]+\/[^/]+$/) ||
     !!pathname.match(/^\/gameplan\/[^/]+\/planning$/) ||
     !!pathname.match(/^\/programs\/[^/]+\/planning$/) ||
     !!pathname.match(/^\/programs\/[^/]+\/blocks\//) ||
