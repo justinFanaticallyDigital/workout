@@ -89,6 +89,8 @@ export default function BottomNav() {
     pathname === "/library/as-gameplan" ||
     pathname === "/gameplan/new" ||
     pathname === "/checkin" ||
+    pathname === "/signin" ||
+    pathname === "/welcome" ||
     !!pathname.match(/^\/gameplan\/[^/]+\/planning$/) ||
     !!pathname.match(/^\/programs\/[^/]+\/planning$/) ||
     !!pathname.match(/^\/programs\/[^/]+\/blocks\//) ||
