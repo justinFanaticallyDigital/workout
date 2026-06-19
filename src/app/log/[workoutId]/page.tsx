@@ -6,7 +6,7 @@ import { Card, SectionHeader } from "@/components/ui";
 import { useToast } from "@/components/ui/Toast";
 import { addToQueue } from "@/lib/offline-queue";
 import { useTier } from "@/providers/TierProvider";
-import { saveSession, saveFrame } from "@/lib/logger-store";
+import { saveSession, saveFrame, type FrameExercise } from "@/lib/logger-store";
 import ThemedIcon from "@/components/themed/ThemedIcon";
 import Lane from "./_logger/Lane";
 import SetSheet from "./_logger/SetSheet";
@@ -418,6 +418,8 @@ export default function ActiveWorkoutPage({
   const [restored, setRestored] = useState(false);
   const [showPicker, setShowPicker] = useState(false);
   const [swapIndex, setSwapIndex] = useState<number | null>(null);
+  // 2.5 — after a local (Logger-tier) finish, offer Save-as-Frame via a sheet.
+  const [finishFrame, setFinishFrame] = useState<{ name: string; exercises: FrameExercise[] } | null>(null);
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Auto-save to localStorage (debounced 2s). Includes "new-blank" so
@@ -850,25 +852,20 @@ export default function ActiveWorkoutPage({
           data: { name, exercises: loggedExercises, notes: workoutNotes || undefined },
         });
 
-        // 2.5 Save-as-Frame — TODO: replace this confirm/prompt with the
-        // designed finish sheet. Functional today; matches the logger's
-        // existing window.confirm usage.
-        if (typeof window !== "undefined" && window.confirm("Save this workout as a reusable frame?")) {
-          const frameName = window.prompt("Frame name", name)?.trim() || name;
-          await saveFrame({
-            name: frameName,
-            exercises: loggedExercises.map((e) => ({
-              name: e.name,
-              exerciseId: e.exerciseId,
-              targetSets: e.sets.length,
-            })),
-          });
-          toast.success("Saved as frame");
-        }
-
         localStorage.removeItem(`workout-draft-${workoutId}`);
         toast.success("Workout saved on this device");
-        router.push("/library");
+
+        // 2.5 Save-as-Frame — open the finish sheet to optionally save this
+        // shell as a reusable Frame. The sheet owns the navigation to /library.
+        setFinishing(false);
+        setFinishFrame({
+          name,
+          exercises: loggedExercises.map((e) => ({
+            name: e.name,
+            exerciseId: e.exerciseId,
+            targetSets: e.sets.length,
+          })),
+        });
       } catch (err) {
         console.error("Local workout save failed:", err);
         toast.error("Couldn't save this workout on your device.");
@@ -1285,6 +1282,84 @@ export default function ActiveWorkoutPage({
           onFinish={handleFinish}
         />
       )}
+
+      {/* 2.5 — Save-as-Frame finish sheet (Logger tier). */}
+      {finishFrame && (
+        <FinishFrameSheet
+          defaultName={finishFrame.name}
+          exerciseCount={finishFrame.exercises.length}
+          onSave={async (frameName) => {
+            try {
+              await saveFrame({ name: frameName, exercises: finishFrame.exercises });
+              toast.success("Saved as frame");
+            } catch {
+              toast.error("Couldn't save the frame.");
+            }
+            router.push("/library");
+          }}
+          onSkip={() => router.push("/library")}
+        />
+      )}
+    </div>
+  );
+}
+
+/** 2.5 — finish sheet: name + save the just-logged shell as a reusable Frame,
+ *  or skip straight to the library. Local-only (Logger tier). */
+function FinishFrameSheet({
+  defaultName,
+  exerciseCount,
+  onSave,
+  onSkip,
+}: {
+  defaultName: string;
+  exerciseCount: number;
+  onSave: (name: string) => void;
+  onSkip: () => void;
+}) {
+  const [name, setName] = useState(defaultName);
+  const [saving, setSaving] = useState(false);
+  const save = () => {
+    setSaving(true);
+    onSave(name.trim() || defaultName);
+  };
+  return (
+    <div className="fixed inset-0 z-[60] flex flex-col justify-end">
+      <button type="button" aria-label="Skip" className="absolute inset-0 bg-black/50" onClick={onSkip} />
+      <div className="relative rounded-t-ft-lg border-t border-ft-border bg-ft-surface px-4 pb-6 pt-4">
+        <div className="font-display text-lg font-bold tracking-[-0.01em] text-ft-white">Workout saved</div>
+        <p className="mt-1 font-body text-[12.5px] leading-relaxed text-ft-light">
+          Save this shell as a reusable frame to repeat it later, or skip.
+        </p>
+        <label className="mt-3 block font-body text-[11px] font-bold uppercase tracking-[0.08em] text-ft-dim">
+          Frame name
+        </label>
+        <input
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          autoFocus
+          className="mt-1 w-full rounded-ft-md border border-ft-border bg-ft-surface-alt px-3.5 py-2.5 font-body text-sm text-ft-white outline-none placeholder:text-ft-dim"
+        />
+        <p className="mt-1.5 font-body text-[11.5px] text-ft-dim">{exerciseCount} exercises</p>
+        <div className="mt-4 flex gap-2">
+          <button
+            type="button"
+            onClick={onSkip}
+            disabled={saving}
+            className="flex-1 rounded-ft-md border border-ft-border bg-ft-surface-alt py-3 font-body text-sm font-semibold text-ft-white"
+          >
+            Skip
+          </button>
+          <button
+            type="button"
+            onClick={save}
+            disabled={saving}
+            className="flex-1 rounded-ft-md border border-ft-accent bg-ft-accent py-3 font-body text-sm font-semibold text-ft-on-accent disabled:opacity-50"
+          >
+            {saving ? "Saving…" : "Save as frame"}
+          </button>
+        </div>
+      </div>
     </div>
   );
 }

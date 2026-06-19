@@ -195,3 +195,21 @@ export async function saveSession(
 export async function deleteSession(id: string): Promise<void> {
   await removeItem("session", id);
 }
+
+// ── Preferences (singletons) ──
+/** Logger-tier macro targets — set manually (2.7a), stored locally. The
+ *  Program/Gameplan tiers read targets from the plan's NutritionTarget. */
+export interface LocalMacroTarget {
+  calories: number | null;
+  protein: number | null;
+  carbs: number | null;
+  fat: number | null;
+}
+
+export async function getMacroTarget(): Promise<LocalMacroTarget | null> {
+  return getItem<LocalMacroTarget>("prefs", "macro-target");
+}
+
+export async function saveMacroTarget(target: LocalMacroTarget): Promise<void> {
+  await putItem("prefs", "macro-target", target);
+}

@@ -187,7 +187,10 @@ function TodayLayer({ target, totals, meals }: { target: Target | null; totals: 
                 {logged ? (
                   <span className="font-number text-[12.5px] text-ft-light">{items.length} item{items.length === 1 ? "" : "s"}</span>
                 ) : (
-                  <Link href={`/nutrition/diary`} className="font-body text-xs font-bold text-ft-accent">
+                  <Link
+                    href={`/nutrition/log?meal=${type[0].toUpperCase()}${type.slice(1)}`}
+                    className="font-body text-xs font-bold text-ft-accent"
+                  >
                     + Add food
                   </Link>
                 )}
@@ -207,7 +210,7 @@ function TodayLayer({ target, totals, meals }: { target: Target | null; totals: 
       </div>
 
       <div className="px-0 pt-4">
-        <Link href="/nutrition/diary" className="block">
+        <Link href="/nutrition/log" className="block">
           <Button kind="primary" size="lg" fullWidth>
             + Log meal
           </Button>
