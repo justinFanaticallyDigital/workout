@@ -15,7 +15,7 @@ export async function GET(request: NextRequest) {
 
   if (!code) {
     return NextResponse.redirect(
-      `${baseUrl}/settings?fitbit=error&reason=no_code`
+      `${baseUrl}/settings/integrations?fitbit=error&reason=no_code`
     );
   }
 
@@ -23,7 +23,7 @@ export async function GET(request: NextRequest) {
   const clientSecret = process.env.FITBIT_CLIENT_SECRET;
   if (!clientId || !clientSecret) {
     return NextResponse.redirect(
-      `${baseUrl}/settings?fitbit=error&reason=not_configured`
+      `${baseUrl}/settings/integrations?fitbit=error&reason=not_configured`
     );
   }
 
@@ -48,7 +48,7 @@ export async function GET(request: NextRequest) {
       const err = await tokenRes.text();
       console.error("Fitbit token exchange failed:", err);
       return NextResponse.redirect(
-        `${baseUrl}/settings?fitbit=error&reason=token_exchange`
+        `${baseUrl}/settings/integrations?fitbit=error&reason=token_exchange`
       );
     }
 
@@ -85,12 +85,12 @@ export async function GET(request: NextRequest) {
     }
 
     return NextResponse.redirect(
-      `${baseUrl}/settings?fitbit=connected`
+      `${baseUrl}/settings/integrations?fitbit=connected`
     );
   } catch (error) {
     console.error("Fitbit callback error:", error);
     return NextResponse.redirect(
-      `${baseUrl}/settings?fitbit=error&reason=unknown`
+      `${baseUrl}/settings/integrations?fitbit=error&reason=unknown`
     );
   }
 }

@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { requireAuth } from "@/lib/auth-helpers";
+import { prisma } from "@/lib/prisma";
 import crypto from "crypto";
 
 /**
@@ -33,4 +34,20 @@ export async function GET() {
   authUrl.searchParams.set("expires_in", "604800");
 
   return NextResponse.json({ authUrl: authUrl.toString(), state });
+}
+
+/**
+ * DELETE /api/integrations/fitbit
+ * Disconnect Fitbit — removes the stored OAuth account/tokens. Synced metrics
+ * are left in place (they're just historical body/daily data at this point).
+ */
+export async function DELETE() {
+  const [userId, authError] = await requireAuth();
+  if (authError) return authError;
+
+  await prisma.account.deleteMany({
+    where: { userId, provider: "fitbit" },
+  });
+
+  return NextResponse.json({ disconnected: true });
 }
