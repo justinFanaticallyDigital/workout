@@ -14,6 +14,7 @@
  * right: 'gear' (settings) · 'skip' · null
  */
 import type { ReactNode } from "react";
+import { useRouter } from "next/navigation";
 
 interface HeaderProps {
   title: string;
@@ -70,6 +71,11 @@ export default function Header({
   onGear,
   onSkip,
 }: HeaderProps) {
+  const router = useRouter();
+  // Sensible defaults so the chrome works on every screen even when a page
+  // doesn't wire callbacks: the gear always opens Settings; back goes back.
+  const handleGear = onGear ?? (() => router.push("/settings"));
+  const handleBack = onBack ?? (() => router.back());
   return (
     <div
       className={[
@@ -80,7 +86,7 @@ export default function Header({
       <div className="flex min-w-0 items-center gap-2.5">
         {kind === "home" && !collapsed && <Logo />}
         {kind === "sub" && (
-          <IconBtn label="Back" onClick={onBack}>
+          <IconBtn label="Back" onClick={handleBack}>
             ‹
           </IconBtn>
         )}
@@ -102,7 +108,7 @@ export default function Header({
       </div>
 
       {right === "gear" && (
-        <IconBtn label="Settings" onClick={onGear} small={collapsed}>
+        <IconBtn label="Settings" onClick={handleGear} small={collapsed}>
           ⚙
         </IconBtn>
       )}
