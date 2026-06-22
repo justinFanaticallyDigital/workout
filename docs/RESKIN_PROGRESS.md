@@ -110,6 +110,33 @@ targets checked), nav hidden on every full-screen step.
 4. **`/welcome` is overloaded** — index = tier landing (pre); `[type]/[id]` =
    post-purchase. Distinct routes, no collision.
 
+## Root-cause fix: fixed nav broken across themes (NOT theme-specific)
+
+Symptom: bottom nav (and bottom sheets) float mid-page / drop below the fold on
+multiple themes. **Root cause:** theme chrome decorated the broad
+`.bg-ft-surface` *color* utility — which the **fixed** `BottomNav`, bottom
+sheets, and the pillar rail all use — with positioning/transform:
+- `[data-theme="cyberpunk"] .bg-ft-surface { position: relative }` — specificity
+  (0,0,2,0) out-ranks the `.fixed` utility (0,0,1,0), so the nav became
+  `position: relative` and fell into normal flow.
+- `[data-theme="graffiti"] .bg-ft-surface { transform: rotate() }` — a transform
+  on a `position:fixed` element breaks fixed positioning on mobile Chrome.
+- arcade/lab/notebook added bezel/shadow/brackets onto the nav/sheets too.
+
+**Fix (systemic, not per-theme):**
+1. Scoped ALL theme card-chrome from `[data-theme] .bg-ft-surface` →
+   `[data-theme] .ft-card` (the semantic card hook). `.bg-ft-surface` is just a
+   surface *color*; only real cards get card ornamentation. The nav/sheets/rail
+   use the color but are not `.ft-card`, so they're cleanly excluded on every
+   theme. (iron/blueprint already targeted `.ft-card`.)
+2. Added `.ft-card` to the legacy `ui/Card` so legacy cards keep their chrome.
+3. Belt-and-suspenders guard: `nav.fixed.bottom-0 { position: fixed !important;
+   transform: none !important }` so no future rule can re-break it.
+
+**Invariant:** theme decorations (transform/position/::before brackets/tilt)
+MUST target `.ft-card`, never `.bg-ft-surface`. The bottom nav + any
+`position:fixed` sheet must never carry a transform or a position override.
+
 ## Live-testing fixes
 
 - **Bottom nav was breaking on the graffiti theme (root cause of "floating /
