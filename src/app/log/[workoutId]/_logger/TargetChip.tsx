@@ -1,6 +1,5 @@
 "use client";
 
-import { useTheme } from "@/providers/ThemeProvider";
 import { IconTarget } from "./icons";
 
 /**
@@ -21,7 +20,7 @@ export default function TargetChip({
   targetSets: number | null | undefined;
   targetRepRange: string | null | undefined;
 }) {
-  const { chrome } = useTheme();
+  const chrome: string = "atompunk"; // P2 shim — per-theme branches removed in P5
   if (!targetSets || !targetRepRange) return null;
   const isNotebook = chrome === "notebook";
   const isLab = chrome === "lab";

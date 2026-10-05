@@ -1,6 +1,5 @@
 "use client";
 
-import { useTheme } from "@/providers/ThemeProvider";
 import SetCell, { AddSetCell } from "./SetCell";
 import TargetChip from "./TargetChip";
 import { movementCat } from "./types";
@@ -88,7 +87,7 @@ export default function Lane({
   onSwap,
   onRemove,
 }: LaneProps) {
-  const { chrome } = useTheme();
+  const chrome: string = "atompunk"; // P2 shim — per-theme branches removed in P5
   const cat = movementCat(movementPattern);
   // Per the prototype, the rail label uses the most specific muscle name.
   // Fall back chain: primaryMuscle → movementPattern → category → cat key.

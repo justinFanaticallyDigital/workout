@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useTheme } from "@/providers/ThemeProvider";
 import { fmtVolume, formatSec } from "./util";
 
 /**
@@ -40,7 +39,7 @@ export default function FinishBar({
   finishing: boolean;
   onFinish: () => void;
 }) {
-  const { chrome } = useTheme();
+  const chrome: string = "atompunk"; // P2 shim — per-theme branches removed in P5
   const setsPct = setsTotal > 0 ? setsDone / setsTotal : 0;
   const isArcade = chrome === "arcade";
   const isLab = chrome === "lab";

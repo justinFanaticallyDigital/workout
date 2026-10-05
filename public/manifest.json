@@ -1,11 +1,11 @@
 {
   "name": "FitTrack",
   "short_name": "FitTrack",
-  "description": "Personal Fitness Tracking",
+  "description": "Personal training and nutrition tracking",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#1a1a1a",
-  "theme_color": "#1a1a1a",
+  "background_color": "#DCE6E0",
+  "theme_color": "#DCE6E0",
   "icons": [
     {
       "src": "/icon-192.png",

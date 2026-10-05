@@ -1,7 +1,6 @@
 "use client";
 
-import { useTheme } from "@/providers/ThemeProvider";
-import ThemedIcon from "@/components/themed/ThemedIcon";
+import { CheckIcon } from "@/components/kit";
 import { fmtWeight } from "./util";
 import type { MovementCat } from "./types";
 
@@ -59,7 +58,7 @@ export default function SetCell({
   disabled = false,
   onTap,
 }: SetCellProps) {
-  const { chrome } = useTheme();
+  const chrome: string = "atompunk"; // P2 shim — per-theme branches removed in P5
   const filled = done && weight != null;
   const showGhost = !filled && !!(ghost && ghost.weight != null);
   const palette = cellPalette(chrome);
@@ -142,7 +141,7 @@ export default function SetCell({
             display: "inline-flex",
           }}
         >
-          <ThemedIcon name="check" size={dense ? 9 : 11} />
+          <CheckIcon size={dense ? 9 : 11} />
         </span>
       )}
 
@@ -218,7 +217,7 @@ export function AddSetCell({
   onTap: () => void;
   dense?: boolean;
 }) {
-  const { chrome } = useTheme();
+  const chrome: string = "atompunk"; // P2 shim — per-theme branches removed in P5
   const isNotebook = chrome === "notebook";
   return (
     <button

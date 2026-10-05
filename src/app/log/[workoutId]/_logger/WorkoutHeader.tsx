@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import { useTheme } from "@/providers/ThemeProvider";
 
 /**
  * Session header — block/day name + week badge + per-chrome ornament.
@@ -45,7 +44,7 @@ export default function WorkoutHeader({
   /** Optional right-side slot (e.g. workout timer). */
   rightSlot?: React.ReactNode;
 }) {
-  const { chrome } = useTheme();
+  const chrome: string = "atompunk"; // P2 shim — per-theme branches removed in P5
   const wkN = (totalWeeks ?? Math.max(currentWeekIdx + 1, 4));
   const wkOf = `${currentWeekIdx + 1}/${wkN}`;
   const block = (blockName ?? "").trim();

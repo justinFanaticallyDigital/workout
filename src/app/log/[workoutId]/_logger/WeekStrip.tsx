@@ -1,6 +1,5 @@
 "use client";
 
-import { useTheme } from "@/providers/ThemeProvider";
 
 export interface WeekTab {
   /** Zero-indexed position in the block. */
@@ -43,7 +42,7 @@ interface Props {
  *   purely the visual selector.
  */
 export default function WeekStrip({ weeks, selected, onSelect }: Props) {
-  const { chrome } = useTheme();
+  const chrome: string = "atompunk"; // P2 shim — per-theme branches removed in P5
   if (weeks.length === 0) return null;
 
   const styles = themeStyles(chrome);

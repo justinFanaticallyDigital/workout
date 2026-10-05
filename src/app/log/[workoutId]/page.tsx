@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { Card, SectionHeader } from "@/components/ui";
 import { useToast } from "@/components/ui/Toast";
 import { addToQueue } from "@/lib/offline-queue";
-import ThemedIcon from "@/components/themed/ThemedIcon";
+import { XIcon } from "@/components/kit";
 import Lane from "./_logger/Lane";
 import SetSheet from "./_logger/SetSheet";
 import WeekStrip, { type WeekTab } from "./_logger/WeekStrip";
@@ -320,7 +320,7 @@ function ExercisePicker({
             className="text-ft-dim hover:text-ft-light text-lg font-body transition-colors px-1 flex items-center"
             aria-label="Close"
           >
-            <ThemedIcon name="x" size={18} />
+            <XIcon size={18} />
           </button>
         </div>
 

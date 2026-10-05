@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import ThemedRestTimer from "@/components/themed/ThemedRestTimer";
 
 interface StretchItem {
   name: string;
@@ -184,13 +183,8 @@ export default function StretchTimerPage() {
           </p>
         )}
 
-        {/* Timer — style adapts per theme (bar / radial / text-countdown) */}
-        <ThemedRestTimer
-          progress={secondsRemaining / currentItem.durationSeconds}
-          remainingSeconds={secondsRemaining}
-          totalSeconds={currentItem.durationSeconds}
-          className="w-48 mb-6"
-        />
+        {/* Timer — radial countdown */}
+        <RingTimer progress={secondsRemaining / currentItem.durationSeconds} remainingSeconds={secondsRemaining} />
 
         {nextItem && (
           <p className="text-tertiary font-body text-xs">
@@ -222,6 +216,39 @@ export default function StretchTimerPage() {
         >
           Skip
         </button>
+      </div>
+    </div>
+  );
+}
+
+/** Radial countdown: teal arc over a faint track, Oxanium time in the centre. */
+function RingTimer({ progress, remainingSeconds }: { progress: number; remainingSeconds: number }) {
+  const size = 192;
+  const stroke = 8;
+  const r = (size - stroke) / 2;
+  const circ = 2 * Math.PI * r;
+  const clamped = Math.max(0, Math.min(1, progress));
+  const min = Math.floor(remainingSeconds / 60);
+  const sec = remainingSeconds % 60;
+  return (
+    <div className="relative mb-6 flex h-48 w-48 items-center justify-center">
+      <svg width={size} height={size} className="-rotate-90">
+        <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="rgb(var(--ft-border-faint))" strokeWidth={stroke} />
+        <circle
+          cx={size / 2}
+          cy={size / 2}
+          r={r}
+          fill="none"
+          stroke="rgb(var(--ft-accent))"
+          strokeWidth={stroke}
+          strokeLinecap="round"
+          strokeDasharray={circ}
+          strokeDashoffset={circ * (1 - clamped)}
+          style={{ transition: "stroke-dashoffset 1s linear" }}
+        />
+      </svg>
+      <div className="absolute font-data text-[44px] font-bold tabular-nums text-ft-white">
+        {min}:{sec.toString().padStart(2, "0")}
       </div>
     </div>
   );

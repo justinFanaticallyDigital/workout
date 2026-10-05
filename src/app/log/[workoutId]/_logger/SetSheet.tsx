@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useTheme } from "@/providers/ThemeProvider";
 import { fmtWeight } from "./util";
 
 interface SetSheetProps {
@@ -57,7 +56,7 @@ export default function SetSheet({
   onCommit,
   onCancel,
 }: SetSheetProps) {
-  const { chrome } = useTheme();
+  const chrome: string = "atompunk"; // P2 shim — per-theme branches removed in P5
   const isArcade = chrome === "arcade";
   const isLab = chrome === "lab";
   const isNotebook = chrome === "notebook";

@@ -119,7 +119,6 @@ export default function SettingsPage() {
       {/* Nav rows */}
       <SectionLabel>More</SectionLabel>
       <div className="flex flex-col gap-2 px-4">
-        <NavRow href="/settings/theme" label="Theme" sub="Switch visual theme" />
         <NavRow href="/settings/integrations" label="Integrations" sub="Fitbit · Apple Health · Garmin" />
         <NavRow href="/stats" label="Stats" sub="Body · calendar · photos · injuries" />
         <NavRow href="/settings/advanced" label="Advanced" sub="Migrations · debug" />

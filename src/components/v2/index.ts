@@ -13,4 +13,3 @@ export { default as Segmented } from "./Segmented";
 export { default as TextField } from "./TextField";
 export { default as FieldLabel } from "./FieldLabel";
 export { default as HomeShell } from "./HomeShell";
-export { default as BottomNav } from "./BottomNav";
