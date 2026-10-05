@@ -1,6 +1,6 @@
 # FitTrack v2 — Rebuild Implementation Plan
 
-Branch: `claude/beautiful-brown-ne4dgl`. Status: **awaiting approval — nothing built yet.**
+Branch: `claude/beautiful-brown-ne4dgl` → merges into `claude/setup-nextjs-project-p4MRM` (the production branch). Status: **approved; in progress.** Progress is tracked at the bottom of `CLAUDE.md`.
 
 Inputs: `FitTrack v2 — UI Rebuild Spec` (Sep 21), the Claude Design canvas (16 screens,
 `atompunk-kit.jsx` + five `v2-*.jsx` files + handoff README), and `meal_construction_guide_4.pdf`.
