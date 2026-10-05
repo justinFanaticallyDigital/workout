@@ -40,25 +40,24 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "name is required" }, { status: 400 });
   }
 
-  // If creating as active, pause any currently active program
-  const newStatus = body.status ?? "active";
-  if (newStatus === "active") {
-    await prisma.program.updateMany({
-      where: { userId, status: "active" },
-      data: { status: "paused" },
-    });
-  }
+  // Plans are independent sequences: creating one never pauses another.
+  const newStatus = (body.status ?? "active") as ProgramStatus;
 
   const program = await prisma.program.create({
     data: {
       userId,
-      name: body.name,
+      name: body.name.trim(),
       description: body.description ?? null,
-      startDate: body.startDate ? new Date(body.startDate) : null,
+      startDate: body.startDate ? new Date(body.startDate) : new Date(),
       endDate: body.endDate ? new Date(body.endDate) : null,
       durationWeeks: body.durationWeeks ?? null,
       status: newStatus,
+      // Hand-built plans have exactly one block ("Days") the UI never shows.
+      ...(body.createDefaultBlock !== false && {
+        blocks: { create: { name: "Days", blockNumber: 1, status: "active" } },
+      }),
     },
+    include: { blocks: { select: { id: true, name: true, blockNumber: true } } },
   });
 
   return NextResponse.json(program, { status: 201 });

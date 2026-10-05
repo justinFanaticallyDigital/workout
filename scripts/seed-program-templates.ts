@@ -2,7 +2,8 @@
  * Seed program templates into the database.
  *
  * Templates live under a system "template" user account. Each template becomes
- * a Program record that users can clone via POST /api/programs/clone.
+ * a Program record (the "Pre-made" plans on /training/plans) that users clone
+ * via POST /api/programs/clone { templateSlug }.
  *
  * Run this script:
  *   npx tsx scripts/seed-program-templates.ts
@@ -50,27 +51,34 @@ async function main() {
   const templateUser = await ensureTemplateUser();
   console.log(`Template user: ${templateUser.email} (${templateUser.id})\n`);
 
-  // 2. Validate ALL templates first — fail fast if any exercise name doesn't resolve
+  // 2. Resolve every exercise name. Names the library lacks are created as
+  //    library rows (movementPattern from the slot category) unless --no-create,
+  //    in which case the script fails fast and lists them, as it always did.
   const resolver = new ExerciseResolver(prisma);
-  console.log(`Validating ${programTemplates.length} templates against exercise library...`);
+  const create = !process.argv.includes("--no-create");
+  console.log(`Resolving exercise names for ${programTemplates.length} templates (${create ? "creating any the library lacks" : "fail-fast"})...`);
 
   const allMissing: string[] = [];
+  const allCreated: string[] = [];
   for (const template of programTemplates) {
-    const missing = await resolver.validateTemplate(template);
-    if (missing.length > 0) {
-      allMissing.push(...missing);
-    }
+    const { created, missing } = await resolver.ensureTemplateExercises(template, { create });
+    allMissing.push(...missing);
+    allCreated.push(...created);
   }
 
   if (allMissing.length > 0) {
     console.error("\n❌ VALIDATION FAILED — exercise names not found in DB:");
     for (const msg of allMissing) console.error(`   ${msg}`);
     console.error(`\nTotal missing: ${allMissing.length}`);
-    console.error("Fix the template files and re-run. No DB writes have occurred.");
+    console.error("Fix the template files, or re-run without --no-create. No DB writes have occurred.");
     process.exit(1);
   }
-
-  console.log(`✓ All exercise names resolved successfully\n`);
+  if (allCreated.length > 0) {
+    console.log(`\nCreated ${allCreated.length} library exercises the templates needed:`);
+    for (const c of allCreated) console.log(`   + ${c}`);
+    console.log("");
+  }
+  console.log(`✓ All exercise names resolved\n`);
 
   // 3. Seed each template
   for (const template of programTemplates) {

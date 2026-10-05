@@ -21,13 +21,6 @@ export async function PATCH(
   }
 
 
-  // If setting to active, pause any currently active program first
-  if (body.status === "active") {
-    await prisma.program.updateMany({
-      where: { userId, status: "active", id: { not: id } },
-      data: { status: "paused" },
-    });
-  }
 
   const updated = await prisma.program.update({
     where: { id },

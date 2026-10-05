@@ -208,7 +208,7 @@ Tracked per phase of `docs/v2-rebuild-plan.md` §7. Update this list when a phas
 - [x] P0 — CLAUDE.md rewrite, docs archived
 - [x] P1 — gameplan tier / tier model / shelf / engines removed; temporary 4-tab nav
 - [x] P2 — Atompunk tokens, fonts, kit primitives, real BottomNav
-- [ ] P3 — schema additions, seeds, APIs
+- [x] P3 — schema additions, seeds, APIs
 - [ ] P4 — Training tab, day detail, plans list, plan editor
 - [ ] P5 — Logger restyle + frames
 - [ ] P6 — Nutrition home, targets, My Days, Day Builder, plans

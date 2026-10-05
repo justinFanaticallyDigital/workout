@@ -147,6 +147,7 @@ export async function POST(request: NextRequest) {
       protein: body.protein ?? 0,
       carbs: body.carbs ?? 0,
       fat: body.fat ?? 0,
+      saturatedFat: body.saturatedFat ?? null,
       fiber: body.fiber ?? null,
       sugar: body.sugar ?? null,
       sodium: body.sodium ?? null,

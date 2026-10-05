@@ -26,6 +26,51 @@ export interface ResolvedSlot {
   notes?: string;
 }
 
+function normalizeName(s: string): string {
+  return s.toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
+}
+
+/** Equipment is the suffix after the last " - " when it names a known implement. */
+function equipmentFromName(name: string): string | null {
+  const tail = name.split(" - ").pop()?.trim() ?? "";
+  const known = ["Barbell", "Dumbbell", "Kettlebell", "Cable", "Machine", "Band", "Bodyweight", "TRX", "Smith Machine", "Plate-Load", "Plate Lever", "Medicine Ball", "Bench Bodyweight", "Hanging"];
+  const hit = known.find((k) => tail.toLowerCase().includes(k.toLowerCase()));
+  if (hit) return hit === "Bench Bodyweight" || hit === "Hanging" ? "Bodyweight" : hit;
+  if (/band/i.test(name)) return "Band";
+  if (/dumbbell/i.test(name)) return "Dumbbell";
+  if (/kettlebell/i.test(name)) return "Kettlebell";
+  if (/cable/i.test(name)) return "Cable";
+  if (/medicine ball/i.test(name)) return "Medicine Ball";
+  if (/bodyweight|push-up|pull-up|chin-up|jump|crawl/i.test(name)) return "Bodyweight";
+  return null;
+}
+
+/** MovementCategory → the library's movementPattern / primaryMuscle vocabulary (lib/categories.ts). */
+const CATEGORY_META: Record<string, { pattern: string; muscle: string | null }> = {
+  squat: { pattern: "Squat", muscle: "Quadriceps" },
+  hinge: { pattern: "Hip Hinge", muscle: "Hamstrings" },
+  horizontal_push: { pattern: "Horizontal Push", muscle: "Chest" },
+  horizontal_pull: { pattern: "Horizontal Pull", muscle: "Lats" },
+  vertical_push: { pattern: "Vertical Push", muscle: "Shoulders" },
+  vertical_pull: { pattern: "Vertical Pull", muscle: "Lats" },
+  single_leg: { pattern: "Lunge", muscle: "Quadriceps" },
+  lunge: { pattern: "Lunge", muscle: "Quadriceps" },
+  quad: { pattern: "Knee Extension", muscle: "Quadriceps" },
+  hamstring: { pattern: "Knee Flexion", muscle: "Hamstrings" },
+  glute: { pattern: "Hip Extension", muscle: "Glutes" },
+  hip_extension: { pattern: "Hip Extension", muscle: "Glutes" },
+  calf: { pattern: "Plantar Flexion", muscle: "Calves" },
+  bicep: { pattern: "Elbow Flexion", muscle: "Biceps" },
+  tricep: { pattern: "Elbow Extension", muscle: "Triceps" },
+  lateral_delt: { pattern: "Shoulder Isolation", muscle: "Shoulders" },
+  rear_delt: { pattern: "Shoulder Isolation", muscle: "Rear Delts" },
+  front_delt: { pattern: "Shoulder Isolation", muscle: "Shoulders" },
+  core: { pattern: "Core Stability", muscle: "Core" },
+  mobility: { pattern: "Stretch", muscle: null },
+  power: { pattern: "Power", muscle: "Full Body" },
+  conditioning: { pattern: "Cardio", muscle: "Full Body" },
+};
+
 export class ExerciseResolver {
   private cache = new Map<string, { id: string; name: string }>();
   private notFound = new Set<string>();
@@ -41,10 +86,20 @@ export class ExerciseResolver {
     if (this.cache.has(name)) return this.cache.get(name)!;
     if (this.notFound.has(name)) return null;
 
-    const ex = await this.prisma.exercise.findFirst({
-      where: { name, userId: null },
-      select: { id: true, name: true },
-    });
+    // Exact, then case-insensitive, then punctuation-insensitive ("Push-Up - TRX" ≈ "Push Up - TRX").
+    let ex = await this.prisma.exercise.findFirst({ where: { name, userId: null }, select: { id: true, name: true } });
+    if (!ex) {
+      ex = await this.prisma.exercise.findFirst({
+        where: { name: { equals: name, mode: "insensitive" }, userId: null },
+        select: { id: true, name: true },
+      });
+    }
+    if (!ex) {
+      const wanted = normalizeName(name);
+      const all = await this.allLibraryNames();
+      const hit = all.find((e) => normalizeName(e.name) === wanted);
+      if (hit) ex = hit;
+    }
 
     if (ex) {
       this.cache.set(name, ex);
@@ -53,6 +108,64 @@ export class ExerciseResolver {
 
     this.notFound.add(name);
     return null;
+  }
+
+  private libraryNames: { id: string; name: string }[] | null = null;
+  private async allLibraryNames(): Promise<{ id: string; name: string }[]> {
+    if (!this.libraryNames) {
+      this.libraryNames = await this.prisma.exercise.findMany({ where: { userId: null }, select: { id: true, name: true } });
+    }
+    return this.libraryNames;
+  }
+
+  /**
+   * Make sure every exercise a template references exists. Names that don't
+   * resolve are created as library rows (userId null) with a movementPattern
+   * and primaryMuscle derived from the slot's MovementCategory and the
+   * equipment parsed from the name's " - <Equipment>" suffix. Returns what was
+   * created so the seeder can report it. With `create: false` nothing is
+   * written and the missing names are returned instead.
+   */
+  async ensureTemplateExercises(
+    template: ProgramTemplate,
+    opts: { create: boolean },
+  ): Promise<{ created: string[]; missing: string[] }> {
+    const created: string[] = [];
+    const missing: string[] = [];
+    const seen = new Set<string>();
+    for (const day of template.days) {
+      for (let slotIdx = 0; slotIdx < day.slots.length; slotIdx++) {
+        const slot = day.slots[slotIdx];
+        const params = day.perBlockParams.map((bp) => bp[slotIdx]);
+        if (params.every((p) => p && p.sets === 0)) continue;
+        for (const name of [slot.primary, slot.alt1, slot.alt2]) {
+          if (!name || seen.has(name)) continue;
+          seen.add(name);
+          if (await this.resolveOne(name)) continue;
+          if (!opts.create) {
+            missing.push(`[${template.slug} / ${day.name} / slot ${slotIdx + 1}] missing: "${name}"`);
+            continue;
+          }
+          const meta = CATEGORY_META[slot.category] ?? { pattern: "Core Stability", muscle: null };
+          const row = await this.prisma.exercise.create({
+            data: {
+              name,
+              userId: null,
+              isCustom: false,
+              movementPattern: meta.pattern,
+              primaryMuscle: meta.muscle,
+              equipment: equipmentFromName(name),
+            },
+            select: { id: true, name: true },
+          });
+          this.notFound.delete(name);
+          this.cache.set(name, row);
+          this.libraryNames?.push(row);
+          created.push(`${name}  →  ${meta.pattern}${meta.muscle ? " · " + meta.muscle : ""}`);
+        }
+      }
+    }
+    return { created, missing };
   }
 
   /**

@@ -67,6 +67,7 @@ export async function POST(request: NextRequest) {
         startTime: body.startTime ? new Date(body.startTime) : new Date(),
         notes: body.notes ?? null,
         bodyWeight: body.bodyWeight ?? null,
+        frameId: typeof body.frameId === "string" ? body.frameId : null,
         ...(source ? { source: source as "STANDALONE" | "GAMEPLAN" | "SINGLE_LIBRARY" } : {}),
       },
       include: {
