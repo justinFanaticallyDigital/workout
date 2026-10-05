@@ -1,29 +1,64 @@
-import { PlanningStamp } from "@/components/ui/PlanningSection";
-import Link from "next/link";
+"use client";
 
-export const dynamic = "force-dynamic";
+/** Units — stored on this device (localStorage), read by the logger and Stats labels. */
+import { useEffect, useState } from "react";
+import { Card, ScreenHeader, Seg } from "@/components/kit";
 
-export default function SettingsUnitsPlaceholder() {
+type Weight = "lbs" | "kg";
+type Distance = "miles" | "km";
+
+export default function SettingsUnitsPage() {
+  const [weight, setWeight] = useState<Weight>("lbs");
+  const [distance, setDistance] = useState<Distance>("miles");
+  const [ready, setReady] = useState(false);
+
+  useEffect(() => {
+    try {
+      setWeight((localStorage.getItem("ft-weight-unit") as Weight) || "lbs");
+      setDistance((localStorage.getItem("ft-distance-unit") as Distance) || "miles");
+    } catch {
+      /* private mode */
+    }
+    setReady(true);
+  }, []);
+  useEffect(() => {
+    if (!ready) return;
+    try {
+      localStorage.setItem("ft-weight-unit", weight);
+      localStorage.setItem("ft-distance-unit", distance);
+    } catch {
+      /* ignore */
+    }
+  }, [ready, weight, distance]);
+
   return (
-    <div className="min-h-screen bg-ft-bg text-ft-on-bg max-w-2xl mx-auto p-6">
-      <div className="ft-card relative bg-ft-surface border border-ft-border p-5">
-        <div className="absolute top-3 right-3">
-          <PlanningStamp>PLANNED</PlanningStamp>
-        </div>
-        <h1 className="font-display text-3xl text-ft-on-bg tracking-wide leading-tight">
-          Units
-        </h1>
-        <p className="text-ft-on-bg-sec font-body text-sm mt-3 leading-relaxed">
-          Weight (lb / kg), distance (mi / km), and time (12h / 24h)
-          preferences still live inline on the Settings index for now.
-          Split into sub-routes lands in R9.
-        </p>
-        <Link
-          href="/settings"
-          className="mt-3 inline-block font-body text-[12px] uppercase tracking-[0.15em] text-ft-accent border-b border-ft-accent"
-        >
-          Open Settings →
-        </Link>
+    <div className="pb-8">
+      <ScreenHeader title="Units" back={{ href: "/settings", label: "Settings" }} sub="Saved on this device" />
+      <div className="px-5">
+        <Card className="flex flex-col gap-4 px-4 py-4">
+          <div>
+            <div className="t-eyebrow mb-1.5">Weight</div>
+            <Seg
+              options={[
+                { value: "lbs", label: "Pounds" },
+                { value: "kg", label: "Kilograms" },
+              ]}
+              value={weight}
+              onChange={setWeight}
+            />
+          </div>
+          <div>
+            <div className="t-eyebrow mb-1.5">Distance</div>
+            <Seg
+              options={[
+                { value: "miles", label: "Miles" },
+                { value: "km", label: "Kilometres" },
+              ]}
+              value={distance}
+              onChange={setDistance}
+            />
+          </div>
+        </Card>
       </div>
     </div>
   );

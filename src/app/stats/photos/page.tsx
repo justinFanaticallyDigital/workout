@@ -1,10 +1,11 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import Link from "next/link";
-import { Card, SectionHeader, Tag, EmptyState } from "@/components/ui";
+/** Progress photos — gallery by date, add by URL, pick two to compare. */
+import { useEffect, useState } from "react";
+import { Btn, Card, ScreenHeader, Sheet, Stamp } from "@/components/kit";
 import { useToast } from "@/components/ui/Toast";
 import { authCheck } from "@/lib/fetch-helpers";
+import { fmtMonthDay, fmtStamp } from "@/lib/dates";
 
 interface ProgressPhoto {
   id: string;
@@ -15,300 +16,176 @@ interface ProgressPhoto {
 }
 
 const POSE_TYPES = ["front", "side", "back", "custom"];
+const inputCls = "w-full rounded-ft-sm border border-ft-border bg-ft-surface-raised px-3 py-2.5 font-body text-[14px] text-ft-white outline-none placeholder:text-ft-muted focus:border-ft-accent";
+const today = () => new Date().toISOString().slice(0, 10);
 
 export default function ProgressPhotosPage() {
+  const toast = useToast();
   const [photos, setPhotos] = useState<ProgressPhoto[]>([]);
   const [loading, setLoading] = useState(true);
-  const [showForm, setShowForm] = useState(false);
-  const [date, setDate] = useState(new Date().toISOString().split("T")[0]);
+  const [formOpen, setFormOpen] = useState(false);
+  const [date, setDate] = useState(today);
   const [imageUrl, setImageUrl] = useState("");
   const [poseType, setPoseType] = useState("front");
   const [notes, setNotes] = useState("");
   const [saving, setSaving] = useState(false);
-  const toast = useToast();
+  const [compare, setCompare] = useState(false);
+  const [picked, setPicked] = useState<ProgressPhoto[]>([]);
 
-  // Comparison state
-  const [compareMode, setCompareMode] = useState(false);
-  const [compareLeft, setCompareLeft] = useState<ProgressPhoto | null>(null);
-  const [compareRight, setCompareRight] = useState<ProgressPhoto | null>(null);
-
-  const fetchPhotos = () => {
+  const fetchPhotos = () =>
     fetch("/api/progress/photos")
       .then(authCheck)
       .then((res) => res.json())
-      .then((data) => {
-        setPhotos(data.photos ?? []);
-        setLoading(false);
-      })
-      .catch(() => setLoading(false));
-  };
-
+      .then((data) => setPhotos(data.photos ?? []))
+      .catch(() => undefined)
+      .finally(() => setLoading(false));
   useEffect(() => {
     fetchPhotos();
   }, []);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!imageUrl.trim()) return;
+  const save = async () => {
+    if (!imageUrl.trim() || saving) return;
     setSaving(true);
     try {
-      const res = await fetch("/api/progress/photos", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          date,
-          imageUrl: imageUrl.trim(),
-          poseType,
-          notes: notes.trim() || null,
-        }),
-      });
-      if (!res.ok) throw new Error("Failed");
-      setShowForm(false);
+      const res = await fetch("/api/progress/photos", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ date, imageUrl: imageUrl.trim(), poseType, notes: notes.trim() || null }) });
+      if (!res.ok) throw new Error();
+      setFormOpen(false);
       setImageUrl("");
       setNotes("");
       setPoseType("front");
-      fetchPhotos();
+      toast.success("Photo added");
+      await fetchPhotos();
     } catch {
-      toast.error("Failed to save photo.");
+      toast.error("Couldn't save the photo.");
     }
     setSaving(false);
   };
 
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-ft-bg flex items-center justify-center">
-        <p className="text-ft-dim font-body text-sm">Loading...</p>
-      </div>
-    );
-  }
+  const togglePick = (p: ProgressPhoto) => {
+    setPicked((cur) => (cur.some((x) => x.id === p.id) ? cur.filter((x) => x.id !== p.id) : cur.length >= 2 ? [cur[1], p] : [...cur, p]));
+  };
+  const [a, b] = picked;
+  const daysApart = a && b ? Math.abs(Math.round((new Date(b.date).getTime() - new Date(a.date).getTime()) / 86_400_000)) : null;
 
   return (
-    <div className="min-h-screen bg-ft-bg p-6 max-w-4xl mx-auto space-y-6">
-      <Link
-        href="/progress"
-        className="inline-flex items-center gap-1.5 text-ft-dim text-sm font-body hover:text-ft-light transition-colors mb-2"
-      >
-        <span>&larr;</span>
-        <span>Progress</span>
-      </Link>
-      <div>
-        <h1 className="text-2xl font-body font-bold text-ft-white tracking-wide">
-          Progress Photos
-        </h1>
-        <p className="text-ft-dim text-sm font-body mt-1">
-          Visual progress over time
-        </p>
+    <div className="pb-8">
+      <ScreenHeader
+        title="Photos"
+        back={{ href: "/stats", label: "Stats" }}
+        sub={loading ? undefined : `${photos.length} ${photos.length === 1 ? "photo" : "photos"}`}
+        right={
+          <div className="flex gap-1.5">
+            {photos.length >= 2 && (
+              <Btn kind={compare ? "primary" : "ghost"} small onClick={() => { setCompare((c) => !c); setPicked([]); }}>
+                {compare ? "Done" : "Compare"}
+              </Btn>
+            )}
+            <Btn small onClick={() => setFormOpen(true)}>
+              + Add
+            </Btn>
+          </div>
+        }
+      />
+      <div className="flex flex-col gap-3 px-5">
+        {compare && (
+          <Card className="px-4 py-3.5">
+            <div className="t-eyebrow mb-2">{picked.length < 2 ? `Pick ${picked.length === 0 ? "two photos" : "one more"}` : `${daysApart} days apart`}</div>
+            <div className="grid grid-cols-2 gap-3">
+              {[a, b].map((p, i) => (
+                <div key={i} className="overflow-hidden rounded-ft-md border border-ft-border bg-ft-surface-alt">
+                  {p ? (
+                    <>
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img src={p.url} alt={`${p.poseType} ${p.date}`} className="aspect-[3/4] w-full object-cover" />
+                      <div className="flex items-center justify-between px-2 py-1.5">
+                        <span className="font-data text-[10px] text-ft-dim">{fmtMonthDay(p.date)}</span>
+                        <Stamp tone="muted">{p.poseType}</Stamp>
+                      </div>
+                    </>
+                  ) : (
+                    <div className="flex aspect-[3/4] items-center justify-center font-data text-[10px] uppercase tracking-[0.12em] text-ft-dim">{i === 0 ? "First" : "Second"}</div>
+                  )}
+                </div>
+              ))}
+            </div>
+          </Card>
+        )}
+
+        {!loading && photos.length === 0 && (
+          <Card className="px-4 py-4">
+            <div className="font-data text-[14.5px] font-bold text-ft-white">No photos yet</div>
+            <p className="mt-1 font-body text-[13px] text-ft-light">Add a photo by URL — the same pose on the same day of the month makes the comparison honest.</p>
+            <Btn small className="mt-3" onClick={() => setFormOpen(true)}>
+              + Add photo
+            </Btn>
+          </Card>
+        )}
+
+        <div className="grid grid-cols-3 gap-2">
+          {photos.map((p) => {
+            const idx = picked.findIndex((x) => x.id === p.id);
+            const selected = idx >= 0;
+            const tile = (
+              <>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={p.url} alt={`${p.poseType} ${p.date}`} className="aspect-[3/4] w-full object-cover" />
+                <span className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-ft-cam-bg/70 to-transparent px-1.5 pb-1.5 pt-5 text-left font-data text-[9px] uppercase tracking-[0.1em] text-ft-cam-text">
+                  {fmtStamp(p.date)} · {p.poseType}
+                </span>
+                {selected && <span className="absolute right-1.5 top-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-ft-accent font-data text-[10px] font-bold text-ft-on-accent">{idx + 1}</span>}
+              </>
+            );
+            const cls = ["relative overflow-hidden rounded-ft-md border bg-ft-surface-alt", selected ? "border-ft-accent ring-1 ring-ft-accent" : "border-ft-border"].join(" ");
+            return compare ? (
+              <button key={p.id} type="button" onClick={() => togglePick(p)} className={cls} aria-pressed={selected}>
+                {tile}
+              </button>
+            ) : (
+              <div key={p.id} className={cls} title={p.notes ?? undefined}>
+                {tile}
+              </div>
+            );
+          })}
+        </div>
       </div>
 
-      {/* Comparison Panel */}
-      {compareMode && (compareLeft || compareRight) && (
-        <Card className="mb-2">
-          <div className="flex items-center justify-between mb-3">
-            <h3 className="font-body text-sm font-bold text-ft-white">Side-by-Side Comparison</h3>
-            <button
-              onClick={() => { setCompareMode(false); setCompareLeft(null); setCompareRight(null); }}
-              className="text-ft-dim text-xs font-body hover:text-ft-light"
-            >
-              Close
-            </button>
+      <Sheet
+        open={formOpen}
+        onClose={() => setFormOpen(false)}
+        title="Add photo"
+        footer={
+          <Btn fullWidth onClick={save} disabled={!imageUrl.trim() || saving}>
+            {saving ? "Saving…" : "Add photo"}
+          </Btn>
+        }
+      >
+        <div className="flex flex-col gap-2">
+          <label className="block">
+            <span className="t-eyebrow mb-1 block !text-[9px]">Image URL</span>
+            <input type="url" value={imageUrl} onChange={(e) => setImageUrl(e.target.value)} placeholder="https://…" autoFocus className={inputCls} />
+          </label>
+          <div className="grid grid-cols-2 gap-2">
+            <label className="block">
+              <span className="t-eyebrow mb-1 block !text-[9px]">Date</span>
+              <input type="date" value={date} max={today()} onChange={(e) => setDate(e.target.value)} className={inputCls} />
+            </label>
+            <label className="block">
+              <span className="t-eyebrow mb-1 block !text-[9px]">Pose</span>
+              <select value={poseType} onChange={(e) => setPoseType(e.target.value)} className={inputCls}>
+                {POSE_TYPES.map((p) => (
+                  <option key={p} value={p}>
+                    {p.charAt(0).toUpperCase() + p.slice(1)}
+                  </option>
+                ))}
+              </select>
+            </label>
           </div>
-          <div className="grid grid-cols-2 gap-4">
-            {[compareLeft, compareRight].map((photo, i) => (
-              <div key={i} className="border border-ft-card rounded overflow-hidden">
-                {photo ? (
-                  <>
-                    <div className="aspect-[3/4] bg-ft-surface">
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img src={photo.url} alt={`${photo.poseType} - ${photo.date}`} className="w-full h-full object-cover" />
-                    </div>
-                    <div className="p-2 flex items-center justify-between">
-                      <span className="text-ft-dim text-[10px] font-body">{photo.date}</span>
-                      <Tag>{photo.poseType}</Tag>
-                    </div>
-                  </>
-                ) : (
-                  <div className="aspect-[3/4] bg-ft-surface flex items-center justify-center">
-                    <span className="text-ft-muted text-xs font-body">
-                      Select {i === 0 ? "first" : "second"} photo
-                    </span>
-                  </div>
-                )}
-              </div>
-            ))}
-          </div>
-          {compareLeft && compareRight && (
-            <p className="text-ft-dim text-[10px] font-body text-center mt-2">
-              {Math.round((new Date(compareRight.date).getTime() - new Date(compareLeft.date).getTime()) / (1000 * 60 * 60 * 24))} days apart
-            </p>
-          )}
-        </Card>
-      )}
-
-      <Card>
-        <SectionHeader
-          title="Photo Gallery"
-          subtitle={photos.length > 0 ? `${photos.length} photos` : undefined}
-          action={
-            <div className="flex items-center gap-2">
-              {photos.length >= 2 && (
-                <button
-                  onClick={() => {
-                    setCompareMode(!compareMode);
-                    if (compareMode) { setCompareLeft(null); setCompareRight(null); }
-                  }}
-                  className={`text-xs font-body transition-colors border rounded px-3 py-1 ${
-                    compareMode
-                      ? "text-ft-white border-ft-accent bg-ft-accent/20"
-                      : "text-ft-dim border-ft-border hover:text-ft-light"
-                  }`}
-                >
-                  {compareMode ? "Cancel Compare" : "Compare"}
-                </button>
-              )}
-              <button
-                onClick={() => setShowForm(!showForm)}
-                className="text-ft-dim text-xs font-body hover:text-ft-light transition-colors border border-ft-border rounded px-3 py-1"
-              >
-                + Add Photo
-              </button>
-            </div>
-          }
-        />
-
-        {/* Add Photo Form */}
-        {showForm && (
-          <form onSubmit={handleSubmit} className="mb-4 p-3 bg-ft-bg rounded border border-ft-card">
-            <div className="grid grid-cols-2 gap-3 mb-3">
-              <div>
-                <label className="block text-ft-dim text-xs font-body uppercase tracking-wider mb-1">
-                  Image URL *
-                </label>
-                <input
-                  type="url"
-                  value={imageUrl}
-                  onChange={(e) => setImageUrl(e.target.value)}
-                  placeholder="https://..."
-                  required
-                  className="w-full bg-ft-surface border border-ft-card rounded px-2 py-1.5 text-sm font-body text-ft-white placeholder:text-ft-muted focus:outline-none focus:border-ft-dim transition-colors"
-                />
-              </div>
-              <div>
-                <label className="block text-ft-dim text-xs font-body uppercase tracking-wider mb-1">
-                  Date
-                </label>
-                <input
-                  type="date"
-                  value={date}
-                  onChange={(e) => setDate(e.target.value)}
-                  className="w-full bg-ft-surface border border-ft-card rounded px-2 py-1.5 text-sm font-body text-ft-white focus:outline-none focus:border-ft-dim transition-colors"
-                />
-              </div>
-              <div>
-                <label className="block text-ft-dim text-xs font-body uppercase tracking-wider mb-1">
-                  Pose Type
-                </label>
-                <select
-                  value={poseType}
-                  onChange={(e) => setPoseType(e.target.value)}
-                  className="w-full bg-ft-surface border border-ft-card rounded px-2 py-1.5 text-sm font-body text-ft-white focus:outline-none focus:border-ft-dim transition-colors"
-                >
-                  {POSE_TYPES.map((p) => (
-                    <option key={p} value={p}>{p.charAt(0).toUpperCase() + p.slice(1)}</option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <label className="block text-ft-dim text-xs font-body uppercase tracking-wider mb-1">
-                  Notes
-                </label>
-                <input
-                  type="text"
-                  value={notes}
-                  onChange={(e) => setNotes(e.target.value)}
-                  placeholder="Optional"
-                  className="w-full bg-ft-surface border border-ft-card rounded px-2 py-1.5 text-sm font-body text-ft-white placeholder:text-ft-muted focus:outline-none focus:border-ft-dim transition-colors"
-                />
-              </div>
-            </div>
-            <div className="flex justify-end gap-2">
-              <button
-                type="button"
-                onClick={() => setShowForm(false)}
-                className="px-3 py-1.5 text-ft-dim text-xs font-body hover:text-ft-light"
-              >
-                Cancel
-              </button>
-              <button
-                type="submit"
-                disabled={saving || !imageUrl.trim()}
-                className="bg-ft-white text-ft-bg font-body text-xs font-bold px-4 py-1.5 rounded hover:bg-ft-light transition-colors disabled:opacity-50"
-              >
-                {saving ? "Saving..." : "Add Photo"}
-              </button>
-            </div>
-          </form>
-        )}
-
-        {photos.length === 0 && !showForm ? (
-          <EmptyState
-            icon="&#x1F4F7;"
-            title="No photos uploaded yet"
-            description="Add your first progress photo to track visual changes over time."
-            actionLabel="+ Add Photo"
-            onAction={() => setShowForm(true)}
-          />
-        ) : (
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-            {photos.map((photo) => {
-              const isSelected = compareLeft?.id === photo.id || compareRight?.id === photo.id;
-              return (
-                <div
-                  key={photo.id}
-                  onClick={() => {
-                    if (!compareMode) return;
-                    if (isSelected) {
-                      if (compareLeft?.id === photo.id) setCompareLeft(null);
-                      else setCompareRight(null);
-                      return;
-                    }
-                    if (!compareLeft) setCompareLeft(photo);
-                    else if (!compareRight) setCompareRight(photo);
-                    else setCompareRight(photo);
-                  }}
-                  className={`border rounded overflow-hidden transition-all ${
-                    compareMode ? "cursor-pointer hover:border-ft-accent" : ""
-                  } ${isSelected ? "border-ft-accent ring-1 ring-ft-accent" : "border-ft-card"}`}
-                >
-                  <div className="aspect-[3/4] bg-ft-surface flex items-center justify-center relative">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
-                      src={photo.url}
-                      alt={`${photo.poseType} - ${photo.date}`}
-                      className="w-full h-full object-cover"
-                    />
-                    {isSelected && (
-                      <div className="absolute top-2 right-2 bg-ft-accent text-ft-bg w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-body font-bold">
-                        {compareLeft?.id === photo.id ? "1" : "2"}
-                      </div>
-                    )}
-                  </div>
-                  <div className="p-2">
-                    <div className="flex items-center justify-between">
-                      <span className="text-ft-dim text-[10px] font-body">{photo.date}</span>
-                      <Tag>{photo.poseType}</Tag>
-                    </div>
-                    {photo.notes && (
-                      <p className="text-ft-muted text-[10px] font-body mt-1 truncate">
-                        {photo.notes}
-                      </p>
-                    )}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        )}
-      </Card>
+          <label className="block">
+            <span className="t-eyebrow mb-1 block !text-[9px]">Notes</span>
+            <input value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Optional" className={inputCls} />
+          </label>
+        </div>
+      </Sheet>
     </div>
   );
 }

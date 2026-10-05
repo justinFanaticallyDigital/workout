@@ -10,12 +10,7 @@ import { usePathname } from "next/navigation";
 import type { ReactNode } from "react";
 
 const LEGACY_PADDED: RegExp[] = [
-  /^\/exercises(\/|$)/,
-  /^\/history$/,
-  /^\/stats\/(body|photos|calendar|injuries)(\/|$)/,
-  /^\/nutrition\/diary/,
-  /^\/settings\/units/,
-  /^\/log\/stretch-timer/,
+  /^\/stats\/calendar(\/|$)/,
 ];
 
 export default function MainFrame({ children }: { children: ReactNode }) {

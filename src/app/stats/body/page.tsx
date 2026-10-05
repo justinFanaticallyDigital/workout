@@ -1,21 +1,12 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
-import Link from "next/link";
-import { Card, SectionHeader } from "@/components/ui";
+/** Body metrics — weight and body-fat entries with a trend, logged by hand or synced from Fitbit. */
+import { useEffect, useMemo, useState } from "react";
+import { Btn, Card, ScreenHeader, Seg, Sheet, Stamp, StatCard, TrendLine } from "@/components/kit";
 import { useToast } from "@/components/ui/Toast";
 import { authCheck } from "@/lib/fetch-helpers";
-import { chartTheme } from "@/lib/theme";
-import FitbitIcon from "@/components/ui/FitbitIcon";
-import {
-  LineChart,
-  Line,
-  XAxis,
-  YAxis,
-  Tooltip,
-  ResponsiveContainer,
-  Legend,
-} from "recharts";
+import { fmtMonthDay } from "@/lib/dates";
+import { fmtNum, monthLabels } from "@/lib/stats";
 
 interface WeightEntry {
   id: string;
@@ -26,357 +17,157 @@ interface WeightEntry {
   notes: string | null;
 }
 
+const inputCls = "w-full rounded-ft-sm border border-ft-border bg-ft-surface-raised px-3 py-2.5 font-data text-[14px] text-ft-white outline-none placeholder:text-ft-muted focus:border-ft-accent";
+const today = () => new Date().toISOString().slice(0, 10);
+
 export default function BodyMetricsPage() {
+  const toast = useToast();
   const [entries, setEntries] = useState<WeightEntry[]>([]);
   const [loading, setLoading] = useState(true);
-  const [showForm, setShowForm] = useState(false);
-  const [date, setDate] = useState(new Date().toISOString().split("T")[0]);
+  const [mode, setMode] = useState<"weight" | "bodyfat">("weight");
+  const [formOpen, setFormOpen] = useState(false);
+  const [date, setDate] = useState(today);
   const [weight, setWeight] = useState("");
   const [bodyFat, setBodyFat] = useState("");
   const [notes, setNotes] = useState("");
   const [saving, setSaving] = useState(false);
-  const [chartMode, setChartMode] = useState<"weight" | "bodyfat" | "both">("weight");
-  const toast = useToast();
-  const ct = useMemo(() => chartTheme(), []);
 
-  const fetchEntries = () => {
+  const fetchEntries = () =>
     fetch("/api/progress/weight")
       .then(authCheck)
       .then((res) => res.json())
-      .then((data) => {
-        setEntries(data.entries ?? []);
-        setLoading(false);
-      })
-      .catch(() => setLoading(false));
-  };
-
+      .then((data) => setEntries((data.entries ?? []).map((e: WeightEntry) => ({ ...e, weight: e.weight == null ? null : Number(e.weight), bodyFatPct: e.bodyFatPct == null ? null : Number(e.bodyFatPct) }))))
+      .catch(() => undefined)
+      .finally(() => setLoading(false));
   useEffect(() => {
     fetchEntries();
   }, []);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!weight) return;
+  const save = async () => {
+    if (!weight || saving) return;
     setSaving(true);
     try {
-      const res = await fetch("/api/progress/weight", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          date,
-          weight: parseFloat(weight),
-          bodyFatPct: bodyFat ? parseFloat(bodyFat) : null,
-          notes: notes.trim() || null,
-        }),
-      });
-      if (!res.ok) throw new Error("Failed");
-      setShowForm(false);
+      const res = await fetch("/api/progress/weight", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ date, weight: parseFloat(weight), bodyFatPct: bodyFat ? parseFloat(bodyFat) : null, notes: notes.trim() || null }) });
+      if (!res.ok) throw new Error();
+      setFormOpen(false);
       setWeight("");
       setBodyFat("");
       setNotes("");
-      setDate(new Date().toISOString().split("T")[0]);
-      fetchEntries();
+      setDate(today());
+      toast.success("Logged");
+      await fetchEntries();
     } catch {
-      toast.error("Failed to log weight.");
+      toast.error("Couldn't log the entry.");
     }
     setSaving(false);
   };
 
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-ft-bg flex items-center justify-center">
-        <p className="text-ft-dim font-body text-sm">Loading...</p>
-      </div>
-    );
-  }
-
-  const chartData = entries
-    .filter((e) => e.weight || e.bodyFatPct)
-    .map((e) => ({
-      date: e.date,
-      weight: e.weight,
-      bodyFat: e.bodyFatPct,
-    }));
-
+  // Entries arrive oldest → newest.
+  const series = useMemo(() => {
+    const rows = entries.filter((e) => (mode === "weight" ? e.weight != null : e.bodyFatPct != null)).slice(-40);
+    return { pts: rows.map((e) => (mode === "weight" ? Number(e.weight) : Number(e.bodyFatPct))), labels: monthLabels(rows.map((e) => new Date(e.date))), first: rows[0], last: rows[rows.length - 1] };
+  }, [entries, mode]);
   const hasBodyFat = entries.some((e) => e.bodyFatPct != null);
-  const hasFitbitData = entries.some((e) => e.source === "fitbit");
-
-  const latestWeight = entries.length > 0 ? entries[entries.length - 1]?.weight : null;
-  const firstWeight = entries.length > 0 ? entries[0]?.weight : null;
-  const weightChange = latestWeight && firstWeight ? (latestWeight - firstWeight).toFixed(1) : null;
-
-  const latestBf = [...entries].reverse().find((e) => e.bodyFatPct)?.bodyFatPct;
-  const firstBf = entries.find((e) => e.bodyFatPct)?.bodyFatPct;
-  const bfChange = latestBf && firstBf ? (latestBf - firstBf).toFixed(1) : null;
+  const latest = entries.length ? entries[entries.length - 1] : null;
+  const change = series.pts.length > 1 ? series.pts[series.pts.length - 1] - series.pts[0] : null;
+  const unit = mode === "weight" ? "lb" : "%";
 
   return (
-    <div className="min-h-screen bg-ft-bg p-6 max-w-4xl mx-auto space-y-6">
-      <Link
-        href="/progress"
-        className="inline-flex items-center gap-1.5 text-ft-dim text-sm font-body hover:text-ft-light transition-colors mb-2"
-      >
-        <span>&larr;</span>
-        <span>Progress</span>
-      </Link>
-      <div>
-        <h1 className="text-2xl font-body font-bold text-ft-white tracking-wide">
-          Body Metrics
-        </h1>
-        <p className="text-ft-dim text-sm font-body mt-1">
-          Track weight, measurements, and body composition
-          {hasFitbitData && (
-            <span className="inline-flex items-center gap-1 ml-2 text-[#00B0B9]">
-              <FitbitIcon size={12} color="#00B0B9" /> Fitbit synced
-            </span>
-          )}
-        </p>
-      </div>
-
-      {/* Charts */}
-      <Card>
-        <SectionHeader
-          title="Trends"
-          action={
-            <div className="flex items-center gap-2">
-              {hasBodyFat && (
-                <div className="flex bg-ft-bg rounded border border-ft-card overflow-hidden">
-                  {(["weight", "bodyfat", "both"] as const).map((mode) => (
-                    <button
-                      key={mode}
-                      onClick={() => setChartMode(mode)}
-                      className={`px-2 py-1 text-[10px] font-body transition-colors ${
-                        chartMode === mode
-                          ? "bg-ft-card text-ft-white"
-                          : "text-ft-muted hover:text-ft-dim"
-                      }`}
-                    >
-                      {mode === "weight" ? "Weight" : mode === "bodyfat" ? "Body Fat" : "Both"}
-                    </button>
-                  ))}
-                </div>
-              )}
-              <button
-                onClick={() => setShowForm(!showForm)}
-                className="text-ft-dim text-xs font-body hover:text-ft-light transition-colors border border-ft-border rounded px-3 py-1"
-              >
-                + Log
-              </button>
-            </div>
+    <div className="pb-8">
+      <ScreenHeader
+        title="Body metrics"
+        back={{ href: "/stats", label: "Stats" }}
+        sub={loading ? undefined : `${entries.length} ${entries.length === 1 ? "entry" : "entries"}${entries.some((e) => e.source === "fitbit") ? " · Fitbit synced" : ""}`}
+        right={
+          <Btn small onClick={() => setFormOpen(true)}>
+            + Log
+          </Btn>
+        }
+      />
+      <div className="flex flex-col gap-3 px-5">
+        <StatCard
+          label="Trend"
+          right={
+            hasBodyFat ? (
+              <Seg
+                className="!w-[150px]"
+                options={[
+                  { value: "weight", label: "Weight" },
+                  { value: "bodyfat", label: "BF %" },
+                ]}
+                value={mode}
+                onChange={setMode}
+              />
+            ) : undefined
           }
-        />
-
-        {/* Log Form */}
-        {showForm && (
-          <form onSubmit={handleSubmit} className="mb-4 p-3 bg-ft-bg rounded border border-ft-card">
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-3">
-              <div>
-                <label className="block text-ft-dim text-xs font-body uppercase tracking-wider mb-1">
-                  Date
-                </label>
-                <input
-                  type="date"
-                  value={date}
-                  onChange={(e) => setDate(e.target.value)}
-                  className="w-full bg-ft-surface border border-ft-card rounded px-2 py-1.5 text-sm font-body text-ft-white focus:outline-none focus:border-ft-dim transition-colors"
-                />
-              </div>
-              <div>
-                <label className="block text-ft-dim text-xs font-body uppercase tracking-wider mb-1">
-                  Weight (lbs) *
-                </label>
-                <input
-                  type="number"
-                  step="0.1"
-                  value={weight}
-                  onChange={(e) => setWeight(e.target.value)}
-                  placeholder="185.0"
-                  required
-                  className="w-full bg-ft-surface border border-ft-card rounded px-2 py-1.5 text-sm font-body text-ft-white placeholder:text-ft-muted focus:outline-none focus:border-ft-dim transition-colors"
-                />
-              </div>
-              <div>
-                <label className="block text-ft-dim text-xs font-body uppercase tracking-wider mb-1">
-                  Body Fat %
-                </label>
-                <input
-                  type="number"
-                  step="0.1"
-                  value={bodyFat}
-                  onChange={(e) => setBodyFat(e.target.value)}
-                  placeholder="15.0"
-                  className="w-full bg-ft-surface border border-ft-card rounded px-2 py-1.5 text-sm font-body text-ft-white placeholder:text-ft-muted focus:outline-none focus:border-ft-dim transition-colors"
-                />
-              </div>
-              <div>
-                <label className="block text-ft-dim text-xs font-body uppercase tracking-wider mb-1">
-                  Notes
-                </label>
-                <input
-                  type="text"
-                  value={notes}
-                  onChange={(e) => setNotes(e.target.value)}
-                  placeholder="Optional"
-                  className="w-full bg-ft-surface border border-ft-card rounded px-2 py-1.5 text-sm font-body text-ft-white placeholder:text-ft-muted focus:outline-none focus:border-ft-dim transition-colors"
-                />
-              </div>
+        >
+          {latest && (
+            <div className="mb-2 flex items-baseline gap-1.5">
+              <div className="font-data text-[30px] font-bold leading-none text-ft-white">{mode === "weight" ? (latest.weight != null ? fmtNum(latest.weight) : "—") : series.last?.bodyFatPct != null ? fmtNum(series.last.bodyFatPct) : "—"}</div>
+              <div className="font-data text-[11px] uppercase text-ft-dim">{unit}</div>
             </div>
-            <div className="flex justify-end gap-2">
-              <button
-                type="button"
-                onClick={() => setShowForm(false)}
-                className="px-3 py-1.5 text-ft-dim text-xs font-body hover:text-ft-light"
-              >
-                Cancel
-              </button>
-              <button
-                type="submit"
-                disabled={saving || !weight}
-                className="bg-ft-white text-ft-bg font-body text-xs font-bold px-4 py-1.5 rounded hover:bg-ft-light transition-colors disabled:opacity-50"
-              >
-                {saving ? "Saving..." : "Log"}
-              </button>
+          )}
+          {series.pts.length > 1 ? (
+            <TrendLine pts={series.pts} w={330} h={80} labels={series.labels} fmt={(v) => `${fmtNum(v)} ${unit}`} title={mode === "weight" ? "Body weight" : "Body fat"} />
+          ) : (
+            <div className="font-body text-[12.5px] text-ft-dim">{entries.length === 0 ? "No entries yet — log your first weight." : "Log another entry to see the trend."}</div>
+          )}
+          {change !== null && series.first && (
+            <div className="mt-1.5 font-data text-[11px] text-ft-light">
+              {change > 0 ? "+" : change < 0 ? "−" : ""}
+              {fmtNum(Math.abs(change))} {unit} since {fmtMonthDay(series.first.date)}
             </div>
-          </form>
-        )}
+          )}
+        </StatCard>
 
-        {chartData.length > 1 ? (
-          <div className="h-52">
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={chartData}>
-                <XAxis
-                  dataKey="date"
-                  tick={ct.tick}
-                  tickLine={false}
-                  axisLine={ct.axisLine}
-                />
-                {(chartMode === "weight" || chartMode === "both") && (
-                  <YAxis
-                    yAxisId="weight"
-                    domain={["dataMin - 2", "dataMax + 2"]}
-                    tick={ct.tick}
-                    tickLine={false}
-                    axisLine={ct.axisLine}
-                    width={45}
-                  />
-                )}
-                {(chartMode === "bodyfat" || chartMode === "both") && (
-                  <YAxis
-                    yAxisId="bf"
-                    orientation={chartMode === "both" ? "right" : "left"}
-                    domain={["dataMin - 1", "dataMax + 1"]}
-                    tick={ct.tick}
-                    tickLine={false}
-                    axisLine={ct.axisLine}
-                    width={40}
-                    tickFormatter={(v: number) => `${v}%`}
-                  />
-                )}
-                <Tooltip
-                  contentStyle={ct.tooltipStyle}
-                  labelStyle={ct.labelStyle}
-                />
-                {chartMode === "both" && <Legend />}
-                {(chartMode === "weight" || chartMode === "both") && (
-                  <Line
-                    yAxisId="weight"
-                    type="monotone"
-                    dataKey="weight"
-                    stroke={ct.lineStroke}
-                    strokeWidth={2}
-                    dot={ct.dot}
-                    name="Weight (lbs)"
-                    connectNulls
-                  />
-                )}
-                {(chartMode === "bodyfat" || chartMode === "both") && (
-                  <Line
-                    yAxisId={chartMode === "both" ? "bf" : "bf"}
-                    type="monotone"
-                    dataKey="bodyFat"
-                    stroke="#00B0B9"
-                    strokeWidth={2}
-                    dot={{ fill: "#00B0B9", r: 3 }}
-                    name="Body Fat %"
-                    connectNulls
-                  />
-                )}
-              </LineChart>
-            </ResponsiveContainer>
-          </div>
-        ) : (
-          <div className="flex flex-col items-center justify-center py-12">
-            {entries.length === 0 ? (
-              <>
-                <p className="text-ft-muted text-sm font-body">
-                  No weight entries yet
-                </p>
-                <p className="text-ft-dim text-xs font-body mt-1">
-                  Start logging your body weight to see trends
-                </p>
-              </>
-            ) : (
-              <p className="text-ft-muted text-sm font-body">
-                Log more entries to see the trend chart
-              </p>
-            )}
-          </div>
-        )}
-
-        {/* Summary stats */}
-        {(weightChange || bfChange) && (
-          <div className="mt-3 pt-3 border-t border-ft-border flex gap-6">
-            {weightChange && (
-              <span className="text-ft-dim text-xs font-body">
-                Weight: <span className={`font-bold ${Number(weightChange) > 0 ? "text-ft-warn" : "text-ft-success"}`}>
-                  {Number(weightChange) > 0 ? "+" : ""}{weightChange} lbs
-                </span>
-              </span>
-            )}
-            {bfChange && (
-              <span className="text-ft-dim text-xs font-body">
-                Body Fat: <span className={`font-bold ${Number(bfChange) > 0 ? "text-ft-warn" : "text-ft-success"}`}>
-                  {Number(bfChange) > 0 ? "+" : ""}{bfChange}%
-                </span>
-              </span>
-            )}
-          </div>
-        )}
-      </Card>
-
-      {/* Weight Log Table */}
-      {entries.length > 0 && (<>
-        <div className="section-divider" />
-        <Card>
-          <SectionHeader title="Weight Log" subtitle={`${entries.length} entries`} />
-          <div className="space-y-2 max-h-72 overflow-y-auto">
-            <div className="grid grid-cols-5 gap-2 text-ft-muted text-[10px] font-body uppercase tracking-wider">
-              <span>Date</span>
-              <span>Weight</span>
-              <span>Body Fat</span>
-              <span>Source</span>
-              <span>Notes</span>
-            </div>
-            {[...entries].reverse().map((entry) => (
-              <div key={entry.id} className="grid grid-cols-5 gap-2 text-xs font-body border-t border-ft-border pt-1.5">
-                <span className="text-ft-dim">{entry.date}</span>
-                <span className="text-ft-light">{entry.weight ?? "—"} lbs</span>
-                <span className="text-ft-dim">{entry.bodyFatPct ? `${entry.bodyFatPct}%` : "—"}</span>
-                <span className="flex items-center gap-1">
-                  {entry.source === "fitbit" ? (
-                    <span className="inline-flex items-center gap-1 text-[#00B0B9]">
-                      <FitbitIcon size={10} color="#00B0B9" />
-                      <span className="text-[10px]">Fitbit</span>
-                    </span>
-                  ) : (
-                    <span className="text-ft-muted text-[10px]">Manual</span>
-                  )}
-                </span>
-                <span className="text-ft-muted truncate">{entry.notes ?? "—"}</span>
+        {entries.length > 0 && (
+          <Card band={false} className="px-4 py-1">
+            {[...entries].reverse().map((e, i, arr) => (
+              <div key={e.id} className={["flex items-center gap-2.5 py-2.5", i < arr.length - 1 ? "border-b border-ft-border-faint" : ""].join(" ")}>
+                <div className="w-[56px] font-data text-[11.5px] text-ft-dim">{fmtMonthDay(e.date)}</div>
+                <div className="min-w-0 flex-1">
+                  <div className="font-data text-[13.5px] font-bold text-ft-white">
+                    {e.weight != null ? `${fmtNum(e.weight)} lb` : "—"}
+                    {e.bodyFatPct != null && <span className="ml-2 font-medium text-ft-light">{fmtNum(e.bodyFatPct)}%</span>}
+                  </div>
+                  {e.notes && <div className="truncate font-body text-[11.5px] text-ft-dim">{e.notes}</div>}
+                </div>
+                {e.source !== "manual" && <Stamp tone="muted">{e.source}</Stamp>}
               </div>
             ))}
-          </div>
-        </Card>
-      </>)}
+          </Card>
+        )}
+      </div>
+
+      <Sheet
+        open={formOpen}
+        onClose={() => setFormOpen(false)}
+        title="Log weight"
+        footer={
+          <Btn fullWidth onClick={save} disabled={!weight || saving}>
+            {saving ? "Saving…" : "Log entry"}
+          </Btn>
+        }
+      >
+        <div className="grid grid-cols-2 gap-2">
+          <label className="block">
+            <span className="t-eyebrow mb-1 block !text-[9px]">Date</span>
+            <input type="date" value={date} max={today()} onChange={(e) => setDate(e.target.value)} className={inputCls} />
+          </label>
+          <label className="block">
+            <span className="t-eyebrow mb-1 block !text-[9px]">Weight (lb)</span>
+            <input inputMode="decimal" value={weight} onChange={(e) => setWeight(e.target.value.replace(/[^\d.]/g, ""))} placeholder="185.0" autoFocus className={inputCls} />
+          </label>
+          <label className="block">
+            <span className="t-eyebrow mb-1 block !text-[9px]">Body fat %</span>
+            <input inputMode="decimal" value={bodyFat} onChange={(e) => setBodyFat(e.target.value.replace(/[^\d.]/g, ""))} placeholder="Optional" className={inputCls} />
+          </label>
+          <label className="block">
+            <span className="t-eyebrow mb-1 block !text-[9px]">Notes</span>
+            <input value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Optional" className={inputCls} />
+          </label>
+        </div>
+      </Sheet>
     </div>
   );
 }

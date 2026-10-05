@@ -1,9 +1,11 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { Card, SectionHeader, Tag, EmptyState } from "@/components/ui";
+/** Injury tracker — active issues with follow-up notes, resolved history below. */
+import { useEffect, useState } from "react";
+import { Btn, Card, ScreenHeader, SectionHeader, Sheet, Stamp, type StampTone } from "@/components/kit";
 import { useToast } from "@/components/ui/Toast";
 import { authCheck } from "@/lib/fetch-helpers";
+import { fmtMonthDay } from "@/lib/dates";
 
 interface InjuryNote {
   id: string;
@@ -11,7 +13,6 @@ interface InjuryNote {
   note: string;
   treatment: string | null;
 }
-
 interface Injury {
   id: string;
   bodyPart: string;
@@ -23,333 +24,205 @@ interface Injury {
   notes: InjuryNote[];
 }
 
-const SEVERITY_OPTIONS = ["tweak", "mild", "moderate", "severe"];
-const BODY_PARTS = [
-  "Shoulder", "Elbow", "Wrist", "Hand",
-  "Upper Back", "Lower Back", "Neck",
-  "Hip", "Knee", "Ankle", "Foot",
-  "Chest", "Quad", "Hamstring", "Calf", "Glute",
-  "Bicep", "Tricep", "Forearm", "Shin",
-];
-
-const severityConfig: Record<string, { classes: string; icon: string }> = {
-  tweak: { classes: "bg-ft-dim/20 text-ft-dim", icon: "·" },
-  mild: { classes: "bg-ft-warn/20 text-ft-warn", icon: "▴" },
-  moderate: { classes: "bg-ft-warn/30 text-ft-warn", icon: "▴▴" },
-  severe: { classes: "bg-ft-danger/20 text-ft-danger", icon: "▴▴▴" },
-};
+const SEVERITIES = ["tweak", "mild", "moderate", "severe"];
+const BODY_PARTS = ["Shoulder", "Elbow", "Wrist", "Hand", "Upper Back", "Lower Back", "Neck", "Hip", "Knee", "Ankle", "Foot", "Chest", "Quad", "Hamstring", "Calf", "Glute", "Bicep", "Tricep", "Forearm", "Shin"];
+const SEVERITY_TONE: Record<string, StampTone> = { tweak: "muted", mild: "gold", moderate: "gold", severe: "coral" };
+const inputCls = "w-full rounded-ft-sm border border-ft-border bg-ft-surface-raised px-3 py-2.5 font-body text-[14px] text-ft-white outline-none placeholder:text-ft-muted focus:border-ft-accent";
+const today = () => new Date().toISOString().slice(0, 10);
 
 export default function InjuriesPage() {
+  const toast = useToast();
   const [injuries, setInjuries] = useState<Injury[]>([]);
   const [loading, setLoading] = useState(true);
-  const [showForm, setShowForm] = useState(false);
+  const [formOpen, setFormOpen] = useState(false);
   const [bodyPart, setBodyPart] = useState("Shoulder");
   const [description, setDescription] = useState("");
   const [severity, setSeverity] = useState("tweak");
-  const [onsetDate, setOnsetDate] = useState(new Date().toISOString().split("T")[0]);
+  const [onsetDate, setOnsetDate] = useState(today);
   const [saving, setSaving] = useState(false);
-
-  // Add note state
-  const [noteInjuryId, setNoteInjuryId] = useState<string | null>(null);
+  const [noteFor, setNoteFor] = useState<Injury | null>(null);
   const [noteText, setNoteText] = useState("");
   const [noteTreatment, setNoteTreatment] = useState("");
   const [savingNote, setSavingNote] = useState(false);
-  const toast = useToast();
 
-  const fetchInjuries = () => {
+  const fetchInjuries = () =>
     fetch("/api/injuries")
       .then(authCheck)
       .then((res) => res.json())
-      .then((data) => {
-        setInjuries(data.injuries ?? []);
-        setLoading(false);
-      })
-      .catch(() => setLoading(false));
-  };
-
+      .then((data) => setInjuries(data.injuries ?? []))
+      .catch(() => undefined)
+      .finally(() => setLoading(false));
   useEffect(() => {
     fetchInjuries();
   }, []);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const save = async () => {
+    if (saving) return;
     setSaving(true);
     try {
-      const res = await fetch("/api/injuries", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          bodyPart,
-          description: description.trim() || null,
-          severity,
-          onsetDate,
-        }),
-      });
-      if (!res.ok) throw new Error("Failed");
-      setShowForm(false);
+      const res = await fetch("/api/injuries", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ bodyPart, description: description.trim() || null, severity, onsetDate }) });
+      if (!res.ok) throw new Error();
+      setFormOpen(false);
       setDescription("");
       setSeverity("tweak");
-      fetchInjuries();
+      toast.success("Logged");
+      await fetchInjuries();
     } catch {
-      toast.error("Failed to log injury.");
+      toast.error("Couldn't log the injury.");
     }
     setSaving(false);
   };
-
-  const handleAddNote = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!noteInjuryId || !noteText.trim()) return;
+  const saveNote = async () => {
+    if (!noteFor || !noteText.trim() || savingNote) return;
     setSavingNote(true);
     try {
-      const res = await fetch(`/api/injuries/${noteInjuryId}/notes`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          note: noteText.trim(),
-          treatment: noteTreatment.trim() || null,
-        }),
-      });
-      if (!res.ok) throw new Error("Failed");
-      setNoteInjuryId(null);
+      const res = await fetch(`/api/injuries/${noteFor.id}/notes`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ note: noteText.trim(), treatment: noteTreatment.trim() || null }) });
+      if (!res.ok) throw new Error();
+      setNoteFor(null);
       setNoteText("");
       setNoteTreatment("");
-      fetchInjuries();
+      await fetchInjuries();
     } catch {
-      toast.error("Failed to add note.");
+      toast.error("Couldn't add the note.");
     }
     setSavingNote(false);
   };
 
-  const activeInjuries = injuries.filter((i) => i.status !== "resolved");
-  const resolvedInjuries = injuries.filter((i) => i.status === "resolved");
-
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-ft-bg flex items-center justify-center">
-        <p className="text-ft-dim font-body text-sm">Loading...</p>
-      </div>
-    );
-  }
+  const active = injuries.filter((i) => i.status !== "resolved");
+  const resolved = injuries.filter((i) => i.status === "resolved");
 
   return (
-    <div className="min-h-screen bg-ft-bg p-6 max-w-4xl mx-auto space-y-6">
-      <div>
-        <h1 className="text-2xl font-body font-bold text-ft-white tracking-wide">
-          Injury Tracker
-        </h1>
-        <p className="text-ft-dim text-sm font-body mt-1">
-          Log and monitor injuries, pain levels, and recovery
-        </p>
+    <div className="pb-8">
+      <ScreenHeader
+        title="Injuries"
+        back={{ href: "/stats", label: "Stats" }}
+        sub={loading ? undefined : active.length ? `${active.length} active` : "Nothing active"}
+        right={
+          <Btn small onClick={() => setFormOpen(true)}>
+            + Log
+          </Btn>
+        }
+      />
+      <div className="flex flex-col gap-2.5 px-5">
+        {!loading && active.length === 0 && (
+          <Card className="px-4 py-4">
+            <div className="font-data text-[14.5px] font-bold text-ft-white">No active injuries</div>
+            <p className="mt-1 font-body text-[13px] text-ft-light">Log tweaks as they happen so you can see what recurs.</p>
+          </Card>
+        )}
+        {active.map((inj) => (
+          <Card key={inj.id} className="px-4 py-3.5">
+            <div className="flex items-center gap-2">
+              <div className="min-w-0 flex-1 font-data text-[14.5px] font-bold text-ft-white">{inj.bodyPart}</div>
+              <Stamp tone={SEVERITY_TONE[inj.severity] ?? "muted"}>{inj.severity}</Stamp>
+              {inj.status !== "active" && <Stamp tone="muted">{inj.status}</Stamp>}
+            </div>
+            <div className="mt-0.5 font-data text-[11px] text-ft-dim">Since {fmtMonthDay(inj.onsetDate)}</div>
+            {inj.description && <p className="mt-1.5 font-body text-[13px] text-ft-light">{inj.description}</p>}
+            {inj.notes.length > 0 && (
+              <div className="mt-2.5 flex flex-col gap-1.5 border-t border-ft-border-faint pt-2.5">
+                {inj.notes.map((n) => (
+                  <div key={n.id} className="border-l-2 border-ft-border pl-2.5">
+                    <div className="font-body text-[12.5px] text-ft-white">{n.note}</div>
+                    <div className="font-data text-[10px] text-ft-dim">
+                      {fmtMonthDay(n.date)}
+                      {n.treatment ? ` · ${n.treatment}` : ""}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+            <div className="mt-2.5 flex justify-end">
+              <button type="button" onClick={() => setNoteFor(inj)} className="t-link">
+                + Add note
+              </button>
+            </div>
+          </Card>
+        ))}
+
+        {resolved.length > 0 && (
+          <>
+            <SectionHeader title="Resolved" stamp={String(resolved.length)} className="mt-3 !px-0" />
+            <Card band={false} className="px-4 py-1">
+              {resolved.map((inj, i) => (
+                <div key={inj.id} className={["flex items-center gap-2.5 py-2.5", i < resolved.length - 1 ? "border-b border-ft-border-faint" : ""].join(" ")}>
+                  <div className="min-w-0 flex-1">
+                    <div className="font-data text-[13px] font-semibold text-ft-white">{inj.bodyPart}</div>
+                    <div className="font-data text-[10.5px] text-ft-dim">
+                      {fmtMonthDay(inj.onsetDate)} — {inj.resolvedDate ? fmtMonthDay(inj.resolvedDate) : "?"}
+                    </div>
+                  </div>
+                  <Stamp tone="success">Resolved</Stamp>
+                </div>
+              ))}
+            </Card>
+          </>
+        )}
       </div>
 
-      {/* Active Injuries */}
-      <Card>
-        <SectionHeader
-          title="Active Injuries"
-          subtitle={activeInjuries.length > 0 ? `${activeInjuries.length} active` : undefined}
-          action={
-            <button
-              onClick={() => setShowForm(!showForm)}
-              className="text-ft-dim text-xs font-body hover:text-ft-light transition-colors border border-ft-border rounded px-3 py-1"
-            >
-              + Log Injury
-            </button>
-          }
-        />
+      <Sheet
+        open={formOpen}
+        onClose={() => setFormOpen(false)}
+        title="Log injury"
+        footer={
+          <Btn fullWidth onClick={save} disabled={saving}>
+            {saving ? "Saving…" : "Log injury"}
+          </Btn>
+        }
+      >
+        <div className="grid grid-cols-2 gap-2">
+          <label className="block">
+            <span className="t-eyebrow mb-1 block !text-[9px]">Body part</span>
+            <select value={bodyPart} onChange={(e) => setBodyPart(e.target.value)} className={inputCls}>
+              {BODY_PARTS.map((p) => (
+                <option key={p} value={p}>
+                  {p}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="block">
+            <span className="t-eyebrow mb-1 block !text-[9px]">Severity</span>
+            <select value={severity} onChange={(e) => setSeverity(e.target.value)} className={inputCls}>
+              {SEVERITIES.map((s) => (
+                <option key={s} value={s}>
+                  {s.charAt(0).toUpperCase() + s.slice(1)}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="block">
+            <span className="t-eyebrow mb-1 block !text-[9px]">Onset</span>
+            <input type="date" value={onsetDate} max={today()} onChange={(e) => setOnsetDate(e.target.value)} className={inputCls} />
+          </label>
+          <label className="col-span-2 block">
+            <span className="t-eyebrow mb-1 block !text-[9px]">What happened</span>
+            <input value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Optional" className={inputCls} />
+          </label>
+        </div>
+      </Sheet>
 
-        {/* Add Injury Form */}
-        {showForm && (
-          <form onSubmit={handleSubmit} className="mb-4 p-3 bg-ft-bg rounded border border-ft-card">
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-3">
-              <div>
-                <label className="block text-ft-dim text-xs font-body uppercase tracking-wider mb-1">
-                  Body Part *
-                </label>
-                <select
-                  value={bodyPart}
-                  onChange={(e) => setBodyPart(e.target.value)}
-                  className="w-full bg-ft-surface border border-ft-card rounded px-2 py-1.5 text-sm font-body text-ft-white focus:outline-none focus:border-ft-dim transition-colors"
-                >
-                  {BODY_PARTS.map((p) => (
-                    <option key={p} value={p}>{p}</option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <label className="block text-ft-dim text-xs font-body uppercase tracking-wider mb-1">
-                  Severity
-                </label>
-                <select
-                  value={severity}
-                  onChange={(e) => setSeverity(e.target.value)}
-                  className="w-full bg-ft-surface border border-ft-card rounded px-2 py-1.5 text-sm font-body text-ft-white focus:outline-none focus:border-ft-dim transition-colors"
-                >
-                  {SEVERITY_OPTIONS.map((s) => (
-                    <option key={s} value={s}>{s.charAt(0).toUpperCase() + s.slice(1)}</option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <label className="block text-ft-dim text-xs font-body uppercase tracking-wider mb-1">
-                  Onset Date
-                </label>
-                <input
-                  type="date"
-                  value={onsetDate}
-                  onChange={(e) => setOnsetDate(e.target.value)}
-                  className="w-full bg-ft-surface border border-ft-card rounded px-2 py-1.5 text-sm font-body text-ft-white focus:outline-none focus:border-ft-dim transition-colors"
-                />
-              </div>
-              <div>
-                <label className="block text-ft-dim text-xs font-body uppercase tracking-wider mb-1">
-                  Description
-                </label>
-                <input
-                  type="text"
-                  value={description}
-                  onChange={(e) => setDescription(e.target.value)}
-                  placeholder="What happened?"
-                  className="w-full bg-ft-surface border border-ft-card rounded px-2 py-1.5 text-sm font-body text-ft-white placeholder:text-ft-muted focus:outline-none focus:border-ft-dim transition-colors"
-                />
-              </div>
-            </div>
-            <div className="flex justify-end gap-2">
-              <button
-                type="button"
-                onClick={() => setShowForm(false)}
-                className="px-3 py-1.5 text-ft-dim text-xs font-body hover:text-ft-light"
-              >
-                Cancel
-              </button>
-              <button
-                type="submit"
-                disabled={saving}
-                className="bg-ft-white text-ft-bg font-body text-xs font-bold px-4 py-1.5 rounded hover:bg-ft-light transition-colors disabled:opacity-50"
-              >
-                {saving ? "Saving..." : "Log Injury"}
-              </button>
-            </div>
-          </form>
-        )}
-
-        {activeInjuries.length === 0 && !showForm ? (
-          <EmptyState
-            title="No active injuries"
-            description="Stay healthy — log any issues here to track recovery."
-            actionLabel="+ Log Injury"
-            onAction={() => setShowForm(true)}
-          />
-        ) : (
-          <div className="space-y-3">
-            {activeInjuries.map((injury) => (
-              <div key={injury.id} className="border border-ft-card rounded p-3">
-                <div className="flex items-center justify-between mb-2">
-                  <div className="flex items-center gap-2">
-                    <h3 className="text-ft-white text-sm font-body font-bold">
-                      {injury.bodyPart}
-                    </h3>
-                    <span
-                      className={`text-[10px] font-body font-bold px-2 py-0.5 rounded ${severityConfig[injury.severity]?.classes ?? "text-ft-dim"}`}
-                      role="img"
-                      aria-label={`Severity: ${injury.severity}`}
-                    >
-                      {severityConfig[injury.severity]?.icon ?? "·"} {injury.severity}
-                    </span>
-                    <Tag>{injury.status}</Tag>
-                  </div>
-                  <span className="text-ft-muted text-xs font-body">
-                    {injury.onsetDate}
-                  </span>
-                </div>
-                {injury.description && (
-                  <p className="text-ft-dim text-xs font-body mb-2">
-                    {injury.description}
-                  </p>
-                )}
-
-                {/* Notes */}
-                {injury.notes.length > 0 && (
-                  <div className="mt-2 space-y-1.5">
-                    {injury.notes.map((n) => (
-                      <div key={n.id} className="pl-3 border-l-2 border-ft-card">
-                        <p className="text-ft-light text-xs font-body">{n.note}</p>
-                        {n.treatment && (
-                          <p className="text-ft-muted text-[10px] font-body">Tx: {n.treatment}</p>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                )}
-
-                {/* Add Note */}
-                {noteInjuryId === injury.id ? (
-                  <form onSubmit={handleAddNote} className="mt-2 flex gap-2">
-                    <input
-                      type="text"
-                      value={noteText}
-                      onChange={(e) => setNoteText(e.target.value)}
-                      placeholder="Update note..."
-                      required
-                      className="flex-1 bg-ft-bg border border-ft-card rounded px-2 py-1 text-xs font-body text-ft-white placeholder:text-ft-muted focus:outline-none focus:border-ft-dim"
-                    />
-                    <input
-                      type="text"
-                      value={noteTreatment}
-                      onChange={(e) => setNoteTreatment(e.target.value)}
-                      placeholder="Treatment"
-                      className="w-28 bg-ft-bg border border-ft-card rounded px-2 py-1 text-xs font-body text-ft-white placeholder:text-ft-muted focus:outline-none focus:border-ft-dim"
-                    />
-                    <button
-                      type="submit"
-                      disabled={savingNote}
-                      className="text-ft-success text-xs font-body font-bold px-2"
-                    >
-                      {savingNote ? "..." : "Save"}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setNoteInjuryId(null)}
-                      className="text-ft-dim text-xs font-body px-2"
-                    >
-                      Cancel
-                    </button>
-                  </form>
-                ) : (
-                  <button
-                    onClick={() => setNoteInjuryId(injury.id)}
-                    className="mt-2 text-ft-dim text-[10px] font-body hover:text-ft-light transition-colors"
-                  >
-                    + Add Note
-                  </button>
-                )}
-              </div>
-            ))}
-          </div>
-        )}
-      </Card>
-
-      {/* Resolved Injuries */}
-      {resolvedInjuries.length > 0 && (
-        <Card>
-          <SectionHeader title="Resolved" subtitle={`${resolvedInjuries.length} resolved`} />
-          <div className="space-y-2">
-            {resolvedInjuries.map((injury) => (
-              <div key={injury.id} className="flex items-center justify-between py-2 border-b border-ft-border last:border-0">
-                <div className="flex items-center gap-2">
-                  <span className="text-ft-dim text-xs font-body">{injury.bodyPart}</span>
-                  <span className="text-ft-muted text-[10px] font-body">{injury.severity}</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="text-ft-muted text-[10px] font-body">
-                    {injury.onsetDate} — {injury.resolvedDate ?? "?"}
-                  </span>
-                  <Tag>Resolved</Tag>
-                </div>
-              </div>
-            ))}
-          </div>
-        </Card>
-      )}
+      <Sheet
+        open={noteFor !== null}
+        onClose={() => setNoteFor(null)}
+        title={noteFor ? `Note · ${noteFor.bodyPart}` : ""}
+        footer={
+          <Btn fullWidth onClick={saveNote} disabled={!noteText.trim() || savingNote}>
+            {savingNote ? "Saving…" : "Add note"}
+          </Btn>
+        }
+      >
+        <div className="flex flex-col gap-2">
+          <label className="block">
+            <span className="t-eyebrow mb-1 block !text-[9px]">Update</span>
+            <input value={noteText} onChange={(e) => setNoteText(e.target.value)} placeholder="How does it feel today?" autoFocus className={inputCls} />
+          </label>
+          <label className="block">
+            <span className="t-eyebrow mb-1 block !text-[9px]">Treatment</span>
+            <input value={noteTreatment} onChange={(e) => setNoteTreatment(e.target.value)} placeholder="Optional" className={inputCls} />
+          </label>
+        </div>
+      </Sheet>
     </div>
   );
 }

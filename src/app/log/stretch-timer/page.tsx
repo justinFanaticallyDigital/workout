@@ -1,14 +1,15 @@
 "use client";
 
+/** Stretch timer — the first saved routine, one stretch at a time (bilateral = left then right); logs an ActivityLog on completion. */
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
+import { Btn, Card, ScreenHeader, Stamp } from "@/components/kit";
 
 interface StretchItem {
   name: string;
   durationSeconds: number;
   bilateral: boolean;
 }
-
 interface StretchRoutine {
   id: string;
   name: string;
@@ -26,55 +27,41 @@ export default function StretchTimerPage() {
   const [isComplete, setIsComplete] = useState(false);
   const [totalElapsed, setTotalElapsed] = useState(0);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
-  const startTimeRef = useRef<number>(0);
 
   useEffect(() => {
     fetch("/api/stretch-routines")
       .then((r) => (r.ok ? r.json() : []))
       .then((routines) => {
-        if (routines.length > 0) {
-          setRoutine(routines[0]);
-          setSecondsRemaining(routines[0].items[0]?.durationSeconds || 30);
+        const list = Array.isArray(routines) ? routines : routines.routines ?? [];
+        if (list.length > 0) {
+          setRoutine(list[0]);
+          setSecondsRemaining(list[0].items[0]?.durationSeconds || 30);
         }
       })
-      .catch(() => {})
+      .catch(() => undefined)
       .finally(() => setLoading(false));
   }, []);
 
   const advanceToNext = useCallback(() => {
     if (!routine) return;
-
     const currentItem = routine.items[currentIndex];
-
-    // If bilateral and currently on left, switch to right
     if (currentItem.bilateral && side === "left") {
       setSide("right");
       setSecondsRemaining(currentItem.durationSeconds);
       return;
     }
-
-    // Move to next exercise
     const nextIndex = currentIndex + 1;
     if (nextIndex >= routine.items.length) {
-      // Routine complete
       setIsComplete(true);
       setIsRunning(false);
       if (intervalRef.current) clearInterval(intervalRef.current);
-
-      // Log the activity
       fetch("/api/activity-logs", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          date: new Date().toISOString(),
-          activityType: "STRETCH",
-          durationMin: Math.ceil(totalElapsed / 60),
-          notes: `Completed ${routine.name}: ${routine.items.length} stretches`,
-        }),
-      }).catch(() => {});
+        body: JSON.stringify({ date: new Date().toISOString(), activityType: "STRETCH", durationMin: Math.max(1, Math.ceil(totalElapsed / 60)), notes: `Completed ${routine.name}: ${routine.items.length} stretches` }),
+      }).catch(() => undefined);
       return;
     }
-
     setCurrentIndex(nextIndex);
     setSide("left");
     setSecondsRemaining(routine.items[nextIndex].durationSeconds);
@@ -93,64 +80,53 @@ export default function StretchTimerPage() {
         setTotalElapsed((prev) => prev + 1);
       }, 1000);
     }
-
     return () => {
       if (intervalRef.current) clearInterval(intervalRef.current);
     };
   }, [isRunning, isComplete, advanceToNext]);
 
-  const toggleRunning = () => {
-    if (!isRunning && !startTimeRef.current) {
-      startTimeRef.current = Date.now();
-    }
-    setIsRunning(!isRunning);
-  };
-
-  const skip = () => {
-    advanceToNext();
-  };
+  const header = <ScreenHeader title="Stretch" back={{ href: "/training", label: "Training" }} sub={routine?.name} />;
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="h-16 w-16 bg-ft-surface rounded-full animate-pulse" />
+      <div className="pb-8">
+        {header}
+        <div className="py-16 text-center font-body text-[13px] text-ft-dim">Loading…</div>
       </div>
     );
   }
-
   if (!routine || routine.items.length === 0) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center px-6 text-center">
-        <p className="font-display text-xl text-ft-white mb-2">No Stretch Routine</p>
-        <p className="text-secondary font-body text-sm mb-4">
-          Set up a morning stretch routine to get started.
-        </p>
-        <button
-          onClick={() => router.push("/")}
-          className="cta-underline text-ft-white font-display text-sm"
-        >
-          Go Back
-        </button>
+      <div className="pb-8">
+        {header}
+        <div className="px-5">
+          <Card className="px-4 py-4">
+            <div className="font-data text-[14.5px] font-bold text-ft-white">No stretch routine yet</div>
+            <p className="mt-1 font-body text-[13px] text-ft-light">Routines are created through the stretch-routines API; the first one saved runs here.</p>
+            <Btn small href="/training" className="mt-3">
+              Back to Training
+            </Btn>
+          </Card>
+        </div>
       </div>
     );
   }
-
   if (isComplete) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center px-6 text-center tab-enter">
-        <p className="font-display text-2xl text-ft-white mb-2">Done!</p>
-        <p className="font-handwritten text-4xl text-ft-success mb-4">
-          {Math.floor(totalElapsed / 60)}:{String(totalElapsed % 60).padStart(2, "0")}
-        </p>
-        <p className="text-secondary font-body text-sm mb-6">
-          {routine.items.length} stretches completed
-        </p>
-        <button
-          onClick={() => router.push("/")}
-          className="cta-underline text-ft-white font-display text-base"
-        >
-          Back to Home
-        </button>
+      <div className="pb-8">
+        {header}
+        <div className="px-5">
+          <Card className="px-4 py-6 text-center">
+            <Stamp tone="success">Done</Stamp>
+            <div className="mt-3 font-data text-[44px] font-bold leading-none tabular-nums text-ft-white">
+              {Math.floor(totalElapsed / 60)}:{String(totalElapsed % 60).padStart(2, "0")}
+            </div>
+            <p className="mt-2 font-body text-[13px] text-ft-light">{routine.items.length} stretches · logged as an activity</p>
+            <Btn href="/training" className="mt-4">
+              Back to Training
+            </Btn>
+          </Card>
+        </div>
       </div>
     );
   }
@@ -160,62 +136,38 @@ export default function StretchTimerPage() {
   const progress = ((currentIndex + (side === "right" ? 0.5 : 0)) / routine.items.length) * 100;
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-between px-6 py-8">
-      {/* Progress bar */}
-      <div className="w-full max-w-sm">
-        <div className="w-full h-1 bg-ft-card rounded-full overflow-hidden">
-          <div
-            className="h-full bg-ft-accent rounded-full transition-all"
-            style={{ width: `${progress}%` }}
-          />
+    <div className="flex min-h-[calc(100vh-80px)] flex-col pb-8">
+      {header}
+      <div className="px-5">
+        <div className="h-1 overflow-hidden rounded-full bg-ft-border-faint">
+          <div className="h-full rounded-full bg-ft-accent transition-[width]" style={{ width: `${progress}%` }} />
         </div>
-        <p className="text-tertiary font-body text-[10px] text-center mt-1">
+        <div className="mt-1 text-center font-data text-[10px] uppercase tracking-[0.14em] text-ft-dim">
           {currentIndex + 1} / {routine.items.length}
-        </p>
+        </div>
       </div>
 
-      {/* Main timer area */}
-      <div className="flex flex-col items-center text-center">
-        <p className="font-display text-xl text-ft-white mb-1">{currentItem.name}</p>
+      <div className="flex flex-1 flex-col items-center justify-center px-5 text-center">
+        <div className="font-data text-[18px] font-bold text-ft-white">{currentItem.name}</div>
         {currentItem.bilateral && (
-          <p className="font-body text-sm text-ft-core uppercase tracking-wider mb-4">
+          <Stamp tone="gold" className="mt-1.5">
             {side} side
-          </p>
+          </Stamp>
         )}
-
-        {/* Timer — radial countdown */}
         <RingTimer progress={secondsRemaining / currentItem.durationSeconds} remainingSeconds={secondsRemaining} />
-
-        {nextItem && (
-          <p className="text-tertiary font-body text-xs">
-            Next: {nextItem.name}
-          </p>
-        )}
+        <div className="font-body text-[12.5px] text-ft-dim">{nextItem ? `Next: ${nextItem.name}` : "Last one"}</div>
       </div>
 
-      {/* Controls */}
-      <div className="flex items-center gap-8">
-        <button
-          onClick={() => router.push("/")}
-          className="text-tertiary font-body text-sm hover:text-ft-light"
-        >
+      <div className="flex items-center justify-center gap-6 px-5 pt-4">
+        <Btn kind="quiet" small onClick={() => router.push("/training")}>
           Quit
+        </Btn>
+        <button type="button" onClick={() => setIsRunning((r) => !r)} aria-label={isRunning ? "Pause" : "Start"} className="flex h-16 w-16 items-center justify-center rounded-full bg-ft-accent font-data text-[18px] text-ft-on-accent shadow-ft-sm">
+          {isRunning ? "❚❚" : "▶"}
         </button>
-        <button
-          onClick={toggleRunning}
-          className="w-16 h-16 rounded-full flex items-center justify-center"
-          style={{ backgroundColor: "rgb(var(--ft-accent))" }}
-        >
-          <span className="text-white font-display text-lg">
-            {isRunning ? "❚❚" : "▶"}
-          </span>
-        </button>
-        <button
-          onClick={skip}
-          className="text-tertiary font-body text-sm hover:text-ft-light"
-        >
+        <Btn kind="quiet" small onClick={advanceToNext}>
           Skip
-        </button>
+        </Btn>
       </div>
     </div>
   );
@@ -231,21 +183,10 @@ function RingTimer({ progress, remainingSeconds }: { progress: number; remaining
   const min = Math.floor(remainingSeconds / 60);
   const sec = remainingSeconds % 60;
   return (
-    <div className="relative mb-6 flex h-48 w-48 items-center justify-center">
+    <div className="relative my-5 flex h-48 w-48 items-center justify-center">
       <svg width={size} height={size} className="-rotate-90">
         <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="rgb(var(--ft-border-faint))" strokeWidth={stroke} />
-        <circle
-          cx={size / 2}
-          cy={size / 2}
-          r={r}
-          fill="none"
-          stroke="rgb(var(--ft-accent))"
-          strokeWidth={stroke}
-          strokeLinecap="round"
-          strokeDasharray={circ}
-          strokeDashoffset={circ * (1 - clamped)}
-          style={{ transition: "stroke-dashoffset 1s linear" }}
-        />
+        <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="rgb(var(--ft-accent))" strokeWidth={stroke} strokeLinecap="round" strokeDasharray={circ} strokeDashoffset={circ * (1 - clamped)} style={{ transition: "stroke-dashoffset 1s linear" }} />
       </svg>
       <div className="absolute font-data text-[44px] font-bold tabular-nums text-ft-white">
         {min}:{sec.toString().padStart(2, "0")}
