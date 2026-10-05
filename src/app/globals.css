@@ -64,7 +64,6 @@
     --ft-gold-bg: 247 235 214;         /* #F7EBD6 */
     --ft-gold-border: 224 197 142;     /* #E0C58E */
 
-    /* State families (legacy names alias coral / gold / teal) */
     --ft-success: 63 143 92;           /* #3F8F5C */
     --ft-success-fg: 47 122 74;        /* #2F7A4A */
     --ft-success-bg: 225 238 228;      /* #E1EEE4 */
@@ -105,10 +104,6 @@
     --ft-data-5: 70 84 79;
     --ft-data-6: 91 165 114;
 
-    /* Legacy stamp tokens */
-    --ft-stamp-fg: 14 140 124;
-    --ft-stamp-bg: 252 251 245;
-    --ft-stamp-border: 14 140 124;
 
     /* Type — loaded with next/font in app/layout.tsx */
     --ft-font-display: var(--font-audiowide), "Audiowide", sans-serif;
@@ -233,56 +228,8 @@
   /* ── Font utilities (Tailwind also maps font-display/data/body) ────── */
   .font-display { font-family: var(--ft-font-display); }
   .font-data { font-family: var(--ft-font-data); font-variant-numeric: tabular-nums; }
-  .font-number { font-family: var(--ft-font-number); font-variant-numeric: tabular-nums; }
   .font-body { font-family: var(--ft-font-body); }
-  .font-handwritten { font-family: var(--ft-font-handwritten); }
 
-  /* ── Survivors used by pages not yet restyled (deleted with them) ─── */
-  .ft-card { position: relative; }
-  .ft-h { font-family: var(--ft-font-display); }
-  .ft-stamp {
-    display: inline-flex;
-    align-items: center;
-    padding: 3px 10px;
-    border-radius: 999px;
-    border: 1px solid rgb(var(--ft-accent) / 0.4);
-    color: rgb(var(--ft-accent));
-    font-family: var(--ft-font-data);
-    font-size: 9px;
-    letter-spacing: 0.18em;
-    text-transform: uppercase;
-    white-space: nowrap;
-  }
-  .cta-underline {
-    position: relative;
-    display: inline-block;
-    cursor: pointer;
-    text-decoration: none;
-    font-family: var(--ft-font-data);
-    font-weight: 600;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-    color: rgb(var(--ft-accent));
-    transition: opacity 0.15s;
-  }
-  .cta-underline::after {
-    content: "";
-    position: absolute;
-    left: 0;
-    right: 0;
-    bottom: -2px;
-    height: 2px;
-    border-radius: 1px;
-    background: rgb(var(--ft-accent));
-    opacity: 0.6;
-  }
-  .cta-underline:hover::after { opacity: 1; }
-  .section-divider { border-top: 1px solid rgb(var(--ft-border-faint)); }
-  .text-primary { color: rgb(var(--ft-text-primary)); }
-  .text-secondary { color: rgb(var(--ft-text-secondary)); }
-  .text-tertiary { color: rgb(var(--ft-text-tertiary)); }
-  .touch-target { min-height: 44px; }
-  .bottom-nav-fade { background: linear-gradient(to top, rgb(var(--ft-bg)) 80%, transparent); }
 }
 
 @layer utilities {
@@ -290,13 +237,8 @@
   .pt-safe { padding-top: env(safe-area-inset-top); }
   .no-scrollbar { scrollbar-width: none; -ms-overflow-style: none; }
   .no-scrollbar::-webkit-scrollbar { display: none; }
-  .tab-enter { animation: tabFadeIn 200ms ease forwards; }
 }
 
-@keyframes tabFadeIn {
-  from { opacity: 0; transform: translateY(6px); }
-  to { opacity: 1; transform: translateY(0); }
-}
 
 /* Label scan viewfinder — the teal line sweeps the frame. */
 @keyframes ft-scan {

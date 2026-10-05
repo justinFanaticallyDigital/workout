@@ -98,7 +98,7 @@ src/
 │   └── api/                       see "API surface" in docs/v2-rebuild-plan.md §4
 ├── components/
 │   ├── kit/                       The Atompunk primitives — the only UI vocabulary (see Design system)
-│   ├── ui/                        Toast · EmptyState · Skeleton (survivors)
+│   ├── ui/                        Toast (the one pre-kit survivor)
 │   ├── SessionProvider.tsx · OfflineSyncProvider.tsx
 ├── lib/
 │   ├── prisma.ts · auth.ts · auth-helpers.ts · fetch-helpers.ts
@@ -191,7 +191,7 @@ Loaded with `next/font/google` in `layout.tsx`, exposed as `--ft-font-display` /
 - **Food picker** (`FoodPickerSheet`): `GET /api/nutrition/foods?mine=1` lists the library (user rows + shared `userId null` rows) before a query; a 2+ character query filters it and adds USDA / Open Food Facts hits, which are saved on pick so they get an id. `POST /api/nutrition/foods` owns every row except `usda` / `openfoodfacts` caches.
 - **Label scan** (`/nutrition/scan` → `/nutrition/scan/review`): camera via `getUserMedia` (environment camera, torch when the track supports it), PHOTOS = file input, MANUAL = empty form. The capture (JPEG ≤ 1280 px) plus `{ mealId, role, back }` travels in sessionStorage (`scan-store.ts`). Review POSTs it to `POST /api/nutrition/foods/scan`, which calls `claude-opus-5-5` through `@anthropic-ai/sdk` with a strict JSON-schema `output_config` (effort `low`, `fallbacks: "default"` so a classifier false positive re-runs on the recommended fallback) and returns `{ fields, confidence }`; fields under 0.7 confidence get the gold CHECK pill. Without `ANTHROPIC_API_KEY` the route returns 501 and the form opens empty. Save creates the FoodItem (`source "label-scan"`) and, when the scan started from a meal slot, fills that slot. The key never reaches the client; the route sets `maxDuration = 60`.
 - **Stats** (`/stats`, `/stats/exercise/[id]`, `/stats/prs`): server pages compute plain data (`lib/stats.ts`: month buckets W1–W5 from the 1st, Epley e1RM, best set, "BW+10 × 8" formatting) and hand it to client views (`StatsView`, `ExerciseHistoryView`) — chart formatters are functions, so they must live client-side. Charts are inline SVG / flex (`TrendLine`, `BarRow`): 2px lines, 8px end marker with a surface ring, bars ≤ 24px with a 4px rounded top on a hairline baseline, values read out on tap in text tokens. The volume split bar orders groups push · legs · pull · core so the two closest hues never touch (validated with the dataviz palette script). Days trained = distinct dates with a finished Workout or an ActivityLog.
-- **Moved pages:** `/stats/body`, `/stats/photos`, `/stats/calendar`, `/stats/injuries` are the former `/progress/*` pages, rebuilt on the kit in P9 (the calendar keeps its own grid and is the only page `MainFrame` still pads); `/progress/*`, `/calendar`, `/injuries` and `/stats/history` are redirect stubs.
+- **Moved pages:** `/stats/body`, `/stats/photos`, `/stats/calendar`, `/stats/injuries` are the former `/progress/*` pages, rebuilt on the kit in P9 (the calendar keeps its own month grid). `/stats/history` → `/history` and `/` → `/training` are the only redirect routes; the old `/progress/*`, `/calendar`, `/injuries`, `/stretch-timer` and `/log` paths are gone.
 - **Kept pages** (sign-in, Settings hub + units / integrations / advanced, history list + replay, exercise library / new / detail, diary + add-food flow, activity loggers, stretch timer) are kit screens: `ScreenHeader` + `Card` rows + `Sheet` forms, `fetch` to the existing APIs. Units live in localStorage (`ft-weight-unit`, `ft-distance-unit`). The exercise detail page edits `name` / `movementPattern` through `PATCH /api/exercises/[id]`; the diary adds food through `/nutrition/log?meal=&date=`.
 - **Toasts:** `useToast()` from `components/ui/Toast` (auto-dismiss 4s). **PWA:** `next-pwa`, offline fallback `/public/offline.html`.
 
@@ -209,19 +209,3 @@ Env: `DATABASE_URL`, `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `NEXTAUTH_URL`,
 
 ## Do not reintroduce
 Gameplan / Program / Logger tiers, `TierProvider`, Shelf / checkout / welcome flows · check-ins, recommendations, the goal engine, lifestyle logs/targets, Planning Mode, `GameplanChange` audit UI · adherence %, streaks, "today's workout", week strips bound to dates, schedule overrides · the program-builder engine, smart generator, visual builder, goal wizard, template customization wizard (one plain editor at `/training/[planId]` is the only creation path besides "Use plan" and duplicate) · theme switcher, `ThemeProvider`, `useTheme`, `data-theme` CSS, `components/themed`, multi-font `@import` · the `+Log` FAB and `LogActivitySheet` · a fifth tab.
-
-## Rebuild status
-Tracked per phase of `docs/v2-rebuild-plan.md` §7. Update this list when a phase lands.
-- [x] P0 — CLAUDE.md rewrite, docs archived
-- [x] P1 — gameplan tier / tier model / shelf / engines removed; temporary 4-tab nav
-- [x] P2 — Atompunk tokens, fonts, kit primitives, real BottomNav
-- [x] P3 — schema additions, seeds, APIs
-- [x] P4 — Training tab, day detail, plans list, plan editor
-- [x] P5 — Logger restyle + frames
-- [x] P6 — Nutrition home, targets, My Days, Day Builder, plans
-- [x] P7 — My Meals, Meal Builder, label scan + review
-- [x] P8 — Stats tab, exercise history, PRs, moved pages
-- [x] P9 — Settings hub + restyle of kept pages
-- [ ] P10 — cutover cleanup (this section is removed when it lands)
-
-Until P10 lands, parts of the tree described above are still being built; the old gameplan-era code that remains is scheduled for deletion, not for extension.

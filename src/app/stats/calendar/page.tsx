@@ -103,14 +103,14 @@ export default function CalendarPage() {
   const selectedSummary = selectedDay ? daySummaries[selectedDay] : null;
 
   return (
-    <div className="space-y-4 tab-enter">
+    <div className="space-y-4 px-4 py-4">
       {/* Header */}
       <div className="flex items-center justify-between">
         <h1 className="font-display text-2xl text-ft-white tracking-wide">Calendar</h1>
         <div className="flex items-center gap-3">
-          <button onClick={prevMonth} className="text-tertiary hover:text-ft-light text-lg px-2">&lsaquo;</button>
-          <span className="font-body text-sm text-secondary min-w-[140px] text-center">{monthName}</span>
-          <button onClick={nextMonth} className="text-tertiary hover:text-ft-light text-lg px-2">&rsaquo;</button>
+          <button onClick={prevMonth} className="text-ft-dim hover:text-ft-light text-lg px-2">&lsaquo;</button>
+          <span className="font-body text-sm text-ft-light min-w-[140px] text-center">{monthName}</span>
+          <button onClick={nextMonth} className="text-ft-dim hover:text-ft-light text-lg px-2">&rsaquo;</button>
         </div>
       </div>
 
@@ -119,7 +119,7 @@ export default function CalendarPage() {
         {/* Day headers */}
         <div className="grid grid-cols-7 gap-1 mb-2">
           {DAY_LABELS.map((d) => (
-            <div key={d} className="text-center text-tertiary font-body text-[10px] uppercase tracking-wider">
+            <div key={d} className="text-center text-ft-dim font-body text-[10px] uppercase tracking-wider">
               {d}
             </div>
           ))}
@@ -149,7 +149,7 @@ export default function CalendarPage() {
                       : "hover:bg-ft-card/30"
                 }`}
               >
-                <span className={`font-body text-xs ${isToday ? "text-ft-white font-semibold" : "text-secondary"}`}>
+                <span className={`font-body text-xs ${isToday ? "text-ft-white font-semibold" : "text-ft-light"}`}>
                   {day}
                 </span>
                 <div className="flex gap-0.5">
@@ -181,12 +181,12 @@ export default function CalendarPage() {
         {Object.entries(MOVEMENT_COLORS).map(([key, color]) => (
           <div key={key} className="flex items-center gap-1">
             <span className="w-2 h-2 rounded-full" style={{ backgroundColor: color }} />
-            <span className="text-tertiary font-body text-[9px] capitalize">{key}</span>
+            <span className="text-ft-dim font-body text-[9px] capitalize">{key}</span>
           </div>
         ))}
         <div className="flex items-center gap-1">
           <span className="w-2 h-2 rounded-full bg-ft-core/50" />
-          <span className="text-tertiary font-body text-[9px]">Meal</span>
+          <span className="text-ft-dim font-body text-[9px]">Meal</span>
         </div>
       </div>
 
@@ -204,12 +204,12 @@ export default function CalendarPage() {
           {selectedSummary ? (
             <div className="space-y-2">
               <div className="flex items-center justify-between">
-                <span className="text-secondary font-body text-sm">{selectedSummary.workoutName}</span>
+                <span className="text-ft-light font-body text-sm">{selectedSummary.workoutName}</span>
                 <span className={`font-body text-xs ${selectedSummary.completed ? "text-ft-success" : "text-ft-warn"}`}>
                   {selectedSummary.completed ? "Completed" : "In progress"}
                 </span>
               </div>
-              <p className="text-tertiary font-body text-xs">
+              <p className="text-ft-dim font-body text-xs">
                 {selectedSummary.exerciseCount} exercises
               </p>
               {selectedSummary.workoutId && (
@@ -223,8 +223,8 @@ export default function CalendarPage() {
             </div>
           ) : (
             <div>
-              <p className="text-tertiary font-body text-sm">No workout logged</p>
-              <p className="text-tertiary font-body text-xs mt-1">No meal plan</p>
+              <p className="text-ft-dim font-body text-sm">No workout logged</p>
+              <p className="text-ft-dim font-body text-xs mt-1">No meal plan</p>
             </div>
           )}
         </div>
@@ -232,7 +232,7 @@ export default function CalendarPage() {
 
       {loading && (
         <div className="text-center">
-          <span className="text-tertiary font-body text-xs">Loading...</span>
+          <span className="text-ft-dim font-body text-xs">Loading...</span>
         </div>
       )}
     </div>

@@ -16,7 +16,7 @@ const Card = forwardRef<HTMLDivElement, CardProps>(function Card(
     <div
       ref={ref}
       className={[
-        "ft-card relative rounded-ft-lg border border-ft-border shadow-ft-sm",
+        "relative rounded-ft-lg border border-ft-border shadow-ft-sm",
         raised ? "bg-ft-surface-raised" : "bg-ft-surface",
         band ? "ft-band" : "",
         className,
