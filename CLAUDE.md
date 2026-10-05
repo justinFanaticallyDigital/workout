@@ -6,7 +6,7 @@
 - **Verification before every commit:** `npx tsc --noEmit`, `npx next lint`, `npx next build` (a dummy `DATABASE_URL` is enough for the build).
 
 ## What FitTrack is
-A personal training + nutrition tracker for one user. Next.js 14 (App Router) + TypeScript, Prisma 7 with `@prisma/adapter-pg` on PostgreSQL (Railway), NextAuth 4 (Google OAuth, database sessions), Tailwind 3 with `ft-*` tokens, `next-pwa`, deployed on Vercel.
+A personal training + nutrition tracker for one user. Next.js 14 (App Router) + TypeScript, Prisma 7 with `@prisma/adapter-pg` on PostgreSQL (Railway), NextAuth 4 (Google OAuth, database sessions), Tailwind 3 with `ft-*` tokens, `next-pwa`, `@anthropic-ai/sdk` (server-only, label scanning), deployed on Vercel.
 
 **v2 (current rebuild)** collapsed three things: the Logger / Program / Gameplan *tier system* became one tier; seven runtime *themes* became one hardcoded theme (Atompunk); the five-tab shell became **four tabs — Training · Nutrition · Stats · Settings**. There is no gameplan concept, no adherence, no goal engine, no recommendations, no check-ins, no Planning Mode, no theme switcher. Do not bring any of them back (see "Do not reintroduce").
 
@@ -89,7 +89,9 @@ src/
 │   ├── log/[workoutId]/           Logger page + _logger/ (Lane, SetCell, SetSheet, FinishBar, WorkoutHeader, TargetChip, …)
 │   ├── log/frame/[frameId]/ · log/activity/[type]/ · log/stretch-timer/
 │   ├── history/
-│   ├── nutrition/                 page.tsx (home) · targets/ · days/ · meals/ · scan/ · plans/ · diary/ · log/ · foods/ · _components/
+│   ├── nutrition/                 page.tsx (home) · targets/ · days/ · meals/ · scan/ · plans/ · diary/ · log/ · foods/
+│   │   └── _components/           NutritionHome · tiles (LibTile · MealTile · FoodTile · TotalBar) · meal-ui (SlotPills · RoleTag · FrameTile) ·
+│   │                              MealPickerSheet · DayPickerSheet · FoodPickerSheet · QtySheet · TemplateSheet · NewFoodSheet · scan-store
 │   ├── stats/                     page.tsx (tab) · exercise/[id]/ · prs/ · calendar/ · body/ · photos/ · injuries/ · _components/
 │   ├── exercises/
 │   ├── settings/
@@ -185,7 +187,9 @@ Loaded with `next/font/google` in `layout.tsx`, exposed as `--ft-font-display` /
 - **Starting a frame** (`/log/frame/[id]`): loads the frame, builds the logger's exercise shape, stores it under the `new-blank` draft key, routes to `/log/new-blank`. No Workout row until Finish, so backing out leaves no orphan.
 - **Categories** (`lib/categories.ts`): group = push / pull / legs / core / other from `movementPattern`; label = the pattern, except isolation patterns show the muscle (Elbow Flexion → "Biceps"). The category picker PATCHes the exercise's `movementPattern`.
 - **Nutrition math** (`lib/nutrition-math.ts`): item kcal/macros = food per-serving values × quantity; meal = Σ items; day = Σ slot meals; targets = day override ?? default NutritionTarget.
-- **Label scan**: `POST /api/nutrition/foods/scan` takes a base64 image and returns label fields with per-field confidence. It calls Claude vision only when `ANTHROPIC_API_KEY` is set; otherwise it returns 501 and the review screen opens empty for manual entry. The key never reaches the client.
+- **Meal Builder** (`/nutrition/meals/[id]`): works on an existing SavedMeal row (My Meals and the Day Builder create "New meal" first, then route here with `?back=`). Every edit autosaves through `PATCH /api/nutrition/saved-meals/[id]` (items replaced atomically, optimistic state, server row wins) because the Scan flow leaves the page; **Save meal** and the back link just leave, and an untouched "New meal" with no items is deleted on the way out. Item `role` = frame slot (`protein / carb / fat / filling / flavor`) or `null` = extra; changing the frame (`templateId`) turns items whose role the new frame lacks into extras. Quantities are servings × `servingSize` (`QtySheet` also takes a gram / ml amount).
+- **Food picker** (`FoodPickerSheet`): `GET /api/nutrition/foods?mine=1` lists the library (user rows + shared `userId null` rows) before a query; a 2+ character query filters it and adds USDA / Open Food Facts hits, which are saved on pick so they get an id. `POST /api/nutrition/foods` owns every row except `usda` / `openfoodfacts` caches.
+- **Label scan** (`/nutrition/scan` → `/nutrition/scan/review`): camera via `getUserMedia` (environment camera, torch when the track supports it), PHOTOS = file input, MANUAL = empty form. The capture (JPEG ≤ 1280 px) plus `{ mealId, role, back }` travels in sessionStorage (`scan-store.ts`). Review POSTs it to `POST /api/nutrition/foods/scan`, which calls `claude-opus-5-5` through `@anthropic-ai/sdk` with a strict JSON-schema `output_config` (effort `low`, `fallbacks: "default"` so a classifier false positive re-runs on the recommended fallback) and returns `{ fields, confidence }`; fields under 0.7 confidence get the gold CHECK pill. Without `ANTHROPIC_API_KEY` the route returns 501 and the form opens empty. Save creates the FoodItem (`source "label-scan"`) and, when the scan started from a meal slot, fills that slot. The key never reaches the client; the route sets `maxDuration = 60`.
 - **Toasts:** `useToast()` from `components/ui/Toast` (auto-dismiss 4s). **PWA:** `next-pwa`, offline fallback `/public/offline.html`.
 
 ## Scripts, seeds, environment
@@ -212,7 +216,7 @@ Tracked per phase of `docs/v2-rebuild-plan.md` §7. Update this list when a phas
 - [x] P4 — Training tab, day detail, plans list, plan editor
 - [x] P5 — Logger restyle + frames
 - [x] P6 — Nutrition home, targets, My Days, Day Builder, plans
-- [ ] P7 — My Meals, Meal Builder, label scan + review
+- [x] P7 — My Meals, Meal Builder, label scan + review
 - [ ] P8 — Stats tab, exercise history, PRs, moved pages
 - [ ] P9 — Settings hub + restyle of kept pages
 - [ ] P10 — cutover cleanup (this section is removed when it lands)

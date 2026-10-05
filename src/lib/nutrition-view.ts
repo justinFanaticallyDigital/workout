@@ -31,7 +31,20 @@ export interface TemplateView {
   id: string;
   slug: string;
   name: string;
+  description?: string | null;
   slots: { role: string; required: boolean; sortOrder: number; hint: string | null }[];
+}
+
+interface RawTemplate {
+  id: string;
+  slug: string;
+  name: string;
+  description?: string | null;
+  slots: { role: string; required: boolean; sortOrder: number; hint: string | null }[];
+}
+
+export function toTemplateView(t: RawTemplate): TemplateView {
+  return { id: t.id, slug: t.slug, name: t.name, description: t.description ?? null, slots: t.slots.map((s) => ({ role: s.role, required: s.required, sortOrder: s.sortOrder, hint: s.hint })) };
 }
 
 export interface MealView {

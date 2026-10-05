@@ -132,6 +132,8 @@ export async function GET(request: NextRequest) {
  * POST /api/nutrition/foods
  * Create a custom food item (or cache a USDA/OFF food).
  */
+const EXTERNAL_SOURCES = new Set(["usda", "openfoodfacts"]);
+
 export async function POST(request: NextRequest) {
   const [userId, authError] = await requireAuth();
   if (authError) return authError;
@@ -143,7 +145,7 @@ export async function POST(request: NextRequest) {
 
   const food = await prisma.foodItem.create({
     data: {
-      userId: body.source === "custom" ? userId : null,
+      userId: EXTERNAL_SOURCES.has(body.source) ? null : userId,
       name: body.name.trim(),
       brand: body.brand ?? null,
       barcode: body.barcode ?? null,
@@ -159,7 +161,7 @@ export async function POST(request: NextRequest) {
       sodium: body.sodium ?? null,
       source: body.source ?? "custom",
       externalId: body.externalId ?? null,
-      isCustom: body.source === "custom",
+      isCustom: !EXTERNAL_SOURCES.has(body.source),
     },
   });
 

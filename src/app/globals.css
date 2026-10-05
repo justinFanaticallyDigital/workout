@@ -297,3 +297,13 @@
   from { opacity: 0; transform: translateY(6px); }
   to { opacity: 1; transform: translateY(0); }
 }
+
+/* Label scan viewfinder — the teal line sweeps the frame. */
+@keyframes ft-scan {
+  0% { top: 6%; opacity: 0.25; }
+  50% { opacity: 1; }
+  100% { top: 92%; opacity: 0.25; }
+}
+.scan-line {
+  animation: ft-scan 2.6s ease-in-out infinite alternate;
+}

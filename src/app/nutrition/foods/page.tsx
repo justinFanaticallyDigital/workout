@@ -2,7 +2,8 @@
 
 /** Food library — search the library (local + USDA) and add a custom food by hand. */
 import { useEffect, useState } from "react";
-import { Btn, Card, MacroTriple, ScreenHeader, SearchIcon, Stamp } from "@/components/kit";
+import { Btn, CameraIcon, Card, MacroTriple, ScreenHeader, SearchIcon, Stamp } from "@/components/kit";
+import { scanHref } from "../_components/scan-store";
 import { useToast } from "@/components/ui/Toast";
 import { fmtKcal, fmtQty } from "@/lib/nutrition-math";
 import NewFoodSheet, { type Food } from "../_components/NewFoodSheet";
@@ -55,9 +56,15 @@ export default function FoodsPage() {
         title="Foods"
         back={{ href: "/nutrition", label: "Nutrition" }}
         right={
-          <Btn small onClick={() => setNewOpen(true)}>
-            + New food
-          </Btn>
+          <div className="flex gap-1.5">
+            <Btn kind="ghost" small href={scanHref({ back: "/nutrition/foods" })}>
+              <CameraIcon size={14} />
+              Scan
+            </Btn>
+            <Btn small onClick={() => setNewOpen(true)}>
+              + New food
+            </Btn>
+          </div>
         }
       />
       <div className="px-5">
