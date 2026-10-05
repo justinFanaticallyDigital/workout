@@ -1,9 +1,6 @@
-/**
- * Shared logger helpers ported verbatim from
- * design-prototypes/logger-app.jsx + logger-skeletons.jsx.
- */
+/** Logger formatting helpers. */
 
-/** "M:SS" formatter for the rest timer + countdown ring. */
+/** "M:SS" */
 export function formatSec(s: number): string {
   if (!Number.isFinite(s) || s < 0) s = 0;
   const m = Math.floor(s / 60);
@@ -11,22 +8,19 @@ export function formatSec(s: number): string {
   return `${m}:${String(r).padStart(2, "0")}`;
 }
 
-/** Weight formatter — integer when whole, single decimal otherwise. */
+/** Integer when whole, one decimal otherwise. */
 export function fmtWeight(w: number | null | undefined): string {
   if (w == null) return "—";
   if (Number.isInteger(w)) return String(w);
   return w.toFixed(1).replace(/\.0$/, "");
 }
 
-/** Volume formatter — "12.4k" or "847". */
+/** "8,420" */
 export function fmtVolume(v: number): string {
-  if (v >= 1000) return `${(v / 1000).toFixed(1)}k`;
-  return `${Math.round(v)}`;
+  return Math.round(v).toLocaleString("en-US");
 }
 
-/** Compact "MM/DD" date for the WeekStrip kicker. */
-export function shortDate(iso: string): string {
-  const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return "—";
-  return `${(d.getMonth() + 1).toString().padStart(2, "0")}/${d.getDate().toString().padStart(2, "0")}`;
+/** Reps-in-reserve stored on Set ↔ RPE shown to the user. */
+export function rirToRpe(rir: number | null | undefined): number | null {
+  return rir == null ? null : 10 - rir;
 }

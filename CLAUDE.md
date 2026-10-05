@@ -210,7 +210,7 @@ Tracked per phase of `docs/v2-rebuild-plan.md` §7. Update this list when a phas
 - [x] P2 — Atompunk tokens, fonts, kit primitives, real BottomNav
 - [x] P3 — schema additions, seeds, APIs
 - [x] P4 — Training tab, day detail, plans list, plan editor
-- [ ] P5 — Logger restyle + frames
+- [x] P5 — Logger restyle + frames
 - [ ] P6 — Nutrition home, targets, My Days, Day Builder, plans
 - [ ] P7 — My Meals, Meal Builder, label scan + review
 - [ ] P8 — Stats tab, exercise history, PRs, moved pages

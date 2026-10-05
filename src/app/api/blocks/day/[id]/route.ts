@@ -14,7 +14,7 @@ export async function GET(
   const day = await prisma.blockDay.findUnique({
     where: { id, block: { program: { userId } } },
     include: {
-      block: { select: { name: true, description: true } },
+      block: { select: { name: true, description: true, program: { select: { id: true, name: true } } } },
       exercises: {
         select: {
           id: true,

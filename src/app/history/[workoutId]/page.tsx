@@ -4,7 +4,7 @@
  * 2.6 Workout History Detail (Cluster 2 reskin). DB-backed session replay —
  * data wiring unchanged (GET /api/workouts/[id], POST .../replay). Presentation
  * rebuilt on the v2 primitives: full-screen Header → summary stats → per-
- * exercise set chips → footer (Repeat). Save-as-frame returns in P5 (DB frames).
+ * exercise set chips → footer (Save as frame · Repeat).
  */
 import { useState, useEffect } from "react";
 import Link from "next/link";
@@ -24,7 +24,7 @@ interface SetDetail {
 
 interface WorkoutExercise {
   id: string;
-  exercise: { name: string; equipment: string | null; movementPattern: string | null };
+  exercise: { id: string; name: string; equipment: string | null; movementPattern: string | null };
   sets: SetDetail[];
   notes: string | null;
 }
@@ -37,6 +37,7 @@ interface WorkoutDetail {
   notes: string | null;
   rating: number | null;
   blockDay: { name: string } | null;
+  frame: { id: string; name: string } | null;
   exercises: WorkoutExercise[];
 }
 
@@ -54,6 +55,7 @@ export default function WorkoutDetailPage({ params }: { params: { workoutId: str
   const [workout, setWorkout] = useState<WorkoutDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [replaying, setReplaying] = useState(false);
+  const [savingFrame, setSavingFrame] = useState(false);
 
   useEffect(() => {
     fetch(`/api/workouts/${workoutId}`)
@@ -79,6 +81,33 @@ export default function WorkoutDetailPage({ params }: { params: { workoutId: str
     }
   };
 
+
+  const handleSaveFrame = async () => {
+    if (!workout || savingFrame) return;
+    setSavingFrame(true);
+    try {
+      const exercises = workout.exercises
+        .filter((ex) => ex.exercise.id)
+        .map((ex) => {
+          const work = ex.sets.filter((s) => !s.isWarmup && s.reps != null);
+          const reps = work.map((s) => s.reps as number);
+          const lo = reps.length ? Math.min(...reps) : null;
+          const hi = reps.length ? Math.max(...reps) : null;
+          return { exerciseId: ex.exercise.id, targetSets: work.length || 3, targetRepRange: lo == null ? "8-12" : lo === hi ? String(lo) : `${lo}-${hi}` };
+        });
+      const res = await fetch("/api/frames", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: workout.frame?.name ?? workout.blockDay?.name ?? "Saved workout", exercises }),
+      });
+      if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error || `HTTP ${res.status}`);
+      toast.success("Saved as frame");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Couldn't save the frame.");
+    } finally {
+      setSavingFrame(false);
+    }
+  };
 
   if (loading) {
     return (
@@ -191,6 +220,9 @@ export default function WorkoutDetailPage({ params }: { params: { workoutId: str
 
       {/* footer */}
       <div className="absolute inset-x-0 bottom-0 flex gap-2 border-t border-ft-border-faint bg-ft-surface px-4 pb-4 pt-3">
+        <Button kind="secondary" size="lg" disabled={savingFrame} onClick={handleSaveFrame}>
+          {savingFrame ? "Saving…" : "Save as frame"}
+        </Button>
         <Button kind="primary" size="lg" fullWidth disabled={replaying} onClick={handleRepeat}>
           {replaying ? "Creating…" : "Repeat workout →"}
         </Button>
