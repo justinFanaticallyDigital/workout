@@ -1,25 +1,54 @@
-import Link from "next/link";
+import { redirect } from "next/navigation";
+import { prisma } from "@/lib/prisma";
+import { getAuthUserId } from "@/lib/auth-helpers";
+import { DAY_EXERCISE_SELECT, mapPlan } from "@/lib/training";
+import { startOfIsoWeek } from "@/lib/dates";
+import TrainingView from "./_components/TrainingView";
 
 export const dynamic = "force-dynamic";
 
 /**
- * Training tab — temporary stub (P1). The real screen (plan sections,
- * day-card strips, Frames row) lands in P4. Until then the two things that
- * must keep working are reachable here: a blank workout and history.
+ * Training tab — one section per active plan (day-card strip, Start on the
+ * card), the Frames row, + New plan, and Show archived. Plans are sequences:
+ * nothing here is bound to today's date except the header stamp.
  */
-export default function TrainingPage() {
+export default async function TrainingPage() {
+  const userId = await getAuthUserId();
+  if (!userId) redirect("/signin");
+
+  const [programs, frames, weekWorkouts] = await Promise.all([
+    prisma.program.findMany({
+      where: { userId },
+      include: {
+        blocks: {
+          orderBy: { blockNumber: "asc" },
+          include: { days: { orderBy: { sortOrder: "asc" }, include: { exercises: { orderBy: { sortOrder: "asc" }, select: DAY_EXERCISE_SELECT } } } },
+        },
+      },
+      orderBy: { createdAt: "desc" },
+    }),
+    prisma.workoutFrame.findMany({
+      where: { userId },
+      select: { id: true, name: true, focus: true, _count: { select: { exercises: true, workouts: true } } },
+      orderBy: { updatedAt: "desc" },
+    }),
+    prisma.workout.findMany({
+      where: { userId, blockDayId: { not: null }, endTime: { not: null }, date: { gte: startOfIsoWeek() } },
+      select: { blockDayId: true, date: true },
+      orderBy: { date: "desc" },
+    }),
+  ]);
+
+  const completedByDay: Record<string, string> = {};
+  for (const w of weekWorkouts) {
+    if (w.blockDayId && !completedByDay[w.blockDayId]) completedByDay[w.blockDayId] = w.date.toISOString();
+  }
+
   return (
-    <div className="px-5 pt-4">
-      <h1 className="font-display text-xl text-ft-white">Training</h1>
-      <p className="mt-1 font-body text-sm text-ft-light">Plans and frames are being rebuilt.</p>
-      <div className="mt-5 flex flex-col gap-2">
-        <Link href="/log/new-blank" className="rounded-ft-md border border-ft-accent bg-ft-accent px-4 py-3 text-center font-body text-sm font-semibold text-ft-on-accent">
-          Start blank workout
-        </Link>
-        <Link href="/history" className="rounded-ft-md border border-ft-border bg-ft-surface px-4 py-3 text-center font-body text-sm font-semibold text-ft-white">
-          Workout history
-        </Link>
-      </div>
-    </div>
+    <TrainingView
+      plans={programs.map(mapPlan)}
+      frames={frames.map((f) => ({ id: f.id, name: f.name, focus: f.focus, exerciseCount: f._count.exercises, used: f._count.workouts }))}
+      completedByDay={completedByDay}
+    />
   );
 }

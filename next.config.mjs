@@ -29,6 +29,9 @@ const pwaConfig = withPWA({
 });
 
 /** @type {import('next').NextConfig} */
-const nextConfig = {};
+const nextConfig = {
+  // Lets a dev server and a production build coexist (NEXT_DIST_DIR=.next-dev for dev).
+  distDir: process.env.NEXT_DIST_DIR || ".next",
+};
 
 export default pwaConfig(nextConfig);
