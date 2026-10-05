@@ -29,3 +29,7 @@ export { default as PromptSheet } from "./PromptSheet";
 export { default as ConfirmSheet } from "./ConfirmSheet";
 export { default as TargetSheet } from "./TargetSheet";
 export { default as ReorderList } from "./ReorderList";
+export { default as StatCard } from "./StatCard";
+export { default as TrendLine } from "./TrendLine";
+export { default as BarRow } from "./BarRow";
+export { default as PhotoSlot } from "./PhotoSlot";

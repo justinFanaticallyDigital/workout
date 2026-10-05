@@ -12,7 +12,7 @@ import type { ReactNode } from "react";
 const LEGACY_PADDED: RegExp[] = [
   /^\/exercises(\/|$)/,
   /^\/history$/,
-  /^\/progress\//,
+  /^\/stats\/(body|photos|calendar|injuries)(\/|$)/,
   /^\/nutrition\/diary/,
   /^\/settings\/units/,
   /^\/log\/stretch-timer/,
