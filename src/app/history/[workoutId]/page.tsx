@@ -4,14 +4,13 @@
  * 2.6 Workout History Detail (Cluster 2 reskin). DB-backed session replay —
  * data wiring unchanged (GET /api/workouts/[id], POST .../replay). Presentation
  * rebuilt on the v2 primitives: full-screen Header → summary stats → per-
- * exercise set chips → footer (Repeat / Save as frame).
+ * exercise set chips → footer (Repeat). Save-as-frame returns in P5 (DB frames).
  */
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useToast } from "@/components/ui/Toast";
 import { Header, Card, Button, Chip, Stamp } from "@/components/v2";
-import { saveFrame } from "@/lib/logger-store";
 
 interface SetDetail {
   setNumber: number;
@@ -80,18 +79,6 @@ export default function WorkoutDetailPage({ params }: { params: { workoutId: str
     }
   };
 
-  const handleSaveFrame = async () => {
-    if (!workout) return;
-    const name = workout.blockDay?.name || "Saved workout";
-    await saveFrame({
-      name,
-      exercises: workout.exercises.map((ex) => ({
-        name: ex.exercise.name,
-        targetSets: ex.sets.filter((s) => !s.isWarmup).length,
-      })),
-    });
-    toast.success("Saved as frame");
-  };
 
   if (loading) {
     return (
@@ -204,9 +191,6 @@ export default function WorkoutDetailPage({ params }: { params: { workoutId: str
 
       {/* footer */}
       <div className="absolute inset-x-0 bottom-0 flex gap-2 border-t border-ft-border-faint bg-ft-surface px-4 pb-4 pt-3">
-        <Button kind="secondary" size="lg" onClick={handleSaveFrame}>
-          Save as frame
-        </Button>
         <Button kind="primary" size="lg" fullWidth disabled={replaying} onClick={handleRepeat}>
           {replaying ? "Creating…" : "Repeat workout →"}
         </Button>

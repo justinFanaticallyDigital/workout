@@ -4,7 +4,7 @@
  * 2.3 Exercise Detail (Cluster 2 reskin). Data wiring unchanged (exercise +
  * history + estimated-1rm + progression-status). Presentation rebuilt on the
  * v2 primitives: full-screen Header → key-stats card w/ trend chart →
- * progression suggestion → set history → tier-locked customize → footer.
+ * progression suggestion → set history → customize → footer.
  */
 import { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
@@ -12,7 +12,6 @@ import { useRouter } from "next/navigation";
 import { chartTheme } from "@/lib/theme";
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
 import { Header, Card, Button, Chip, Stamp } from "@/components/v2";
-import { useTier } from "@/providers/TierProvider";
 
 interface AdjacentExercise {
   id: string;
@@ -53,7 +52,6 @@ interface VolumePoint {
 export default function ExerciseDetailPage({ params }: { params: { exerciseId: string } }) {
   const { exerciseId } = params;
   const router = useRouter();
-  const { tier } = useTier();
   const [exercise, setExercise] = useState<ExerciseDetail | null>(null);
   const [prs, setPrs] = useState<PR[]>([]);
   const [history, setHistory] = useState<HistorySession[]>([]);
@@ -250,11 +248,11 @@ export default function ExerciseDetailPage({ params }: { params: { exerciseId: s
           </>
         )}
 
-        {/* customize — tier-locked for Logger */}
+        {/* customize */}
         <div className="ft-on-bg px-0.5 pb-2 pt-5 font-data text-[10.5px] font-bold uppercase tracking-[0.1em] text-ft-on-bg-sec">
           Customize
         </div>
-        <Card className={["flex items-center gap-3 px-3.5 py-3", tier === "logger" ? "opacity-[0.62]" : ""].join(" ")}>
+        <Card className="flex items-center gap-3 px-3.5 py-3">
           <span className="inline-flex h-[34px] w-[34px] flex-shrink-0 items-center justify-center rounded-ft-md bg-ft-surface-alt text-ft-dim">
             <svg width={18} height={18} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.7} strokeLinecap="round" strokeLinejoin="round">
               <path d="M12 20h9" />
@@ -264,16 +262,10 @@ export default function ExerciseDetailPage({ params }: { params: { exerciseId: s
           <div className="min-w-0 flex-1">
             <div className="font-body text-[13.5px] font-semibold text-ft-white">Edit exercise</div>
             <div className="mt-px font-body text-[11.5px] text-ft-dim">
-              {tier === "logger" ? "Custom exercises unlock with Program" : "Rename · tags · default loads · notes"}
+              Rename · tags · default loads · notes
             </div>
           </div>
-          {tier === "logger" ? (
-            <Chip tone="neutral" size="sm">
-              Locked
-            </Chip>
-          ) : (
-            <span className="font-body text-base text-ft-dim">›</span>
-          )}
+          <span className="font-body text-base text-ft-dim">›</span>
         </Card>
       </div>
 

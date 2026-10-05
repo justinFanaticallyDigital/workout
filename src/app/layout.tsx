@@ -5,7 +5,6 @@ import { ToastProvider } from "@/components/ui/Toast";
 import SessionProvider from "@/components/SessionProvider";
 import OfflineSyncProvider from "@/components/OfflineSyncProvider";
 import { ThemeProvider } from "@/providers/ThemeProvider";
-import { TierProvider } from "@/providers/TierProvider";
 import ThemedTexture from "@/components/themed/ThemedTexture";
 import ThemedOverlays from "@/components/themed/ThemedOverlays";
 
@@ -51,7 +50,6 @@ export default function RootLayout({
           Skip to main content
         </a>
         <ThemeProvider>
-          <TierProvider>
             <ThemedTexture />
             <ThemedOverlays />
             <SessionProvider>
@@ -64,7 +62,6 @@ export default function RootLayout({
                 </ToastProvider>
               </OfflineSyncProvider>
             </SessionProvider>
-          </TierProvider>
         </ThemeProvider>
       </body>
     </html>

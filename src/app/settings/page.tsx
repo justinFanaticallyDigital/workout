@@ -1,22 +1,12 @@
 "use client";
 
-/**
- * Cluster 6 — Settings hub · /settings (the top-right gear destination across
- * every tier). v2 reskin: account + the UI-simulated tier switcher
- * (MIGRATION_MAP §1.3 — no billing yet) + unit prefs + grouped nav rows into
- * the existing sub-pages (theme / integrations / advanced) and the
- * consolidated surfaces (Progress / Library). Data export (CSV) is preserved
- * inline. Settings is NOT a pillar — it renders through HomeShell + the global
- * BottomNav.
- */
+/** Settings hub — account, units, links, CSV export. Restyled in the kit in P9. */
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useSession, signOut } from "next-auth/react";
-import { HomeShell, Header, Card, Button, Stamp, SectionLabel } from "@/components/v2";
+import { HomeShell, Header, Card, Button, SectionLabel } from "@/components/v2";
 import { useToast } from "@/components/ui/Toast";
-import { useTier } from "@/providers/TierProvider";
-import { TIERS, TIER_LABEL, type Tier } from "@/lib/tier";
 
 function getStoredUnit(key: string, fallback: string): string {
   if (typeof window === "undefined") return fallback;
@@ -27,7 +17,6 @@ export default function SettingsPage() {
   const router = useRouter();
   const toast = useToast();
   const { data: session } = useSession();
-  const { tier, setTier } = useTier();
 
   const [weightUnit, setWeightUnit] = useState(() => getStoredUnit("ft-weight-unit", "lbs"));
   const [distanceUnit, setDistanceUnit] = useState(() => getStoredUnit("ft-distance-unit", "miles"));
@@ -103,7 +92,7 @@ export default function SettingsPage() {
           <div className="flex items-center justify-between gap-2.5">
             <div className="min-w-0">
               <div className="truncate font-body text-[14px] font-semibold text-ft-white">{email ?? "Not signed in"}</div>
-              <div className="mt-0.5 font-data text-[10.5px] uppercase tracking-[0.06em] text-ft-dim">{TIER_LABEL[tier]} tier</div>
+              <div className="mt-0.5 font-data text-[10.5px] uppercase tracking-[0.06em] text-ft-dim">Google account</div>
             </div>
             {email ? (
               <Button kind="secondary" size="sm" onClick={() => signOut({ callbackUrl: "/signin" })}>
@@ -115,40 +104,6 @@ export default function SettingsPage() {
               </Button>
             )}
           </div>
-        </Card>
-      </div>
-
-      {/* Tier switcher (UI-simulated) */}
-      <SectionLabel right="Simulated">Tier</SectionLabel>
-      <div className="px-4">
-        <Card className="px-4 py-3.5">
-          <Stamp>Preview tier</Stamp>
-          <p className="mt-1 font-body text-[11.5px] leading-snug text-ft-dim">
-            No billing yet — switch to preview each tier&apos;s surfaces (locked slots, slot-1 home, pillar gameplan layer).
-          </p>
-          <div className="mt-2.5 flex gap-2">
-            {TIERS.map((t) => {
-              const sel = t === tier;
-              return (
-                <button
-                  key={t}
-                  type="button"
-                  onClick={() => setTier(t as Tier)}
-                  className={[
-                    "flex-1 rounded-ft-md border px-2 py-2.5 font-body text-[12.5px] font-bold capitalize transition-colors",
-                    sel ? "border-ft-accent bg-ft-accent-faint text-ft-accent" : "border-ft-border bg-ft-surface-alt text-ft-light",
-                  ].join(" ")}
-                >
-                  {TIER_LABEL[t]}
-                </button>
-              );
-            })}
-          </div>
-          <Link href="/shelf" className="mt-2.5 block">
-            <Button kind="ghost" size="sm">
-              Browse the Shelf →
-            </Button>
-          </Link>
         </Card>
       </div>
 
@@ -166,8 +121,7 @@ export default function SettingsPage() {
       <div className="flex flex-col gap-2 px-4">
         <NavRow href="/settings/theme" label="Theme" sub="Switch visual theme" />
         <NavRow href="/settings/integrations" label="Integrations" sub="Fitbit · Apple Health · Garmin" />
-        <NavRow href="/progress" label="Progress" sub="Charts · calendar · check-ins · photos" />
-        <NavRow href="/library" label="Workouts library" sub="Saved frames + single workouts" />
+        <NavRow href="/stats" label="Stats" sub="Body · calendar · photos · injuries" />
         <NavRow href="/settings/advanced" label="Advanced" sub="Migrations · debug" />
       </div>
 

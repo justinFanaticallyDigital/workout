@@ -1,12 +1,8 @@
 "use client";
 
 /**
- * 2.13 Activity loggers — HIIT / Cardio / Class / Custom (Cluster 2, Logger tier).
- *
- * One dynamic full-screen logger driven by [type]. Working stopwatch hero +
- * type-specific fields + universal effort + auto/manual calories + notes.
- * Saves a LocalSession (kind:"activity") to the local logger-store — never the
- * DB. Replaces the Ways-to-log placeholders that routed to the blank logger.
+ * Activity loggers — HIIT / Cardio / Class / Custom. Timer + per-type fields;
+ * saving writes an ActivityLog row via POST /api/activity-logs.
  */
 import { useEffect, useRef, useState } from "react";
 import { notFound, useRouter } from "next/navigation";
@@ -21,7 +17,6 @@ import {
   FieldLabel,
 } from "@/components/v2";
 import { useToast } from "@/components/ui/Toast";
-import { saveSession } from "@/lib/logger-store";
 
 export const dynamic = "force-dynamic";
 
@@ -100,13 +95,28 @@ export default function ActivityLoggerPage({ params }: { params: { type: string 
           ? `${mode[0].toUpperCase()}${mode.slice(1)} · ${distance.toFixed(1)} km`
           : cfg.label;
 
-    await saveSession({
-      kind: "activity",
-      startedAt: startedAt.current,
-      finishedAt: Date.now(),
-      data: { name: sessionName, activityType: type, fields, effort, kcal, durationSec: sec, notes: notes || undefined },
+    const intensity = effort === "easy" ? "LIGHT" : effort === "mod" ? "MODERATE" : "HARD";
+    const res = await fetch("/api/activity-logs", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        date: new Date(startedAt.current).toISOString(),
+        activityType: type.toUpperCase(),
+        subType: sessionName,
+        durationMin: Math.max(1, Math.round(sec / 60)),
+        intensity,
+        distanceKm: type === "liss" ? Number(distance) || null : null,
+        avgHeartRate: type === "liss" ? Number(hr) || null : null,
+        caloriesBurned: kcal ? Math.round(Number(kcal)) : null,
+        studio: type === "class" ? studio || null : null,
+        notes: [notes, Object.keys(fields).length ? JSON.stringify(fields) : ""].filter(Boolean).join("\n") || null,
+      }),
     });
-    toast.success(`${cfg.label} saved on this device`);
+    if (!res.ok) {
+      toast.error(`Couldn't save the ${cfg.label.toLowerCase()} session.`);
+      return;
+    }
+    toast.success(`${cfg.label} saved`);
     router.push("/training");
   };
 

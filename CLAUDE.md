@@ -206,7 +206,7 @@ Gameplan / Program / Logger tiers, `TierProvider`, Shelf / checkout / welcome fl
 ## Rebuild status
 Tracked per phase of `docs/v2-rebuild-plan.md` §7. Update this list when a phase lands.
 - [x] P0 — CLAUDE.md rewrite, docs archived
-- [ ] P1 — gameplan tier / tier model / shelf / engines removed; temporary 4-tab nav
+- [x] P1 — gameplan tier / tier model / shelf / engines removed; temporary 4-tab nav
 - [ ] P2 — Atompunk tokens, fonts, kit primitives, real BottomNav
 - [ ] P3 — schema additions, seeds, APIs
 - [ ] P4 — Training tab, day detail, plans list, plan editor
