@@ -57,6 +57,12 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ foods: [], source: "none" });
   }
 
+  // Library listing (no query): the user's own foods plus shared cached ones, same set the Nutrition tile counts.
+  if (searchParams.get("mine") === "1" && search.length < 2) {
+    const foods = await prisma.foodItem.findMany({ where: { OR: [{ userId }, { userId: null }] }, orderBy: { name: "asc" }, take: 200 });
+    return NextResponse.json({ foods, source: "local" });
+  }
+
   // Search by name
   if (search.length < 2) {
     return NextResponse.json({ foods: [] });

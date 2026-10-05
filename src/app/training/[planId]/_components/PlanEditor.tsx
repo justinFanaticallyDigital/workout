@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   Btn,
@@ -12,6 +12,7 @@ import {
   DayHeader,
   ExercisePickerSheet,
   PromptSheet,
+  ReorderList,
   ScreenHeader,
   Seg,
   StatusStamp,
@@ -392,10 +393,10 @@ function EdDay({ day, index, open, onToggle, onAdd, onRename, onDelete, onPickNa
   );
 }
 
-function EdExRow({ row, grip, onPickName, onPickCategory, onPickTarget, onRemove }: { row: PlanExercise; grip: React.HTMLAttributes<HTMLSpanElement>; onPickName: () => void; onPickCategory: () => void; onPickTarget: () => void; onRemove: () => void }) {
+function EdExRow({ row, grip, onPickName, onPickCategory, onPickTarget, onRemove }: { row: PlanExercise; grip: React.HTMLAttributes<HTMLElement>; onPickName: () => void; onPickCategory: () => void; onPickTarget: () => void; onRemove: () => void }) {
   return (
     <div className="flex items-center gap-2.5 border-b border-ft-border-faint py-2">
-      <span {...grip} className="cursor-grab touch-none select-none font-data text-[13px] tracking-[2px] text-ft-dim active:cursor-grabbing" aria-label="Drag to reorder">
+      <span {...grip} className={`font-data text-[13px] tracking-[2px] text-ft-dim ${grip.className ?? ""}`} aria-label="Drag to reorder">
         ⠿
       </span>
       <div className="flex min-w-0 flex-1 flex-col items-start gap-[7px] py-0.5">
@@ -412,64 +413,6 @@ function EdExRow({ row, grip, onPickName, onPickCategory, onPickTarget, onRemove
       <button type="button" onClick={onRemove} aria-label={`Remove ${row.name}`} className="px-1 font-data text-[12px] text-ft-dim">
         ✕
       </button>
-    </div>
-  );
-}
-
-/** Pointer-driven reorder: drag from the grip, rows slide, commit on release. */
-function ReorderList({ rows, onReorder, children }: { rows: PlanExercise[]; onReorder: (order: string[]) => void; children: (row: PlanExercise, grip: React.HTMLAttributes<HTMLSpanElement>) => React.ReactNode }) {
-  const listRef = useRef<HTMLDivElement>(null);
-  const [drag, setDrag] = useState<{ id: string; from: number; to: number; dy: number } | null>(null);
-  const ids = useMemo(() => rows.map((r) => r.id), [rows]);
-
-  const start = (id: string, from: number, e: React.PointerEvent) => {
-    e.preventDefault();
-    (e.target as HTMLElement).setPointerCapture?.(e.pointerId);
-    const startY = e.clientY;
-    const rowEls = Array.from(listRef.current?.querySelectorAll<HTMLElement>("[data-row]") ?? []);
-    const centers = rowEls.map((el) => {
-      const r = el.getBoundingClientRect();
-      return r.top + r.height / 2;
-    });
-    const move = (ev: PointerEvent) => {
-      const dy = ev.clientY - startY;
-      const y = centers[from] + dy;
-      let to = 0;
-      for (let i = 0; i < centers.length; i++) if (y > centers[i]) to = i;
-      setDrag({ id, from, to, dy });
-    };
-    const up = () => {
-      document.removeEventListener("pointermove", move);
-      document.removeEventListener("pointerup", up);
-      setDrag((d) => {
-        if (d && d.to !== d.from) {
-          const next = ids.slice();
-          const [m] = next.splice(d.from, 1);
-          next.splice(d.to, 0, m);
-          onReorder(next);
-        }
-        return null;
-      });
-    };
-    document.addEventListener("pointermove", move);
-    document.addEventListener("pointerup", up);
-  };
-
-  return (
-    <div ref={listRef}>
-      {rows.map((row, i) => {
-        let style: React.CSSProperties | undefined;
-        if (drag) {
-          if (row.id === drag.id) style = { transform: `translateY(${drag.dy}px)`, opacity: 0.75, position: "relative", zIndex: 2 };
-          else if (drag.from < drag.to && i > drag.from && i <= drag.to) style = { transform: "translateY(-100%)", transition: "transform 120ms" };
-          else if (drag.from > drag.to && i >= drag.to && i < drag.from) style = { transform: "translateY(100%)", transition: "transform 120ms" };
-        }
-        return (
-          <div key={row.id} data-row style={style}>
-            {children(row, { onPointerDown: (e) => start(row.id, i, e) })}
-          </div>
-        );
-      })}
     </div>
   );
 }

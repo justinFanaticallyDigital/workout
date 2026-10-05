@@ -211,7 +211,7 @@ Tracked per phase of `docs/v2-rebuild-plan.md` §7. Update this list when a phas
 - [x] P3 — schema additions, seeds, APIs
 - [x] P4 — Training tab, day detail, plans list, plan editor
 - [x] P5 — Logger restyle + frames
-- [ ] P6 — Nutrition home, targets, My Days, Day Builder, plans
+- [x] P6 — Nutrition home, targets, My Days, Day Builder, plans
 - [ ] P7 — My Meals, Meal Builder, label scan + review
 - [ ] P8 — Stats tab, exercise history, PRs, moved pages
 - [ ] P9 — Settings hub + restyle of kept pages
