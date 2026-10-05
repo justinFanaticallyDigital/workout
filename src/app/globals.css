@@ -1,2194 +1,251 @@
-@import url('https://fonts.googleapis.com/css2?family=Permanent+Marker&family=Caveat:wght@400;700&family=Barlow+Condensed:wght@300;400;500;600;700&family=Space+Mono:wght@400;700&family=Libre+Baskerville:wght@400;700&family=Press+Start+2P&family=IBM+Plex+Mono:wght@400;500;600;700&family=IBM+Plex+Sans:wght@300;400;500;600;700&family=Anton&family=Inter:wght@300;400;500;600;700&family=VT323&family=Silkscreen:wght@400;700&family=Pixelify+Sans:wght@400;500;600;700&family=Orbitron:wght@400;500;600;700;900&family=Rajdhani:wght@300;400;500;600;700&family=Share+Tech+Mono&family=Stardos+Stencil:wght@400;700&family=Teko:wght@300;400;500;600;700&family=Oswald:wght@300;400;500;600;700&family=Archivo+Black&family=Reenie+Beanie&family=Patrick+Hand&family=Major+Mono+Display&family=JetBrains+Mono:wght@400;500;600;700&display=swap');
-
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
+/* ═══════════════════════════════════════════════════════════════════════
+   FitTrack v2 — Atompunk. One theme, static tokens, no runtime switching.
+   Colour tokens are RGB triplets so Tailwind's `ft-*` utilities can apply
+   alpha (`bg-ft-accent/[.12]`). Values come from the Claude Design canvas
+   ("FitTrack v2 — Base Screens · Atompunk"); see CLAUDE.md → Design system.
+   ═══════════════════════════════════════════════════════════════════════ */
 @layer base {
-  /* ═════════════════════════════════════════════════════════════
-     Theme tokens. CSS owns the static first-paint values. After
-     ThemeProvider hydrates, runtime CSS-var injection takes over
-     (writeRuntimeCssVars in src/providers/ThemeProvider.tsx) and
-     keeps every prototype-shape token (theme-bridge.jsx contract)
-     in sync with the active theme.
-
-     `:root` is the graffiti baseline (preserves first-paint for
-     existing users with no data-theme attribute set yet). Each
-     named theme overrides via `:root[data-theme="X"]`.
-
-     Movement colors (push/pull/legs/core), state base colors
-     (success/warn/danger/info), and the data-viz palette are
-     declared once on :root and inherited where unchanged.
-     ═════════════════════════════════════════════════════════════ */
-
   :root {
-    /* Graffiti baseline (first-paint default before ThemeProvider hydrates) */
-    --ft-bg: 28 28 30;
-    --ft-bg-alt: 42 42 45;
-    --ft-surface: 58 58 62;
-    --ft-surface-alt: 45 45 48;
-    --ft-card: 72 72 76;
-    --ft-surface-raised: 72 72 76;
-    --ft-border: 245 220 60;
-    --ft-border-alpha: 1;
-    --ft-border-color: rgba(245,220,60,0.35);
-    --ft-border-subtle-color: rgba(255,255,255,0.10);
-    --ft-border-faint: 255 255 255;
-    --ft-border-strong: 245 220 60;
-    --ft-muted: 192 192 195;
-    --ft-dim: 192 192 195;
-    --ft-light: 215 215 220;
-    --ft-pale: 250 250 248;
-    --ft-white: 250 250 248;
-    --ft-accent: 245 220 60;
-    --ft-accent-secondary: 253 202 64;
-    --ft-accent-fg: 245 220 60;
-    --ft-accent-faint: 245 220 60;
-    --ft-accent-border: 245 220 60;
-    /* On-bg accent family — aliases the active theme's accent. Blueprint
-       overrides these to navy (its accent is white → invisible on the light
-       page bg). See ARCHITECTURE.md §1. Runtime ThemeProvider keeps these
-       exact post-hydration; this is the anti-FOUC fallback. */
-    --ft-accent-on-bg: var(--ft-accent);
-    --ft-accent-faint-on-bg: var(--ft-accent-faint);
-    --ft-accent-border-on-bg: var(--ft-accent-border);
-    --ft-success: 92 184 92;
-    --ft-warn: 240 173 78;
-    --ft-danger: 255 80 140;
+    /* Surfaces */
+    --ft-bg: 220 230 224;              /* #DCE6E0 mint paper */
+    --ft-bg-alt: 204 217 210;          /* #CCD9D2 */
+    --ft-surface: 252 251 245;         /* #FCFBF5 porcelain — cards, nav, sticky bars */
+    --ft-surface-raised: 255 255 255;  /* #FFFFFF inputs, mini tiles */
+    --ft-card: 255 255 255;            /* legacy alias of surface-raised */
+    --ft-surface-alt: 240 239 230;     /* #F0EFE6 segmented track, food tiles, quiet buttons */
 
-    /* Movement pattern colors — graffiti baseline */
-    --ft-push: 92 156 250;
-    --ft-pull: 125 209 125;
-    --ft-legs: 255 122 168;
-    --ft-core: 245 194 117;
-
-    /* Data visualization palette (constant across all themes) */
-    --ft-data-1: 59 130 246;
-    --ft-data-2: 234 179 8;
-    --ft-data-3: 239 68 68;
-    --ft-data-4: 167 139 250;
-    --ft-data-5: 251 146 60;
-    --ft-data-6: 34 211 238;
-
-    /* Text hierarchy — solid colors (alpha vars retained for backward compat) */
-    --ft-text-primary: 250 250 248;
-    --ft-text-secondary: 215 215 220;
-    --ft-text-tertiary: 192 192 195;
-    --ft-text-on-accent: 28 28 30;
-    --ft-text-on-bg: 250 250 248;
-    --ft-text-on-bg-sec: 215 215 220;
-    --ft-text-on-bg-ter: 192 192 195;
+    /* Text */
+    --ft-text-primary: 31 42 40;       /* #1F2A28 */
+    --ft-text-secondary: 70 84 79;     /* #46544F */
+    --ft-text-tertiary: 122 135 130;   /* #7A8782 */
+    --ft-white: 31 42 40;              /* legacy aliases → primary */
+    --ft-pale: 31 42 40;
+    --ft-light: 70 84 79;              /* → secondary */
+    --ft-dim: 122 135 130;             /* → tertiary */
+    --ft-muted: 122 135 130;           /* → tertiary (never a border colour) */
+    --ft-text-on-accent: 252 251 245;  /* #FCFBF5 on teal / coral */
+    --ft-text-on-bg: 31 42 40;         /* on-bg family == normal text (light page) */
+    --ft-text-on-bg-sec: 70 84 79;
+    --ft-text-on-bg-ter: 122 135 130;
     --ft-alpha-primary: 1;
     --ft-alpha-secondary: 1;
     --ft-alpha-tertiary: 1;
 
-    /* State families — base + Fg/Bg/Border for graffiti */
-    --ft-success: 92 184 92;
-    --ft-success-fg: 125 209 125;
-    --ft-success-bg: 92 184 92;
-    --ft-success-border: 92 184 92;
-    --ft-success-br: 92 184 92;
-    --ft-warn: 240 173 78;
-    --ft-warn-fg: 245 194 117;
-    --ft-warn-bg: 240 173 78;
-    --ft-warn-border: 240 173 78;
-    --ft-warn-br: 240 173 78;
-    --ft-danger: 255 80 140;
-    --ft-danger-fg: 255 122 168;
-    --ft-danger-bg: 255 80 140;
-    --ft-danger-border: 255 80 140;
-    --ft-danger-br: 255 80 140;
-    --ft-info: 59 130 246;
-    --ft-info-fg: 92 156 250;
-    --ft-info-bg: 59 130 246;
-    --ft-info-border: 59 130 246;
-    --ft-info-br: 59 130 246;
+    /* Borders */
+    --ft-border: 201 210 204;          /* #C9D2CC card border */
+    --ft-border-faint: 219 226 220;    /* #DBE2DC row divider */
+    --ft-border-strong: 174 187 180;   /* #AEBBB4 */
+    --ft-border-color: #C9D2CC;
+    --ft-border-subtle-color: #DBE2DC;
+    --ft-border-card: 1px solid #C9D2CC;
+    --ft-border-divider: 1px solid #DBE2DC;
 
-    /* Font stacks — graffiti baseline */
-    --ft-font-display: 'Permanent Marker', cursive;
-    --ft-font-data: 'Bungee', sans-serif;
-    --ft-font-handwritten: 'Bungee', sans-serif;
-    --ft-font-body: 'Permanent Marker', cursive;
-    --ft-font-mono: 'Courier New', Courier, monospace;
-    --ft-font-sans: 'Permanent Marker', cursive;
-    --ft-font-number: 'Bungee', sans-serif;
+    /* Accent — atomic teal */
+    --ft-accent: 14 140 124;           /* #0E8C7C */
+    --ft-accent-deep: 11 114 99;       /* #0B7263 primary button border */
+    --ft-accent-secondary: 201 137 42; /* gold */
+    --ft-accent-fg: 14 140 124;
+    --ft-accent-faint: 14 140 124;     /* use as bg-ft-accent-faint/[.12] */
+    --ft-accent-border: 14 140 124;    /* use as border-ft-accent-border/40 */
+    --ft-accent-on-bg: 14 140 124;
+    --ft-accent-faint-on-bg: 14 140 124;
+    --ft-accent-border-on-bg: 14 140 124;
 
-    /* Border shorthands + radius */
-    --ft-border-card: 1px dashed rgba(255,255,255,0.12);
-    --ft-border-divider: 1px dashed rgba(255,255,255,0.10);
-    --ft-border-radius: 0;
-    --ft-radius: 0;
-    --ft-radius-sm: 0;
-    --ft-radius-md: 1px;
-    --ft-radius-lg: 2px;
+    /* Coral — calories, PR, Finish, protein */
+    --ft-coral: 214 73 46;             /* #D6492E */
+    --ft-coral-bg: 250 230 224;        /* #FAE6E0 */
+    /* Gold — rest timer, fat, warnings */
+    --ft-gold: 201 137 42;             /* #C9892A */
+    --ft-gold-fg: 176 116 28;          /* #B0741C text on gold bg */
+    --ft-gold-bg: 247 235 214;         /* #F7EBD6 */
+    --ft-gold-border: 224 197 142;     /* #E0C58E */
 
-    /* Shadows */
-    --ft-shadow-sm: 2px 2px 0 rgba(0,0,0,0.3);
-    --ft-shadow-md: 0 6px 18px rgba(0,0,0,0.4);
+    --ft-success: 63 143 92;           /* #3F8F5C */
+    --ft-success-fg: 47 122 74;        /* #2F7A4A */
+    --ft-success-bg: 225 238 228;      /* #E1EEE4 */
+    --ft-success-border: 173 209 183;  /* #ADD1B7 */
+    --ft-success-br: 173 209 183;
+    --ft-warn: 201 137 42;
+    --ft-warn-fg: 176 116 28;
+    --ft-warn-bg: 247 235 214;
+    --ft-warn-border: 224 197 142;
+    --ft-warn-br: 224 197 142;
+    --ft-danger: 214 73 46;
+    --ft-danger-fg: 214 73 46;
+    --ft-danger-bg: 250 230 224;
+    --ft-danger-border: 214 73 46;
+    --ft-danger-br: 214 73 46;
+    --ft-info: 14 140 124;
+    --ft-info-fg: 14 140 124;
+    --ft-info-bg: 232 243 241;
+    --ft-info-border: 14 140 124;
+    --ft-info-br: 14 140 124;
 
-    /* Stamp pill */
-    --ft-stamp-fg: 28 28 30;
-    --ft-stamp-bg: 245 220 60;
-    --ft-stamp-border: 245 220 60;
-  }
+    /* Exercise category groups (fixed) */
+    --ft-push: 42 157 143;             /* #2A9D8F */
+    --ft-pull: 91 165 114;             /* #5BA572 */
+    --ft-legs: 214 73 46;              /* #D6492E */
+    --ft-core: 201 137 42;             /* #C9892A */
 
-  /* ═════════════ DEFAULT (8th theme — stock dark) ═════════════ */
-  :root[data-theme="default"] {
-    --ft-bg: 26 26 26;
-    --ft-bg-alt: 34 34 34;
-    --ft-surface: 46 46 46;
-    --ft-surface-alt: 56 56 56;
-    --ft-card: 67 67 67;
-    --ft-surface-raised: 67 67 67;
-    --ft-border: 85 85 85;
-    --ft-border-faint: 58 58 58;
-    --ft-border-strong: 122 122 122;
-    --ft-border-color: #555555;
-    --ft-border-subtle-color: #3A3A3A;
-    --ft-muted: 184 184 184;
-    --ft-dim: 184 184 184;
-    --ft-light: 204 204 204;
-    --ft-pale: 239 239 239;
-    --ft-white: 239 239 239;
-    --ft-accent: 224 224 224;
-    --ft-accent-secondary: 253 202 64;
-    --ft-accent-fg: 224 224 224;
-    --ft-accent-faint: 224 224 224;
-    --ft-accent-border: 224 224 224;
-    --ft-text-primary: 239 239 239;
-    --ft-text-secondary: 204 204 204;
-    --ft-text-tertiary: 184 184 184;
-    --ft-text-on-accent: 26 26 26;
-    --ft-text-on-bg: 239 239 239;
-    --ft-text-on-bg-sec: 204 204 204;
-    --ft-text-on-bg-ter: 184 184 184;
-    --ft-alpha-primary: 1;
-    --ft-alpha-secondary: 1;
-    --ft-alpha-tertiary: 1;
-    --ft-push: 59 130 246;
-    --ft-pull: 34 197 94;
-    --ft-legs: 239 68 68;
-    --ft-core: 234 179 8;
-    --ft-success: 111 191 115;
-    --ft-success-fg: 130 215 140;
-    --ft-success-bg: 111 191 115;
-    --ft-success-border: 111 191 115;
-    --ft-success-br: 111 191 115;
-    --ft-warn: 230 162 60;
-    --ft-warn-fg: 238 184 97;
-    --ft-warn-bg: 230 162 60;
-    --ft-warn-border: 230 162 60;
-    --ft-warn-br: 230 162 60;
-    --ft-danger: 239 83 80;
-    --ft-danger-fg: 244 122 120;
-    --ft-danger-bg: 239 83 80;
-    --ft-danger-border: 239 83 80;
-    --ft-danger-br: 239 83 80;
-    --ft-info: 140 180 220;
-    --ft-info-fg: 140 180 220;
-    --ft-info-bg: 140 180 220;
-    --ft-info-border: 140 180 220;
-    --ft-info-br: 140 180 220;
-    --ft-font-display: system-ui, -apple-system, sans-serif;
-    --ft-font-data: 'Courier New', Courier, monospace;
-    --ft-font-handwritten: 'Courier New', Courier, monospace;
-    --ft-font-body: system-ui, -apple-system, sans-serif;
-    --ft-font-mono: 'Courier New', Courier, monospace;
-    --ft-font-sans: system-ui, -apple-system, sans-serif;
-    --ft-font-number: 'Courier New', Courier, monospace;
-    --ft-border-card: 1px solid rgba(255,255,255,0.08);
-    --ft-border-divider: 1px solid rgba(255,255,255,0.06);
-    --ft-border-radius: 4px;
-    --ft-radius: 4px;
-    --ft-radius-sm: 2px;
-    --ft-radius-md: 4px;
-    --ft-radius-lg: 8px;
-    --ft-shadow-sm: 0 1px 2px rgba(0,0,0,0.3);
-    --ft-shadow-md: 0 4px 12px rgba(0,0,0,0.4);
-    --ft-stamp-fg: 184 184 184;
-    --ft-stamp-bg: 0 0 0;
-    --ft-stamp-border: 85 85 85;
-  }
+    /* Camera (label scan) */
+    --ft-cam-bg: 20 29 27;             /* #141D1B */
+    --ft-cam-text: 233 239 236;        /* #E9EFEC */
+    --ft-cam-muted: 159 176 170;       /* #9FB0AA */
 
-  /* ═════════════ GRAFFITI (90s Street) ═════════════ */
-  :root[data-theme="graffiti"] {
-    --ft-bg: 28 28 30;
-    --ft-bg-alt: 42 42 45;
-    --ft-surface: 58 58 62;
-    --ft-surface-alt: 45 45 48;
-    --ft-card: 72 72 76;
-    --ft-surface-raised: 72 72 76;
-    --ft-border: 245 220 60;
-    --ft-border-faint: 255 255 255;
-    --ft-border-strong: 245 220 60;
-    --ft-border-color: rgba(245,220,60,0.35);
-    --ft-border-subtle-color: rgba(255,255,255,0.10);
-    --ft-muted: 192 192 195;
-    --ft-dim: 192 192 195;
-    --ft-light: 215 215 220;
-    --ft-pale: 250 250 248;
-    --ft-white: 250 250 248;
-    --ft-accent: 245 220 60;
-    --ft-accent-secondary: 253 202 64;
-    --ft-accent-fg: 245 220 60;
-    --ft-accent-faint: 245 220 60;
-    --ft-accent-border: 245 220 60;
-    --ft-text-primary: 250 250 248;
-    --ft-text-secondary: 215 215 220;
-    --ft-text-tertiary: 192 192 195;
-    --ft-text-on-accent: 28 28 30;
-    --ft-text-on-bg: 250 250 248;
-    --ft-text-on-bg-sec: 215 215 220;
-    --ft-text-on-bg-ter: 192 192 195;
-    --ft-alpha-primary: 1;
-    --ft-alpha-secondary: 1;
-    --ft-alpha-tertiary: 1;
-    --ft-push: 92 156 250;
-    --ft-pull: 125 209 125;
-    --ft-legs: 255 122 168;
-    --ft-core: 245 194 117;
-    --ft-success: 92 184 92;
-    --ft-success-fg: 125 209 125;
-    --ft-success-bg: 92 184 92;
-    --ft-success-border: 92 184 92;
-    --ft-success-br: 92 184 92;
-    --ft-warn: 240 173 78;
-    --ft-warn-fg: 245 194 117;
-    --ft-warn-bg: 240 173 78;
-    --ft-warn-border: 240 173 78;
-    --ft-warn-br: 240 173 78;
-    --ft-danger: 255 80 140;
-    --ft-danger-fg: 255 122 168;
-    --ft-danger-bg: 255 80 140;
-    --ft-danger-border: 255 80 140;
-    --ft-danger-br: 255 80 140;
-    --ft-info: 59 130 246;
-    --ft-info-fg: 92 156 250;
-    --ft-info-bg: 59 130 246;
-    --ft-info-border: 59 130 246;
-    --ft-info-br: 59 130 246;
-    --ft-font-display: 'Permanent Marker', cursive;
-    --ft-font-data: 'Bungee', sans-serif;
-    --ft-font-handwritten: 'Bungee', sans-serif;
-    --ft-font-body: 'Permanent Marker', cursive;
-    --ft-font-mono: 'Courier New', Courier, monospace;
-    --ft-font-sans: 'Permanent Marker', cursive;
-    --ft-font-number: 'Bungee', sans-serif;
-    --ft-border-card: 1px dashed rgba(255,255,255,0.12);
-    --ft-border-divider: 1px dashed rgba(255,255,255,0.10);
-    --ft-border-radius: 0;
-    --ft-radius: 0;
-    --ft-radius-sm: 0;
-    --ft-radius-md: 1px;
-    --ft-radius-lg: 2px;
-    --ft-shadow-sm: 2px 2px 0 rgba(0,0,0,0.3);
-    --ft-shadow-md: 0 6px 18px rgba(0,0,0,0.4);
-    --ft-stamp-fg: 28 28 30;
-    --ft-stamp-bg: 245 220 60;
-    --ft-stamp-border: 245 220 60;
-  }
+    /* Data-viz series */
+    --ft-data-1: 14 140 124;
+    --ft-data-2: 214 73 46;
+    --ft-data-3: 201 137 42;
+    --ft-data-4: 63 143 92;
+    --ft-data-5: 70 84 79;
+    --ft-data-6: 91 165 114;
 
-  /* ═════════════ CYBERPUNK (Dark Future) ═════════════ */
-  :root[data-theme="cyberpunk"] {
-    --ft-bg: 5 10 22;
-    --ft-bg-alt: 12 20 38;
-    --ft-surface: 18 30 52;
-    --ft-surface-alt: 14 24 40;
-    --ft-card: 26 42 74;
-    --ft-surface-raised: 26 42 74;
-    --ft-border: 0 240 255;
-    --ft-border-faint: 0 240 255;
-    --ft-border-strong: 0 240 255;
-    --ft-border-color: rgba(0,240,255,0.35);
-    --ft-border-subtle-color: rgba(0,240,255,0.15);
-    --ft-muted: 144 176 200;
-    --ft-dim: 144 176 200;
-    --ft-light: 200 230 245;
-    --ft-pale: 235 250 255;
-    --ft-white: 235 250 255;
-    --ft-accent: 0 240 255;
-    --ft-accent-secondary: 255 48 104;
-    --ft-accent-fg: 0 240 255;
-    --ft-accent-faint: 0 240 255;
-    --ft-accent-border: 0 240 255;
-    --ft-text-primary: 235 250 255;
-    --ft-text-secondary: 200 230 245;
-    --ft-text-tertiary: 144 176 200;
-    --ft-text-on-accent: 5 10 22;
-    --ft-text-on-bg: 235 250 255;
-    --ft-text-on-bg-sec: 200 230 245;
-    --ft-text-on-bg-ter: 144 176 200;
-    --ft-alpha-primary: 1;
-    --ft-alpha-secondary: 1;
-    --ft-alpha-tertiary: 1;
-    --ft-push: 0 240 255;
-    --ft-pull: 125 255 184;
-    --ft-legs: 255 138 162;
-    --ft-core: 255 208 80;
-    --ft-success: 80 240 160;
-    --ft-success-fg: 125 255 184;
-    --ft-success-bg: 80 240 160;
-    --ft-success-border: 80 240 160;
-    --ft-success-br: 80 240 160;
-    --ft-warn: 255 208 80;
-    --ft-warn-fg: 255 224 120;
-    --ft-warn-bg: 255 208 80;
-    --ft-warn-border: 255 208 80;
-    --ft-warn-br: 255 208 80;
-    --ft-danger: 255 88 120;
-    --ft-danger-fg: 255 138 162;
-    --ft-danger-bg: 255 88 120;
-    --ft-danger-border: 255 88 120;
-    --ft-danger-br: 255 88 120;
-    --ft-info: 0 240 255;
-    --ft-info-fg: 0 240 255;
-    --ft-info-bg: 0 240 255;
-    --ft-info-border: 0 240 255;
-    --ft-info-br: 0 240 255;
-    --ft-font-display: 'Orbitron', sans-serif;
-    --ft-font-data: 'Share Tech Mono', monospace;
-    --ft-font-handwritten: 'Share Tech Mono', monospace;
-    --ft-font-body: 'Share Tech Mono', monospace;
-    --ft-font-mono: 'Share Tech Mono', monospace;
-    --ft-font-sans: 'Share Tech Mono', monospace;
-    --ft-font-number: 'Share Tech Mono', monospace;
-    --ft-border-card: 1px solid rgba(0,240,255,0.12);
-    --ft-border-divider: 1px solid rgba(0,240,255,0.07);
-    --ft-border-radius: 0;
-    --ft-radius: 0;
-    --ft-radius-sm: 0;
-    --ft-radius-md: 0;
-    --ft-radius-lg: 2px;
-    --ft-shadow-sm: 0 0 6px rgba(0,240,255,0.25);
-    --ft-shadow-md: 0 0 20px rgba(0,240,255,0.18);
-    --ft-stamp-fg: 0 240 255;
-    --ft-stamp-bg: 0 0 0;
-    --ft-stamp-border: 0 240 255;
-  }
 
-  /* ═════════════ NOTEBOOK (Coach's Notebook) ═════════════ */
-  :root[data-theme="notebook"] {
-    --ft-bg: 250 246 237;
-    --ft-bg-alt: 240 235 221;
-    --ft-surface: 255 252 244;
-    --ft-surface-alt: 250 246 237;
-    --ft-card: 255 255 255;
-    --ft-surface-raised: 255 255 255;
-    --ft-border: 210 198 178;
-    --ft-border-faint: 229 219 203;
-    --ft-border-strong: 168 155 133;
-    --ft-border-color: #D2C6B2;
-    --ft-border-subtle-color: #E5DBCB;
-    --ft-muted: 110 95 74;
-    --ft-dim: 110 95 74;
-    --ft-light: 90 79 64;
-    --ft-pale: 38 33 25;
-    --ft-white: 38 33 25;
-    --ft-accent: 181 49 42;
-    --ft-accent-secondary: 26 107 60;
-    --ft-accent-fg: 181 49 42;
-    --ft-accent-faint: 181 49 42;
-    --ft-accent-border: 181 49 42;
-    --ft-text-primary: 38 33 25;
-    --ft-text-secondary: 90 79 64;
-    --ft-text-tertiary: 110 95 74;
-    --ft-text-on-accent: 255 252 244;
-    --ft-text-on-bg: 38 33 25;
-    --ft-text-on-bg-sec: 90 79 64;
-    --ft-text-on-bg-ter: 110 95 74;
-    --ft-alpha-primary: 1;
-    --ft-alpha-secondary: 1;
-    --ft-alpha-tertiary: 1;
-    --ft-push: 90 133 199;
-    --ft-pull: 107 170 100;
-    --ft-legs: 194 90 79;
-    --ft-core: 212 154 72;
-    --ft-success: 64 122 60;
-    --ft-success-fg: 64 122 60;
-    --ft-success-bg: 230 240 215;
-    --ft-success-border: 180 205 145;
-    --ft-success-br: 180 205 145;
-    --ft-warn: 170 95 20;
-    --ft-warn-fg: 170 95 20;
-    --ft-warn-bg: 246 232 200;
-    --ft-warn-border: 210 175 110;
-    --ft-warn-br: 210 175 110;
-    --ft-danger: 181 49 42;
-    --ft-danger-fg: 181 49 42;
-    --ft-danger-bg: 245 220 213;
-    --ft-danger-border: 210 145 130;
-    --ft-danger-br: 210 145 130;
-    --ft-info: 50 85 130;
-    --ft-info-fg: 50 85 130;
-    --ft-info-bg: 220 230 240;
-    --ft-info-border: 170 190 210;
-    --ft-info-br: 170 190 210;
-    --ft-font-display: 'Caveat', cursive;
-    --ft-font-data: 'Caveat', cursive;
-    --ft-font-handwritten: 'Caveat', cursive;
-    --ft-font-body: 'Patrick Hand', cursive;
-    --ft-font-mono: 'Courier New', Courier, monospace;
-    --ft-font-sans: 'Patrick Hand', cursive;
-    --ft-font-number: 'Caveat', cursive;
-    --ft-border-card: none;
-    --ft-border-divider: 1px solid #D2C6B2;
-    --ft-border-radius: 2px;
-    --ft-radius: 2px;
-    --ft-radius-sm: 2px;
-    --ft-radius-md: 2px;
-    --ft-radius-lg: 3px;
-    --ft-shadow-sm: 0 1px 2px rgba(0,0,0,0.08);
-    --ft-shadow-md: 0 4px 10px rgba(0,0,0,0.1);
-    --ft-stamp-fg: 140 125 105;
-    --ft-stamp-bg: 0 0 0;
-    --ft-stamp-border: 210 198 178;
-  }
+    /* Type — loaded with next/font in app/layout.tsx */
+    --ft-font-display: var(--font-audiowide), "Audiowide", sans-serif;
+    --ft-font-data: var(--font-oxanium), "Oxanium", sans-serif;
+    --ft-font-body: var(--font-jost), "Jost", sans-serif;
+    --ft-font-handwritten: var(--font-jost), "Jost", sans-serif;
+    --ft-font-mono: var(--font-oxanium), "Oxanium", sans-serif;
+    --ft-font-sans: var(--font-jost), "Jost", sans-serif;
+    --ft-font-number: var(--font-oxanium), "Oxanium", sans-serif;
 
-  /* ═════════════ BLUEPRINT ═════════════ */
-  :root[data-theme="blueprint"] {
-    --ft-bg: 222 233 244;
-    --ft-bg-alt: 205 217 230;
-    --ft-surface: 19 44 82;
-    --ft-surface-alt: 30 60 110;
-    --ft-card: 30 60 110;
-    --ft-surface-raised: 30 60 110;
-    --ft-border: 19 44 82;
-    --ft-border-faint: 19 44 82;
-    --ft-border-strong: 19 44 82;
-    --ft-border-color: #132C52;
-    --ft-border-subtle-color: rgba(19,44,82,0.35);
-    --ft-muted: 144 176 204;
-    --ft-dim: 144 176 204;
-    --ft-light: 210 225 240;
-    --ft-pale: 250 253 255;
-    --ft-white: 250 253 255;
-    --ft-accent: 250 253 255;
-    --ft-accent-secondary: 255 107 74;
-    --ft-accent-fg: 250 253 255;
-    --ft-accent-faint: 250 253 255;
-    --ft-accent-border: 250 253 255;
-    /* FLIP: accent is white → invisible on the light page bg. On-bg accent
-       falls back to navy so accent chrome on the page bg stays visible. */
-    --ft-accent-on-bg: 19 44 82;
-    --ft-accent-faint-on-bg: 19 44 82;
-    --ft-accent-border-on-bg: 19 44 82;
-    --ft-text-primary: 250 253 255;
-    --ft-text-secondary: 210 225 240;
-    --ft-text-tertiary: 144 176 204;
-    --ft-text-on-accent: 19 44 82;
-    --ft-text-on-bg: 19 44 82;
-    --ft-text-on-bg-sec: 30 60 110;
-    --ft-text-on-bg-ter: 63 95 138;
-    --ft-alpha-primary: 1;
-    --ft-alpha-secondary: 1;
-    --ft-alpha-tertiary: 1;
-    --ft-push: 144 200 255;
-    --ft-pull: 160 229 176;
-    --ft-legs: 255 168 156;
-    --ft-core: 245 218 122;
-    --ft-success: 116 216 148;
-    --ft-success-fg: 160 229 176;
-    --ft-success-bg: 116 216 148;
-    --ft-success-border: 116 216 148;
-    --ft-success-br: 116 216 148;
-    --ft-warn: 240 205 90;
-    --ft-warn-fg: 245 218 122;
-    --ft-warn-bg: 240 205 90;
-    --ft-warn-border: 240 205 90;
-    --ft-warn-br: 240 205 90;
-    --ft-danger: 255 139 126;
-    --ft-danger-fg: 255 168 156;
-    --ft-danger-bg: 255 139 126;
-    --ft-danger-border: 255 139 126;
-    --ft-danger-br: 255 139 126;
-    --ft-info: 144 200 255;
-    --ft-info-fg: 144 200 255;
-    --ft-info-bg: 144 200 255;
-    --ft-info-border: 144 200 255;
-    --ft-info-br: 144 200 255;
-    --ft-font-display: 'Major Mono Display', monospace;
-    --ft-font-data: 'Space Mono', monospace;
-    --ft-font-handwritten: 'Space Mono', monospace;
-    --ft-font-body: 'Space Mono', monospace;
-    --ft-font-mono: 'Space Mono', monospace;
-    --ft-font-sans: 'Space Mono', monospace;
-    --ft-font-number: 'Space Mono', monospace;
-    --ft-border-card: 1px solid rgba(255,255,255,0.25);
-    --ft-border-divider: 1px solid rgba(255,255,255,0.15);
-    --ft-border-radius: 0;
-    --ft-radius: 0;
-    --ft-radius-sm: 0;
-    --ft-radius-md: 0;
-    --ft-radius-lg: 2px;
-    --ft-shadow-sm: 0 1px 0 rgba(19,44,82,0.3);
-    --ft-shadow-md: 0 4px 16px rgba(19,44,82,0.18);
-    --ft-stamp-fg: 250 253 255;
-    --ft-stamp-bg: 0 0 0;
-    --ft-stamp-border: 250 253 255;
-  }
-
-  /* ═════════════ ARCADE (Retro Arcade) ═════════════ */
-  :root[data-theme="arcade"] {
-    --ft-bg: 7 7 15;
-    --ft-bg-alt: 14 14 28;
-    --ft-surface: 34 34 58;
-    --ft-surface-alt: 26 26 46;
-    --ft-card: 42 42 68;
-    --ft-surface-raised: 42 42 68;
-    --ft-border: 255 80 200;
-    --ft-border-faint: 255 80 200;
-    --ft-border-strong: 0 240 255;
-    --ft-border-color: #FF50C8;
-    --ft-border-subtle-color: rgba(255,80,200,0.30);
-    --ft-muted: 168 163 210;
-    --ft-dim: 168 163 210;
-    --ft-light: 220 215 240;
-    --ft-pale: 255 255 255;
-    --ft-white: 255 255 255;
-    --ft-accent: 255 80 200;
-    --ft-accent-secondary: 255 215 0;
-    --ft-accent-fg: 255 80 200;
-    --ft-accent-faint: 255 80 200;
-    --ft-accent-border: 255 80 200;
-    --ft-text-primary: 255 255 255;
-    --ft-text-secondary: 220 215 240;
-    --ft-text-tertiary: 168 163 210;
-    --ft-text-on-accent: 7 7 15;
-    --ft-text-on-bg: 255 255 255;
-    --ft-text-on-bg-sec: 220 215 240;
-    --ft-text-on-bg-ter: 168 163 210;
-    --ft-alpha-primary: 1;
-    --ft-alpha-secondary: 1;
-    --ft-alpha-tertiary: 1;
-    --ft-push: 0 240 255;
-    --ft-pull: 80 255 140;
-    --ft-legs: 255 80 140;
-    --ft-core: 255 220 60;
-    --ft-success: 50 240 130;
-    --ft-success-fg: 80 255 140;
-    --ft-success-bg: 50 240 130;
-    --ft-success-border: 50 240 130;
-    --ft-success-br: 50 240 130;
-    --ft-warn: 255 220 60;
-    --ft-warn-fg: 255 235 90;
-    --ft-warn-bg: 255 220 60;
-    --ft-warn-border: 255 220 60;
-    --ft-warn-br: 255 220 60;
-    --ft-danger: 255 80 140;
-    --ft-danger-fg: 255 110 160;
-    --ft-danger-bg: 255 80 140;
-    --ft-danger-border: 255 80 140;
-    --ft-danger-br: 255 80 140;
-    --ft-info: 0 240 255;
-    --ft-info-fg: 0 240 255;
-    --ft-info-bg: 0 240 255;
-    --ft-info-border: 0 240 255;
-    --ft-info-br: 0 240 255;
-    --ft-font-display: 'Press Start 2P', monospace;
-    --ft-font-data: 'VT323', monospace;
-    --ft-font-handwritten: 'VT323', monospace;
-    --ft-font-body: 'Pixelify Sans', sans-serif;
-    --ft-font-mono: 'VT323', monospace;
-    --ft-font-sans: 'Pixelify Sans', sans-serif;
-    --ft-font-number: 'VT323', monospace;
-    --ft-border-card: 2px solid rgba(255,255,255,0.08);
-    --ft-border-divider: 2px solid rgba(255,255,255,0.06);
-    --ft-border-radius: 0;
-    --ft-radius: 0;
-    --ft-radius-sm: 0;
-    --ft-radius-md: 0;
-    --ft-radius-lg: 0;
-    --ft-shadow-sm: 2px 2px 0 rgba(0,240,255,0.5);
-    --ft-shadow-md: 4px 4px 0 rgba(255,80,200,0.35);
-    --ft-stamp-fg: 0 240 255;
-    --ft-stamp-bg: 0 0 0;
-    --ft-stamp-border: 0 240 255;
-  }
-
-  /* ═════════════ LAB (Lab Report) ═════════════ */
-  :root[data-theme="lab"] {
-    --ft-bg: 236 237 240;
-    --ft-bg-alt: 248 249 251;
-    --ft-surface: 255 255 255;
-    --ft-surface-alt: 248 249 251;
-    --ft-card: 255 255 255;
-    --ft-surface-raised: 255 255 255;
-    --ft-border: 210 214 220;
-    --ft-border-faint: 229 231 235;
-    --ft-border-strong: 156 163 175;
-    --ft-border-color: #D2D6DC;
-    --ft-border-subtle-color: #E5E7EB;
-    --ft-muted: 90 100 115;
-    --ft-dim: 90 100 115;
-    --ft-light: 58 66 84;
-    --ft-pale: 18 24 35;
-    --ft-white: 18 24 35;
-    --ft-accent: 37 99 235;
-    --ft-accent-secondary: 5 150 105;
-    --ft-accent-fg: 37 99 235;
-    --ft-accent-faint: 239 244 254;
-    --ft-accent-border: 199 215 251;
-    --ft-text-primary: 18 24 35;
-    --ft-text-secondary: 58 66 84;
-    --ft-text-tertiary: 90 100 115;
-    --ft-text-on-accent: 255 255 255;
-    --ft-text-on-bg: 18 24 35;
-    --ft-text-on-bg-sec: 58 66 84;
-    --ft-text-on-bg-ter: 90 100 115;
-    --ft-alpha-primary: 1;
-    --ft-alpha-secondary: 1;
-    --ft-alpha-tertiary: 1;
-    --ft-push: 74 144 217;
-    --ft-pull: 92 184 92;
-    --ft-legs: 217 83 79;
-    --ft-core: 240 173 78;
-    --ft-success: 21 128 61;
-    --ft-success-fg: 21 128 61;
-    --ft-success-bg: 236 253 243;
-    --ft-success-border: 167 224 188;
-    --ft-success-br: 167 224 188;
-    --ft-warn: 199 116 5;
-    --ft-warn-fg: 199 116 5;
-    --ft-warn-bg: 255 246 229;
-    --ft-warn-border: 244 214 154;
-    --ft-warn-br: 244 214 154;
-    --ft-danger: 180 35 24;
-    --ft-danger-fg: 180 35 24;
-    --ft-danger-bg: 254 241 240;
-    --ft-danger-border: 245 181 174;
-    --ft-danger-br: 245 181 174;
-    --ft-info: 37 99 235;
-    --ft-info-fg: 37 99 235;
-    --ft-info-bg: 239 244 254;
-    --ft-info-border: 199 215 251;
-    --ft-info-br: 199 215 251;
-    --ft-font-display: 'IBM Plex Sans', sans-serif;
-    --ft-font-data: 'JetBrains Mono', monospace;
-    --ft-font-handwritten: 'JetBrains Mono', monospace;
-    --ft-font-body: 'IBM Plex Sans', sans-serif;
-    --ft-font-mono: 'JetBrains Mono', monospace;
-    --ft-font-sans: 'IBM Plex Sans', sans-serif;
-    --ft-font-number: 'JetBrains Mono', monospace;
-    --ft-border-card: 1px solid #E5E7EB;
-    --ft-border-divider: 1px solid #F3F4F6;
-    --ft-border-radius: 6px;
-    --ft-radius: 6px;
+    /* Radii + shadows */
     --ft-radius-sm: 4px;
-    --ft-radius-md: 6px;
-    --ft-radius-lg: 10px;
-    --ft-shadow-sm: 0 1px 2px rgba(0,0,0,0.04);
-    --ft-shadow-md: 0 4px 12px rgba(0,0,0,0.08);
-    --ft-stamp-fg: 107 114 128;
-    --ft-stamp-bg: 0 0 0;
-    --ft-stamp-border: 210 214 220;
+    --ft-radius-md: 10px;
+    --ft-radius-lg: 18px;
+    --ft-radius: 10px;
+    --ft-border-radius: 18px;
+    --ft-shadow-sm: 0 1px 2px rgba(31, 42, 40, 0.08);
+    --ft-shadow-md: 0 6px 20px rgba(31, 42, 40, 0.14);
+
+    /* The chrome gradient: teal → coral → gold */
+    --ft-chrome: linear-gradient(90deg, rgb(var(--ft-accent)) 0 62%, rgb(var(--ft-coral)) 62% 82%, rgb(var(--ft-gold)) 82% 100%);
   }
 
-  /* ═════════════ IRON (Iron & Chalk) ═════════════ */
-  :root[data-theme="iron"] {
-    --ft-bg: 22 21 20;
-    --ft-bg-alt: 30 29 27;
-    --ft-surface: 46 45 43;
-    --ft-surface-alt: 58 56 53;
-    --ft-card: 60 58 55;
-    --ft-surface-raised: 60 58 55;
-    --ft-border: 200 169 110;
-    --ft-border-faint: 200 169 110;
-    --ft-border-strong: 200 169 110;
-    --ft-border-color: rgba(200,169,110,0.25);
-    --ft-border-subtle-color: rgba(200,169,110,0.12);
-    --ft-muted: 186 177 161;
-    --ft-dim: 186 177 161;
-    --ft-light: 215 205 190;
-    --ft-pale: 245 240 230;
-    --ft-white: 245 240 230;
-    --ft-accent: 200 169 110;
-    --ft-accent-secondary: 139 69 19;
-    --ft-accent-fg: 200 169 110;
-    --ft-accent-faint: 200 169 110;
-    --ft-accent-border: 200 169 110;
-    --ft-text-primary: 245 240 230;
-    --ft-text-secondary: 215 205 190;
-    --ft-text-tertiary: 186 177 161;
-    --ft-text-on-accent: 22 21 20;
-    --ft-text-on-bg: 245 240 230;
-    --ft-text-on-bg-sec: 215 205 190;
-    --ft-text-on-bg-ter: 186 177 161;
-    --ft-alpha-primary: 1;
-    --ft-alpha-secondary: 1;
-    --ft-alpha-tertiary: 1;
-    --ft-push: 91 160 224;
-    --ft-pull: 122 201 122;
-    --ft-legs: 224 114 104;
-    --ft-core: 232 184 96;
-    --ft-success: 110 200 130;
-    --ft-success-fg: 130 215 145;
-    --ft-success-bg: 110 200 130;
-    --ft-success-border: 110 200 130;
-    --ft-success-br: 110 200 130;
-    --ft-warn: 240 190 90;
-    --ft-warn-fg: 240 200 110;
-    --ft-warn-bg: 240 190 90;
-    --ft-warn-border: 240 190 90;
-    --ft-warn-br: 240 190 90;
-    --ft-danger: 240 95 85;
-    --ft-danger-fg: 245 130 120;
-    --ft-danger-bg: 240 95 85;
-    --ft-danger-border: 240 95 85;
-    --ft-danger-br: 240 95 85;
-    --ft-info: 200 169 110;
-    --ft-info-fg: 200 169 110;
-    --ft-info-bg: 200 169 110;
-    --ft-info-border: 200 169 110;
-    --ft-info-br: 200 169 110;
-    --ft-font-display: 'Stardos Stencil', serif;
-    --ft-font-data: 'Teko', sans-serif;
-    --ft-font-handwritten: 'Teko', sans-serif;
-    --ft-font-body: 'Oswald', sans-serif;
-    --ft-font-mono: 'Courier New', Courier, monospace;
-    --ft-font-sans: 'Oswald', sans-serif;
-    --ft-font-number: 'Teko', sans-serif;
-    --ft-border-card: 1px solid rgba(255,252,245,0.08);
-    --ft-border-divider: 1px solid rgba(255,252,245,0.06);
-    --ft-border-radius: 0;
-    --ft-radius: 0;
-    --ft-radius-sm: 0;
-    --ft-radius-md: 0;
-    --ft-radius-lg: 2px;
-    --ft-shadow-sm: 0 1px 0 rgba(0,0,0,0.4);
-    --ft-shadow-md: 0 4px 12px rgba(0,0,0,0.5);
-    --ft-stamp-fg: 200 169 110;
-    --ft-stamp-bg: 0 0 0;
-    --ft-stamp-border: 200 169 110;
+  * {
+    box-sizing: border-box;
+  }
+
+  html {
+    background: rgb(var(--ft-bg));
+  }
+
+  body {
+    margin: 0;
+    background: rgb(var(--ft-bg));
+    color: rgb(var(--ft-text-primary));
+    font-family: var(--ft-font-body);
+    font-weight: 400;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  /* Starburst field — three faint radial glows behind every light screen. */
+  body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    pointer-events: none;
+    background-image:
+      radial-gradient(circle at 16% 12%, rgba(14, 140, 124, 0.07), transparent 36%),
+      radial-gradient(circle at 84% 82%, rgba(214, 73, 46, 0.05), transparent 40%),
+      radial-gradient(circle at 50% 50%, rgba(201, 137, 42, 0.035), transparent 55%);
+  }
+
+  input, textarea, select, button {
+    font-family: inherit;
   }
 }
 
-* {
-  box-sizing: border-box;
+@layer components {
+  /* ── Type scale (Oxanium for data, Audiowide for titles) ───────────── */
+  .t-title {
+    font-family: var(--ft-font-display);
+    font-size: 21px;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    line-height: 1.1;
+    color: rgb(var(--ft-text-primary));
+  }
+  .t-eyebrow {
+    font-family: var(--ft-font-data);
+    font-size: 10px;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: rgb(var(--ft-text-tertiary));
+  }
+  .t-label {
+    font-family: var(--ft-font-data);
+    font-size: 9.5px;
+    font-weight: 700;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+  }
+  .t-link {
+    font-family: var(--ft-font-data);
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: rgb(var(--ft-accent));
+    white-space: nowrap;
+  }
+  .t-day {
+    font-family: var(--ft-font-data);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.16em;
+    color: rgb(var(--ft-accent));
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+  .t-num {
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* ── Ornament: the chrome band on cards ────────────────────────────── */
+  .ft-band::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 16px;
+    right: 16px;
+    height: 3px;
+    border-radius: 0 0 3px 3px;
+    opacity: 0.9;
+    background: var(--ft-chrome);
+    pointer-events: none;
+  }
+  .ft-chrome-bar {
+    background: var(--ft-chrome);
+  }
+
+  /* ── Font utilities (Tailwind also maps font-display/data/body) ────── */
+  .font-display { font-family: var(--ft-font-display); }
+  .font-data { font-family: var(--ft-font-data); font-variant-numeric: tabular-nums; }
+  .font-body { font-family: var(--ft-font-body); }
+
 }
 
-body {
-  background: rgb(var(--ft-bg));
-  color: rgba(var(--ft-text-primary) / var(--ft-alpha-primary));
-  font-family: var(--ft-font-body);
-  font-weight: 400;
-  margin: 0;
-}
-
-/* Font utility classes */
-.font-display {
-  font-family: var(--ft-font-display);
-}
-.font-handwritten {
-  font-family: var(--ft-font-handwritten);
-}
-.font-data {
-  font-family: var(--ft-font-data);
-  font-variant-numeric: tabular-nums;
-}
-.font-body {
-  font-family: var(--ft-font-body);
-}
-
-/* ─────────────────────────────────────────────────────────────
-   Theme-flavored card chrome — opt-in.
-   Page markup adds `ft-card` to elements that want the per-theme
-   ornament (knurled brass strip on iron, paper drop-shadow on
-   notebook, pixel bezel on arcade, etc.). Each theme's ornament
-   is defined in its `[data-theme="X"]` block further down in this
-   file. The base class is just a positioning anchor.
-   ───────────────────────────────────────────────────────────── */
-.ft-card {
-  position: relative;
-}
-
-/* Iron — brass knurled rib along card top */
-[data-theme="iron"] .ft-card::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 4px;
-  background:
-    repeating-linear-gradient(90deg,
-      rgba(200, 169, 110, 0.9) 0 2px,
-      rgba(140, 108, 58, 0.9) 2px 4px),
-    linear-gradient(90deg, #c8a96e, #a98855 50%, #c8a96e);
-  background-blend-mode: multiply;
-  box-shadow: 0 1px 0 rgba(0, 0, 0, 0.4) inset;
-  pointer-events: none;
-  z-index: 1;
-}
-
-/* Arcade — pink/cyan pixel bezel */
-[data-theme="arcade"] .ft-card {
-  box-shadow:
-    0 0 0 1px rgb(var(--ft-border)),
-    0 0 0 3px rgb(var(--ft-bg)),
-    0 0 0 4px rgba(0, 240, 255, 0.9),
-    4px 4px 0 0 rgba(255, 80, 200, 0.35);
-}
-
-/* Cyberpunk — soft cyan inner glow */
-[data-theme="cyberpunk"] .ft-card {
-  box-shadow: 0 0 0 1px rgba(0, 240, 255, 0.15), inset 0 0 20px rgba(0, 240, 255, 0.08);
-}
-
-/* Graffiti — slight tilt on alternating cards */
-[data-theme="graffiti"] .ft-card {
-  transform: rotate(-0.2deg);
-}
-[data-theme="graffiti"] .ft-card:nth-of-type(2n) {
-  transform: rotate(0.25deg);
-}
-
-/* Notebook — paper drop shadow */
-[data-theme="notebook"] .ft-card {
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08), 0 4px 10px rgba(0, 0, 0, 0.06);
-}
-
-/* ─────────────────────────────────────────────────────────────
-   Small-caps "stamp" pill — used for status/section labels
-   like ACTIVE, PR, SPECIMEN # etc. Shape is theme-adaptive.
-   ───────────────────────────────────────────────────────────── */
-.ft-stamp {
-  display: inline-block;
-  padding: 3px 8px;
-  font-size: 9px;
-  letter-spacing: 0.15em;
-  text-transform: uppercase;
-  border: 1px solid rgb(var(--ft-border));
-  color: rgb(var(--ft-dim));
-  font-family: var(--ft-font-data);
-}
-[data-theme="iron"] .ft-stamp {
-  border-color: rgba(200, 169, 110, 0.6);
-  color: rgb(var(--ft-accent));
-  letter-spacing: 0.35em;
-  font-size: 10px;
-}
-[data-theme="graffiti"] .ft-stamp {
-  background: rgb(var(--ft-accent-secondary));
-  color: #1c1c1e;
-  border: none;
-  transform: rotate(-2deg);
-}
-[data-theme="arcade"] .ft-stamp {
-  font-family: var(--ft-font-display);
-  font-size: 8px;
-  color: rgb(var(--ft-accent));
-  letter-spacing: 0.1em;
-}
-[data-theme="blueprint"] .ft-stamp {
-  border: 1px solid rgba(255, 255, 255, 0.5);
-  color: rgb(var(--ft-pale));
-}
-
-/* Display heading helper (alternative to <h1>/<h2>) */
-.ft-h {
-  font-family: var(--ft-font-display);
-}
-
-/* Text opacity hierarchy */
-.text-primary {
-  color: rgba(var(--ft-text-primary) / var(--ft-alpha-primary));
-}
-.text-secondary {
-  color: rgba(var(--ft-text-secondary) / var(--ft-alpha-secondary));
-}
-.text-tertiary {
-  color: rgba(var(--ft-text-tertiary) / var(--ft-alpha-tertiary));
-}
-
-/*
- * Theme-adaptive CTA class.
- * Reads --ft-button-style (set by ThemeProvider) and switches presentation:
- *   underline  — spray-paint underline (graffiti, notebook)
- *   outline    — accent border pill (blueprint, iron)
- *   ghost      — subtle border (cyberpunk)
- *   pixel-border — chunky retro box-shadow (arcade)
- *   fill       — solid accent background (lab)
- */
-.cta-underline {
-  position: relative;
-  display: inline-block;
-  text-decoration: none;
-  cursor: pointer;
-  font-family: var(--ft-font-display);
-  transition: opacity 0.15s;
-}
-
-/* Default: spray-paint underline (for 'underline' button style) */
-.cta-underline::after {
-  content: '';
-  position: absolute;
-  bottom: -2px;
-  left: -2px;
-  right: -2px;
-  height: 3px;
-  background: rgb(var(--ft-accent));
-  opacity: 0.6;
-  filter: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='r'%3E%3CfeTurbulence baseFrequency='0.5' numOctaves='2' seed='3'/%3E%3CfeDisplacementMap in='SourceGraphic' scale='3'/%3E%3C/filter%3E%3C/svg%3E#r");
-}
-.cta-underline:hover::after {
-  opacity: 0.85;
-  height: 4px;
-}
-
-/* outline — accent border pill */
-:root[data-button-style="outline"] .cta-underline {
-  border: 1px solid rgb(var(--ft-accent));
-  border-radius: var(--ft-border-radius, 0.5rem);
-  padding: 4px 12px;
-}
-:root[data-button-style="outline"] .cta-underline::after { display: none; }
-
-/* ghost — subtle border */
-:root[data-button-style="ghost"] .cta-underline {
-  border: 1px solid var(--ft-border-color, rgba(255,255,255,0.12));
-  padding: 4px 12px;
-}
-:root[data-button-style="ghost"] .cta-underline::after { display: none; }
-
-/* pixel-border — retro box-shadow */
-:root[data-button-style="pixel-border"] .cta-underline {
-  border: 2px solid rgb(var(--ft-accent));
-  box-shadow: 3px 3px 0 rgb(var(--ft-accent));
-  padding: 4px 12px;
-}
-:root[data-button-style="pixel-border"] .cta-underline::after { display: none; }
-
-/* fill — solid accent background */
-:root[data-button-style="fill"] .cta-underline {
-  background: rgb(var(--ft-accent));
-  color: #fff !important;
-  border-radius: var(--ft-border-radius, 0.5rem);
-  padding: 4px 12px;
-}
-:root[data-button-style="fill"] .cta-underline::after { display: none; }
-
-/* Dashed section dividers — theme-aware */
-.section-divider {
-  border-top: var(--ft-border-divider, 1px dashed var(--ft-border-color, rgba(255, 255, 255, 0.10)));
-}
-
-/* Scrollbar styling */
-::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
-}
-::-webkit-scrollbar-track {
-  background: rgb(var(--ft-bg));
-}
-::-webkit-scrollbar-thumb {
-  background: rgb(var(--ft-card));
-}
-::-webkit-scrollbar-thumb:hover {
-  background: rgb(var(--ft-border));
-}
-
-/* Input resets for the dark theme */
-input, textarea, select {
-  font-family: var(--ft-font-body);
-}
-
-input:focus, textarea:focus, select:focus {
-  outline: 1px solid rgb(var(--ft-dim));
-  outline-offset: -1px;
-}
-
-/* Visible focus ring for keyboard navigation */
-:focus-visible {
-  outline: 2px solid rgb(var(--ft-accent));
-  outline-offset: 2px;
-}
-
-/* Remove focus-visible ring from inputs (they have their own style) */
-input:focus-visible, textarea:focus-visible, select:focus-visible {
-  outline: 1px solid rgb(var(--ft-dim));
-  outline-offset: -1px;
-}
-
-input::placeholder, textarea::placeholder {
-  color: rgb(var(--ft-muted));
-}
-
-/* Safe area padding for notched devices */
-.pb-safe {
-  padding-bottom: max(1rem, env(safe-area-inset-bottom));
-}
-.pt-safe {
-  padding-top: env(safe-area-inset-top);
-}
-
-/* Minimum touch target for interactive elements */
 @layer utilities {
-  .touch-target {
-    min-height: 44px;
-    min-width: 44px;
-  }
-
-  /* ── On-bg foreground helper (Blueprint inversion rule, ARCHITECTURE.md §1) ──
-     Any chrome rendered DIRECTLY on the page bg (titles, labels, footnotes,
-     step text — anything NOT inside a Card) carries `ft-on-bg`. Its default
-     text color flips to navy on Blueprint (where `--ft-text-primary` is white
-     and would vanish on the light page). Inside a Card, do NOT use this —
-     normal text-ft-white / text-ft-light tokens are correct there. Pair with
-     the `text-ft-on-bg*` / `*-ft-accent-on-bg` Tailwind utilities for explicit
-     tiers. */
-  .ft-on-bg {
-    color: rgb(var(--ft-text-on-bg));
-  }
-  .ft-on-bg-sec {
-    color: rgb(var(--ft-text-on-bg-sec));
-  }
-  .ft-on-bg-ter {
-    color: rgb(var(--ft-text-on-bg-ter));
-  }
-}
-
-/* Bottom nav fade gradient */
-.bottom-nav-fade {
-  background: linear-gradient(to top, rgb(var(--ft-bg)) 80%, transparent);
-}
-
-/* Safety net for the fixed bottom nav. Theme card-chrome is scoped to .ft-card
-   (never the broad .bg-ft-surface the nav/sheets/rail share), but this is the
-   belt-and-suspenders guard: the nav must ALWAYS stay viewport-fixed and
-   untransformed. A `transform` on a position:fixed element re-bases it to a new
-   containing block (breaks fixed positioning on mobile Chrome); a theme rule
-   like `[data-theme] .bg-ft-surface { position: relative }` could otherwise
-   out-specify the `.fixed` utility and drop the nav into flow. */
-nav.fixed.bottom-0 {
-  position: fixed !important;
-  transform: none !important;
-}
-
-
-/* Tab transition animation */
-.tab-enter {
-  animation: tabFadeIn 200ms ease forwards;
-}
-@keyframes tabFadeIn {
-  from {
-    opacity: 0;
-    transform: translateY(6px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-/* Texture overlay is rendered by ThemedTexture component (theme-driven) */
-body > * {
-  position: relative;
-  z-index: 1;
-}
-
-/* === Graffiti theme typography scale (reference sizes from mockup) === */
-.graffiti-title {
-  font-family: var(--ft-font-display);
-  font-size: 28px;
-  line-height: 1.2;
-}
-.graffiti-exercise-name {
-  font-family: var(--ft-font-display);
-  font-size: 20px;
-  line-height: 1.3;
-}
-.graffiti-set-data {
-  font-family: var(--ft-font-handwritten);
-  font-size: 22px;
-  line-height: 1.1;
-}
-.graffiti-column-header {
-  font-family: var(--ft-font-body);
-  font-size: 10px;
-  text-transform: uppercase;
-  letter-spacing: 0.12em;
-}
-.graffiti-meta {
-  font-family: var(--ft-font-body);
-  font-size: 11px;
-}
-.graffiti-nav {
-  font-family: var(--ft-font-body);
-  font-size: 10px;
-  text-transform: uppercase;
-}
-.graffiti-rest-timer {
-  font-family: var(--ft-font-handwritten);
-  font-size: 32px;
-}
-
-/* Movement color badge fills — low-opacity backgrounds with white text */
-.badge-push { background: rgba(59,130,246,0.12); }
-.badge-pull { background: rgba(34,197,94,0.12); }
-.badge-legs { background: rgba(239,68,68,0.12); }
-.badge-core { background: rgba(234,179,8,0.12); }
-
-/* === Cyberpunk theme utilities === */
-
-/* Top-edge cyan power-on glow line */
-.cyber-glow-line {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 1px;
-  background: rgba(0,240,255,0.3);
-  box-shadow: 0 0 8px rgba(0,240,255,0.2), 0 0 20px rgba(0,240,255,0.1);
-  z-index: 50;
-  pointer-events: none;
-}
-
-/* Background gradient for cyberpunk body */
-.cyber-bg-gradient {
-  background: linear-gradient(180deg, #0E0E1A 0%, #08080F 30%, #0A0A14 70%, #060610 100%);
-}
-
-/* Cyan text-shadow bloom on active/highlighted elements */
-.cyber-glow-text {
-  text-shadow: 0 0 8px rgba(0,240,255,0.3);
-}
-
-/* Blinking terminal cursor */
-.cyber-cursor::after {
-  content: '_';
-  animation: cursorBlink 1.06s step-end infinite;
-  opacity: 0.6;
-}
-@keyframes cursorBlink {
-  0%, 100% { opacity: 0.6; }
-  50% { opacity: 0; }
-}
-
-/* Pulsing glow for rest timer bar */
-.cyber-pulse-glow {
-  animation: pulseGlow 2s ease-in-out infinite;
-}
-@keyframes pulseGlow {
-  0%, 100% { box-shadow: 0 0 8px rgba(0,240,255,0.3); }
-  50% { box-shadow: 0 0 16px rgba(0,240,255,0.5), 0 0 32px rgba(0,240,255,0.2); }
-}
-
-/* Movement badges — outlined (1px border) not filled */
-.cyber-badge-push { border: 1px solid #3B82F6; background: transparent; }
-.cyber-badge-pull { border: 1px solid #22C55E; background: transparent; }
-.cyber-badge-legs { border: 1px solid #EF4444; background: transparent; }
-.cyber-badge-core { border: 1px solid #EAB308; background: transparent; }
-
-/* System ID watermark */
-.cyber-sys-id {
-  font-family: 'Space Mono', monospace;
-  font-size: 8px;
-  opacity: 0.18;
-  color: #00F0FF;
-  letter-spacing: 1px;
-}
-
-/* Cyberpunk typography scale */
-.cyber-title {
-  font-family: 'Space Mono', monospace;
-  font-size: 22px;
-  font-weight: 700;
-  text-shadow: 0 0 8px rgba(0,240,255,0.3);
-}
-.cyber-block-context {
-  font-family: 'Space Mono', monospace;
-  font-size: 9px;
-  letter-spacing: 2px;
-  color: rgba(0,240,255,0.28);
-}
-.cyber-exercise-name {
-  font-family: 'Space Mono', monospace;
-  font-size: 16px;
-}
-.cyber-set-data {
-  font-family: 'Space Mono', monospace;
-  font-size: 12px;
-}
-.cyber-status-tag {
-  font-family: 'Space Mono', monospace;
-  font-size: 8px;
-}
-.cyber-timer {
-  font-family: 'Space Mono', monospace;
-  font-size: 28px;
-  font-weight: 700;
-  text-shadow: 0 0 12px rgba(0,240,255,0.4);
-}
-.cyber-nav {
-  font-family: 'Space Mono', monospace;
-  font-size: 9px;
-  letter-spacing: 2px;
-}
-
-/* === Notebook theme utilities === */
-
-/* Spiral binding holes along left edge */
-.notebook-binding {
-  position: fixed;
-  left: 0;
-  top: 0;
-  bottom: 0;
-  width: 24px;
-  z-index: 2;
-  pointer-events: none;
-  background-image:
-    repeating-linear-gradient(
-      to bottom,
-      transparent,
-      transparent 30px,
-      #D5D0C8 30px,
-      #D5D0C8 32px,
-      transparent 32px,
-      transparent 38px
-    );
-}
-.notebook-binding::after {
-  content: '';
-  position: absolute;
-  left: 8px;
-  top: 0;
-  bottom: 0;
-  width: 8px;
-  background-image:
-    repeating-radial-gradient(
-      circle at center,
-      transparent 0,
-      transparent 3px,
-      #C8C0B4 3px,
-      #C8C0B4 4px,
-      transparent 4px,
-      transparent 40px
-    );
-  background-size: 8px 40px;
-}
-
-/* Red margin line */
-.notebook-margin-line {
-  position: fixed;
-  left: 24px;
-  top: 0;
-  bottom: 0;
-  width: 1px;
-  background: rgba(180,60,60,0.2);
-  z-index: 2;
-  pointer-events: none;
-}
-
-/* Coffee stain watermark */
-.notebook-coffee-stain {
-  position: fixed;
-  top: 30%;
-  right: 10%;
-  width: 120px;
-  height: 100px;
-  border-radius: 50%;
-  background: radial-gradient(
-    ellipse at 40% 45%,
-    rgba(140,100,60,0.06) 0%,
-    rgba(140,100,60,0.03) 40%,
-    transparent 70%
-  );
-  z-index: 1;
-  pointer-events: none;
-}
-
-/* Handwritten checkmark for completed sets */
-.notebook-check {
-  color: #1A9E45;
-  font-family: 'Caveat', cursive;
-  font-size: 20px;
-  font-weight: 700;
-}
-
-/* Ghost/incomplete set row — "not yet written" */
-.notebook-ghost {
-  color: #B8A898;
-}
-
-/* Previous session faded pencil note */
-.notebook-faded {
-  color: #B8A898;
-  opacity: 0.7;
-}
-
-/* Notes field — italic Caveat with deeper contrast */
-.notebook-notes {
-  font-family: 'Caveat', cursive;
-  font-size: 16px;
-  font-style: italic;
-  font-weight: 500;
-  color: #4A3D32;
-}
-
-/* Notebook typography scale */
-.notebook-title {
-  font-family: 'Caveat', cursive;
-  font-size: 32px;
-  font-weight: 700;
-  color: #2C241E;
-}
-.notebook-exercise-name {
-  font-family: 'Caveat', cursive;
-  font-size: 24px;
-  font-weight: 600;
-  color: #2C241E;
-}
-.notebook-set-data {
-  font-family: 'Caveat', cursive;
-  font-size: 22px;
-  font-weight: 600;
-  color: #2C241E;
-}
-.notebook-column-header {
-  font-family: 'Libre Baskerville', Georgia, serif;
-  font-size: 9.5px;
-  font-variant: small-caps;
-  color: #6B5A4A;
-}
-.notebook-meta {
-  font-family: 'Libre Baskerville', Georgia, serif;
-  font-size: 10px;
-  color: #6B5A4A;
-}
-.notebook-nav {
-  font-family: 'Libre Baskerville', Georgia, serif;
-  font-size: 11px;
-  font-variant: small-caps;
-}
-.notebook-rest-timer {
-  font-family: 'Caveat', cursive;
-  font-size: 36px;
-  font-weight: 700;
-  color: #2C241E;
-}
-
-/* === Blueprint theme utilities === */
-
-/* Title block — boxed section header with revision number feel */
-.blueprint-title-block {
-  border: 1px solid rgba(255,255,255,0.12);
-  padding: 6px 12px;
-  display: inline-block;
-}
-
-/* Registration crosshair marks at section corners */
-.blueprint-crosshair {
-  position: relative;
-}
-.blueprint-crosshair::before {
-  content: '+';
-  position: absolute;
-  top: -8px;
-  left: -8px;
-  font-family: 'IBM Plex Mono', monospace;
-  font-size: 10px;
-  color: rgba(255,255,255,0.15);
-  line-height: 1;
-}
-
-/* Fold lines — faint diagonal creases */
-.blueprint-fold-lines {
-  position: fixed;
-  inset: 0;
-  pointer-events: none;
-  z-index: 1;
-  background-image:
-    linear-gradient(135deg, transparent 49.5%, rgba(255,255,255,0.015) 49.5%, rgba(255,255,255,0.015) 50.5%, transparent 50.5%),
-    linear-gradient(45deg, transparent 49.5%, rgba(255,255,255,0.01) 49.5%, rgba(255,255,255,0.01) 50.5%, transparent 50.5%);
-  background-size: 100% 100%;
-}
-
-/* Dimension callout — small lines with arrows pointing to values */
-.blueprint-dimension {
-  font-family: 'IBM Plex Mono', monospace;
-  font-size: 9px;
-  color: rgba(180,200,230,0.6);
-  position: relative;
-  padding: 0 8px;
-}
-.blueprint-dimension::before {
-  content: '\2190';
-  position: absolute;
-  left: 0;
-  top: 0;
-}
-.blueprint-dimension::after {
-  content: '\2192';
-  position: absolute;
-  right: 0;
-  top: 0;
-}
-
-/* Annotation style — small technical notes */
-.blueprint-annotation {
-  font-family: 'IBM Plex Mono', monospace;
-  font-size: 9px;
-  color: rgba(180,200,230,0.35);
-  text-transform: uppercase;
-  letter-spacing: 1px;
-}
-
-/* SPEC: prefix label style */
-.blueprint-spec-label {
-  font-family: 'IBM Plex Mono', monospace;
-  font-size: 10px;
-  text-transform: uppercase;
-  letter-spacing: 2px;
-  color: rgba(180,200,230,0.6);
-}
-
-/* Blueprint typography scale — all IBM Plex Mono */
-.blueprint-section-title {
-  font-family: 'IBM Plex Mono', monospace;
-  font-size: 16px;
-  text-transform: uppercase;
-  letter-spacing: 3px;
-  color: rgba(255,255,255,0.9);
-}
-.blueprint-exercise-name {
-  font-family: 'IBM Plex Mono', monospace;
-  font-size: 14px;
-  text-transform: uppercase;
-}
-.blueprint-set-data {
-  font-family: 'IBM Plex Mono', monospace;
-  font-size: 13px;
-}
-.blueprint-label {
-  font-family: 'IBM Plex Mono', monospace;
-  font-size: 10px;
-  text-transform: uppercase;
-  letter-spacing: 2px;
-  color: rgba(180,200,230,0.6);
-}
-.blueprint-nav {
-  font-family: 'IBM Plex Mono', monospace;
-  font-size: 10px;
-  text-transform: uppercase;
-  letter-spacing: 1.5px;
-}
-
-/* === Arcade theme utilities === */
-
-/* ALL CAPS enforced — arcade games never use lowercase */
-.arcade-caps {
-  text-transform: uppercase;
-}
-
-/* CRT vignette — dark corners simulating CRT edge falloff */
-.arcade-vignette {
-  position: fixed;
-  inset: 0;
-  pointer-events: none;
-  z-index: 2;
-  background: radial-gradient(
-    ellipse at center,
-    transparent 60%,
-    rgba(0,0,0,0.25) 100%
-  );
-}
-
-/* Score counter display */
-.arcade-score {
-  font-family: 'Press Start 2P', monospace;
-  font-size: 10px;
-  color: #FFD700;
-  text-transform: uppercase;
-}
-
-/* Streak/combo bonus text */
-.arcade-streak {
-  font-family: 'Press Start 2P', monospace;
-  font-size: 9px;
-  color: #FFD700;
-  text-transform: uppercase;
-}
-
-/* PLAYER 1 header identifier */
-.arcade-player-id {
-  font-family: 'Press Start 2P', monospace;
-  font-size: 9px;
-  color: #FF50C8;
-  text-transform: uppercase;
-  letter-spacing: 1px;
-}
-
-/* Pixel border button treatment — double-line pixel style */
-.arcade-pixel-btn {
-  font-family: 'Press Start 2P', monospace;
-  font-size: 9px;
-  text-transform: uppercase;
-  background: transparent;
-  border: 2px solid rgba(255,255,255,0.08);
-  color: #E0E0F0;
-  padding: 8px 16px;
-  cursor: pointer;
-  position: relative;
-}
-.arcade-pixel-btn::after {
-  content: '';
-  position: absolute;
-  inset: 2px;
-  border: 1px solid rgba(255,255,255,0.06);
-  pointer-events: none;
-}
-.arcade-pixel-btn:hover {
-  border-color: #FF50C8;
-  color: #FF50C8;
-}
-
-/* Health bar rest timer — green to yellow to red */
-.arcade-health-bar {
-  height: 8px;
-  background: rgba(255,255,255,0.05);
-}
-.arcade-health-bar-fill {
-  height: 100%;
-  transition: width 1s linear, background-color 0.5s ease;
-}
-.arcade-health-green { background-color: #22C55E; }
-.arcade-health-yellow { background-color: #FFD700; }
-.arcade-health-red { background-color: #EF4444; }
-
-/* Idle prompt — "INSERT COIN" / "PRESS START" */
-.arcade-idle-prompt {
-  font-family: 'Press Start 2P', monospace;
-  font-size: 10px;
-  text-transform: uppercase;
-  color: #E0E0F0;
-  animation: arcadeBlink 1s step-end infinite;
+  .pb-safe { padding-bottom: max(1rem, env(safe-area-inset-bottom)); }
+  .pt-safe { padding-top: env(safe-area-inset-top); }
+  .no-scrollbar { scrollbar-width: none; -ms-overflow-style: none; }
+  .no-scrollbar::-webkit-scrollbar { display: none; }
 }
-@keyframes arcadeBlink {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0; }
-}
-
-/* ROUND label (replaces "Set") */
-.arcade-round-label {
-  font-family: 'Press Start 2P', monospace;
-  font-size: 9px;
-  text-transform: uppercase;
-  color: rgba(224,224,240,0.5);
-}
-
-/*
- * Arcade typography scale — CRITICAL: Press Start 2P renders small!
- * All sizes are upsized vs other themes to compensate.
- * Minimum 8px absolute floor for this font.
- */
-.arcade-title {
-  font-family: 'Press Start 2P', monospace;
-  font-size: 16px;
-  text-transform: uppercase;
-  color: #E0E0F0;
-  line-height: 1.6;
-}
-.arcade-title-lg {
-  font-family: 'Press Start 2P', monospace;
-  font-size: 18px;
-  text-transform: uppercase;
-  color: #E0E0F0;
-  line-height: 1.6;
-}
-.arcade-exercise-name {
-  font-family: 'Press Start 2P', monospace;
-  font-size: 13px;
-  text-transform: uppercase;
-  line-height: 1.5;
-}
-.arcade-set-data {
-  font-family: 'Courier New', monospace;
-  font-size: 14px;
-  font-weight: 700;
-}
-.arcade-label {
-  font-family: 'Press Start 2P', monospace;
-  font-size: 9px;
-  text-transform: uppercase;
-  color: rgba(224,224,240,0.5);
-  line-height: 1.6;
-}
-.arcade-label-sm {
-  font-family: 'Press Start 2P', monospace;
-  font-size: 8px;
-  text-transform: uppercase;
-  color: rgba(224,224,240,0.25);
-  line-height: 1.6;
-}
-.arcade-nav {
-  font-family: 'Press Start 2P', monospace;
-  font-size: 9px;
-  text-transform: uppercase;
-  line-height: 1.6;
-}
-
-/* === Lab Report theme utilities === */
-
-/* Card shadow — very subtle, clinical depth */
-.lab-card-shadow {
-  box-shadow: 0 1px 3px rgba(0,0,0,0.06);
-}
-
-/* Alternating row shading for data tables */
-.lab-row-alt:nth-child(even) {
-  background: rgba(0,0,0,0.02);
-}
-
-/* Status pills — small, filled badges */
-.lab-status-pill {
-  font-family: 'Inter', sans-serif;
-  font-size: 10px;
-  font-weight: 600;
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
-  padding: 2px 8px;
-  border-radius: 10px;
-  display: inline-block;
-}
-.lab-status-complete {
-  background: rgba(5,150,105,0.08);
-  color: #059669;
-}
-.lab-status-pending {
-  background: rgba(107,114,128,0.08);
-  color: #6B7280;
-}
-
-/* Specimen ID / sample number convention */
-.lab-specimen-id {
-  font-family: 'Inter', sans-serif;
-  font-size: 10px;
-  font-weight: 400;
-  letter-spacing: 0.08em;
-  color: #9CA3AF;
-}
-
-/* Delta comparison values */
-.lab-delta {
-  font-family: 'Inter', sans-serif;
-  font-size: 12px;
-  font-weight: 500;
-  font-variant-numeric: tabular-nums;
-}
-.lab-delta-positive { color: #059669; }
-.lab-delta-negative { color: #DC2626; }
-.lab-delta-neutral { color: #6B7280; }
-
-/* Protocol adherence badge */
-.lab-protocol {
-  font-family: 'Inter', sans-serif;
-  font-size: 11px;
-  font-weight: 500;
-  color: #6B7280;
-}
-
-/* Lab typography scale — all Inter, varying by weight */
-.lab-section-header {
-  font-family: 'Inter', sans-serif;
-  font-size: 16px;
-  font-weight: 600;
-  color: #1A1A1A;
-}
-.lab-exercise-name {
-  font-family: 'Inter', sans-serif;
-  font-size: 15px;
-  font-weight: 600;
-  color: #1A1A1A;
-}
-.lab-set-data {
-  font-family: 'Inter', sans-serif;
-  font-size: 14px;
-  font-weight: 500;
-  font-variant-numeric: tabular-nums;
-  color: #1A1A1A;
-}
-.lab-column-header {
-  font-family: 'Inter', sans-serif;
-  font-size: 11px;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  color: #6B7280;
-}
-.lab-meta {
-  font-family: 'Inter', sans-serif;
-  font-size: 12px;
-  font-weight: 400;
-  color: #6B7280;
-}
-.lab-nav {
-  font-family: 'Inter', sans-serif;
-  font-size: 12px;
-  font-weight: 500;
-}
-
-/* === Iron & Chalk theme utilities === */
-
-/* Weight plate groove dividers — subtle raised/recessed horizontal lines */
-.iron-plate-groove {
-  border-top: 1px solid rgba(255,252,245,0.08);
-  border-bottom: 1px solid rgba(0,0,0,0.3);
-  height: 0;
-}
-
-/* Chalked-in completed set — slightly brighter, settled */
-.iron-chalked {
-  color: rgba(255,252,245,0.92);
-}
-
-/* Not-yet-loaded pending set — dimmer */
-.iron-pending {
-  color: rgba(255,252,245,0.25);
-}
-
-/* PR indicator — brass gold subtle border/underline */
-.iron-pr-mark {
-  border-bottom: 2px solid #C8A96E;
-  padding-bottom: 1px;
-}
-
-/* Brass accent rule — like knurling on a barbell */
-.iron-brass-rule {
-  border-top: 1px solid rgba(200,169,110,0.25);
-}
-
-/* Iron typography scale */
-.iron-title {
-  font-family: 'Anton', sans-serif;
-  font-size: 28px;
-  text-transform: uppercase;
-  color: rgba(255,252,245,0.92);
-  line-height: 1.1;
-}
-.iron-exercise-name {
-  font-family: 'Anton', sans-serif;
-  font-size: 20px;
-  text-transform: uppercase;
-  color: rgba(255,252,245,0.92);
-  line-height: 1.2;
-}
-.iron-set-data {
-  font-family: 'Barlow Condensed', sans-serif;
-  font-size: 18px;
-  font-weight: 500;
-  color: rgba(255,252,245,0.92);
-}
-.iron-column-header {
-  font-family: 'Barlow Condensed', sans-serif;
-  font-size: 11px;
-  text-transform: uppercase;
-  letter-spacing: 0.1em;
-  color: rgba(255,252,245,0.55);
-}
-.iron-meta {
-  font-family: 'Barlow Condensed', sans-serif;
-  font-size: 12px;
-  font-weight: 400;
-  color: rgba(255,252,245,0.55);
-}
-.iron-nav {
-  font-family: 'Barlow Condensed', sans-serif;
-  font-size: 11px;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-}
-.iron-rest-timer {
-  font-family: 'Barlow Condensed', sans-serif;
-  font-size: 36px;
-  font-weight: 600;
-  color: rgba(255,252,245,0.92);
-}
-
-/*
- * =============================================================================
- * THEME DIFFERENTIATION
- *
- * Each theme has its own visual language — fonts, chrome, ornament, motion.
- * Triggered via the [data-theme="..."] attribute set on <html> by ThemeProvider.
- * =============================================================================
- */
-
-/* =============================================================================
- * DARK FUTURE (cyberpunk) — neon Tokyo HUD
- *
- * Signature: animated cyan border glow, glowing underline on headers,
- * pulsing accent text, HUD corner brackets on cards, terminal-style
- * scanline + vignette texture.
- * ========================================================================== */
-[data-theme="cyberpunk"] .font-display {
-  text-shadow:
-    0 0 4px rgba(0,240,255,0.75),
-    0 0 12px rgba(0,240,255,0.45),
-    0 0 22px rgba(0,240,255,0.2);
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-}
-[data-theme="cyberpunk"] h1.font-display,
-[data-theme="cyberpunk"] h2.font-display {
-  position: relative;
-  display: inline-block;
-  padding-bottom: 6px;
-}
-[data-theme="cyberpunk"] h1.font-display::after,
-[data-theme="cyberpunk"] h2.font-display::after {
-  content: "";
-  position: absolute;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  height: 2px;
-  background: linear-gradient(90deg, rgba(0,240,255,0.9), rgba(0,240,255,0));
-  box-shadow: 0 0 8px rgba(0,240,255,0.8), 0 0 16px rgba(0,240,255,0.5);
-}
-[data-theme="cyberpunk"] .font-handwritten {
-  text-shadow: 0 0 6px rgba(0,240,255,0.5);
-}
-[data-theme="cyberpunk"] .text-ft-accent {
-  text-shadow: 0 0 6px rgba(0,240,255,0.65);
-  animation: cyber-accent-pulse 2.4s ease-in-out infinite;
-}
-@keyframes cyber-accent-pulse {
-  0%, 100% { text-shadow: 0 0 4px rgba(0,240,255,0.45); }
-  50%      { text-shadow: 0 0 10px rgba(0,240,255,0.95), 0 0 20px rgba(0,240,255,0.5); }
-}
-/* Animated cyan 2px border glow on every card-like surface */
-[data-theme="cyberpunk"] .ft-card {
-  position: relative;
-  border-color: rgba(0,240,255,0.45) !important;
-  box-shadow:
-    inset 0 0 0 1px rgba(0,240,255,0.35),
-    0 0 12px rgba(0,240,255,0.25),
-    0 0 28px rgba(0,240,255,0.12);
-  animation: cyber-border-breathe 4.5s ease-in-out infinite;
-}
-@keyframes cyber-border-breathe {
-  0%, 100% { box-shadow: inset 0 0 0 1px rgba(0,240,255,0.30), 0 0 10px rgba(0,240,255,0.18), 0 0 22px rgba(0,240,255,0.08); }
-  50%      { box-shadow: inset 0 0 0 1px rgba(0,240,255,0.55), 0 0 18px rgba(0,240,255,0.35), 0 0 36px rgba(0,240,255,0.18); }
-}
-/* HUD-style corner brackets on cards */
-[data-theme="cyberpunk"] .ft-card::before,
-[data-theme="cyberpunk"] .ft-card::after {
-  content: "";
-  position: absolute;
-  width: 10px;
-  height: 10px;
-  border-color: rgba(0,240,255,0.95);
-  border-style: solid;
-  pointer-events: none;
-  filter: drop-shadow(0 0 3px rgba(0,240,255,0.6));
-}
-[data-theme="cyberpunk"] .ft-card::before {
-  top: -1px; left: -1px;
-  border-width: 2px 0 0 2px;
-}
-[data-theme="cyberpunk"] .ft-card::after {
-  bottom: -1px; right: -1px;
-  border-width: 0 2px 2px 0;
-}
-[data-theme="cyberpunk"] .cta-underline {
-  text-shadow: 0 0 6px rgba(0,240,255,0.7);
-}
-[data-theme="cyberpunk"] .cta-underline:hover {
-  text-shadow: 0 0 10px rgba(0,240,255,0.95), 0 0 18px rgba(0,240,255,0.5);
-}
-[data-theme="cyberpunk"] input:focus,
-[data-theme="cyberpunk"] textarea:focus,
-[data-theme="cyberpunk"] select:focus {
-  box-shadow: 0 0 0 1px rgba(0,240,255,0.8), 0 0 14px rgba(0,240,255,0.4);
-  outline: none;
-}
-
-/* =============================================================================
- * RETRO ARCADE — 80s cabinet sprite world
- *
- * Signature: pixel-bezel containers, hard pixel drop-shadow, CRT scanlines +
- * aperture grille + corner vignette, uppercase pixel fonts, no smoothing.
- * ========================================================================== */
-[data-theme="arcade"] {
-  image-rendering: pixelated;
-}
-[data-theme="arcade"] body {
-  text-rendering: geometricPrecision;
-}
-/* Pink/cyan double-pixel outer bezel on cards */
-[data-theme="arcade"] .ft-card {
-  border: 2px solid #FF50C8 !important;
-  box-shadow:
-    0 0 0 2px #07070F,
-    0 0 0 4px #00F0FF,
-    4px 4px 0 0 rgba(0,0,0,0.65);
-}
-/* Hard pixel drop-shadow on titles + text */
-[data-theme="arcade"] .font-display {
-  text-shadow: 2px 2px 0 rgba(0,0,0,0.85), 4px 4px 0 rgba(255,80,200,0.35);
-  line-height: 1.45;
-  text-transform: uppercase;
-}
-[data-theme="arcade"] .font-body,
-[data-theme="arcade"] .font-handwritten {
-  letter-spacing: 0.03em;
-}
-[data-theme="arcade"] .cta-underline {
-  text-transform: uppercase;
-  letter-spacing: 0.1em;
-  text-shadow: 1px 1px 0 rgba(0,0,0,0.8);
-}
-[data-theme="arcade"] input,
-[data-theme="arcade"] textarea,
-[data-theme="arcade"] select {
-  box-shadow: inset 2px 2px 0 rgba(0,0,0,0.45);
-  border-radius: 0 !important;
-}
-/* Attract-mode pink pulse on accent text */
-[data-theme="arcade"] .text-ft-accent {
-  animation: arcade-attract 1.2s steps(2) infinite;
-}
-@keyframes arcade-attract {
-  0%, 100% { opacity: 1; }
-  50%      { opacity: 0.65; }
-}
-
-/* =============================================================================
- * IRON & CHALK — forged metal + brass + chalk dust
- *
- * Signature: brass-knurled rib strip on every card top, brushed-plate
- * gradient, stenciled uppercase display type, chalk spray behind titles.
- * ========================================================================== */
-[data-theme="iron"] .ft-card.bg-ft-surface {
-  position: relative;
-  background-image: linear-gradient(
-    180deg,
-    rgba(255,252,245,0.07) 0%,
-    rgba(255,252,245,0.02) 15%,
-    transparent 35%,
-    transparent 70%,
-    rgba(0,0,0,0.28) 100%
-  );
-  border-top: 1px solid rgba(255,252,245,0.14) !important;
-  border-bottom: 1px solid rgba(0,0,0,0.45);
-  box-shadow: inset 0 -8px 14px -10px rgba(0,0,0,0.5);
-}
-/* Barbell-knurled 2px brass rib strip along the top edge of every card */
-[data-theme="iron"] .ft-card.bg-ft-surface::before {
-  content: "";
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 3px;
-  background:
-    linear-gradient(180deg, rgba(200,169,110,0.95) 0%, rgba(139,69,19,0.6) 100%),
-    repeating-linear-gradient(
-      90deg,
-      rgba(0,0,0,0.35) 0 1px,
-      transparent 1px 3px
-    );
-  background-blend-mode: multiply;
-  pointer-events: none;
-  box-shadow: 0 1px 0 rgba(0,0,0,0.5);
-}
-[data-theme="iron"] .section-divider {
-  border-top: 1px solid rgba(200,169,110,0.55);
-  box-shadow: 0 1px 0 rgba(0,0,0,0.3);
-}
-[data-theme="iron"] .font-display {
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  text-shadow:
-    0 1px 0 rgba(0,0,0,0.55),
-    0 2px 6px rgba(0,0,0,0.35);
-}
-/* Chalk dust spray behind display headings */
-[data-theme="iron"] h1.font-display,
-[data-theme="iron"] h2.font-display {
-  position: relative;
-  display: inline-block;
-  padding: 2px 6px;
-}
-[data-theme="iron"] h1.font-display::before,
-[data-theme="iron"] h2.font-display::before {
-  content: "";
-  position: absolute;
-  inset: -4px -8px;
-  background: radial-gradient(ellipse, rgba(255,252,245,0.08) 0%, transparent 70%);
-  pointer-events: none;
-  z-index: -1;
-}
-
-/* =============================================================================
- * 90s STREET (graffiti) — wheatpaste + spray tag
- *
- * Signature: alternating card rotation like taped posters, yellow tape stamps,
- * torn-edge page headers, marker drop-stroke on display type.
- * ========================================================================== */
-[data-theme="graffiti"] .font-display {
-  text-shadow:
-    1px 1px 0 rgba(0,0,0,0.7),
-    2px 2px 0 rgba(0,0,0,0.45),
-    4px 4px 10px rgba(0,0,0,0.3);
-  letter-spacing: 0.01em;
-}
-[data-theme="graffiti"] h1.font-display {
-  display: inline-block;
-  transform: rotate(-1.8deg);
-  transform-origin: left center;
-}
-[data-theme="graffiti"] .section-divider {
-  border-top: 3px dashed rgba(255,255,255,0.22);
-}
-/* Alternating poster/sticker rotations — cards feel slapped up on a wall */
-[data-theme="graffiti"] .ft-card {
-  box-shadow: 3px 4px 0 rgba(0,0,0,0.4), 5px 6px 12px rgba(0,0,0,0.25);
-}
-[data-theme="graffiti"] .ft-card:nth-of-type(odd) {
-  transform: rotate(-0.6deg);
-}
-[data-theme="graffiti"] .ft-card:nth-of-type(even) {
-  transform: rotate(0.4deg);
-}
-/* Yellow tape stamp on the top-left of elevated cards (first of type) */
-[data-theme="graffiti"] .ft-card:first-of-type {
-  position: relative;
-}
-[data-theme="graffiti"] .ft-card:first-of-type::before {
-  content: "";
-  position: absolute;
-  top: -5px;
-  left: 14px;
-  width: 32px;
-  height: 10px;
-  background: rgba(253,202,64,0.85);
-  transform: rotate(-4deg);
-  box-shadow: 1px 1px 0 rgba(0,0,0,0.4);
-  pointer-events: none;
-  z-index: 3;
-}
-/* Torn edge on page-level H1 — jagged underline */
-[data-theme="graffiti"] h1.font-display::after {
-  content: "";
-  display: block;
-  height: 6px;
-  margin-top: 2px;
-  background: currentColor;
-  opacity: 0.25;
-  clip-path: polygon(
-    0 0, 4% 60%, 9% 20%, 14% 80%, 20% 30%, 26% 90%, 32% 40%, 38% 70%,
-    44% 20%, 50% 85%, 56% 40%, 62% 75%, 68% 30%, 74% 80%, 80% 50%,
-    86% 90%, 92% 35%, 100% 70%, 100% 100%, 0 100%
-  );
-}
-
-/* =============================================================================
- * COACH'S NOTEBOOK — spiral-bound journal
- *
- * Signature: wire binding + margin line (rendered via ThemedOverlays),
- * coffee-ring watermark, no card borders, soft paper shadow, handwritten type.
- * ========================================================================== */
-[data-theme="notebook"] main {
-  padding-left: 40px !important;    /* make room for binding + margin line */
-}
-[data-theme="notebook"] .ft-card {
-  /* Post-it / page-on-a-page look — no hard borders, subtle paper shadow */
-  border-color: transparent !important;
-  box-shadow:
-    0 1px 2px rgba(0,0,0,0.05),
-    0 4px 12px rgba(0,0,0,0.08),
-    0 10px 24px rgba(0,0,0,0.04);
-  background-image: none !important;
-}
-[data-theme="notebook"] .font-display {
-  letter-spacing: 0.005em;
-  line-height: 1.1;
-}
-[data-theme="notebook"] .font-body {
-  letter-spacing: 0.01em;
-  line-height: 1.5;
-}
-/* Completed items — handwritten green checkmark styling */
-[data-theme="notebook"] input[type="checkbox"]:checked {
-  accent-color: #1A9E45;
-}
 
-/* =============================================================================
- * BLUEPRINT — technical drafting
- *
- * Signature: wide spaced uppercase display (Major Mono), ::before crosshair
- * corner marks on cards, title-block strip above page titles, dashed dividers.
- * ========================================================================== */
-[data-theme="blueprint"] .font-display {
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  line-height: 1.15;
-}
-[data-theme="blueprint"] .ft-card.bg-ft-surface {
-  position: relative;
-  box-shadow: inset 0 0 0 1px rgba(255,255,255,0.25);
-}
-/* Crosshair + marks at each corner of every card */
-[data-theme="blueprint"] .ft-card.bg-ft-surface::before,
-[data-theme="blueprint"] .ft-card.bg-ft-surface::after {
-  content: "+";
-  position: absolute;
-  font-family: 'IBM Plex Mono', monospace;
-  font-size: 10px;
-  color: rgba(255,255,255,0.55);
-  line-height: 1;
-  pointer-events: none;
-}
-[data-theme="blueprint"] .ft-card.bg-ft-surface::before { top: -7px; left: -4px; }
-[data-theme="blueprint"] .ft-card.bg-ft-surface::after  { bottom: -7px; right: -4px; }
-[data-theme="blueprint"] .section-divider {
-  border-top: 1px dashed rgba(255,255,255,0.45);
-}
-/* Page titles get a mini title-block header strip above them */
-[data-theme="blueprint"] h1.font-display {
-  position: relative;
-  padding-top: 14px;
-}
-[data-theme="blueprint"] h1.font-display::before {
-  content: "DWG — FITTRACK / PG.01";
-  position: absolute;
-  top: 0;
-  left: 0;
-  font-family: 'IBM Plex Mono', monospace;
-  font-size: 9px;
-  letter-spacing: 0.25em;
-  color: rgba(255,255,255,0.55);
-  text-transform: uppercase;
-}
 
-/* =============================================================================
- * LAB REPORT — clinical precision
- *
- * Signature: alternating row shading on list rows, tabular-nums on every
- * numeric value, uppercase mono labels, subtle card shadow, IBM Plex/JetBrains.
- * ========================================================================== */
-[data-theme="lab"] .ft-card {
-  box-shadow: 0 1px 2px rgba(0,0,0,0.04), 0 2px 6px rgba(0,0,0,0.04);
-}
-[data-theme="lab"] .font-handwritten,
-[data-theme="lab"] input[type="number"],
-[data-theme="lab"] .tabular-nums {
-  font-variant-numeric: tabular-nums;
-  font-feature-settings: "tnum" 1;
-}
-/* Alternating row shading for grid/list children inside cards */
-[data-theme="lab"] .ft-card > div[class*="grid"] > *:nth-child(even),
-[data-theme="lab"] .ft-card tr:nth-child(even) {
-  background: rgba(26,26,26,0.025);
-}
-[data-theme="lab"] .font-display {
-  letter-spacing: -0.01em;
-  font-weight: 600;
+/* Label scan viewfinder — the teal line sweeps the frame. */
+@keyframes ft-scan {
+  0% { top: 6%; opacity: 0.25; }
+  50% { opacity: 1; }
+  100% { top: 92%; opacity: 0.25; }
 }
-[data-theme="lab"] label {
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  font-size: 0.72rem;
-  font-weight: 600;
+.scan-line {
+  animation: ft-scan 2.6s ease-in-out infinite alternate;
 }

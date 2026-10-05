@@ -1,0 +1,35 @@
+/**
+ * The kit — FitTrack's only UI vocabulary (CLAUDE.md → Design system).
+ * Plain components over static `ft-*` tokens. No theme branching anywhere.
+ */
+export { default as Card } from "./Card";
+export { default as Stamp, type StampTone } from "./Stamp";
+export { default as Btn, type BtnKind } from "./Btn";
+export { default as Orbit } from "./Orbit";
+export { default as ScreenHeader } from "./ScreenHeader";
+export { default as SectionHeader } from "./SectionHeader";
+export { default as CardStrip } from "./CardStrip";
+export { default as AddCard } from "./AddCard";
+export { default as MacroTriple } from "./MacroTriple";
+export { default as Seg } from "./Seg";
+export { default as Stepper } from "./Stepper";
+export { default as Chev } from "./Chev";
+export { default as TargetTag } from "./TargetTag";
+export { default as CategoryChip, CategoryDot } from "./CategoryChip";
+export { default as StatusStamp, type PlanStatus } from "./StatusStamp";
+export { default as DayHeader } from "./DayHeader";
+export { default as StickyBar } from "./StickyBar";
+export { default as BottomNav, isNavHidden } from "./BottomNav";
+export { default as MainFrame } from "./MainFrame";
+export * from "./icons";
+export { default as Sheet } from "./Sheet";
+export { default as ExercisePickerSheet, type PickedExercise } from "./ExercisePickerSheet";
+export { default as CategoryPickerSheet } from "./CategoryPickerSheet";
+export { default as PromptSheet } from "./PromptSheet";
+export { default as ConfirmSheet } from "./ConfirmSheet";
+export { default as TargetSheet } from "./TargetSheet";
+export { default as ReorderList } from "./ReorderList";
+export { default as StatCard } from "./StatCard";
+export { default as TrendLine } from "./TrendLine";
+export { default as BarRow } from "./BarRow";
+export { default as PhotoSlot } from "./PhotoSlot";

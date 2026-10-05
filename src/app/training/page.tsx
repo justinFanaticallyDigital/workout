@@ -1,17 +1,54 @@
-"use client";
+import { redirect } from "next/navigation";
+import { prisma } from "@/lib/prisma";
+import { getAuthUserId } from "@/lib/auth-helpers";
+import { DAY_EXERCISE_SELECT, mapPlan } from "@/lib/training";
+import { startOfIsoWeek } from "@/lib/dates";
+import TrainingView from "./_components/TrainingView";
+
+export const dynamic = "force-dynamic";
 
 /**
- * Training pillar — tier-branched (MIGRATION_MAP §1.2).
- *
- * Logger tier → the local-first logger training pillar (Cluster 2).
- * Program/Gameplan tiers → the plan-driven program Training tab with rail
- * layers (Today / Block / Program / Gameplan-locked), Cluster 3.
+ * Training tab — one section per active plan (day-card strip, Start on the
+ * card), the Frames row, + New plan, and Show archived. Plans are sequences:
+ * nothing here is bound to today's date except the header stamp.
  */
-import { useTier } from "@/providers/TierProvider";
-import LoggerTrainingPillar from "./_logger";
-import ProgramTrainingTab from "./_program";
+export default async function TrainingPage() {
+  const userId = await getAuthUserId();
+  if (!userId) redirect("/signin");
 
-export default function TrainingPage() {
-  const { tier } = useTier();
-  return tier === "logger" ? <LoggerTrainingPillar /> : <ProgramTrainingTab />;
+  const [programs, frames, weekWorkouts] = await Promise.all([
+    prisma.program.findMany({
+      where: { userId },
+      include: {
+        blocks: {
+          orderBy: { blockNumber: "asc" },
+          include: { days: { orderBy: { sortOrder: "asc" }, include: { exercises: { orderBy: { sortOrder: "asc" }, select: DAY_EXERCISE_SELECT } } } },
+        },
+      },
+      orderBy: { createdAt: "desc" },
+    }),
+    prisma.workoutFrame.findMany({
+      where: { userId },
+      select: { id: true, name: true, focus: true, _count: { select: { exercises: true, workouts: true } } },
+      orderBy: { updatedAt: "desc" },
+    }),
+    prisma.workout.findMany({
+      where: { userId, blockDayId: { not: null }, endTime: { not: null }, date: { gte: startOfIsoWeek() } },
+      select: { blockDayId: true, date: true },
+      orderBy: { date: "desc" },
+    }),
+  ]);
+
+  const completedByDay: Record<string, string> = {};
+  for (const w of weekWorkouts) {
+    if (w.blockDayId && !completedByDay[w.blockDayId]) completedByDay[w.blockDayId] = w.date.toISOString();
+  }
+
+  return (
+    <TrainingView
+      plans={programs.map(mapPlan)}
+      frames={frames.map((f) => ({ id: f.id, name: f.name, focus: f.focus, exerciseCount: f._count.exercises, used: f._count.workouts }))}
+      completedByDay={completedByDay}
+    />
+  );
 }

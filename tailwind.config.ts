@@ -9,6 +9,7 @@ const config: Config = {
     "./src/pages/**/*.{js,ts,jsx,tsx,mdx}",
     "./src/components/**/*.{js,ts,jsx,tsx,mdx}",
     "./src/app/**/*.{js,ts,jsx,tsx,mdx}",
+    "./src/lib/**/*.{js,ts,jsx,tsx}",
   ],
   theme: {
     extend: {
@@ -41,14 +42,28 @@ const config: Config = {
 
           // Accent
           accent: ftColor("accent"),
+          "accent-deep": ftColor("accent-deep"),
           "accent-secondary": ftColor("accent-secondary"),
           "accent-fg": ftColor("accent-fg"),
           "accent-faint": ftColor("accent-faint"),
           "accent-border": ftColor("accent-border"),
-          // On-bg accent family (Blueprint-safe — see ARCHITECTURE.md §1)
+          // On-bg accent family (legacy — equals the accent family on the light page)
           "accent-on-bg": ftColor("accent-on-bg"),
           "accent-faint-on-bg": ftColor("accent-faint-on-bg"),
           "accent-border-on-bg": ftColor("accent-border-on-bg"),
+
+          // Coral / gold (Atompunk secondaries)
+          coral: ftColor("coral"),
+          "coral-bg": ftColor("coral-bg"),
+          gold: ftColor("gold"),
+          "gold-fg": ftColor("gold-fg"),
+          "gold-bg": ftColor("gold-bg"),
+          "gold-border": ftColor("gold-border"),
+
+          // Camera (label scan)
+          "cam-bg": ftColor("cam-bg"),
+          "cam-text": ftColor("cam-text"),
+          "cam-muted": ftColor("cam-muted"),
 
           // Movement
           push: ftColor("push"),

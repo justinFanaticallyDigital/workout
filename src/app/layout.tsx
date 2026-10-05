@@ -1,21 +1,22 @@
 import type { Metadata, Viewport } from "next";
+import { Audiowide, Jost, Oxanium } from "next/font/google";
 import "./globals.css";
-import BottomNav from "@/components/v2/BottomNav";
+import { BottomNav, MainFrame } from "@/components/kit";
 import { ToastProvider } from "@/components/ui/Toast";
 import SessionProvider from "@/components/SessionProvider";
 import OfflineSyncProvider from "@/components/OfflineSyncProvider";
-import { ThemeProvider } from "@/providers/ThemeProvider";
-import { TierProvider } from "@/providers/TierProvider";
-import ThemedTexture from "@/components/themed/ThemedTexture";
-import ThemedOverlays from "@/components/themed/ThemedOverlays";
+
+const audiowide = Audiowide({ weight: "400", subsets: ["latin"], variable: "--font-audiowide", display: "swap" });
+const oxanium = Oxanium({ weight: ["400", "500", "600", "700"], subsets: ["latin"], variable: "--font-oxanium", display: "swap" });
+const jost = Jost({ weight: ["400", "500", "600", "700"], subsets: ["latin"], variable: "--font-jost", display: "swap" });
 
 export const metadata: Metadata = {
   title: "FitTrack",
-  description: "Personal Fitness Tracking",
+  description: "Personal training and nutrition tracking",
   manifest: "/manifest.json",
   appleWebApp: {
     capable: true,
-    statusBarStyle: "black-translucent",
+    statusBarStyle: "default",
     title: "FitTrack",
   },
   icons: {
@@ -28,44 +29,31 @@ export const viewport: Viewport = {
   initialScale: 1,
   maximumScale: 1,
   viewportFit: "cover",
-  themeColor: "#2a2d2f",
+  themeColor: "#DCE6E0",
 };
 
-export default function RootLayout({
-  children,
-}: Readonly<{
-  children: React.ReactNode;
-}>) {
+export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="en">
+    <html lang="en" className={`${audiowide.variable} ${oxanium.variable} ${jost.variable}`}>
       <head>
-        {/* Standard PWA hint — Next's metadata.appleWebApp only emits the
-            apple-specific tag, which Chrome warns about as deprecated. */}
+        {/* Standard PWA hint — Next's metadata.appleWebApp only emits the apple-specific tag. */}
         <meta name="mobile-web-app-capable" content="yes" />
       </head>
-      <body className="bg-ft-bg min-h-screen antialiased">
+      <body className="min-h-screen bg-ft-bg font-body text-ft-white antialiased">
         <a
           href="#main-content"
-          className="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-[100] focus:bg-ft-accent focus:text-ft-bg focus:px-4 focus:py-2 focus:rounded focus:font-body focus:text-sm focus:font-bold"
+          className="sr-only focus:not-sr-only focus:fixed focus:left-2 focus:top-2 focus:z-[100] focus:rounded-ft-md focus:bg-ft-accent focus:px-4 focus:py-2 focus:font-data focus:text-sm focus:font-bold focus:text-ft-on-accent"
         >
           Skip to main content
         </a>
-        <ThemeProvider>
-          <TierProvider>
-            <ThemedTexture />
-            <ThemedOverlays />
-            <SessionProvider>
-              <OfflineSyncProvider>
-                <ToastProvider>
-                  <main id="main-content" className="max-w-[600px] mx-auto px-4 py-4 pb-24">
-                    {children}
-                  </main>
-                  <BottomNav />
-                </ToastProvider>
-              </OfflineSyncProvider>
-            </SessionProvider>
-          </TierProvider>
-        </ThemeProvider>
+        <SessionProvider>
+          <OfflineSyncProvider>
+            <ToastProvider>
+              <MainFrame>{children}</MainFrame>
+              <BottomNav />
+            </ToastProvider>
+          </OfflineSyncProvider>
+        </SessionProvider>
       </body>
     </html>
   );

@@ -88,6 +88,10 @@ model User {
   lifestyleLogs     LifestyleLog[]
   recommendations   Recommendation[]
   gameplanChanges   GameplanChange[]
+  // v2 libraries + frames
+  workoutFrames     WorkoutFrame[]
+  savedMeals        SavedMeal[]
+  savedDays         SavedDay[]
 
   @@map("users")
 }
@@ -355,16 +359,20 @@ model Workout {
   // from a scheduled BlockDay; STANDALONE applies to improv logs;
   // SINGLE_LIBRARY tags one-offs from /log/library.
   source     WorkoutSource? @default(GAMEPLAN)
+  // v2: the frame this session was started from ("used N×" on frame cards).
+  frameId    String?        @map("frame_id") @db.Uuid
   createdAt  DateTime       @default(now()) @map("created_at")
 
   user      User              @relation(fields: [userId], references: [id], onDelete: Cascade)
   block     Block?            @relation(fields: [blockId], references: [id], onDelete: SetNull)
   blockDay  BlockDay?         @relation(fields: [blockDayId], references: [id], onDelete: SetNull)
+  frame     WorkoutFrame?     @relation(fields: [frameId], references: [id], onDelete: SetNull)
   exercises WorkoutExercise[]
 
   @@index([userId])
   @@index([userId, date])
   @@index([blockId])
+  @@index([frameId])
   @@map("workouts")
 }
 
@@ -422,6 +430,7 @@ model Exercise {
   blockDayExercises    BlockDayExercise[]   @relation("primary")
   blockDayExercisesAlt BlockDayExercise[]   @relation("alternate")
   stretchRoutineItems  StretchRoutineItem[]
+  frameExercises       WorkoutFrameExercise[]
 
   @@unique([name])
   @@index([primaryMuscle])
@@ -561,6 +570,8 @@ model FoodItem {
   protein     Decimal  @default(0)
   carbs       Decimal  @default(0)
   fat         Decimal  @default(0)
+  // v2: label-review field
+  saturatedFat Decimal? @map("saturated_fat")
   fiber       Decimal? @default(0)
   sugar       Decimal? @default(0)
   sodium      Decimal? @default(0)
@@ -572,6 +583,7 @@ model FoodItem {
   user          User?          @relation(fields: [userId], references: [id], onDelete: Cascade)
   mealItems     MealItem[]
   mealPlanItems MealPlanItem[]
+  savedMealItems SavedMealItem[]
 
   @@index([userId])
   @@index([barcode])
@@ -675,12 +687,18 @@ model MealPlanDay {
   id        String   @id @default(uuid()) @db.Uuid
   planId    String   @map("plan_id") @db.Uuid
   dayNumber Int      @map("day_number")
+  // v2: a plan is an ordered list of references to saved days ("My Days").
+  // `name` is an optional per-plan label; the day's own name lives on SavedDay.
+  name       String?
+  savedDayId String?  @map("saved_day_id") @db.Uuid
   createdAt DateTime @default(now()) @map("created_at")
 
-  plan  MealPlan       @relation(fields: [planId], references: [id], onDelete: Cascade)
-  meals MealPlanMeal[]
+  plan     MealPlan       @relation(fields: [planId], references: [id], onDelete: Cascade)
+  savedDay SavedDay?      @relation(fields: [savedDayId], references: [id], onDelete: SetNull)
+  meals    MealPlanMeal[]
 
   @@index([planId])
+  @@index([savedDayId])
   @@map("meal_plan_days")
 }
 
@@ -1096,4 +1114,154 @@ model GameplanChange {
   @@index([programId, createdAt])
   @@index([recommendationId])
   @@map("gameplan_changes")
+}
+
+// ─── v2: Frames (saved workout templates) ─────────────────────────────
+// A frame is a plan, not a record: exercises + targets, never weights.
+// Seeded from src/lib/workout-library.ts (scripts/seed-frames.ts); created
+// from the logger's finish flow, day detail and history ("Save as frame").
+
+model WorkoutFrame {
+  id          String   @id @default(uuid()) @db.Uuid
+  userId      String   @map("user_id") @db.Uuid
+  name        String
+  focus       String?            // "Chest · delts"
+  description String?
+  notes       String?
+  libraryId   String?  @map("library_id") // workout-library entry id when seeded
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  user      User                   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  exercises WorkoutFrameExercise[]
+  workouts  Workout[]
+
+  @@index([userId])
+  @@map("workout_frames")
+}
+
+model WorkoutFrameExercise {
+  id             String  @id @default(uuid()) @db.Uuid
+  frameId        String  @map("frame_id") @db.Uuid
+  exerciseId     String  @map("exercise_id") @db.Uuid
+  sortOrder      Int     @map("sort_order")
+  targetSets     Int?    @map("target_sets")
+  targetRepRange String? @map("target_rep_range")
+  targetRpe      String? @map("target_rpe")
+  notes          String?
+
+  frame    WorkoutFrame @relation(fields: [frameId], references: [id], onDelete: Cascade)
+  exercise Exercise     @relation(fields: [exerciseId], references: [id], onDelete: Cascade)
+
+  @@index([frameId])
+  @@map("workout_frame_exercises")
+}
+
+// ─── v2: Nutrition libraries ──────────────────────────────────────────
+// Meals and days are first-class, reusable by reference: a SavedMeal is one
+// thing used by many SavedDaySlots; a SavedDay is one thing a MealPlan orders.
+// Archetypes (MealTemplate) give a meal its frame of slots.
+
+enum MealSlotRole {
+  protein
+  carb
+  fat
+  filling
+  flavor
+}
+
+model MealTemplate {
+  id          String  @id @default(uuid()) @db.Uuid
+  slug        String  @unique
+  name        String
+  description String?
+  sortOrder   Int     @default(0) @map("sort_order")
+
+  slots      MealTemplateSlot[]
+  savedMeals SavedMeal[]
+
+  @@map("meal_templates")
+}
+
+model MealTemplateSlot {
+  id         String       @id @default(uuid()) @db.Uuid
+  templateId String       @map("template_id") @db.Uuid
+  role       MealSlotRole
+  required   Boolean      @default(true)
+  sortOrder  Int          @map("sort_order")
+  hint       String?      // "5–7 oz lean protein"
+
+  template MealTemplate @relation(fields: [templateId], references: [id], onDelete: Cascade)
+
+  @@index([templateId])
+  @@map("meal_template_slots")
+}
+
+model SavedMeal {
+  id         String    @id @default(uuid()) @db.Uuid
+  userId     String    @map("user_id") @db.Uuid
+  name       String
+  mealType   MealType? @map("meal_type") // tag for the My Meals filter chips
+  templateId String?   @map("template_id") @db.Uuid
+  notes      String?
+  createdAt  DateTime  @default(now()) @map("created_at")
+  updatedAt  DateTime  @updatedAt @map("updated_at")
+
+  user     User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  template MealTemplate?  @relation(fields: [templateId], references: [id], onDelete: SetNull)
+  items    SavedMealItem[]
+  daySlots SavedDaySlot[]
+
+  @@index([userId])
+  @@map("saved_meals")
+}
+
+model SavedMealItem {
+  id         String        @id @default(uuid()) @db.Uuid
+  mealId     String        @map("meal_id") @db.Uuid
+  foodItemId String        @map("food_item_id") @db.Uuid
+  quantity   Decimal       @default(1) // × FoodItem.servingSize
+  role       MealSlotRole? // frame slot this item fills; null = extra
+  sortOrder  Int           @default(0) @map("sort_order")
+
+  meal     SavedMeal @relation(fields: [mealId], references: [id], onDelete: Cascade)
+  foodItem FoodItem  @relation(fields: [foodItemId], references: [id], onDelete: Cascade)
+
+  @@index([mealId])
+  @@map("saved_meal_items")
+}
+
+model SavedDay {
+  id        String   @id @default(uuid()) @db.Uuid
+  userId    String   @map("user_id") @db.Uuid
+  name      String
+  // Target override; all null = use the default NutritionTarget.
+  calories  Decimal?
+  protein   Decimal?
+  carbs     Decimal?
+  fat       Decimal?
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  user     User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  slots    SavedDaySlot[]
+  planDays MealPlanDay[]
+
+  @@index([userId])
+  @@map("saved_days")
+}
+
+model SavedDaySlot {
+  id        String  @id @default(uuid()) @db.Uuid
+  dayId     String  @map("day_id") @db.Uuid
+  sortOrder Int     @map("sort_order")
+  label     String? // "Breakfast" — optional; the UI derives "Meal N" from sortOrder
+  mealId    String? @map("meal_id") @db.Uuid
+
+  day  SavedDay   @relation(fields: [dayId], references: [id], onDelete: Cascade)
+  meal SavedMeal? @relation(fields: [mealId], references: [id], onDelete: SetNull)
+
+  @@index([dayId])
+  @@index([mealId])
+  @@map("saved_day_slots")
 }

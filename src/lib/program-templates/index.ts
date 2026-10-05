@@ -11,7 +11,7 @@ import { longevity } from "./longevity";
 /**
  * Master registry of all program templates.
  *
- * Templates are added here in the order they should appear on /programs/new/templates.
+ * Templates are listed in the order they appear under Pre-made on /training/plans.
  * The seed script reads this list to create/update Program records under the
  * system "template" user account.
  */
@@ -43,40 +43,3 @@ export function getTemplateBySlug(slug: string): ProgramTemplate | undefined {
   return programTemplates.find((t) => t.slug === slug);
 }
 
-/* ─── R13 compatibility surface ──────────────────────────────────
- * The R12 `@/lib/gameplan-templates` registry is folded into this
- * module; the helpers below preserve its shape so existing callers
- * (Header badge, /api/programs/generate, picker Step4Preview) keep
- * working without a sweep. New callers should use `getTemplateBySlug`
- * directly.
- */
-
-/** R13: aliased lookup that accepts null/undefined for callers that
- *  pass `Program.gameplanKind` directly. Mirrors R12's API shape. */
-export function gameplanTemplate(slug: string | null | undefined): ProgramTemplate | null {
-  if (!slug) return null;
-  return getTemplateBySlug(slug) ?? null;
-}
-
-/** R13: every slug is valid iff a template carries it. */
-export function isValidGameplanKind(slug: string): boolean {
-  return programTemplates.some((t) => t.slug === slug);
-}
-
-/** R13: legacy R12 helper. The new picker design is "pick a gameplan
- *  template directly," so program-engine template ids no longer map
- *  to gameplan kinds. Returns null in R13; deleted entirely once the
- *  R12 picker is replaced by R14's templates flow. */
-export function inferGameplanKindFromTemplate(
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  programEngineTemplateId: string | null | undefined,
-): string | null {
-  return null;
-}
-
-/** R13: legacy R12 surface. Returns the same array with a different name. */
-export const GAMEPLAN_TEMPLATES = programTemplates;
-/** R13: type alias for callers that imported `GameplanTemplate`. */
-export type GameplanTemplate = ProgramTemplate;
-/** R13: type alias for callers that imported `GameplanKind`. */
-export type GameplanKind = string;

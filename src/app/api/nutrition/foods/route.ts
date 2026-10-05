@@ -57,6 +57,12 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ foods: [], source: "none" });
   }
 
+  // Library listing (no query): the user's own foods plus shared cached ones, same set the Nutrition tile counts.
+  if (searchParams.get("mine") === "1" && search.length < 2) {
+    const foods = await prisma.foodItem.findMany({ where: { OR: [{ userId }, { userId: null }] }, orderBy: { name: "asc" }, take: 200 });
+    return NextResponse.json({ foods, source: "local" });
+  }
+
   // Search by name
   if (search.length < 2) {
     return NextResponse.json({ foods: [] });
@@ -126,6 +132,8 @@ export async function GET(request: NextRequest) {
  * POST /api/nutrition/foods
  * Create a custom food item (or cache a USDA/OFF food).
  */
+const EXTERNAL_SOURCES = new Set(["usda", "openfoodfacts"]);
+
 export async function POST(request: NextRequest) {
   const [userId, authError] = await requireAuth();
   if (authError) return authError;
@@ -137,7 +145,7 @@ export async function POST(request: NextRequest) {
 
   const food = await prisma.foodItem.create({
     data: {
-      userId: body.source === "custom" ? userId : null,
+      userId: EXTERNAL_SOURCES.has(body.source) ? null : userId,
       name: body.name.trim(),
       brand: body.brand ?? null,
       barcode: body.barcode ?? null,
@@ -147,12 +155,13 @@ export async function POST(request: NextRequest) {
       protein: body.protein ?? 0,
       carbs: body.carbs ?? 0,
       fat: body.fat ?? 0,
+      saturatedFat: body.saturatedFat ?? null,
       fiber: body.fiber ?? null,
       sugar: body.sugar ?? null,
       sodium: body.sodium ?? null,
       source: body.source ?? "custom",
       externalId: body.externalId ?? null,
-      isCustom: body.source === "custom",
+      isCustom: !EXTERNAL_SOURCES.has(body.source),
     },
   });
 

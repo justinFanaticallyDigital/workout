@@ -15,12 +15,13 @@ export async function GET(
     include: {
       exercises: {
         include: {
-          exercise: { select: { name: true, equipment: true, movementPattern: true } },
+          exercise: { select: { id: true, name: true, equipment: true, movementPattern: true, primaryMuscle: true } },
           sets: { orderBy: { setNumber: "asc" } },
         },
         orderBy: { sortOrder: "asc" },
       },
-      blockDay: { select: { name: true } },
+      blockDay: { select: { id: true, name: true } },
+      frame: { select: { id: true, name: true } },
     },
   });
 

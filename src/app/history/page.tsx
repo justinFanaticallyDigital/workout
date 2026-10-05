@@ -1,10 +1,13 @@
 "use client";
 
+/** Workout history — finished and open sessions, newest first, with an optional date range. */
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
-import { Card, Tag, EmptyState } from "@/components/ui";
+import { Btn, Card, ScreenHeader, Stamp } from "@/components/kit";
 import { useToast } from "@/components/ui/Toast";
 import { authCheck, toastError } from "@/lib/fetch-helpers";
+import { fmtMonthDay } from "@/lib/dates";
+import { fmtLb } from "@/lib/stats";
 
 interface WorkoutSummary {
   id: string;
@@ -13,29 +16,21 @@ interface WorkoutSummary {
   endTime: string | null;
   notes: string | null;
   blockDay: { name: string } | null;
-  exercises: {
-    exercise: { name: string };
-    sets: { weight: number | null; reps: number | null; isWarmup: boolean }[];
-  }[];
+  frame?: { name: string } | null;
+  exercises: { exercise: { name: string }; sets: { weight: number | null; reps: number | null; isWarmup: boolean }[] }[];
 }
+
+const LIMIT = 20;
 
 function formatDuration(start: string | null, end: string | null): string {
   if (!start || !end) return "—";
-  const ms = new Date(end).getTime() - new Date(start).getTime();
-  const mins = Math.round(ms / 60000);
-  if (mins < 60) return `${mins}m`;
-  return `${Math.floor(mins / 60)}h ${mins % 60}m`;
+  const mins = Math.round((new Date(end).getTime() - new Date(start).getTime()) / 60000);
+  return mins < 60 ? `${mins}m` : `${Math.floor(mins / 60)}h ${mins % 60}m`;
 }
 
 function calcVolume(exercises: WorkoutSummary["exercises"]): number {
   let vol = 0;
-  for (const ex of exercises) {
-    for (const s of ex.sets) {
-      if (s.weight && s.reps && !s.isWarmup) {
-        vol += Number(s.weight) * s.reps;
-      }
-    }
-  }
+  for (const ex of exercises) for (const s of ex.sets) if (s.weight && s.reps && !s.isWarmup) vol += Number(s.weight) * s.reps;
   return vol;
 }
 
@@ -47,27 +42,28 @@ export default function HistoryPage() {
   const [hasMore, setHasMore] = useState(true);
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
-  const limit = 20;
 
-  const fetchWorkouts = useCallback((off: number, append: boolean, from?: string, to?: string) => {
-    const params = new URLSearchParams({ limit: String(limit), offset: String(off) });
-    if (from) params.set("from", from);
-    if (to) params.set("to", to);
-    fetch(`/api/workouts?${params}`)
-      .then(authCheck)
-      .then((res) => res.json())
-      .then((data) => {
-        const fetched = data.workouts ?? [];
-        if (append) {
-          setWorkouts((prev) => [...prev, ...fetched]);
-        } else {
-          setWorkouts(fetched);
-        }
-        setHasMore(fetched.length === limit);
-        setLoading(false);
-      })
-      .catch((err: unknown) => { toastError(toast, "Failed to load workout history")(err); setLoading(false); });
-  }, [toast]);
+  const fetchWorkouts = useCallback(
+    (off: number, append: boolean, from?: string, to?: string) => {
+      const params = new URLSearchParams({ limit: String(LIMIT), offset: String(off) });
+      if (from) params.set("from", from);
+      if (to) params.set("to", to);
+      fetch(`/api/workouts?${params}`)
+        .then(authCheck)
+        .then((res) => res.json())
+        .then((data) => {
+          const fetched: WorkoutSummary[] = data.workouts ?? [];
+          setWorkouts((prev) => (append ? [...prev, ...fetched] : fetched));
+          setHasMore(fetched.length === LIMIT);
+          setLoading(false);
+        })
+        .catch((err: unknown) => {
+          toastError(toast, "Couldn't load the history")(err);
+          setLoading(false);
+        });
+    },
+    [toast],
+  );
 
   useEffect(() => {
     fetchWorkouts(0, false);
@@ -78,7 +74,6 @@ export default function HistoryPage() {
     setLoading(true);
     fetchWorkouts(0, false, dateFrom || undefined, dateTo || undefined);
   };
-
   const clearDateFilter = () => {
     setDateFrom("");
     setDateTo("");
@@ -86,148 +81,96 @@ export default function HistoryPage() {
     setLoading(true);
     fetchWorkouts(0, false);
   };
-
   const loadMore = () => {
-    const newOffset = offset + limit;
-    setOffset(newOffset);
-    fetchWorkouts(newOffset, true, dateFrom || undefined, dateTo || undefined);
+    const next = offset + LIMIT;
+    setOffset(next);
+    fetchWorkouts(next, true, dateFrom || undefined, dateTo || undefined);
   };
 
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-ft-bg flex items-center justify-center">
-        <p className="text-ft-dim font-body text-sm">Loading...</p>
-      </div>
-    );
-  }
+  const filtered = !!(dateFrom || dateTo);
+  const inputCls = "w-full rounded-ft-sm border border-ft-border bg-ft-surface-raised px-2.5 py-2 font-data text-[12.5px] text-ft-white outline-none focus:border-ft-accent";
 
   return (
-    <div className="min-h-screen bg-ft-bg text-ft-white p-4 sm:p-6 max-w-4xl mx-auto">
-      <div className="mb-6">
-        <h1 className="text-2xl font-body font-bold tracking-wide">
-          Workout History
-        </h1>
-        <p className="text-ft-dim text-sm font-body mt-1">
-          {workouts.length > 0
-            ? `${workouts.length}${hasMore ? "+" : ""} sessions`
-            : "No workouts logged yet"}
-        </p>
+    <div className="pb-8">
+      <ScreenHeader title="History" back={{ href: "/stats", label: "Stats" }} right={!loading ? <Stamp>{workouts.length}{hasMore ? "+" : ""} sessions</Stamp> : undefined} />
+      <div className="px-5 pb-3.5">
+        <Card band={false} className="flex items-end gap-2 px-3.5 py-3">
+          <label className="min-w-0 flex-1">
+            <span className="t-eyebrow !text-[9px]">From</span>
+            <input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} className={`mt-1 ${inputCls}`} />
+          </label>
+          <label className="min-w-0 flex-1">
+            <span className="t-eyebrow !text-[9px]">To</span>
+            <input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} className={`mt-1 ${inputCls}`} />
+          </label>
+          <Btn small onClick={applyDateFilter} disabled={!dateFrom && !dateTo}>
+            Filter
+          </Btn>
+          {filtered && (
+            <Btn kind="quiet" small onClick={clearDateFilter}>
+              Clear
+            </Btn>
+          )}
+        </Card>
       </div>
 
-      {/* Date Range Filter */}
-      <div className="flex flex-wrap items-end gap-3 mb-5">
-        <div>
-          <label className="block text-ft-dim text-[10px] font-body uppercase tracking-wider mb-1">From</label>
-          <input
-            type="date"
-            value={dateFrom}
-            onChange={(e) => setDateFrom(e.target.value)}
-            className="bg-ft-surface border border-ft-card rounded px-3 py-1.5 text-sm font-body text-ft-white"
-          />
-        </div>
-        <div>
-          <label className="block text-ft-dim text-[10px] font-body uppercase tracking-wider mb-1">To</label>
-          <input
-            type="date"
-            value={dateTo}
-            onChange={(e) => setDateTo(e.target.value)}
-            className="bg-ft-surface border border-ft-card rounded px-3 py-1.5 text-sm font-body text-ft-white"
-          />
-        </div>
-        <button
-          onClick={applyDateFilter}
-          disabled={!dateFrom && !dateTo}
-          className="px-3 py-1.5 text-xs font-body font-bold bg-ft-accent text-ft-bg rounded hover:opacity-90 transition-opacity disabled:opacity-40"
-        >
-          Filter
-        </button>
-        {(dateFrom || dateTo) && (
-          <button
-            onClick={clearDateFilter}
-            className="px-3 py-1.5 text-xs font-body text-ft-dim hover:text-ft-light transition-colors"
-          >
-            Clear
-          </button>
+      <div className="flex flex-col gap-2.5 px-5">
+        {loading && <div className="py-6 text-center font-body text-[13px] text-ft-dim">Loading…</div>}
+        {!loading && workouts.length === 0 && (
+          <Card className="px-4 py-4">
+            <div className="font-data text-[14.5px] font-bold text-ft-white">{filtered ? "No sessions in this range" : "No sessions yet"}</div>
+            <p className="mt-1 font-body text-[13px] text-ft-light">{filtered ? "Try a wider date range." : "Finish a workout from the Training tab and it shows up here."}</p>
+            {!filtered && (
+              <Btn small href="/training" className="mt-3">
+                Go to Training
+              </Btn>
+            )}
+          </Card>
         )}
-      </div>
-
-      {workouts.length === 0 ? (
-        <EmptyState
-          icon="barbell"
-          title={dateFrom || dateTo ? "No workouts in this range" : "No workouts yet"}
-          description={dateFrom || dateTo ? "Try adjusting your date range." : "Start logging workouts to see your history here."}
-          actionLabel={dateFrom || dateTo ? undefined : "Log a workout"}
-          actionHref={dateFrom || dateTo ? undefined : "/log"}
-        />
-      ) : (
-        <div className="space-y-3">
-          {workouts.map((w) => {
+        {!loading &&
+          workouts.map((w) => {
             const volume = calcVolume(w.exercises);
-            const exerciseNames = w.exercises
-              .slice(0, 4)
-              .map((e) => e.exercise.name);
-            const setCount = w.exercises.reduce(
-              (sum, e) => sum + e.sets.filter((s) => !s.isWarmup).length,
-              0
-            );
-
+            const names = w.exercises.slice(0, 4).map((e) => e.exercise.name);
+            const setCount = w.exercises.reduce((sum, e) => sum + e.sets.filter((s) => !s.isWarmup).length, 0);
+            const title = w.blockDay?.name ?? w.frame?.name ?? "Workout";
             return (
-              <Link key={w.id} href={`/history/${w.id}`}>
-                <Card className="hover:border-ft-dim transition-colors mb-1">
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2 mb-1">
-                        <span className="text-ft-white text-sm font-body font-bold">
-                          {new Date(w.date).toLocaleDateString("en-US", {
-                            weekday: "short",
-                            month: "short",
-                            day: "numeric",
-                          })}
-                        </span>
-                        {w.blockDay && (
-                          <Tag>{w.blockDay.name}</Tag>
-                        )}
-                      </div>
-                      <p className="text-ft-dim text-xs font-body">
-                        {exerciseNames.join(", ")}
-                        {w.exercises.length > 4 && ` +${w.exercises.length - 4} more`}
-                      </p>
-                    </div>
-                    <div className="flex items-center gap-4 text-right">
-                      <div>
-                        <p className="text-ft-light text-xs font-body font-bold">
-                          {volume > 0 ? `${volume.toLocaleString()} lbs` : "—"}
-                        </p>
-                        <p className="text-ft-muted text-[10px] font-body">volume</p>
-                      </div>
-                      <div>
-                        <p className="text-ft-light text-xs font-body font-bold">{setCount}</p>
-                        <p className="text-ft-muted text-[10px] font-body">sets</p>
-                      </div>
-                      <div>
-                        <p className="text-ft-light text-xs font-body font-bold">
-                          {formatDuration(w.startTime, w.endTime)}
-                        </p>
-                        <p className="text-ft-muted text-[10px] font-body">time</p>
-                      </div>
-                      <span className="text-ft-muted text-sm">&rarr;</span>
-                    </div>
+              <Link key={w.id} href={`/history/${w.id}`} className="block">
+                <Card className="px-4 py-3">
+                  <div className="flex items-center gap-2">
+                    <span className="font-data text-[13px] font-bold text-ft-white">{fmtMonthDay(w.date)}</span>
+                    <span className="min-w-0 flex-1 truncate font-data text-[12px] text-ft-light">{title}</span>
+                    {!w.endTime && <Stamp tone="gold">Open</Stamp>}
+                    <span className="font-data text-[14px] text-ft-accent">›</span>
+                  </div>
+                  <p className="mt-1 truncate font-body text-[12px] text-ft-dim">
+                    {names.join(", ")}
+                    {w.exercises.length > 4 ? ` +${w.exercises.length - 4} more` : ""}
+                    {w.exercises.length === 0 ? "No exercises" : ""}
+                  </p>
+                  <div className="mt-2 flex gap-5">
+                    <Mini label="lb vol" value={volume > 0 ? fmtLb(volume) : "—"} />
+                    <Mini label="Sets" value={String(setCount)} />
+                    <Mini label="Time" value={formatDuration(w.startTime, w.endTime)} />
                   </div>
                 </Card>
               </Link>
             );
           })}
+        {!loading && hasMore && workouts.length > 0 && (
+          <button type="button" onClick={loadMore} className="w-full rounded-ft-lg border-[1.6px] border-dashed border-ft-border px-4 py-[11px] text-center font-data text-[11.5px] font-bold uppercase tracking-[0.12em] text-ft-light">
+            Load more
+          </button>
+        )}
+      </div>
+    </div>
+  );
+}
 
-          {hasMore && (
-            <button
-              onClick={loadMore}
-              className="w-full border border-dashed border-ft-card rounded py-3 text-ft-dim text-xs font-body hover:border-ft-dim hover:text-ft-light transition-colors"
-            >
-              Load More
-            </button>
-          )}
-        </div>
-      )}
+function Mini({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="leading-none">
+      <div className="font-data text-[13px] font-bold tabular-nums text-ft-white">{value}</div>
+      <div className="mt-[3px] font-data text-[9px] uppercase tracking-[0.14em] text-ft-dim">{label}</div>
     </div>
   );
 }

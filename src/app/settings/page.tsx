@@ -1,63 +1,33 @@
 "use client";
 
-/**
- * Cluster 6 — Settings hub · /settings (the top-right gear destination across
- * every tier). v2 reskin: account + the UI-simulated tier switcher
- * (MIGRATION_MAP §1.3 — no billing yet) + unit prefs + grouped nav rows into
- * the existing sub-pages (theme / integrations / advanced) and the
- * consolidated surfaces (Progress / Library). Data export (CSV) is preserved
- * inline. Settings is NOT a pillar — it renders through HomeShell + the global
- * BottomNav.
- */
+/** Settings hub — account · preferences · libraries · health · data. */
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useSession, signOut } from "next-auth/react";
-import { HomeShell, Header, Card, Button, Stamp, SectionLabel } from "@/components/v2";
+import { Btn, Card, ScreenHeader, SectionHeader, Stamp } from "@/components/kit";
 import { useToast } from "@/components/ui/Toast";
-import { useTier } from "@/providers/TierProvider";
-import { TIERS, TIER_LABEL, type Tier } from "@/lib/tier";
-
-function getStoredUnit(key: string, fallback: string): string {
-  if (typeof window === "undefined") return fallback;
-  return localStorage.getItem(key) ?? fallback;
-}
+import { fmtHeaderDate } from "@/lib/dates";
 
 export default function SettingsPage() {
   const router = useRouter();
   const toast = useToast();
   const { data: session } = useSession();
-  const { tier, setTier } = useTier();
-
-  const [weightUnit, setWeightUnit] = useState(() => getStoredUnit("ft-weight-unit", "lbs"));
-  const [distanceUnit, setDistanceUnit] = useState(() => getStoredUnit("ft-distance-unit", "miles"));
+  const [units, setUnits] = useState({ weight: "lbs", distance: "miles" });
   const [exporting, setExporting] = useState(false);
 
   useEffect(() => {
-    localStorage.setItem("ft-weight-unit", weightUnit);
-  }, [weightUnit]);
-  useEffect(() => {
-    localStorage.setItem("ft-distance-unit", distanceUnit);
-  }, [distanceUnit]);
-
-  const downloadCSV = (filename: string, content: string) => {
-    const blob = new Blob([content], { type: "text/csv" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = filename;
-    a.click();
-    URL.revokeObjectURL(url);
-  };
+    try {
+      setUnits({ weight: localStorage.getItem("ft-weight-unit") ?? "lbs", distance: localStorage.getItem("ft-distance-unit") ?? "miles" });
+    } catch {
+      /* private mode */
+    }
+  }, []);
 
   const handleExport = async () => {
     setExporting(true);
     try {
-      const [workoutsRes, weightRes, prsRes] = await Promise.all([
-        fetch("/api/workouts?limit=1000"),
-        fetch("/api/progress/weight"),
-        fetch("/api/progress/prs"),
-      ]);
+      const [workoutsRes, weightRes, prsRes] = await Promise.all([fetch("/api/workouts?limit=1000"), fetch("/api/progress/weight"), fetch("/api/progress/prs")]);
       const workoutsData = await workoutsRes.json();
       const weightData = await weightRes.json();
       const prsData = await prsRes.json();
@@ -67,9 +37,7 @@ export default function SettingsPage() {
         const date = workout.date?.split("T")[0] ?? "";
         for (const we of workout.exercises ?? []) {
           for (const set of we.sets ?? []) {
-            lines.push(
-              [date, `"${we.exercise?.name ?? ""}"`, set.setNumber, set.weight ?? "", set.reps ?? "", set.rir ?? "", set.rpe ?? "", set.isPr ? "Yes" : ""].join(","),
-            );
+            lines.push([date, `"${we.exercise?.name ?? ""}"`, set.setNumber, set.weight ?? "", set.reps ?? "", set.rir ?? "", set.rpe ?? "", set.isPr ? "Yes" : ""].join(","));
           }
         }
       }
@@ -87,147 +55,92 @@ export default function SettingsPage() {
       setTimeout(() => downloadCSV("fittrack-prs.csv", prLines.join("\n")), 1000);
       toast.success("Exporting 3 CSV files…");
     } catch {
-      toast.error("Failed to export data.");
+      toast.error("Couldn't export the data.");
     }
     setExporting(false);
   };
 
   const email = session?.user?.email ?? null;
+  const name = session?.user?.name ?? null;
+  const initial = (name ?? email ?? "?").trim().charAt(0).toUpperCase();
 
   return (
-    <HomeShell header={<Header kind="home" title="Settings" right={null} />}>
-      {/* Account */}
-      <SectionLabel>Account</SectionLabel>
-      <div className="px-4">
-        <Card className="px-4 py-3.5">
-          <div className="flex items-center justify-between gap-2.5">
-            <div className="min-w-0">
-              <div className="truncate font-body text-[14px] font-semibold text-ft-white">{email ?? "Not signed in"}</div>
-              <div className="mt-0.5 font-data text-[10.5px] uppercase tracking-[0.06em] text-ft-dim">{TIER_LABEL[tier]} tier</div>
-            </div>
-            {email ? (
-              <Button kind="secondary" size="sm" onClick={() => signOut({ callbackUrl: "/signin" })}>
-                Sign out
-              </Button>
-            ) : (
-              <Button kind="primary" size="sm" onClick={() => router.push("/signin")}>
-                Sign in
-              </Button>
-            )}
+    <div className="pb-8">
+      <ScreenHeader title="Settings" right={<Stamp>{fmtHeaderDate()}</Stamp>} />
+
+      <SectionHeader title="Account" />
+      <div className="px-5">
+        <Card className="flex items-center gap-3 px-4 py-3.5">
+          <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-ft-accent font-data text-[16px] font-bold text-ft-on-accent">{initial}</div>
+          <div className="min-w-0 flex-1">
+            <div className="truncate font-data text-[14px] font-bold text-ft-white">{name ?? email ?? "Not signed in"}</div>
+            <div className="truncate font-body text-[12px] text-ft-dim">{email ? `${name ? `${email} · ` : ""}Google account` : "Sign in to sync your data"}</div>
           </div>
+          {email ? (
+            <Btn kind="quiet" small onClick={() => signOut({ callbackUrl: "/signin" })}>
+              Sign out
+            </Btn>
+          ) : (
+            <Btn small onClick={() => router.push("/signin")}>
+              Sign in
+            </Btn>
+          )}
         </Card>
       </div>
 
-      {/* Tier switcher (UI-simulated) */}
-      <SectionLabel right="Simulated">Tier</SectionLabel>
-      <div className="px-4">
-        <Card className="px-4 py-3.5">
-          <Stamp>Preview tier</Stamp>
-          <p className="mt-1 font-body text-[11.5px] leading-snug text-ft-dim">
-            No billing yet — switch to preview each tier&apos;s surfaces (locked slots, slot-1 home, pillar gameplan layer).
-          </p>
-          <div className="mt-2.5 flex gap-2">
-            {TIERS.map((t) => {
-              const sel = t === tier;
-              return (
-                <button
-                  key={t}
-                  type="button"
-                  onClick={() => setTier(t as Tier)}
-                  className={[
-                    "flex-1 rounded-ft-md border px-2 py-2.5 font-body text-[12.5px] font-bold capitalize transition-colors",
-                    sel ? "border-ft-accent bg-ft-accent-faint text-ft-accent" : "border-ft-border bg-ft-surface-alt text-ft-light",
-                  ].join(" ")}
-                >
-                  {TIER_LABEL[t]}
-                </button>
-              );
-            })}
-          </div>
-          <Link href="/shelf" className="mt-2.5 block">
-            <Button kind="ghost" size="sm">
-              Browse the Shelf →
-            </Button>
-          </Link>
-        </Card>
+      <SectionHeader title="Preferences" className="mt-5" />
+      <div className="flex flex-col gap-2 px-5">
+        <Row href="/settings/units" label="Units" sub={`${units.weight === "kg" ? "Kilograms" : "Pounds"} · ${units.distance === "km" ? "Kilometres" : "Miles"}`} />
+        <Row href="/settings/integrations" label="Integrations" sub="Fitbit · Apple Health · Garmin" />
       </div>
 
-      {/* Units */}
-      <SectionLabel>Units</SectionLabel>
-      <div className="px-4">
-        <Card className="flex flex-col gap-3 px-4 py-3.5">
-          <UnitToggle label="Weight" value={weightUnit} options={["lbs", "kg"]} onChange={setWeightUnit} />
-          <UnitToggle label="Distance" value={distanceUnit} options={["miles", "km"]} onChange={setDistanceUnit} />
-        </Card>
+      <SectionHeader title="Library" className="mt-5" />
+      <div className="flex flex-col gap-2 px-5">
+        <Row href="/training/plans" label="Training plans" sub="Active · paused · completed · pre-made" />
+        <Row href="/nutrition/plans" label="Nutrition plans" sub="Active · archived" />
+        <Row href="/nutrition/meals" label="My Meals" sub="Saved meals and frames" />
+        <Row href="/nutrition/foods" label="Foods" sub="Library · scanned labels · custom foods" />
+        <Row href="/exercises" label="Exercises" sub="Library · custom exercises · categories" />
       </div>
 
-      {/* Nav rows */}
-      <SectionLabel>More</SectionLabel>
-      <div className="flex flex-col gap-2 px-4">
-        <NavRow href="/settings/theme" label="Theme" sub="Switch visual theme" />
-        <NavRow href="/settings/integrations" label="Integrations" sub="Fitbit · Apple Health · Garmin" />
-        <NavRow href="/progress" label="Progress" sub="Charts · calendar · check-ins · photos" />
-        <NavRow href="/library" label="Workouts library" sub="Saved frames + single workouts" />
-        <NavRow href="/settings/advanced" label="Advanced" sub="Migrations · debug" />
+      <SectionHeader title="Health" className="mt-5" />
+      <div className="flex flex-col gap-2 px-5">
+        <Row href="/stats/injuries" label="Injuries" sub="Tweaks, flare-ups and recovery notes" />
+        <Row href="/stats/body" label="Body metrics" sub="Weight · body fat" />
+        <Row href="/stats/photos" label="Progress photos" sub="Front · side · back" />
       </div>
 
-      {/* Data */}
-      <SectionLabel>Data</SectionLabel>
-      <div className="px-4 pb-2">
-        <Button kind="secondary" size="lg" fullWidth disabled={exporting} onClick={handleExport}>
+      <SectionHeader title="Data" className="mt-5" />
+      <div className="flex flex-col gap-2 px-5">
+        <Btn kind="ghost" fullWidth disabled={exporting} onClick={handleExport}>
           {exporting ? "Exporting…" : "Export all data (CSV)"}
-        </Button>
-      </div>
-    </HomeShell>
-  );
-}
-
-function UnitToggle({
-  label,
-  value,
-  options,
-  onChange,
-}: {
-  label: string;
-  value: string;
-  options: [string, string];
-  onChange: (v: string) => void;
-}) {
-  return (
-    <div className="flex items-center justify-between">
-      <span className="font-body text-[13px] font-semibold text-ft-white">{label}</span>
-      <div className="flex gap-1 rounded-ft-md border border-ft-border-faint bg-ft-surface-alt p-1">
-        {options.map((o) => {
-          const sel = o === value;
-          return (
-            <button
-              key={o}
-              type="button"
-              onClick={() => onChange(o)}
-              className={[
-                "rounded-[6px] px-3 py-1.5 font-body text-[12px] font-semibold transition-colors",
-                sel ? "bg-ft-surface text-ft-white shadow-ft-sm" : "text-ft-dim",
-              ].join(" ")}
-            >
-              {o}
-            </button>
-          );
-        })}
+        </Btn>
+        <Row href="/settings/advanced" label="Advanced" sub="Seeds · debug" />
       </div>
     </div>
   );
 }
 
-function NavRow({ href, label, sub }: { href: string; label: string; sub: string }) {
+function Row({ href, label, sub }: { href: string; label: string; sub: string }) {
   return (
-    <Link href={href}>
-      <Card className="flex items-center justify-between px-3.5 py-3">
-        <div className="min-w-0">
-          <div className="font-body text-[13.5px] font-semibold text-ft-white">{label}</div>
+    <Link href={href} className="block">
+      <Card band={false} className="flex items-center gap-3 px-4 py-3">
+        <div className="min-w-0 flex-1">
+          <div className="font-data text-[13.5px] font-semibold text-ft-white">{label}</div>
           <div className="mt-px font-body text-[11.5px] text-ft-dim">{sub}</div>
         </div>
-        <span className="font-body text-base text-ft-dim">›</span>
+        <span className="font-data text-[14px] text-ft-accent">›</span>
       </Card>
     </Link>
   );
+}
+
+function downloadCSV(filename: string, content: string) {
+  const blob = new Blob([content], { type: "text/csv" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(url);
 }

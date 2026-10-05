@@ -14,6 +14,7 @@ export interface QueuedWorkout {
     startTime: string;
     blockId: string | null;
     blockDayId: string | null;
+    frameId?: string | null;
     notes: string | null;
     exercises: {
       exerciseId: string;
@@ -73,6 +74,7 @@ export async function syncQueue(): Promise<number> {
           startTime: item.payload.startTime,
           blockId: item.payload.blockId,
           blockDayId: item.payload.blockDayId,
+          frameId: item.payload.frameId ?? null,
           notes: item.payload.notes,
         }),
       });
