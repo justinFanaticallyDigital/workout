@@ -25,6 +25,8 @@ export * from "./icons";
 export { default as Sheet } from "./Sheet";
 export { default as ExercisePickerSheet, type PickedExercise } from "./ExercisePickerSheet";
 export { default as CategoryPickerSheet } from "./CategoryPickerSheet";
+export { default as NewExerciseSheet } from "./NewExerciseSheet";
+export { default as ExerciseTemplateForm, useExerciseTemplate, createExerciseFromTemplate } from "./ExerciseTemplateForm";
 export { default as PromptSheet } from "./PromptSheet";
 export { default as ConfirmSheet } from "./ConfirmSheet";
 export { default as TargetSheet } from "./TargetSheet";
