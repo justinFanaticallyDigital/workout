@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import Sheet from "./Sheet";
 import CategoryChip from "./CategoryChip";
+import NewExerciseSheet from "./NewExerciseSheet";
 import { SearchIcon } from "./icons";
 
 export interface PickedExercise {
@@ -20,18 +21,24 @@ interface ExercisePickerSheetProps {
   title?: string;
 }
 
-/** Search the exercise library. Recently used exercises show before a query is typed. */
+/**
+ * Search the exercise library. Recently used exercises show before a query is typed.
+ * The trailing "+ New exercise" row opens the template sheet (seeded with the query)
+ * and picks the created exercise straight away.
+ */
 export default function ExercisePickerSheet({ open, onClose, onPick, title = "Pick exercise" }: ExercisePickerSheetProps) {
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<PickedExercise[]>([]);
   const [recent, setRecent] = useState<PickedExercise[]>([]);
   const [loading, setLoading] = useState(false);
+  const [creating, setCreating] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (!open) return;
     setQuery("");
     setResults([]);
+    setCreating(false);
     fetch("/api/exercises/recent")
       .then((r) => (r.ok ? r.json() : { exercises: [] }))
       .then((d) => setRecent((d.exercises ?? []) as PickedExercise[]))
@@ -97,6 +104,22 @@ export default function ExercisePickerSheet({ open, onClose, onPick, title = "Pi
           <li className="py-6 text-center font-body text-[13px] text-ft-dim">{query.trim().length >= 2 ? "No matches" : "Type to search the library"}</li>
         )}
       </ul>
+      <button
+        type="button"
+        onClick={() => setCreating(true)}
+        className="mt-3 flex w-full items-center justify-center gap-1.5 rounded-ft-lg border-[1.6px] border-dashed border-ft-accent/40 bg-ft-accent/[.12] px-4 py-[11px] font-data text-[11.5px] font-bold uppercase tracking-[0.12em] text-ft-accent"
+      >
+        <span className="text-[16px] leading-none">+</span> New exercise
+      </button>
+      <NewExerciseSheet
+        open={creating}
+        onClose={() => setCreating(false)}
+        initialMovement={query.trim()}
+        onCreated={(ex) => {
+          setCreating(false);
+          onPick(ex);
+        }}
+      />
     </Sheet>
   );
 }
